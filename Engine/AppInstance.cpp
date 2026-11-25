@@ -659,12 +659,12 @@ AppInstance::loadInternal(const CLArgs& cl,
         std::list<AppInstance::RenderWork> writersWork;
 
 
-        if ( ( info.suffix() == QString::fromUtf8(NATRON_PROJECT_FILE_EXT) ) || Project::isPythonProjectFile( info.absoluteFilePath() ) ) {
+        if ( Project::isProjectFile( info.absoluteFilePath() ) ) {
             ///Load the project (a .ntp file, or a project saved as a Python script)
             if ( !_imp->_currentProject->loadProject( info.path(), info.fileName() ) ) {
                 throw std::invalid_argument( tr("Project file loading failed.").toStdString() );
             }
-        } else if ( info.suffix() == QString::fromUtf8("py") ) {
+        } else if ( Project::hasPythonFileExtension( info.fileName() ) ) {
             ///Load the python script
             // A Python error stops the run, so that the exit status is not 0 (#1276)
             if ( !loadPythonScript(info) ) {
@@ -733,12 +733,12 @@ AppInstance::loadInternal(const CLArgs& cl,
         appPTR->registerCloseProjectsAtPythonExit();
         QFileInfo info( cl.getScriptFilename() );
         if ( info.exists() ) {
-            if ( ( info.suffix() == QString::fromUtf8("py") ) && !Project::isPythonProjectFile( info.absoluteFilePath() ) ) {
-                loadPythonScript(info);
-            } else if ( ( info.suffix() == QString::fromUtf8(NATRON_PROJECT_FILE_EXT) ) || ( info.suffix() == QString::fromUtf8("py") ) ) {
+            if ( Project::isProjectFile( info.absoluteFilePath() ) ) {
                 if ( !_imp->_currentProject->loadProject( info.path(), info.fileName() ) ) {
                     throw std::invalid_argument( tr("Project file loading failed.").toStdString() );
                 }
+            } else if ( Project::hasPythonFileExtension( info.fileName() ) ) {
+                loadPythonScript(info);
             }
         }
 

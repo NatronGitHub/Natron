@@ -370,6 +370,34 @@ TEST(ProjectFileFormat, Detection)
     EXPECT_EQ( eProjectFileFormatNone, Project::detectFileFormat( QString::fromUtf8("/nonexistent/project.ntp") ) );
 }
 
+// The command line, File > Open, the macOS file-open event and drops all use Project::isProjectFile(): a
+// .ntp file, or a .py file that starts with NATRON_PROJECT_PYTHON_MAGIC; suffixes are case-insensitive.
+TEST(ProjectFileFormat, IsProjectFile)
+{
+    QTemporaryDir tmpDir;
+
+    ASSERT_TRUE( tmpDir.isValid() );
+    const auto write = [&tmpDir](const char* name, const char* contents) {
+        const QString path = tmpDir.path() + QLatin1Char('/') + QString::fromUtf8(name);
+        QFile f(path);
+        EXPECT_TRUE( f.open(QIODevice::WriteOnly) );
+        f.write(contents);
+
+        return path;
+    };
+    const char* const pythonProject = "# -*- coding: utf-8 -*-\n" NATRON_PROJECT_PYTHON_MAGIC "\n";
+    const char* const script = "# -*- coding: utf-8 -*-\nprint(1)\n";
+
+    EXPECT_TRUE( Project::isProjectFile( write("a.ntp", "") ) );
+    EXPECT_TRUE( Project::isProjectFile( write("b.NTP", "") ) );
+    EXPECT_TRUE( Project::isProjectFile( write("c.py", pythonProject) ) );
+    EXPECT_TRUE( Project::isProjectFile( write("d.PY", pythonProject) ) );
+    EXPECT_FALSE( Project::isProjectFile( write("e.py", script) ) );
+    EXPECT_FALSE( Project::isProjectFile( write("f.txt", pythonProject) ) );
+    EXPECT_TRUE( Project::hasPythonFileExtension( QString::fromUtf8("/x/d.PY") ) );
+    EXPECT_FALSE( Project::hasPythonFileExtension( QString::fromUtf8("/x/c.py.binautosave") ) );
+}
+
 // Text -> binary -> text: the binary file goes through the same serialize() functions (and class
 // versions) as the text one, so the project saved again as text after loading the binary file is
 // identical to the original text file. Each project also keeps the format of its file.

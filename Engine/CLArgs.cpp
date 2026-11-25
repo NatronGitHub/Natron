@@ -1353,7 +1353,7 @@ CLArgsPrivate::parse()
     {
         QStringList::iterator it = findFileNameWithExtension( QString::fromUtf8(NATRON_PROJECT_FILE_EXT) );
         if ( it == args.end() ) {
-            it = findFileNameWithExtension( QString::fromUtf8("py") );
+            it = findFileNameWithExtension( QString::fromUtf8(NATRON_PYTHON_FILE_EXT) );
             if (it != args.end()) {
                 isPythonScript = true;
             } else if (!isInterpreterMode && isBackground) {
