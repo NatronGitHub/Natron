@@ -1452,7 +1452,8 @@ Node::areAllProcessingThreadsQuit() const
 {
     {
         QMutexLocker locker(&_imp->computingPreviewMutex);
-        if (!_imp->previewThreadQuit) {
+        // A preview could start after this returns if previews were not forbidden
+        if (!_imp->previewThreadQuit || _imp->computingPreview) {
             return false;
         }
     }

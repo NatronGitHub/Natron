@@ -888,12 +888,15 @@ Node::destroyNode(bool blockingDestroy, bool autoReconnect)
         _imp->isBeingDestroyed = true;
     }
 
+    // The node is destroyed at once unless it is processing (#1805): no preview starts from now on, and the
+    // destruction waits only for the one being computed, if any.
+    _imp->forbidPreviews();
     bool allProcessingQuit = areAllProcessingThreadsQuit();
     if (allProcessingQuit || blockingDestroy) {
         if (!allProcessingQuit) {
             quitAnyProcessing_blocking(false);
         }
-        doDestroyNodeInternalEnd(false);
+        doDestroyNodeInternalEnd(autoReconnect);
     } else {
         NodeGroup* isGrp = dynamic_cast<NodeGroup*>( _imp->effect.get() );
         NodesList nodesToWatch;
