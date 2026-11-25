@@ -1,14 +1,16 @@
 """Regression test for #1256 in the GUI: the buttons of a Tracker that no viewer shows.
 
-The Tracker's buttons did nothing when the Tracker was not shown in a viewer. With a motion type, the
-transform solve that follows a tracking also never ended: it ran in the tracking thread, which has no event
-loop, and left the solver parameters disabled.
+The Tracker's buttons did nothing when no viewer showed the Tracker (TrackerNode::knobChanged() returned
+at once). The test also checks that the transform solve that follows the tracking ends.
 """
 import time
 
 from natrontest import *
 
 CHECKERBOARD = "net.sf.openfx.CheckerBoardPlugin"
+# Engine/TrackerContextPrivate.h
+AUTO_COMPUTE_TRANSFORM = "autoComputeransform"  # kTrackerParamAutoGenerateTransform (sic)
+MOTION_TYPE_MATCH_MOVE = 2  # eTrackerMotionTypeMatchMove
 for plugin in (CHECKERBOARD, "net.sf.openfx.TransformPlugin", "net.sf.openfx.CornerPinPlugin"):
     require_plugin(plugin)
 
@@ -25,9 +27,9 @@ wait_idle()
 track = trackerNode.getTrackerContext().createTrack()
 track.getParam("centerPoint").set(256, 256)  # a corner of the 64x64 boxes
 # no automatic solve before the tracking: the solve checked below is the one that follows the tracking
-trackerNode.getParam("autoComputeransform").set(False)
+trackerNode.getParam(AUTO_COMPUTE_TRANSFORM).set(False)
 motionType = trackerNode.getParam("motionType")
-motionType.set(2)  # Match-move
+motionType.set(MOTION_TYPE_MATCH_MOVE)
 app.getViewer("Viewer1").seek(1)
 trackerNode.getParam("selectAllMenuAction").trigger()
 trackerNode.getParam("trackNext").trigger()

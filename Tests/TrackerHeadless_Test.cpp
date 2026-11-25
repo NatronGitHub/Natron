@@ -269,7 +269,7 @@ TEST_F(TrackerHeadlessTest, TrackNextButtonWithoutViewer)
         return;
     }
     ASSERT_TRUE(_tracker && _context && _track);
-    trackNextOnCheckerBoard( _tracker, _context, _track, knob<KnobButton>(kTrackerUIParamTrackNext) );
+    ASSERT_NO_FATAL_FAILURE( trackNextOnCheckerBoard( _tracker, _context, _track, knob<KnobButton>(kTrackerUIParamTrackNext) ) );
 }
 
 // The transform is solved after a tracking (the motion type is not None), without a viewer
@@ -285,8 +285,10 @@ TEST_F(TrackerHeadlessTest, SolveAfterTrackingWithoutViewer)
     knob<KnobInt>(kTrackerParamReferenceFrame)->setValue(1);
     KnobDoublePtr transformCenter = knob<KnobDouble>(kTransformParamCenter);
     ASSERT_TRUE( bool(transformCenter) );
-    trackNextOnCheckerBoard( _tracker, _context, _track, knob<KnobButton>(kTrackerUIParamTrackNext) );
+    ASSERT_NO_FATAL_FAILURE( trackNextOnCheckerBoard( _tracker, _context, _track, knob<KnobButton>(kTrackerUIParamTrackNext) ) );
     // the solve sets the center of the transform to the center of the tracks at the reference frame
     EXPECT_NEAR( 256., transformCenter->getValue(0), 1e-6 ) << "the transform was not solved after the tracking";
     EXPECT_NEAR( 256., transformCenter->getValue(1), 1e-6 ) << "the transform was not solved after the tracking";
+    // and the solve ended: it enables the solver parameters again
+    EXPECT_TRUE( motionType->isEnabled(0) ) << "the solve after the tracking did not end";
 }
