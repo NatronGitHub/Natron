@@ -3794,6 +3794,25 @@ EffectInstance::getTransform_public(double time,
     return getTransform(time, renderScale, draftRender, view, inputToTransform, transform);
 }
 
+// Whether the writer is rendered by a render that is not its own render to disk (its Render button,
+// app.render(), NatronRenderer -w...): a render of a node or of another writer downstream, of the Viewer,
+// of a preview. A render to disk is sequential, and its root is the writer (the embedded writer of a
+// Write node, see DefaultRenderFrameRunnable::renderFrame()) or the Write node that contains it. Read
+// from the arguments of the current render, which this thread set: false outside a render.
+static bool
+isWriterPulledByAnotherRender(const EffectInstance& writer)
+{
+    const ParallelRenderArgsPtr frameArgs = writer.getParallelRenderArgsTLS();
+
+    if (!frameArgs) {
+        return false;
+    }
+    const NodePtr node = writer.getNode();
+    const bool isRoot = frameArgs->treeRoot && ( (frameArgs->treeRoot == node) || (frameArgs->treeRoot == node->getIOContainer()) );
+
+    return !isRoot || !frameArgs->isSequentialRender;
+}
+
 bool
 EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true when calling for the whole image (not for a subrect)
                                   U64 hash,
@@ -3805,6 +3824,17 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
                                   ViewIdx* inputView,
                                   int* inputNb)
 {
+    // A writer writes its files only in its own render to disk: pulled by another render, it passes its
+    // input through, as its render action does, but without writing a file (#815). This depends on the
+    // current render, not on the hash: never in the identity cache.
+    if ( isWriter() && isWriterPulledByAnotherRender(*this) ) {
+        *inputNb = 0;
+        *inputTime = time;
+        *inputView = view;
+
+        return true;
+    }
+
     if (useIdentityCache) {
         double timeF = 0.;
         bool foundInCache = _imp->actionsCache->getIdentityResult(hash, time, view, inputNb, inputView, &timeF);
