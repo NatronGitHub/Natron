@@ -415,6 +415,11 @@ add_test(NAME KeyframeDerivativesHeadless
     COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_keyframe_derivatives.py")
 set_tests_properties(KeyframeDerivativesHeadless PROPERTIES TIMEOUT 120
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/keyframe-derivatives-headless-cache")
+# BezierCurve.setKeyframeInterpolation() (#1749), headless; skipped without the Roto plug-in (openfx-misc)
+add_test(NAME RotoInterpolationHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_roto_interpolation.py")
+set_tests_properties(RotoInterpolationHeadless PROPERTIES TIMEOUT 120 SKIP_RETURN_CODE 77
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/roto-interpolation-headless-cache")
 
 # App.createNode(), createReader() and createWriter() take their properties argument, also on Windows (#1827)
 add_test(NAME CreateNodePropertiesHeadless

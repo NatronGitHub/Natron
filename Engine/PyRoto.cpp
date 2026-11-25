@@ -26,6 +26,7 @@
 #include "PyRoto.h"
 
 #include <cassert>
+#include <iterator> // advance
 #include <stdexcept>
 #include <string>
 
@@ -346,6 +347,54 @@ BezierCurve::getKeyframes(std::list<double>* keys) const
     for (std::set<double>::iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
         keys->push_back(*it);
     }
+}
+
+bool
+BezierCurve::setKeyframeInterpolation(double time,
+                                      KeyframeTypeEnum interpolation)
+{
+    // as the Curve Editor (Bezier::setKeyFrameInterpolation(), which takes an index and only sets the internal
+    // curves), also on the GUI curves, which the Curve Editor and getKeyframes() read
+    const std::list<BezierCPPtr> cps = _bezier->getControlPoints_mt_safe();
+    const std::list<BezierCPPtr> fps = _bezier->getFeatherPoints_mt_safe();
+
+    if ( cps.empty() || (cps.front()->getKeyFrameIndex(false, time) < 0) ) {
+        return false;
+    }
+    for (const std::list<BezierCPPtr>* points : { &cps, &fps }) {
+        for (std::list<BezierCPPtr>::const_iterator it = points->begin(); it != points->end(); ++it) {
+            for (bool useGuiCurves : { false, true }) {
+                const int index = (*it)->getKeyFrameIndex(useGuiCurves, time);
+                if (index >= 0) {
+                    (*it)->setKeyFrameInterpolation(useGuiCurves, interpolation, index);
+                }
+            }
+        }
+    }
+    _bezier->incrementNodesAge();
+
+    return true;
+}
+
+KeyframeTypeEnum
+BezierCurve::getKeyframeInterpolation(double time) const
+{
+    const std::list<BezierCPPtr> cps = _bezier->getControlPoints_mt_safe();
+
+    if ( cps.empty() ) {
+        return eKeyframeTypeNone;
+    }
+    // the keyframe that setKeyframeInterpolation() finds
+    const int index = cps.front()->getKeyFrameIndex(false, time);
+    if (index < 0) {
+        return eKeyframeTypeNone;
+    }
+    std::list<std::pair<double, KeyframeTypeEnum> > keys;
+    cps.front()->getKeyFrames(false, &keys);
+    std::list<std::pair<double, KeyframeTypeEnum> >::const_iterator it = keys.begin();
+    std::advance(it, index);
+
+    return ( it != keys.end() ) ? it->second : eKeyframeTypeNone;
 }
 
 void
