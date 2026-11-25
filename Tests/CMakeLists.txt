@@ -104,6 +104,7 @@ set(Tests_SOURCES
     PythonScript_Test.cpp
     ProjectFileFormat_Test.cpp
     PythonExpressionScope_Test.cpp
+    ReadNodeInputs_Test.cpp
     ReadNodeOverlay_Test.cpp
     ReadWriteVersion_Test.cpp
     RenderThreadSafety_Test.cpp
