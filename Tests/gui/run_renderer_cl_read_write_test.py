@@ -61,8 +61,10 @@ if not hasReader or not any(i.startswith("fr.inria.openfx.WritePNG") for i in id
     sys.stdout.write("SKIP: no PNG reader or writer\\n"); sys.stdout.flush()
     natron.quit(77)
 else:
-    # Read has no file, so -i replaces its default decoder (ReadOIIO) by ReadPNG. The report's EXR files keep
-    # ReadOIIO: that path is not tested (it would need an extra TIFF render step).
+    # Read has no file, so it has no decoder (ReadNodePrivate::createDefaultReadNode() destroys the default one):
+    # -i creates one, ReadPNG here, ReadOIIO for the EXR files of the report. The new decoder shares the file
+    # parameter of the Read node, which -i already set: it must still get the instance changed action for its
+    # file, which sets its frame range (ReadNodePrivate::createReadNode(); without it, frame 0 was read).
     read = app.createNode("fr.inria.built-in.Read")
     read.setScriptName("Read")
     write = app.createNode("fr.inria.built-in.Write")
