@@ -657,9 +657,17 @@ AnimatedParam::setExpression(const QString& expr,
     if (!thisKnob) {
         return false;
     }
+    if ( (dimension < 0) || ( dimension >= thisKnob->getDimension() ) ) {
+        return false;
+    }
+    const std::string oldExpression = thisKnob->getExpression(dimension);
+    const bool oldHasRetVariable = thisKnob->isExpressionUsingRetVariable(dimension);
+    const bool oldIsValid = thisKnob->isExpressionValid(dimension, 0);
+    bool ok = false;
     try {
         recordForUndoGroup(thisKnob);
         thisKnob->setExpression(dimension, expr.toStdString(), hasRetVariable, true);
+        ok = true;
     } catch (const std::exception& e) {
         // Keep returning False (no exception, for the scripts that test the result), but say why,
         // else the failure is easy to miss (#1250)
@@ -684,13 +692,21 @@ AnimatedParam::setExpression(const QString& expr,
                                        .arg(dimension)
                                        .arg( QString::fromUtf8( error.c_str() ) ).toStdString() );
         }
-
-        return false;
     } catch (...) {
-        return false;
     }
 
-    return true;
+    // The value of the parameter changes with its expression: tell its holder (e.g. kOfxActionInstanceChanged for an
+    // OpenFX plug-in, and the onParamChanged callback) and re-render, as the GUI does (SetExpressionCommand), with the
+    // reason of setValue() (#1336). As setValue(), only if something changed, e.g. an invalid expression of a loaded
+    // project that the same text makes valid again. A failed setExpression() also removes the previous expression.
+    const std::string newExpression = thisKnob->getExpression(dimension);
+    if ( (newExpression != oldExpression) ||
+         ( !newExpression.empty() && ( (thisKnob->isExpressionUsingRetVariable(dimension) != oldHasRetVariable) ||
+                                       (thisKnob->isExpressionValid(dimension, 0) != oldIsValid) ) ) ) {
+        thisKnob->evaluateValueChange(dimension, thisKnob->getCurrentTime(), ViewIdx(0), eValueChangedReasonNatronInternalEdited);
+    }
+
+    return ok;
 }
 
 QString
