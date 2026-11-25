@@ -38,9 +38,6 @@ on:
     - 'v*-beta*'
     - 'v*-rc*'
     - 'v*-RC*'
-    # TEMPORARY, for one test run at the head of the PR: remove before marking it ready
-    branches:
-    - ci-macos-x86_64
 
 permissions:
   contents: read
