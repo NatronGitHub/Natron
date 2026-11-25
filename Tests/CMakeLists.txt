@@ -382,6 +382,13 @@ add_test(NAME NodeNamingHeadless
 set_tests_properties(NodeNamingHeadless PROPERTIES TIMEOUT 300
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/node-naming-headless-cache")
 
+# App.timelineSetTime(frame) moves the current frame, also in background mode (#1796): NatronRenderer runs
+# the script, which exits with natron.quit(status).
+add_test(NAME TimelineSetTimeHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_timeline_set_time.py")
+set_tests_properties(TimelineSetTimeHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/timeline-set-time-headless-cache")
+
 # ColorParam.get(frame) returns the alpha of an RGBA color, not its blue (#1712): NatronRenderer runs the
 # script, which exits with natron.quit(status).
 add_test(NAME ColorGetFrameHeadless
