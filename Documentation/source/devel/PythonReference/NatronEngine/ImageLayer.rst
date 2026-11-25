@@ -14,8 +14,10 @@ ForwardMotion, BackwardMotion, DisparityLeft,DisparityRight, etc...
 .
 
 Two layers are equal (``==``) if they have the same plane ID and the same channel names;
-the channels pretty name is not compared. ``<`` orders layers by plane ID, then channel
-names, so layers can be sorted and used as dict keys or set items.
+the channels pretty name is not compared. The plane ID is the *layerName* of a layer made
+with :meth:`ImageLayer<NatronEngine.ImageLayer.ImageLayer>`, and the OpenFX plane name for
+the default layers. ``<`` orders layers by plane ID, then channel names, so layers can be
+sorted, and, since equal layers have equal hashes, used as dict keys or set items.
 
 See :ref:`detailed<ImageLayer.details>` description...
 
