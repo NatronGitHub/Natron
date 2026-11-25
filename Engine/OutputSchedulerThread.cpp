@@ -1171,11 +1171,8 @@ OutputSchedulerThread::startRender()
 
             // e.g. a movie writer that can't open its output file. Not notifyRenderFailure(): this is
             // the scheduler thread, and for a blocking render it waits for the abort to complete.
-            if ( appPTR->isBackground() ) {
-                std::cerr << "Error while rendering: " << _imp->outputEffect.lock()->getNode()->getScriptName_mt_safe()
-                          << " could not start the render of the sequence" << std::endl;
-                appPTR->setBackgroundRenderFailed();
-            }
+            handleRenderFailure( "Error while rendering: " + _imp->outputEffect.lock()->getNode()->getScriptName_mt_safe() +
+                                 " could not start the render of the sequence" );
 
             _imp->engine->abortRenderingNoRestart();
 
@@ -1271,11 +1268,8 @@ OutputSchedulerThread::stopRender()
                                               false /*use OpenGL render*/,
                                               EffectInstance::OpenGLContextEffectDataPtr() ) == eStatusFailed) {
             // e.g. a movie writer that can't finish its file
-            if ( appPTR->isBackground() ) {
-                std::cerr << "Error while rendering: " << _imp->outputEffect.lock()->getNode()->getScriptName_mt_safe()
-                          << " could not end the render of the sequence" << std::endl;
-                appPTR->setBackgroundRenderFailed();
-            }
+            handleRenderFailure( "Error while rendering: " + _imp->outputEffect.lock()->getNode()->getScriptName_mt_safe() +
+                                 " could not end the render of the sequence" );
         }
     }
 
