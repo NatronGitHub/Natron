@@ -262,7 +262,7 @@ OfxHost::setProperties()
     /* Known OpenFX host names:
        uk.co.thefoundry.nuke
        com.eyeonline.Fusion
-       com.sonycreativesoftware.vegas
+       com.vegascreativesoftware.vegas (VEGAS Pro 19 and later; com.sonycreativesoftware.vegas before)
        Autodesk Toxik
        Assimilator
        Dustbuster
