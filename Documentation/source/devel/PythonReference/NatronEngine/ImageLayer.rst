@@ -13,6 +13,10 @@ the color layer, or sometimes called "RGBA". Some other default layers include
 ForwardMotion, BackwardMotion, DisparityLeft,DisparityRight, etc...
 .
 
+Two layers are equal (``==``) if they have the same plane ID and the same channel names;
+the channels pretty name is not compared. ``<`` orders layers by plane ID, then channel
+names, so layers can be sorted and used as dict keys or set items.
+
 See :ref:`detailed<ImageLayer.details>` description...
 
 Functions
@@ -103,8 +107,8 @@ Member functions description
     :param layer: :class:`ImageLayer<NatronEngine.ImageLayer>`
     :rtype: :class:`int`
 
-This static function returns a hash computed from the components name (e.g. "RGBA") and
-the channel names of *layer*. The layer name itself is not part of the hash.
+This static function returns a hash computed from the plane ID and the channel names of
+*layer*, the fields that ``==`` compares, so that equal layers have equal hashes.
 Up to Natron 2.5, it always returned 0
 (`issue #1275 <https://github.com/NatronGitHub/Natron/issues/1275>`_).
 
