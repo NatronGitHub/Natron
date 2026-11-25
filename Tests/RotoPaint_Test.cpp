@@ -18,7 +18,8 @@
  * ***** END LICENSE BLOCK ***** */
 
 // Regression tests for https://github.com/NatronGitHub/Natron/issues/510
-// ("Rotopaint doesn't apply stroke to pencil at the first frame it is created").
+// ("Rotopaint doesn't apply stroke to pencil at the first frame it is created"), and for the other RotoPaint
+// overlay issues cited by each test.
 //
 // The RotoPaint overlay interact is driven headless, with a mock viewport. Every user edit that changes what the
 // node renders must evaluate the node (RotoContext::evaluateChange()), which increments the node hash: that is
@@ -58,6 +59,7 @@
 #include "Engine/RotoContext.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoPaintInteract.h"
+#include "Engine/RotoStrokeItem.h"
 #include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_USING
@@ -280,6 +282,38 @@ protected:
         Q_UNUSED(used);
     }
 
+    // Paints a stroke from (x1, y1) to (x2, y2) with the selected paint tool.
+    void paintStroke(double x1,
+                     double y1,
+                     double x2,
+                     double y2)
+    {
+        penDown(x1, y1);
+        penMotion( (x1 + x2) / 2., (y1 + y2) / 2. );
+        penMotion(x2, y2);
+        penUp(x2, y2);
+    }
+
+    // The strokes in render order: the first one painted first.
+    std::list<RotoStrokeItemPtr> getStrokes() const
+    {
+        std::list<RotoStrokeItemPtr> strokes;
+        std::list<RotoDrawableItemPtr> items = _context->getCurvesByRenderOrder(false);
+
+        for (std::list<RotoDrawableItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
+            RotoStrokeItemPtr stroke = std::dynamic_pointer_cast<RotoStrokeItem>(*it);
+            if (stroke) {
+                strokes.push_back(stroke);
+            }
+        }
+
+        return strokes;
+    }
+
+    // Two strokes with the Clone or Reveal tool from the foreground must be two items, the second one
+    // cloning the first one.
+    void checkForegroundStartsNewStroke(const char* toolName);
+
     BezierPtr getDrawnBezier() const
     {
         // onlyActivated = false: a closed bezier that is not finished yet is not listed otherwise
@@ -326,6 +360,94 @@ TEST_F(RotoPaintOverlayTest, PencilStrokeEvaluatesNodeOnPenUp)
     EXPECT_EQ(2, bezier->getControlPointsCount());
     EXPECT_GT(_context->getAge(), ageBeforeSecondPenUp);
     EXPECT_NE(_node->getHashValue(), hashBeforeSecondPenUp);
+}
+
+// With Multi-Stroke on (the default), a clone stroke from the foreground must start a new stroke, which clones
+// what the strokes below it painted. It used to be appended to the previous clone stroke, so it could not clone
+// what that one painted, and "foreground" did the same as "background": issue 629.
+TEST_F(RotoPaintOverlayTest, CloneFromForegroundStartsNewStroke)
+{
+    if (!_havePlugins) {
+        return;
+    }
+    checkForegroundStartsNewStroke(kRotoUIParamCloneToolButtonAction);
+}
+
+// The Reveal tool too: issue 629.
+TEST_F(RotoPaintOverlayTest, RevealFromForegroundStartsNewStroke)
+{
+    if (!_havePlugins) {
+        return;
+    }
+    checkForegroundStartsNewStroke(kRotoUIParamRevealToolButtonAction);
+}
+
+void
+RotoPaintOverlayTest::checkForegroundStartsNewStroke(const char* toolName)
+{
+    selectTool(kRotoUIParamCloneBrushToolButton, toolName);
+    KnobBoolPtr multiStroke = std::dynamic_pointer_cast<KnobBool>( _node->getKnobByName(kRotoUIParamMultiStrokeEnabled) );
+    KnobChoicePtr sourceType = std::dynamic_pointer_cast<KnobChoice>( _node->getKnobByName(kRotoUIParamSourceType) );
+    ASSERT_TRUE(multiStroke && sourceType);
+    ASSERT_TRUE( multiStroke->getValue() );
+    sourceType->setValue(0); // foreground
+
+    paintStroke(100., 100., 150., 100.);
+    paintStroke(300., 100., 350., 100.);
+
+    std::list<RotoStrokeItemPtr> strokes = getStrokes();
+    ASSERT_EQ( 2u, strokes.size() ) << "each foreground clone stroke must be a new stroke";
+    RotoStrokeItemPtr first = strokes.front();
+    RotoStrokeItemPtr second = strokes.back();
+    EXPECT_EQ( 0, second->getBrushSourceTypeKnob()->getValue() );
+    // the clone source (through the time offset node) of the second stroke is the output of the first one
+    NodePtr source = second->getTimeOffsetNode();
+    ASSERT_TRUE( bool(source) );
+    EXPECT_EQ( first->getMergeNode(), source->getInput(0) );
+}
+
+// A clone stroke from a background input still goes to the same multi-stroke item: issue 629 must not change that.
+TEST_F(RotoPaintOverlayTest, CloneFromBackgroundIsAppendedToMultiStroke)
+{
+    if (!_havePlugins) {
+        return;
+    }
+    selectTool(kRotoUIParamCloneBrushToolButton, kRotoUIParamCloneToolButtonAction);
+    KnobChoicePtr sourceType = std::dynamic_pointer_cast<KnobChoice>( _node->getKnobByName(kRotoUIParamSourceType) );
+    ASSERT_TRUE( bool(sourceType) );
+    ASSERT_EQ( 1, sourceType->getValue() ); // background, the default of the Clone tool
+
+    paintStroke(100., 100., 150., 100.);
+    paintStroke(300., 100., 350., 100.);
+
+    EXPECT_EQ( 1u, getStrokes().size() );
+
+    // changing the source starts a new stroke, with the new source
+    sourceType->setValue(0);
+    paintStroke(500., 100., 550., 100.);
+    std::list<RotoStrokeItemPtr> strokes = getStrokes();
+    ASSERT_EQ( 2u, strokes.size() );
+    EXPECT_EQ( 0, strokes.back()->getBrushSourceTypeKnob()->getValue() );
+}
+
+// Unchecking Multi-Stroke after a multi-stroke must start a new item: the next stroke used to be painted into the
+// item already in the hierarchy (added to it again), and undoing it removed the whole multi-stroke.
+TEST_F(RotoPaintOverlayTest, UncheckingMultiStrokeStartsNewStroke)
+{
+    if (!_havePlugins) {
+        return;
+    }
+    selectTool(kRotoUIParamPaintBrushToolButton, kRotoUIParamDrawBrushToolButtonAction);
+    KnobBoolPtr multiStroke = std::dynamic_pointer_cast<KnobBool>( _node->getKnobByName(kRotoUIParamMultiStrokeEnabled) );
+    ASSERT_TRUE( multiStroke && multiStroke->getValue() );
+
+    paintStroke(100., 100., 150., 100.);
+    paintStroke(300., 100., 350., 100.);
+    ASSERT_EQ( 1u, getStrokes().size() );
+
+    multiStroke->setValue(false);
+    paintStroke(500., 100., 550., 100.);
+    EXPECT_EQ( 2u, getStrokes().size() );
 }
 
 // A closed bezier is not rendered before it is finished (see RotoContextPrivate::renderBezier()): adding a point

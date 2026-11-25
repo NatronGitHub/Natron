@@ -1211,6 +1211,12 @@ RotoPaint::knobChanged(KnobI* k,
         ctx->onRippleEditChanged( _imp->ui->rippleEditEnabledButton.lock()->getValue() );
     } else if ( k == _imp->ui->colorWheelButton.lock().get() ) {
         _imp->ui->onBreakMultiStrokeTriggered();
+    } else if ( k == _imp->ui->multiStrokeEnabled.lock().get() ) {
+        // a stroke already in the hierarchy must not be painted again as a new item
+        _imp->ui->onBreakMultiStrokeTriggered();
+    } else if ( k == _imp->ui->sourceTypeChoice.lock().get() ) {
+        // the source of a stroke can't change while it is painted, and a foreground source needs a new stroke
+        _imp->ui->onBreakMultiStrokeTriggered();
     } else if ( k == _imp->ui->pressureOpacityButton.lock().get() ) {
         _imp->ui->onBreakMultiStrokeTriggered();
     } else if ( k == _imp->ui->pressureSizeButton.lock().get() ) {
