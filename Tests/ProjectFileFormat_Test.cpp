@@ -898,6 +898,15 @@ TEST(ProjectFileFormat, InvalidKnobData)
         EXPECT_EQ( 1, std::count_if( log.begin(), log.end(), [](const LogEntry& e) {
             return e.context == QString::fromUtf8("myInt2") && e.message.contains( QString::fromUtf8("Could not restore the link of dimension 1") );
         } ) );
+        // a master that doesn't exist is in the error log too (only the dimension errors were)
+        appPTR->clearErrorLog_mt_safe();
+        myInt2->storeLink(0, "Group1", "Group1", "", "noSuchKnob", 0);
+        EXPECT_NO_THROW( myInt2->restoreLinks(allNodes, noRenames, false) );
+        log.clear();
+        appPTR->getErrorLog_mt_safe(&log);
+        EXPECT_EQ( 1, std::count_if( log.begin(), log.end(), [](const LogEntry& e) {
+            return e.context == QString::fromUtf8("myInt2") && e.message.contains( QString::fromUtf8("Could not restore link to node/knob/track Group1/noSuchKnob/") );
+        } ) );
         // with throwOnFailure, the valid links after a bad one are still restored, then it throws
         myInt2->storeLink(0, "Group1", "Group1", "", "myInt", 1 /*master dimension*/);
         myInt2->storeLink(0, "Group1", "Group1", "", "myInt", 0);
