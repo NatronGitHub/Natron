@@ -264,6 +264,12 @@ public:
 
     void removeAllCacheEntriesForHolder(const CacheEntryHolder* holder, bool blocking);
 
+    /**
+     * @brief Waits until the cleaner and deleter threads of the caches have processed all their requests (they start
+     * again at the next request). Only call it when no other thread uses the caches: at exit, or in the tests.
+     **/
+    void waitForCacheThreads();
+
     SettingsPtr getCurrentSettings() const WARN_UNUSED_RETURN;
     const KnobFactory & getKnobFactory() const WARN_UNUSED_RETURN;
 

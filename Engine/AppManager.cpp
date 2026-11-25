@@ -595,15 +595,7 @@ AppManager::~AppManager()
     QThreadPool::globalInstance()->waitForDone();
 
     ///Kill caches now because decreaseNCacheFilesOpened can be called
-    if (_imp->_nodeCache) {
-        _imp->_nodeCache->waitForDeleterThread();
-    }
-    if (_imp->_diskCache) {
-        _imp->_diskCache->waitForDeleterThread();
-    }
-    if (_imp->_viewerCache) {
-        _imp->_viewerCache->waitForDeleterThread();
-    }
+    waitForCacheThreads();
     _imp->_nodeCache.reset();
     _imp->_viewerCache.reset();
     _imp->_diskCache.reset();
@@ -2661,6 +2653,20 @@ AppManager::removeAllCacheEntriesForHolder(const CacheEntryHolder* holder,
     _imp->_viewerCache->removeAllEntriesForHolderPublic(holder, blocking);
 }
 
+void
+AppManager::waitForCacheThreads()
+{
+    if (_imp->_nodeCache) {
+        _imp->_nodeCache->waitForDeleterThread();
+    }
+    if (_imp->_diskCache) {
+        _imp->_diskCache->waitForDeleterThread();
+    }
+    if (_imp->_viewerCache) {
+        _imp->_viewerCache->waitForDeleterThread();
+    }
+}
+
 const QString &
 AppManager::getApplicationBinaryPath() const
 {
@@ -3798,15 +3804,7 @@ AppManager::cleanUpAtPythonExit()
     }
     // Wait for the images that the caches gave to their cleaner and deleter threads, as ~AppManager does. The caches
     // stay until ~AppManager (after the -t prompt) or exit().
-    if (_imp->_nodeCache) {
-        _imp->_nodeCache->waitForDeleterThread();
-    }
-    if (_imp->_diskCache) {
-        _imp->_diskCache->waitForDeleterThread();
-    }
-    if (_imp->_viewerCache) {
-        _imp->_viewerCache->waitForDeleterThread();
-    }
+    waitForCacheThreads();
     // Each loaded plug-in gets kOfxActionUnload, and its binary is unloaded, on the main thread, before exit().
     // The plug-ins are unloaded once: ~OfxHost won't unload them again.
     if (_imp->ofxHost) {
