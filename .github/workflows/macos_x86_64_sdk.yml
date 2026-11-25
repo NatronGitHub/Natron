@@ -181,7 +181,6 @@ jobs:
           compression-level: 0
 
       - name: Upload the state for the next stage
-        id: upload_state
         if: steps.provision.outputs.finished == 'false'
         uses: actions/upload-artifact@v4
         with:
@@ -204,11 +203,6 @@ jobs:
           elif [ "${{ steps.provision.outputs.finished }}" = false ]; then
             if [ "$STAGE" -ge "$LAST_STAGE" ]; then
               echo "::error::the SDK is not finished after the last stage (${{ inputs.last_stage }}): add stages to macos_x86_64.yml"
-              exit 1
-            fi
-            # the next stage would fail to download it
-            if [ "${{ steps.upload_state.outcome }}" != success ]; then
-              echo "::error::the state of stage $STAGE could not be uploaded"
               exit 1
             fi
             echo "state=sdk-state-${{ inputs.stage }}" >> "$GITHUB_OUTPUT"
