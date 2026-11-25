@@ -53,7 +53,6 @@
 // —— general includes —————————————————————————
 #include <Dde.h>
 
-#include <QMessageBox>
 #include <QApplication>
 #include <QDir>
 #include <QFileInfo>
@@ -62,6 +61,8 @@
 #include "Engine/AppManager.h" // appPTR, Dialogs
 
 NATRON_NAMESPACE_ENTER
+
+static const char kRegistryErrorTitle[] = "Error in setting Registry values";
 
 // —— construction ——————————————————————————
 DocumentWindow::DocumentWindow(QWidget* parent,
@@ -342,23 +343,11 @@ DocumentWindow::SetHkcrUserRegKey(QString key,
             return true;
         }
 
-        const QString title = QString::fromUtf8("Error in setting Registry values");
-        const QString text = QString::fromUtf8("registration database update failed for key '%1'.").arg(key);
-        if ( appPTR->isDialogsDisabled() ) {
-            Dialogs::printDismissedDialog( title.toStdString(), text.toStdString() );
-        } else {
-            QMessageBox::warning(0, title, text);
-        }
+        Dialogs::warningDialog( kRegistryErrorTitle, QString::fromUtf8("registration database update failed for key '%1'.").arg(key).toStdString() );
     } else {
         wchar_t buffer[4096];
         ::FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM, 0, lRetVal, 0, buffer, 4096, 0);
-        QString szText = QString::fromUtf16( (const ushort*)buffer );
-        const QString title = QString::fromUtf8("Error in setting Registry values");
-        if ( appPTR->isDialogsDisabled() ) {
-            Dialogs::printDismissedDialog( title.toStdString(), szText.toStdString() );
-        } else {
-            QMessageBox::warning(this, title, szText);
-        }
+        Dialogs::warningDialog( kRegistryErrorTitle, QString::fromUtf16( (const ushort*)buffer ).toStdString() );
     }
 
     return false;
