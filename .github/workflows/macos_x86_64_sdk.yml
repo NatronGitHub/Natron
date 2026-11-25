@@ -21,10 +21,11 @@ on:
       state:
         type: string
         default: ''
-      # the number of stages of the caller: the last one fails if the SDK isn't finished
+      # the number of stages of the caller (the sdk-N jobs of macos_x86_64.yml): the last one fails
+      # if the SDK isn't finished
       last_stage:
         type: number
-        default: 10
+        default: 4
     outputs:
       sdk:
         description: 'name of the finished SDK artifact (empty if not finished)'

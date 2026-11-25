@@ -4,13 +4,13 @@ name: macOS x86_64 DMG
 # tested there with Natron-Tests. The arm64 DMG is built in a tart VM (tools/tart). Runs weekly
 # (Sunday), on demand, and on pre-release tags (v*-alpha*, -beta*, -rc*, -RC*), never on pull requests.
 #
-# 1. SDK (macos_x86_64_sdk.yml, up to 10 chained stages of less than 6 hours): the MacPorts SDK of
+# 1. SDK (macos_x86_64_sdk.yml, up to 4 chained stages of less than 6 hours): the MacPorts SDK of
 #    tools/tart/provision.sh, for macOS 14.0 (every Mach-O file has minos <= 14.0). On macOS 15 the
 #    MacPorts binary archives are built for macOS 15, so provision.sh runs with BUNDLE_ONLY_REBUILD=1:
 #    the archives are used for the build tools, and the ports whose files go into the DMG are rebuilt
 #    from source, as are the overlay ports (which have no archives). From scratch this takes about
-#    8.5 hours of runner time in 2 stages; the result is kept as an artifact (90 days) keyed by a hash of what defines the SDK
-#    (tools/MacPorts, provision.sh, ...). A run reuses the SDK of the same key if it is less than 30
+#    8.5 hours of runner time in 2 stages; the result is kept as an artifact (90 days) keyed by a
+#    hash of what defines the SDK (tools/MacPorts, provision.sh, ...). A run reuses the SDK of the same key if it is less than 30
 #    days old, else it updates the newest one (port sync, upgrade outdated, rebuild: 50 minutes
 #    with a few upgrades), and only builds from scratch if there is none ("sdk" input of workflow_dispatch).
 # 2. dmg: Natron and the plug-ins built from source with tools/jenkins/launchBuildMain.sh (CMake,
@@ -85,79 +85,19 @@ jobs:
     with:
       stage: 4
       state: ${{ needs.sdk-3.outputs.state }}
-  sdk-5:
-    needs: sdk-4
-    if: needs.sdk-4.outputs.state != ''
-    uses: ./.github/workflows/macos_x86_64_sdk.yml
-    permissions:
-      contents: read
-      actions: read
-    with:
-      stage: 5
-      state: ${{ needs.sdk-4.outputs.state }}
-  sdk-6:
-    needs: sdk-5
-    if: needs.sdk-5.outputs.state != ''
-    uses: ./.github/workflows/macos_x86_64_sdk.yml
-    permissions:
-      contents: read
-      actions: read
-    with:
-      stage: 6
-      state: ${{ needs.sdk-5.outputs.state }}
-  sdk-7:
-    needs: sdk-6
-    if: needs.sdk-6.outputs.state != ''
-    uses: ./.github/workflows/macos_x86_64_sdk.yml
-    permissions:
-      contents: read
-      actions: read
-    with:
-      stage: 7
-      state: ${{ needs.sdk-6.outputs.state }}
-  sdk-8:
-    needs: sdk-7
-    if: needs.sdk-7.outputs.state != ''
-    uses: ./.github/workflows/macos_x86_64_sdk.yml
-    permissions:
-      contents: read
-      actions: read
-    with:
-      stage: 8
-      state: ${{ needs.sdk-7.outputs.state }}
-  sdk-9:
-    needs: sdk-8
-    if: needs.sdk-8.outputs.state != ''
-    uses: ./.github/workflows/macos_x86_64_sdk.yml
-    permissions:
-      contents: read
-      actions: read
-    with:
-      stage: 9
-      state: ${{ needs.sdk-8.outputs.state }}
-  sdk-10:
-    needs: sdk-9
-    if: needs.sdk-9.outputs.state != ''
-    uses: ./.github/workflows/macos_x86_64_sdk.yml
-    permissions:
-      contents: read
-      actions: read
-    with:
-      stage: 10
-      state: ${{ needs.sdk-9.outputs.state }}
 
   dmg:
     name: Build the DMG
-    needs: [sdk-1, sdk-2, sdk-3, sdk-4, sdk-5, sdk-6, sdk-7, sdk-8, sdk-9, sdk-10]
-    if: ${{ !cancelled() && (needs.sdk-1.outputs.sdk || needs.sdk-2.outputs.sdk || needs.sdk-3.outputs.sdk || needs.sdk-4.outputs.sdk || needs.sdk-5.outputs.sdk || needs.sdk-6.outputs.sdk || needs.sdk-7.outputs.sdk || needs.sdk-8.outputs.sdk || needs.sdk-9.outputs.sdk || needs.sdk-10.outputs.sdk) != '' }}
+    needs: [sdk-1, sdk-2, sdk-3, sdk-4]
+    if: ${{ !cancelled() && (needs.sdk-1.outputs.sdk || needs.sdk-2.outputs.sdk || needs.sdk-3.outputs.sdk || needs.sdk-4.outputs.sdk) != '' }}
     runs-on: macos-15-intel
     timeout-minutes: 300
     permissions:
       contents: read
       actions: read
     env:
-      SDK: ${{ needs.sdk-1.outputs.sdk || needs.sdk-2.outputs.sdk || needs.sdk-3.outputs.sdk || needs.sdk-4.outputs.sdk || needs.sdk-5.outputs.sdk || needs.sdk-6.outputs.sdk || needs.sdk-7.outputs.sdk || needs.sdk-8.outputs.sdk || needs.sdk-9.outputs.sdk || needs.sdk-10.outputs.sdk }}
-      SDK_RUN_ID: ${{ needs.sdk-1.outputs.sdk_run_id || needs.sdk-2.outputs.sdk_run_id || needs.sdk-3.outputs.sdk_run_id || needs.sdk-4.outputs.sdk_run_id || needs.sdk-5.outputs.sdk_run_id || needs.sdk-6.outputs.sdk_run_id || needs.sdk-7.outputs.sdk_run_id || needs.sdk-8.outputs.sdk_run_id || needs.sdk-9.outputs.sdk_run_id || needs.sdk-10.outputs.sdk_run_id }}
+      SDK: ${{ needs.sdk-1.outputs.sdk || needs.sdk-2.outputs.sdk || needs.sdk-3.outputs.sdk || needs.sdk-4.outputs.sdk }}
+      SDK_RUN_ID: ${{ needs.sdk-1.outputs.sdk_run_id || needs.sdk-2.outputs.sdk_run_id || needs.sdk-3.outputs.sdk_run_id || needs.sdk-4.outputs.sdk_run_id }}
       SDK_TOOL: ${{ github.workspace }}/.github/workflows/macos_x86_64_sdk.sh
     steps:
       - uses: actions/checkout@v4
