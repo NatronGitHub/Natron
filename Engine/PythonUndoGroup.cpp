@@ -310,8 +310,8 @@ PythonUndoGroupCommand::restoreInputs(bool after)
 void
 PythonUndoGroupCommand::setNodesActivated(bool done)
 {
-    // undo: the most recent change first
     if (done) {
+        // redo: in the order of the changes
         for (std::list<NodeRecord>::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
             NodePtr node = it->node.lock();
             if (!node) {
@@ -324,6 +324,7 @@ PythonUndoGroupCommand::setNodesActivated(bool done)
             }
         }
     } else {
+        // undo: the most recent change first
         for (std::list<NodeRecord>::const_reverse_iterator it = _nodes.rbegin(); it != _nodes.rend(); ++it) {
             NodePtr node = it->node.lock();
             if (!node) {

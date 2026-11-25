@@ -554,34 +554,38 @@ checkMainThread(const char* function)
     return true;
 }
 
+// App.undo() and App.redo(): only on the main thread, outside an undo group (the group would record the state
+// of what the undo or redo changes, and its step would undo it)
+static bool
+checkUndoRedoAllowed(const AppInstancePtr& app,
+                     const char* function)
+{
+    if ( !checkMainThread(function) ) {
+        return false;
+    }
+    if (app->getUndoGroupDepth() > 0) {
+        PyErr_Format(PyExc_RuntimeError, "%s cannot be called in an open undo group", function);
+
+        return false;
+    }
+
+    return true;
+}
+
 void
 App::undo()
 {
-    if ( !checkMainThread("App.undo()") ) {
-        return;
+    if ( checkUndoRedoAllowed(getInternalApp(), "App.undo()") ) {
+        getInternalApp()->undo();
     }
-    if (getInternalApp()->getUndoGroupDepth() > 0) {
-        // the group would record the state of what the undo changes, and its step would undo it
-        PyErr_SetString(PyExc_RuntimeError, "App.undo() cannot be called in an open undo group");
-
-        return;
-    }
-    getInternalApp()->undo();
 }
 
 void
 App::redo()
 {
-    if ( !checkMainThread("App.redo()") ) {
-        return;
+    if ( checkUndoRedoAllowed(getInternalApp(), "App.redo()") ) {
+        getInternalApp()->redo();
     }
-    if (getInternalApp()->getUndoGroupDepth() > 0) {
-        // the group would record the state of what the undo changes, and its step would undo it
-        PyErr_SetString(PyExc_RuntimeError, "App.redo() cannot be called in an open undo group");
-
-        return;
-    }
-    getInternalApp()->redo();
 }
 
 bool
