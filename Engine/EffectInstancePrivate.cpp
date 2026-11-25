@@ -573,6 +573,7 @@ EffectInstance::Implementation::runChangedParamCallback(KnobI* k,
     std::string script = ss.str();
     std::string err;
     std::string output;
+    Node::PythonCallbackScope callbackScope;
     if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, &output) ) {
         _publicInterface->getApp()->appendToScriptEditor( tr("Failed to execute onParamChanged callback: %1").arg( QString::fromUtf8( err.c_str() ) ).toStdString() );
     } else {

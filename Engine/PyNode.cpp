@@ -293,6 +293,10 @@ void
 Effect::destroy(bool autoReconnect)
 {
     NodePtr node = getInternalNode();
+    // The node may already be destroyed (a second destroy())
+    if (!node) {
+        return;
+    }
     AppInstancePtr app = node->getApp();
 
     // in an undo group (App.beginUndoGroup()), the node is only deactivated, so that undo can restore it

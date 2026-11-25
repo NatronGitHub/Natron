@@ -1415,6 +1415,11 @@ Node::isRenderingPreview() const
 void
 Node::Implementation::abortPreview_blocking(bool allowPreviewRenders)
 {
+    bool beingDestroyed;
+    {
+        QMutexLocker k(&isBeingDestroyedMutex);
+        beingDestroyed = isBeingDestroyed;
+    }
     QMutexLocker l(&computingPreviewMutex);
 
     // No preview starts while this waits
@@ -1422,7 +1427,8 @@ Node::Implementation::abortPreview_blocking(bool allowPreviewRenders)
     while (computingPreview) {
         computingPreviewCond.wait( l.mutex() );
     }
-    previewThreadQuit = !allowPreviewRenders;
+    // destroyNode() forbade the previews for good
+    previewThreadQuit = !allowPreviewRenders || beingDestroyed;
 }
 
 bool
@@ -6953,6 +6959,7 @@ Node::Implementation::runOnNodeCreatedCBInternal(const std::string& cb,
     ss << ")\n";
     std::string output;
     std::string script = ss.str();
+    PythonCallbackScope callbackScope;
     if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, &output) ) {
         _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeCreated callback: " + error);
     } else if ( !output.empty() ) {
@@ -7002,6 +7009,7 @@ Node::Implementation::runOnNodeDeleteCBInternal(const std::string& cb)
 
     std::string err;
     std::string output;
+    PythonCallbackScope callbackScope;
     if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &err, &output) ) {
         _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeDeletion callback: " + err);
     } else if ( !output.empty() ) {
@@ -7195,6 +7203,7 @@ Node::Implementation::runInputChangedCallback(int index,
 
     std::string script = ss.str();
     std::string output;
+    PythonCallbackScope callbackScope;
     if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, &output) ) {
         _publicInterface->getApp()->appendToScriptEditor( tr("Failed to execute callback: %1").arg( QString::fromUtf8( error.c_str() ) ).toStdString() );
     } else {

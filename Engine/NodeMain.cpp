@@ -876,6 +876,27 @@ Node::onProcessingQuitInDestroyNodeInternal(int taskID,
 }
 
 
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+// The number of PythonCallbackScope objects alive in this thread
+thread_local int pythonCallbacksRunning = 0;
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
+Node::PythonCallbackScope::PythonCallbackScope()
+{
+    ++pythonCallbacksRunning;
+}
+
+Node::PythonCallbackScope::~PythonCallbackScope()
+{
+    --pythonCallbacksRunning;
+}
+
+bool
+Node::PythonCallbackScope::isRunning()
+{
+    return pythonCallbacksRunning > 0;
+}
+
 void
 Node::destroyNode(bool blockingDestroy, bool autoReconnect)
 {
@@ -888,22 +909,35 @@ Node::destroyNode(bool blockingDestroy, bool autoReconnect)
         _imp->isBeingDestroyed = true;
     }
 
-    // The node is destroyed at once unless it is processing (#1805): no preview starts from now on, and the
-    // destruction waits only for the one being computed, if any.
+    // No preview starts from now on
     _imp->forbidPreviews();
-    bool allProcessingQuit = areAllProcessingThreadsQuit();
-    if (allProcessingQuit || blockingDestroy) {
-        if (!allProcessingQuit) {
+    if (blockingDestroy) {
+        if ( !areAllProcessingThreadsQuit() ) {
             quitAnyProcessing_blocking(false);
         }
         doDestroyNodeInternalEnd(autoReconnect);
+
+        return;
+    }
+
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>( _imp->effect.get() );
+    NodesList nodesToWatch;
+    nodesToWatch.push_back( shared_from_this() );
+    if (isGrp) {
+        isGrp->getNodes_recursive(nodesToWatch, false);
+    }
+    // The node is destroyed at once (#1805), unless it or a node in it is processing, or a Python callback of a
+    // node is running: the code that runs the callback may still use the node (e.g. a node that destroys itself
+    // from its onParamChanged callback). The destruction is then done once the processing has quit, from the
+    // event loop.
+    bool destroyNow = !PythonCallbackScope::isRunning();
+    for (NodesList::const_iterator it = nodesToWatch.begin(); it != nodesToWatch.end(); ++it) {
+        (*it)->_imp->forbidPreviews();
+        destroyNow = destroyNow && (*it)->areAllProcessingThreadsQuit();
+    }
+    if (destroyNow) {
+        doDestroyNodeInternalEnd(autoReconnect);
     } else {
-        NodeGroup* isGrp = dynamic_cast<NodeGroup*>( _imp->effect.get() );
-        NodesList nodesToWatch;
-        nodesToWatch.push_back( shared_from_this() );
-        if (isGrp) {
-            isGrp->getNodes_recursive(nodesToWatch, false);
-        }
         _imp->renderWatcher = std::make_shared<NodeRenderWatcher>(nodesToWatch);
         QObject::connect( _imp->renderWatcher.get(), SIGNAL(taskFinished(int,GenericWatcherCallerArgsPtr)), this, SLOT(onProcessingQuitInDestroyNodeInternal(int,GenericWatcherCallerArgsPtr)) );
         NodeDestroyNodeInternalArgsPtr args = std::make_shared<NodeDestroyNodeInternalArgs>();
