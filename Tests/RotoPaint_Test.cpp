@@ -162,6 +162,12 @@ public:
     static PenMotionFn penMotion() { return &OverlayActions::onOverlayPenMotion; }
 
     static PenUpFn penUp() { return &OverlayActions::onOverlayPenUp; }
+
+    typedef bool (EffectInstance::*KeyFn)(double, const RenderScale &, ViewIdx, Key, KeyboardModifiers, const QString &);
+
+    static KeyFn keyDown() { return &OverlayActions::onOverlayKeyDown; }
+
+    static KeyFn keyUp() { return &OverlayActions::onOverlayKeyUp; }
 };
 
 const double kTime = 1.;
@@ -257,6 +263,21 @@ protected:
         const bool redraw = ( (*_effect).*OverlayActions::penUp() )(kTime, RenderScale(), ViewIdx(0), QPointF(x, y), QPointF(x, y), 1., 0., KeyboardModifiers());
 
         Q_UNUSED(redraw);
+    }
+
+    void keyDown(Key key)
+    {
+        // The return value only tells whether the interact used the key
+        const bool used = ( (*_effect).*OverlayActions::keyDown() )(kTime, RenderScale(), ViewIdx(0), key, KeyboardModifiers(), QString());
+
+        Q_UNUSED(used);
+    }
+
+    void keyUp(Key key)
+    {
+        const bool used = ( (*_effect).*OverlayActions::keyUp() )(kTime, RenderScale(), ViewIdx(0), key, KeyboardModifiers(), QString());
+
+        Q_UNUSED(used);
     }
 
     BezierPtr getDrawnBezier() const
@@ -486,4 +507,33 @@ TEST_F(RotoPaintOverlayTest, PythonLayerAddItemAfterRemoveItem)
     // Python None is ignored
     baseLayer->addItem(NULL);
     baseLayer->insertItem(0, NULL);
+}
+
+// With a paint tool, Ctrl+Shift+drag changes the brush opacity, and Shift+drag the brush size. Ctrl+Shift+drag
+// used to change the size, and a small move to the left made the brush more opaque: issue 1813.
+TEST_F(RotoPaintOverlayTest, CtrlShiftDragChangesBrushOpacity)
+{
+    if (!_havePlugins) {
+        return;
+    }
+    selectTool(kRotoUIParamPaintBrushToolButton, kRotoUIParamDrawBrushToolButtonAction);
+    KnobDoublePtr opacity = std::dynamic_pointer_cast<KnobDouble>( _node->getKnobByName(kRotoUIParamOpacity) );
+    KnobDoublePtr size = std::dynamic_pointer_cast<KnobDouble>( _node->getKnobByName(kRotoUIParamSize) );
+    ASSERT_TRUE(opacity && size);
+    opacity->setValue(0.5);
+    const double sizeBefore = size->getValue();
+
+    keyDown(Key_Control_L);
+    keyDown(Key_Shift_L);
+    penDown(100., 100.);
+    penMotion(110., 110.); // to the right: more opaque
+    EXPECT_NEAR(0.55, opacity->getValue(), 1e-9);
+    penMotion(109.5, 109.5); // a little to the left: less opaque
+    penUp(109.5, 109.5);
+    keyUp(Key_Shift_L);
+    keyUp(Key_Control_L);
+
+    EXPECT_DOUBLE_EQ( sizeBefore, size->getValue() );
+    EXPECT_NEAR(0.5, opacity->getValue(), 1e-9);
+    EXPECT_TRUE( _context->getCurvesByRenderOrder(false).empty() ) << "the drag must not paint";
 }
