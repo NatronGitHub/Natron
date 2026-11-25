@@ -1,6 +1,8 @@
-# A PyPlug that ships inside an OFX plug-in bundle, in NatronTestPlugin.ofx.bundle/Contents/Resources/PyPlugs/
-# (copied there by Tests/CMakeLists.txt and Tests/OfxTestPlugin/OfxTestPlugin.pro), for
-# Tests/OfxBundlePyPlugs_Test.cpp. Its icon is next to it.
+"""A PyPlug that ships inside an OFX plug-in bundle, for Tests/OfxBundlePyPlugs_Test.cpp.
+
+Tests/CMakeLists.txt and Tests/OfxTestPlugin/OfxTestPlugin.pro copy it, with its icon, to
+NatronTestPlugin.ofx.bundle/Contents/Resources/PyPlugs/.
+"""
 
 
 def getPluginID():

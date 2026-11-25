@@ -95,11 +95,39 @@ canonical(const QString& path)
     return QFileInfo(path).canonicalFilePath();
 }
 
-void
+bool
 makeDir(const QString& path)
 {
-    ASSERT_TRUE( QDir().mkpath(path) ) << path.toStdString();
+    return QDir().mkpath(path);
 }
+
+// Sets NATRON_PLUGIN_PATH for its lifetime
+class ScopedNatronPluginPath
+{
+public:
+    explicit ScopedNatronPluginPath(const QByteArray& value)
+        : _old( qgetenv(NATRON_PLUGIN_PATH_ENV_VAR) )
+        , _wasSet( qEnvironmentVariableIsSet(NATRON_PLUGIN_PATH_ENV_VAR) )
+    {
+        qputenv(NATRON_PLUGIN_PATH_ENV_VAR, value);
+    }
+
+    ~ScopedNatronPluginPath()
+    {
+        if (_wasSet) {
+            qputenv(NATRON_PLUGIN_PATH_ENV_VAR, _old);
+        } else {
+            qunsetenv(NATRON_PLUGIN_PATH_ENV_VAR);
+        }
+    }
+
+    ScopedNatronPluginPath(const ScopedNatronPluginPath&) = delete;
+    ScopedNatronPluginPath& operator=(const ScopedNatronPluginPath&) = delete;
+
+private:
+    const QByteArray _old;
+    const bool _wasSet;
+};
 } // anonymous namespace
 
 // OfxHost::makeBundlesPyPlugsPaths(): one PyPlugs directory per bundle that has one, in the order of the OFX plug-in
@@ -119,11 +147,11 @@ TEST(OfxBundlePyPlugs, MakeBundlesPyPlugsPaths)
     const QString c = second + QString::fromUtf8("/C.ofx.bundle");
     const QString d = other + QString::fromUtf8("/D.ofx.bundle"); // in no entry of the search path
     const QString e = root + QString::fromUtf8("/firstbis/E.ofx.bundle"); // "first" is not a directory of its path
-    makeDir(a + pyPlugs);
-    makeDir(b + QString::fromUtf8("/Contents/Resources"));
-    makeDir(c + pyPlugs);
-    makeDir(d + pyPlugs);
-    makeDir(e + pyPlugs);
+    ASSERT_TRUE( makeDir(a + pyPlugs) );
+    ASSERT_TRUE( makeDir(b + QString::fromUtf8("/Contents/Resources")) );
+    ASSERT_TRUE( makeDir(c + pyPlugs) );
+    ASSERT_TRUE( makeDir(d + pyPlugs) );
+    ASSERT_TRUE( makeDir(e + pyPlugs) );
 
     std::list<std::string> searchPath;
     searchPath.push_back( second.toStdString() + '/' );
@@ -146,7 +174,7 @@ TEST(OfxBundlePyPlugs, MakeBundlesPyPlugsPaths)
 
 // The PyPlug of the test bundle is loaded, once, from the bundle, with the icon next to it; with
 // NATRON_PLUGIN_PATH=Tests/data/ofx-bundle-pyplugs-override (TestsOfxBundlePyPlugOverride), the PyPlug of the same ID
-// and version there is loaded instead
+// and version there, in a file of another name, is loaded instead
 TEST(OfxBundlePyPlugs, BundlePyPlugIsFound)
 {
 #ifndef NATRON_TESTS_OFX_PLUGIN_DIR
@@ -179,7 +207,7 @@ TEST(OfxBundlePyPlugs, BundlePyPlugIsFound)
     ASSERT_TRUE(plugin);
     const QString moduleFile = canonical( plugin->getPythonModule() + QString::fromUtf8(".py") );
     if (overridden) {
-        EXPECT_EQ( canonical( QString::fromUtf8(NATRON_TESTS_DATA_DIR "/ofx-bundle-pyplugs-override/NatronTestBundlePyPlug.py") ), moduleFile );
+        EXPECT_EQ( canonical( QString::fromUtf8(NATRON_TESTS_DATA_DIR "/ofx-bundle-pyplugs-override/NatronTestBundlePyPlugOverride.py") ), moduleFile );
         EXPECT_EQ( std::string("BundlePyPlugOverride"), plugin->getPluginLabel().toStdString() );
         EXPECT_TRUE( plugin->getIconFilePath().isEmpty() ) << plugin->getIconFilePath().toStdString();
     } else {
@@ -217,17 +245,11 @@ TEST(OfxBundlePyPlugs, NoDuplicateSearchPath)
         return;
     }
     const QString bundleDir = testBundlePyPlugsDir();
-    const QByteArray oldPluginPath = qgetenv(NATRON_PLUGIN_PATH_ENV_VAR);
-    const bool hadPluginPath = qEnvironmentVariableIsSet(NATRON_PLUGIN_PATH_ENV_VAR);
-    // with a trailing slash, as a user may write it
-    qputenv( NATRON_PLUGIN_PATH_ENV_VAR, ( bundleDir + QLatin1Char('/') ).toUtf8() );
-
-    const QStringList searchPath = appPTR->getAllNonOFXPluginsPaths();
-
-    if (hadPluginPath) {
-        qputenv(NATRON_PLUGIN_PATH_ENV_VAR, oldPluginPath);
-    } else {
-        qunsetenv(NATRON_PLUGIN_PATH_ENV_VAR);
+    QStringList searchPath;
+    {
+        // with a trailing slash, as a user may write it
+        const ScopedNatronPluginPath pluginPath( ( bundleDir + QLatin1Char('/') ).toUtf8() );
+        searchPath = appPTR->getAllNonOFXPluginsPaths();
     }
     int count = 0;
     Q_FOREACH(const QString &dir, searchPath) {

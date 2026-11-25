@@ -37,6 +37,7 @@
 #include <algorithm> // transform, min, max
 #include <string>
 #include <cstring> // for std::memcpy, std::memset, std::strcmp
+#include <set>
 #include <utility> // pair
 #include <vector>
 
@@ -1269,14 +1270,14 @@ OfxHost::makeBundlesPyPlugsPaths(const std::list<std::string>& pluginSearchPath,
         searchDirs.push_back(dir);
     }
     std::vector<std::pair<std::size_t, QString> > found; // (search path entry, PyPlugs directory), in bundlePaths order
+    std::set<QString> seenBundles; // a bundle comes once per plug-in
     for (std::list<std::string>::const_iterator it = bundlePaths.begin(); it != bundlePaths.end(); ++it) {
         const QString bundle = QDir::cleanPath( QString::fromUtf8( it->c_str() ) );
-        const QString pyPlugsDir = bundle + QString::fromUtf8("/Contents/Resources/PyPlugs");
-        bool known = false;
-        for (std::size_t i = 0; i < found.size() && !known; ++i) {
-            known = (found[i].second == pyPlugsDir);
+        if ( !seenBundles.insert(bundle).second ) {
+            continue;
         }
-        if ( known || !QFileInfo(pyPlugsDir).isDir() ) {
+        const QString pyPlugsDir = bundle + QString::fromUtf8("/Contents/Resources/PyPlugs");
+        if ( !QFileInfo(pyPlugsDir).isDir() ) {
             continue;
         }
         std::size_t entry = 0;

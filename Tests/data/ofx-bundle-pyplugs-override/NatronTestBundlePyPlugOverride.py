@@ -1,6 +1,9 @@
-# The same PyPlug as Tests/data/ofx-bundle-pyplugs/NatronTestBundlePyPlug.py (same ID and version), found through
-# NATRON_PLUGIN_PATH by the TestsOfxBundlePyPlugOverride test (Tests/CMakeLists.txt): it overrides the copy in the
-# OFX plug-in bundle (Tests/OfxBundlePyPlugs_Test.cpp).
+"""The PyPlug of Tests/data/ofx-bundle-pyplugs/NatronTestBundlePyPlug.py, overridden.
+
+Same ID and version, in a file of another name. The TestsOfxBundlePyPlugOverride test
+(Tests/CMakeLists.txt) finds it through NATRON_PLUGIN_PATH, and it overrides the copy in the OFX
+plug-in bundle (Tests/OfxBundlePyPlugs_Test.cpp).
+"""
 
 
 def getPluginID():
