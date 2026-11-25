@@ -186,7 +186,16 @@ cached: the ``ActionsCache`` setters and ``renderRoI`` check
 ``GraphDepthGuard::hasFailed()``. A new recursive traversal that walks upstream
 must either be iterative (like ``isFrameVaryingOrAnimated_Recursive``) or create
 a guard, and code that would treat a failure as an empty result (an empty RoD,
-for example) must check ``GraphDepthGuard::hasFailed()``.
+for example) must check ``GraphDepthGuard::hasFailed()``. This also applies to
+the traversals that walk downstream. Iterative traversals (#1611): the
+upstream walk of ``ParallelRenderArgsSetter``, which runs before the guards,
+and the users of ``visitNodesDepthFirst`` (``Node.cpp``): the hash propagation,
+the downstream walk of ``Node::shouldCacheOutput`` (in ``renderRoI``, not
+guarded), the clearing of messages upstream of the viewer and the refresh of
+the previews. They keep the order of the recursions they replaced, which the
+hashes depend on (see :ref:`maint-cache`). Not iterative yet (#1628): the
+refresh of the input-related data on connection and project load, and the
+RotoPaint stroke walks.
 
 The cache
 ---------
