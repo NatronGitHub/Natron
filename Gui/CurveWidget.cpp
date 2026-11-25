@@ -1547,33 +1547,24 @@ int
 CurveWidget::getWidgetFontHeight() const
 {
     // in widget pixels, for the font that renderText() draws with
-    if ( !_imp->_textFont || !(_imp->_screenPixelRatio > 0.) ) {
-        return fontMetrics().height();
-    }
-
-    return (int)std::floor(QFontMetrics(*_imp->_textFont).height() / _imp->_screenPixelRatio + 0.5);
+    return TextRenderer::widgetFontMetric( _imp->_textFont.get(), _imp->_screenPixelRatio, fontMetrics(),
+                                           [](const QFontMetrics& m) { return m.height(); } );
 }
 
 int
 CurveWidget::getWidgetFontAscent() const
 {
     // in widget pixels, for the font that renderText() draws with
-    if ( !_imp->_textFont || !(_imp->_screenPixelRatio > 0.) ) {
-        return fontMetrics().ascent();
-    }
-
-    return (int)std::floor(QFontMetrics(*_imp->_textFont).ascent() / _imp->_screenPixelRatio + 0.5);
+    return TextRenderer::widgetFontMetric( _imp->_textFont.get(), _imp->_screenPixelRatio, fontMetrics(),
+                                           [](const QFontMetrics& m) { return m.ascent(); } );
 }
 
 int
 CurveWidget::getWidgetFontDescent() const
 {
     // in widget pixels, for the font that renderText() draws with
-    if ( !_imp->_textFont || !(_imp->_screenPixelRatio > 0.) ) {
-        return fontMetrics().descent();
-    }
-
-    return (int)std::floor(QFontMetrics(*_imp->_textFont).descent() / _imp->_screenPixelRatio + 0.5);
+    return TextRenderer::widgetFontMetric( _imp->_textFont.get(), _imp->_screenPixelRatio, fontMetrics(),
+                                           [](const QFontMetrics& m) { return m.descent(); } );
 }
 
 /**
@@ -1584,11 +1575,9 @@ CurveWidget::getStringWidthForCurrentFont(const std::string& string) const
 {
     // the width that renderText() draws, in widget pixels
     const QString text = QString::fromUtf8( string.c_str() );
-    if ( !_imp->_textFont || !(_imp->_screenPixelRatio > 0.) ) {
-        return TextRenderer::textWidth(fontMetrics(), text);
-    }
 
-    return (int)std::floor(TextRenderer::textWidth(QFontMetrics(*_imp->_textFont), text) / _imp->_screenPixelRatio + 0.5);
+    return TextRenderer::widgetFontMetric( _imp->_textFont.get(), _imp->_screenPixelRatio, fontMetrics(),
+                                           [&text](const QFontMetrics& m) { return TextRenderer::textWidth(m, text); } );
 }
 
 QSize
