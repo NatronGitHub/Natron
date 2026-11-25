@@ -319,3 +319,31 @@ TEST(FailedRoDRender, DisabledNodeWithoutInputRenders)
     disabled->setNodeDisabled(true);
     renderMultiPAR(nodes, disabled, true);
 }
+
+// A failed RoD is not kept in the actions cache (#1602), but it is remembered for the time of the request that
+// found it: in a chain of diamonds under a failing generator, the generator is not asked once per path to it.
+// Each MultiPAR has the previous node on its two inputs (a diamond), so there are 2^kDiamonds paths. A project
+// with a missing file upstream of a few dozen such nodes did not load otherwise.
+TEST(FailedRoDRender, FailedInputIsNotAskedOncePerPath)
+{
+    if ( !canRunTest() ) {
+        return;
+    }
+    const int kDiamonds = 12;
+    Nodes nodes;
+    NodePtr last = nodes.generator(true);
+    for (int i = 0; i < kDiamonds; ++i) {
+        NodePtr multiPAR = nodes.create(kNatronTestPluginMultiPAR);
+        ASSERT_TRUE( connect(last, 0, multiPAR) );
+        ASSERT_TRUE( connect(last, 1, multiPAR) );
+        last = multiPAR;
+    }
+    // twice: the failure is not remembered after the request, so the generator is asked again by the second one
+    // (a file that was missing may be there now)
+    for (int i = 0; i < 2; ++i) {
+        const int calls = NatronTestPlugin::counter("Generator.regionOfDefinition");
+        RectD rod;
+        EXPECT_EQ( eStatusFailed, last->getEffectInstance()->getRegionOfDefinition_public(last->getHashValue(), kTime, RenderScale::identity, ViewIdx(0), &rod, 0) ) << "request " << i;
+        EXPECT_EQ(1, NatronTestPlugin::counter("Generator.regionOfDefinition") - calls) << "request " << i << " (" << (1 << kDiamonds) << " paths)";
+    }
+}

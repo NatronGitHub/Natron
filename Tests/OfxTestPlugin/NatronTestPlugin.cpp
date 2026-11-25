@@ -50,6 +50,7 @@
 //   the output frame rate to it in getClipPreferences (kOfxImageEffectPropSetableFrameRate). If its "fail"
 //   parameter is true, kOfxImageEffectActionGetRegionOfDefinition and kOfxImageEffectActionRender return
 //   kOfxStatFailed, as a Read node whose file is missing does with "On missing frame: Error" (#1602).
+//   It counts its kOfxImageEffectActionGetRegionOfDefinition actions ("Generator.regionOfDefinition").
 // - net.natron.test.MultiPAR: two inputs, Source and B, and kOfxImageEffectPropSupportsMultipleClipPARs.
 //   It records the pixel aspect ratio of each input clip and image, times 1000, in render.
 // - net.natron.test.ClipGetImage: asks for a small region of Source in getRegionsOfInterest; in render,
@@ -1001,6 +1002,9 @@ generatorPluginMain(const char* action,
         }
 
         return kOfxStatOK;
+    }
+    if (std::strcmp(action, kOfxImageEffectActionGetRegionOfDefinition) == 0) {
+        incrementCounter("Generator.regionOfDefinition");
     }
     if ( (std::strcmp(action, kOfxImageEffectActionGetRegionOfDefinition) == 0) ||
          (std::strcmp(action, kOfxImageEffectActionRender) == 0) ) {
