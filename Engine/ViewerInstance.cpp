@@ -1247,6 +1247,28 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     return getRoDAndLookupCache(true, viewerHash, rotoPaintNode, stats, outArgs);
 }
 
+// Auto contrast: the gain and offset that map [vmin, vmax], the range of the displayed channels, to [0, 1].
+// vmin > vmax: the RoI is empty, no range was found.
+static void
+setAutoContrastGainOffset(double vmin,
+                          double vmax,
+                          UpdateViewerParams* updateParams)
+{
+    if (vmin > vmax) {
+        vmin = 0.;
+        vmax = 1.;
+    } else if (vmin == vmax) {
+        vmin = vmax - 1.;
+    }
+    if (vmax <= 0) {
+        updateParams->gain = 0;
+        updateParams->offset = 0;
+    } else {
+        updateParams->gain = 1 / (vmax - vmin);
+        updateParams->offset = -vmin / (vmax - vmin);
+    }
+}
+
 ViewerInstance::ViewerRenderRetCode
 ViewerInstance::renderViewer_internal(ViewIdx view,
                                       bool singleThreaded,
@@ -1775,22 +1797,8 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
 
         if (singleThreaded) {
             if (inArgs.autoContrast && !inArgs.isDoingPartialUpdates) {
-                double vmin, vmax;
-                MinMaxVal vMinMax = findAutoContrastVminVmax(colorImage, lutFromColorspace(srcColorSpace), inArgs.channels, alphaChannelIndex, viewerRenderRoI);
-                vmin = vMinMax.min;
-                vmax = vMinMax.max;
-
-                ///if vmax - vmin is greater than 1 the gain will be really small and we won't see
-                ///anything in the image
-                if (vmin > vmax) {
-                    // empty RoI: no min/max was found
-                    vmin = 0.;
-                    vmax = 1.;
-                } else if (vmin == vmax) {
-                    vmin = vmax - 1.;
-                }
-                updateParams->gain = 1 / (vmax - vmin);
-                updateParams->offset = -vmin / ( vmax - vmin);
+                const MinMaxVal vMinMax = findAutoContrastVminVmax(colorImage, lutFromColorspace(srcColorSpace), inArgs.channels, alphaChannelIndex, viewerRenderRoI);
+                setAutoContrastGainOffset(vMinMax.min, vMinMax.max, updateParams.get());
             }
 
             const RenderViewerArgs args(colorImage,
@@ -1848,21 +1856,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                     }
                 } // runInCurrentThread
 
-                if (vmin > vmax) {
-                    // empty RoI: no min/max was found
-                    vmin = 0.;
-                    vmax = 1.;
-                } else if (vmax == vmin) {
-                    vmin = vmax - 1.;
-                }
-
-                if (vmax <= 0) {
-                    updateParams->gain = 0;
-                    updateParams->offset = 0;
-                } else {
-                    updateParams->gain = 1 / (vmax - vmin);
-                    updateParams->offset =  -vmin / (vmax - vmin);
-                }
+                setAutoContrastGainOffset(vmin, vmax, updateParams.get());
             }
 
             const RenderViewerArgs args(colorImage,
