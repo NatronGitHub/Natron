@@ -65,9 +65,19 @@
 NATRON_NAMESPACE_USING
 
 namespace {
+// The chains of the tests that must render are shorter in unoptimized (-O0) builds, whose stack frames
+// are several times larger: there GraphDepthGuard, which stops a traversal before the stack overflows,
+// reports a chain of about 600 MultiPAR nodes as too deep on macOS arm64 (#1865). The shorter chains use
+// about as much stack as the long ones do in optimized builds.
+#ifdef __OPTIMIZE__
+const int kStackFrameScale = 1;
+#else
+const int kStackFrameScale = 3;
+#endif
+
 // Number of filters in the chain: with 512 KB stacks, the render of this chain overflowed the stack
 // of the render thread at a depth of about 440 nodes (in the getRegionOfDefinition recursion).
-const int kChainLength = 600;
+const int kChainLength = 600 / kStackFrameScale;
 
 // Number of filters of a chain that is too deep for the stacks of Natron's threads (#1440): with
 // 8 MB stacks, a render of about 3500 MultiPAR nodes overflowed it, and with GraphDepthGuard the
@@ -619,7 +629,7 @@ TEST(DeepGraphRender, RenderTimeIsLinear)
         return;
     }
     // Well below the limit of GraphDepthGuard, which is lower in debug builds (larger stack frames):
-    // the other tests render 600 filters, and a chain of 2000 filters rendered on macOS arm64.
+    // the other tests render kChainLength filters, and a chain of 2000 filters rendered on macOS arm64.
     const int shortLength = 50;
     const int longLength = 24 * shortLength;
     SmallProject smallProject;
@@ -699,7 +709,7 @@ TEST(DeepGraphRender, DotChain)
         return;
     }
     SmallProject smallProject;
-    const int length = 1000;
+    const int length = 1000 / kStackFrameScale;
     appPTR->clearAllCaches();
     DeepChain chain(length, PLUGINID_NATRON_DOT);
     ASSERT_TRUE( chain.isValid() );
