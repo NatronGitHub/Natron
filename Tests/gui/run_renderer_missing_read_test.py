@@ -38,8 +38,8 @@ NatronRenderer -b runs a script that creates Read (on a missing file, or with no
   frame 1. The render must write the three frames: the missing frame is never used (skipped
   without openfx-misc's FrameHold).
 
-Exit status: 0 on success, 77 if skipped (in CI unless NATRON_GUI_TESTS=1, without OCIO, or if the
-Read/Write PNG plug-ins of openfx-io are not available: set OFX_PLUGIN_PATH), 1 on failure.
+Exit status: 0 on success, 77 if skipped (without OCIO, or if the Read/Write PNG plug-ins of
+openfx-io are not available: set OFX_PLUGIN_PATH), 1 on failure.
 --debugger runs NatronRenderer under natron-lldb.sh (see run_gui_smoke_test.py), or set
 NATRON_TEST_WRAPPER.
 """
@@ -165,9 +165,6 @@ def main(argv):
     if len(argv) < 2:
         sys.stderr.write(__doc__)
         return 2
-    if os.environ.get("CI") and os.environ.get("NATRON_GUI_TESTS") != "1":
-        print("renderer missing Read test skipped in CI (set NATRON_GUI_TESTS=1 to run it, as for GuiSmokeTest)")
-        return SKIP
     if not os.environ.get("OCIO"):
         # the Write node fails without an OCIO config ("Invalid OCIO config"), as for the Tests binary
         print("renderer missing Read test skipped: set OCIO to an OpenColorIO config")

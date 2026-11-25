@@ -35,8 +35,8 @@ and afterFrameRender callbacks of Write1, then starts the render:
 Each run must finish under a timeout, run the callbacks (beforeRender once, afterFrameRender
 for each frame) or the expression, write the 3 frames, and run the rest of the script after the render.
 
-Exit status: 0 on success, 77 if skipped (in CI unless NATRON_GUI_TESTS=1, without OCIO, or if the
-Read/Write PNG plug-ins of openfx-io are not available: set OFX_PLUGIN_PATH), 1 on failure.
+Exit status: 0 on success, 77 if skipped (without OCIO, or if the Read/Write PNG plug-ins of
+openfx-io are not available: set OFX_PLUGIN_PATH), 1 on failure.
 --debugger runs NatronRenderer under natron-lldb.sh (see run_gui_smoke_test.py), or set
 NATRON_TEST_WRAPPER.
 """
@@ -204,9 +204,6 @@ def main(argv):
     if len(argv) < 2:
         sys.stderr.write(__doc__)
         return 2
-    if os.environ.get("CI") and os.environ.get("NATRON_GUI_TESTS") != "1":
-        print("renderer callbacks test skipped in CI (set NATRON_GUI_TESTS=1 to run it, as for GuiSmokeTest)")
-        return SKIP
     if not os.environ.get("OCIO"):
         # the Write node fails without an OCIO config ("Invalid OCIO config"), as for the Tests binary
         print("renderer callbacks test skipped: set OCIO to an OpenColorIO config")
