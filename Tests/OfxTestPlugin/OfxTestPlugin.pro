@@ -51,3 +51,10 @@ for(skipped, NATRON_TEST_OFX_SKIPPED) {
     QMAKE_POST_LINK += $$sprintf($$QMAKE_MKDIR_CMD, $$shell_quote($$shell_path($$dirname(skippedPath)))) $$escape_expand(\\n\\t)
     QMAKE_POST_LINK += $$QMAKE_COPY $$shell_quote($$shell_path($${DESTDIR}/$${TARGET}.ofx)) $$shell_quote($$shell_path($${skippedPath})) $$escape_expand(\\n\\t)
 }
+
+# A PyPlug that ships in the bundle, with its icon (Tests/OfxBundlePyPlugs_Test.cpp). Same as Tests/CMakeLists.txt.
+NATRON_TEST_OFX_PYPLUGS_DIR = $${NATRON_TEST_OFX_PLUGIN_DIR}/NatronTestPlugin.ofx.bundle/Contents/Resources/PyPlugs
+QMAKE_POST_LINK += $$sprintf($$QMAKE_MKDIR_CMD, $$shell_quote($$shell_path($${NATRON_TEST_OFX_PYPLUGS_DIR}))) $$escape_expand(\\n\\t)
+for(pyplugFile, $$list(NatronTestBundlePyPlug.py NatronTestBundlePyPlug.png)) {
+    QMAKE_POST_LINK += $$QMAKE_COPY $$shell_quote($$shell_path($$PWD/../data/ofx-bundle-pyplugs/$${pyplugFile})) $$shell_quote($$shell_path($${NATRON_TEST_OFX_PYPLUGS_DIR}/$${pyplugFile})) $$escape_expand(\\n\\t)
+}

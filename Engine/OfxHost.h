@@ -36,6 +36,7 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QCoreApplication>
+#include <QStringList>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -226,6 +227,18 @@ public:
        to load them all.*/
     void loadOFXPlugins(IOPluginsMap* readersMap,
                         IOPluginsMap* writersMap);
+
+    /// The PyPlugs directories of the OFX plug-in bundles that loadOFXPlugins() loaded, from the scan or from the
+    /// plug-in cache: <bundle>/Contents/Resources/PyPlugs, if it exists, once per bundle, in the order of the OFX
+    /// plug-in search path. Empty before loadOFXPlugins(), which writes it on the main thread before the PyPlugs
+    /// are loaded; read-only afterwards.
+    const QStringList& getBundlesPyPlugsPaths() const;
+
+    /// The PyPlugs directories of these bundles (absolute paths, as HostSupport gives them), as
+    /// getBundlesPyPlugsPaths() returns them: those that exist, without duplicates, ordered by the first entry of
+    /// pluginSearchPath that contains the bundle, then by their order in bundlePaths. Public for the tests.
+    static QStringList makeBundlesPyPlugsPaths(const std::list<std::string>& pluginSearchPath,
+                                               const std::list<std::string>& bundlePaths);
 
     void clearPluginsLoadedCache();
 

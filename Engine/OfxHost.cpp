@@ -37,6 +37,9 @@
 #include <algorithm> // transform, min, max
 #include <string>
 #include <cstring> // for std::memcpy, std::memset, std::strcmp
+#include <set>
+#include <utility> // pair
+#include <vector>
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -45,6 +48,7 @@ CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is depr
 #include <QDateTime>
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QMutex>
 #include <QThreadPool>
 #include <QCoreApplication>
@@ -192,6 +196,7 @@ struct OfxHostPrivate
     QMutex describeMutex;
     std::atomic<QThread*> describeThread; // the thread that holds describeMutex, or NULL
     std::atomic<bool> pluginsUnloaded; // unloadPlugins() was called
+    QStringList bundlesPyPlugsPaths; // see getBundlesPyPlugsPaths(): written by loadOFXPlugins() only
 
     void clearLoadingState()
     {
@@ -219,6 +224,7 @@ struct OfxHostPrivate
         , describeMutex()
         , describeThread(nullptr)
         , pluginsUnloaded(false)
+        , bundlesPyPlugsPaths()
     {
     }
 };
@@ -1088,6 +1094,8 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
         _imp->imageEffectPluginCache->getPluginsByIDMajor();
 
 
+    // the bundles of the plug-ins registered below, for getBundlesPyPlugsPaths()
+    std::list<std::string> loadedBundlePaths;
     for (PMap::const_iterator it = ofxPlugins.begin();
          it != ofxPlugins.end(); ++it) {
         OFX::Host::ImageEffect::ImageEffectPlugin* p = it->second;
@@ -1116,6 +1124,7 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
         std::string openfxId = p->getIdentifier();
         const std::string & grouping = p->getDescriptor().getPluginGrouping();
         const std::string & bundlePath = p->getBinary()->getBundlePath();
+        loadedBundlePaths.push_back(bundlePath);
         std::string pluginLabel = OfxEffectInstance::makePluginLabel( p->getDescriptor().getShortLabel(),
                                                                       p->getDescriptor().getLabel(),
                                                                       p->getDescriptor().getLongLabel() );
@@ -1235,8 +1244,57 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
             }
         }
     }
+    _imp->bundlesPyPlugsPaths = makeBundlesPyPlugsPaths(pluginCache->getPluginPath(), loadedBundlePaths);
+    qDebug() << "Load OFX Plugins: PyPlugs directories of the bundles" << _imp->bundlesPyPlugsPaths;
     qDebug() << "Load OFX Plugins... done!";
 } // loadOFXPlugins
+
+const QStringList&
+OfxHost::getBundlesPyPlugsPaths() const
+{
+    return _imp->bundlesPyPlugsPaths;
+}
+
+QStringList
+OfxHost::makeBundlesPyPlugsPaths(const std::list<std::string>& pluginSearchPath,
+                                 const std::list<std::string>& bundlePaths)
+{
+    // the first entry of the search path that contains each bundle (HostSupport scans the entries recursively),
+    // or pluginSearchPath.size() for a bundle that is in none of them
+    std::vector<QString> searchDirs;
+    for (std::list<std::string>::const_iterator it = pluginSearchPath.begin(); it != pluginSearchPath.end(); ++it) {
+        QString dir = QDir::cleanPath( QString::fromUtf8( it->c_str() ) );
+        if ( !dir.endsWith( QLatin1Char('/') ) ) {
+            dir += QLatin1Char('/');
+        }
+        searchDirs.push_back(dir);
+    }
+    std::vector<std::pair<std::size_t, QString> > found; // (search path entry, PyPlugs directory), in bundlePaths order
+    std::set<QString> seenBundles; // a bundle comes once per plug-in
+    for (std::list<std::string>::const_iterator it = bundlePaths.begin(); it != bundlePaths.end(); ++it) {
+        const QString bundle = QDir::cleanPath( QString::fromUtf8( it->c_str() ) );
+        if ( !seenBundles.insert(bundle).second ) {
+            continue;
+        }
+        const QString pyPlugsDir = bundle + QString::fromUtf8("/Contents/Resources/PyPlugs");
+        if ( !QFileInfo(pyPlugsDir).isDir() ) {
+            continue;
+        }
+        std::size_t entry = 0;
+        while ( entry < searchDirs.size() && !bundle.startsWith(searchDirs[entry]) ) {
+            ++entry;
+        }
+        found.push_back( std::make_pair(entry, pyPlugsDir) );
+    }
+    std::stable_sort( found.begin(), found.end(),
+                      [](const std::pair<std::size_t, QString>& a, const std::pair<std::size_t, QString>& b) { return a.first < b.first; } );
+    QStringList ret;
+    for (std::size_t i = 0; i < found.size(); ++i) {
+        ret.push_back(found[i].second);
+    }
+
+    return ret;
+}
 
 void
 OfxHost::writeOFXCache()

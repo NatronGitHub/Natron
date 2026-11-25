@@ -59,6 +59,7 @@ set(Tests_SOURCES
     NodePresets_Test.cpp
     NodePreview_Test.cpp
     NoDialogs_Test.cpp
+    OfxBundlePyPlugs_Test.cpp
     OfxBytesParam_Test.cpp
     OfxContexts_Test.cpp
     OfxCPURenderSupport_Test.cpp
@@ -159,7 +160,7 @@ add_test(NAME Tests COMMAND Tests)
 # scan: the binaries are loaded at the first use of their plug-ins (OfxHost::getPluginContextAndDescribe()).
 # Tests sets up the fixture (it scans with --clear-openfx-cache and writes the cache), so
 # `ctest -R TestsOfxCache` runs Tests first too.
-add_test(NAME TestsOfxCache COMMAND Tests "--gtest_filter=OfxHostProperties.*:OfxTestPlugin*:OfxPluginObsolete.*")
+add_test(NAME TestsOfxCache COMMAND Tests "--gtest_filter=OfxHostProperties.*:OfxTestPlugin*:OfxPluginObsolete.*:OfxBundlePyPlugs.*")
 # The caches of both (the same OFX plug-in cache) in the build tree, not in the user's cache directory, which
 # every build of this version shares (#1569). NATRON_DISK_CACHE_PATH, if set, takes precedence (see wmain.cpp).
 set(NATRON_TESTS_CACHE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests-cache")
@@ -252,7 +253,20 @@ foreach(_natron_test_skipped
         COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:NatronTestPlugin>" "${NATRON_TESTS_OFX_PLUGIN_DIR}/${_natron_test_skipped}"
         VERBATIM)
 endforeach()
+# A PyPlug that ships in the bundle, with its icon (OfxBundlePyPlugs_Test.cpp)
+set(_natron_test_bundle_pyplugs
+    "${CMAKE_CURRENT_SOURCE_DIR}/data/ofx-bundle-pyplugs/NatronTestBundlePyPlug.py"
+    "${CMAKE_CURRENT_SOURCE_DIR}/data/ofx-bundle-pyplugs/NatronTestBundlePyPlug.png")
+add_custom_command(TARGET NatronTestPlugin POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${_natron_test_bundle}/Contents/Resources/PyPlugs"
+    COMMAND ${CMAKE_COMMAND} -E copy ${_natron_test_bundle_pyplugs} "${_natron_test_bundle}/Contents/Resources/PyPlugs/"
+    VERBATIM)
 add_dependencies(Tests NatronTestPlugin)
+# The same tests with NATRON_PLUGIN_PATH set to a directory with a PyPlug of the same ID and version as the bundle's:
+# that one is loaded instead (OfxBundlePyPlugs_Test.cpp)
+add_test(NAME TestsOfxBundlePyPlugOverride COMMAND Tests "--gtest_filter=OfxBundlePyPlugs.*")
+set_tests_properties(TestsOfxBundlePyPlugOverride PROPERTIES
+    ENVIRONMENT "NATRON_PLUGIN_PATH=${CMAKE_CURRENT_SOURCE_DIR}/data/ofx-bundle-pyplugs-override;PYTHONDONTWRITEBYTECODE=1;NATRON_TESTS_CACHE_DIR=${CMAKE_CURRENT_BINARY_DIR}/tests-cache-pyplug-override")
 target_compile_definitions(Tests PRIVATE
     NATRON_TESTS_OFX_PLUGIN_DIR="${NATRON_TESTS_OFX_PLUGIN_DIR}"
     NATRON_TESTS_OFX_PLUGIN_BINARY="$<TARGET_FILE:NatronTestPlugin>"
