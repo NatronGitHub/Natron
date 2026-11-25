@@ -90,15 +90,22 @@ try:
     group.destroy()
     check_destroyed(app, group_name)
 
-    # a node destroyed by its own callbacks (a Group, since a Dot has no callback parameters): this must not crash
+    # a node destroyed by its own callbacks (a Group, since a Dot has no callback parameters): this must not crash.
+    # The destruction is deferred to the event loop, which NatronRenderer -t only runs after this script, so the
+    # nodes are still there.
     self_destroying = app.createNode(GROUP)
+    name = self_destroying.getScriptName()
     self_destroying.createButtonParam("destroyMe", "Destroy me")
     self_destroying.getParam("onParamChanged").set("destroy_on_param_changed")
     self_destroying.getParam("destroyMe").trigger()
+    assert app.getNode(name) is not None, name
+    self_destroying.destroy()  # the destruction is already pending: this does nothing
     self_destroying = app.createNode(GROUP)
+    name = self_destroying.getScriptName()
     app.createNode("fr.inria.built-in.Input", -1, self_destroying)
     self_destroying.getParam("onInputChanged").set("destroy_on_input_changed")
     connect(self_destroying, 0, source)
+    assert app.getNode(name) is not None, name
     assert callbacks_run == ["onParamChanged", "onInputChanged"], callbacks_run
     status = 0
 except BaseException:

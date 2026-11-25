@@ -1415,11 +1415,6 @@ Node::isRenderingPreview() const
 void
 Node::Implementation::abortPreview_blocking(bool allowPreviewRenders)
 {
-    bool beingDestroyed;
-    {
-        QMutexLocker k(&isBeingDestroyedMutex);
-        beingDestroyed = isBeingDestroyed;
-    }
     QMutexLocker l(&computingPreviewMutex);
 
     // No preview starts while this waits
@@ -1427,7 +1422,13 @@ Node::Implementation::abortPreview_blocking(bool allowPreviewRenders)
     while (computingPreview) {
         computingPreviewCond.wait( l.mutex() );
     }
-    // destroyNode() forbade the previews for good
+    // destroyNode() forbids the previews for good (it doesn't hold isBeingDestroyedMutex while it locks
+    // computingPreviewMutex, so this lock order is safe)
+    bool beingDestroyed;
+    {
+        QMutexLocker k(&isBeingDestroyedMutex);
+        beingDestroyed = isBeingDestroyed;
+    }
     previewThreadQuit = !allowPreviewRenders || beingDestroyed;
 }
 
