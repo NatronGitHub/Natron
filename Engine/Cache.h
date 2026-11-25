@@ -1731,6 +1731,12 @@ public:
      */
     void save(CacheTOC* tableOfContents);
 
+    /* Writes the table of contents to getRestoreFilePath(), atomically (#1594, see CacheSerialization.h).
+       Returns false, leaving the previous file untouched, if it could not be written. It may be called concurrently
+       (Cache::_lock guards the entries read by save(), each call writes its own temporary file): the last
+       complete write wins. */
+    bool writeRestoreFile();
+
 
     /*Restores the cache from disk. Must not be called if another process uses the cache
        (see AppManager::isDiskCacheUsedByAnotherProcess()): the files that are not in the table of contents are deleted.*/
