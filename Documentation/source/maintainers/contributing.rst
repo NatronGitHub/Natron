@@ -362,10 +362,10 @@ run is never skipped: every job uses rolling toolchains. Any branch can also be 
 standards such as C++23, other compilers or OS versions) are meant to run
 weekly or by hand, never per pull request; none is set up yet.
 
-**Installers and packages are built weekly, on demand and for tags, never for
-pull requests.** Before a pre-release tag, collect the CHANGELOG (see
+**Installers and packages are built on demand and for tags (the installers
+also weekly), never for pull requests.** Before a pre-release tag, collect the CHANGELOG (see
 :ref:`maint-changelog`). ``build_installer.yml`` builds the Windows installer
-(Setup.exe and the portable zip) every Sunday (06:17 UTC), by hand and for
+(the portable tree, with Setup.exe in it) every Sunday (06:17 UTC), by hand and for
 ``v*`` tags, with the package repository pinned by
 ``tools/MINGW-packages/windows_pacman_repo_version.txt``; the weekly run is never
 skipped (MSYS2 is a rolling toolchain) and fails if that repository's zip isn't
