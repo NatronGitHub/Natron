@@ -82,6 +82,18 @@ struct CustomParamInteractPrivate
         preferredSize.setWidth(pW);
         preferredSize.setHeight(pH);
     }
+
+    // The timeline of the project, NULL if the knob or its holder is gone: the focus also changes when the window
+    // is deactivated or the panel is being destroyed
+    TimeLinePtr getTimeLineIfAny() const
+    {
+        KnobGuiPtr knobGui = knob.lock();
+        KnobIPtr k = knobGui ? knobGui->getKnob() : KnobIPtr();
+        KnobHolder* holder = k ? k->getHolder() : NULL;
+        AppInstancePtr app = holder ? holder->getApp() : AppInstancePtr();
+
+        return app ? app->getTimeLine() : TimeLinePtr();
+    }
 };
 
 CustomParamInteract::CustomParamInteract(const KnobGuiPtr& knob,
@@ -403,16 +415,11 @@ CustomParamInteract::focusInEvent(QFocusEvent* /*e*/)
     OfxPointD scale;
 
     scale.x = scale.y = 1.;
-    // the focus also changes when the window is deactivated or the panel is being destroyed: the knob or
-    // its holder may be gone
-    KnobGuiPtr knobGui = _imp->knob.lock();
-    KnobIPtr knob = knobGui ? knobGui->getKnob() : KnobIPtr();
-    KnobHolder* holder = knob ? knob->getHolder() : NULL;
-    AppInstancePtr app = holder ? holder->getApp() : AppInstancePtr();
-    if ( !app || !app->getTimeLine() ) {
+    TimeLinePtr timeLine = _imp->getTimeLineIfAny();
+    if (!timeLine) {
         return;
     }
-    double time = app->getTimeLine()->currentFrame();
+    double time = timeLine->currentFrame();
     OfxStatus stat = _imp->entryPoint->gainFocusAction(time, scale, /*view=*/ 0, _imp->entryPoint->hasColorPicker() ? &_imp->entryPoint->getLastColorPickerColor() : /*colourPicker=*/0);
     if (stat == kOfxStatOK) {
         update();
@@ -425,16 +432,11 @@ CustomParamInteract::focusOutEvent(QFocusEvent* /*e*/)
     OfxPointD scale;
 
     scale.x = scale.y = 1.;
-    // the focus also changes when the window is deactivated or the panel is being destroyed: the knob or
-    // its holder may be gone
-    KnobGuiPtr knobGui = _imp->knob.lock();
-    KnobIPtr knob = knobGui ? knobGui->getKnob() : KnobIPtr();
-    KnobHolder* holder = knob ? knob->getHolder() : NULL;
-    AppInstancePtr app = holder ? holder->getApp() : AppInstancePtr();
-    if ( !app || !app->getTimeLine() ) {
+    TimeLinePtr timeLine = _imp->getTimeLineIfAny();
+    if (!timeLine) {
         return;
     }
-    double time = app->getTimeLine()->currentFrame();
+    double time = timeLine->currentFrame();
     OfxStatus stat = _imp->entryPoint->loseFocusAction(time, scale, /*view=*/ 0, _imp->entryPoint->hasColorPicker() ? &_imp->entryPoint->getLastColorPickerColor() : /*colourPicker=*/0);
     if (stat == kOfxStatOK) {
         update();
