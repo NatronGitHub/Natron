@@ -821,12 +821,6 @@ Gui::renderSelectedNode()
     }
 
     NodesGuiList selectedNodes = graph->getSelectedNodes();
-
-    if ( selectedNodes.empty() ) {
-        Dialogs::warningDialog( tr("Render").toStdString(), tr("You must select a Write node to render first!").toStdString() );
-
-        return;
-    }
     std::list<AppInstance::RenderWork> workList;
     bool useStats = getApp()->isRenderStatsActionChecked();
     bool hasWriter = false;
@@ -857,8 +851,8 @@ Gui::renderSelectedNode()
         }
     }
     if (!hasWriter) {
-        // Rendering a node that is not a Write node is not supported: this used to create an
-        // unconnected, unnamed Write node, whose render could only fail (#1259).
+        // No node selected, or no Write node: rendering a node that is not a Write node is not supported,
+        // this used to create an unconnected, unnamed Write node, whose render could only fail (#1259).
         Dialogs::warningDialog( tr("Render").toStdString(), tr("You must select a Write node to render first!").toStdString() );
 
         return;
