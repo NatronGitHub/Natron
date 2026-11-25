@@ -177,8 +177,7 @@ jobs:
 
       - name: Build Natron, the plug-ins and the DMG
         run: |
-          export PATH=/opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
-          for v in $(env | sed -n 's/^\(HOMEBREW_[A-Za-z_]*\)=.*/\1/p'); do unset "$v"; done
+          . tools/MacPorts/macports-env.sh
           # provision.sh's build step, as tools/tart/natron-build.sh: launchBuildMain.sh checks out
           # this commit and the plug-ins, builds them with CMake for macOS 14.0 (NATRON_MACOS_MIN),
           # makes the DMG and checks its minos (check-minos.sh). sync: the overlay of this commit.
