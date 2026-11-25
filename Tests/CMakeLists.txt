@@ -401,6 +401,12 @@ add_test(NAME KeyframeDerivativesHeadless
 set_tests_properties(KeyframeDerivativesHeadless PROPERTIES TIMEOUT 120
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/keyframe-derivatives-headless-cache")
 
+# App.createNode(), createReader() and createWriter() take their properties argument, also on Windows (#1827)
+add_test(NAME CreateNodePropertiesHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_create_node_properties.py")
+set_tests_properties(CreateNodePropertiesHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/create-node-properties-headless-cache")
+
 # A PyPlug is created after the script rebinds the global "app" (#1525)
 add_test(NAME PyPlugReboundAppHeadless
     COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_pyplug_rebound_app.py")
