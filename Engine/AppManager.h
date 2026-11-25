@@ -270,6 +270,17 @@ public:
      **/
     void waitForCacheThreads();
 
+    /**
+     * @brief Gives the cache ID of a destroyed node to no other node of this process. The removal of the cache
+     * entries of the destroyed node is asynchronous: it would also remove those of the new node (#1848).
+     **/
+    void retireCacheID(const std::string& cacheID);
+
+    /**
+     * @brief Returns true if retireCacheID() was called with this cache ID.
+     **/
+    bool isCacheIDRetired(const std::string& cacheID) const;
+
     SettingsPtr getCurrentSettings() const WARN_UNUSED_RETURN;
     const KnobFactory & getKnobFactory() const WARN_UNUSED_RETURN;
 

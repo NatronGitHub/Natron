@@ -805,7 +805,12 @@ Node::doDestroyNodeInternalEnd(bool autoReconnect)
 
     ///Remove all images in the cache associated to this node
     ///This will not remove from the disk cache if the project is closing
-    removeAllImagesFromCache(false);
+    if ( removeAllImagesFromCache(false) ) {
+        // The cleaner threads of the caches remove the entries later: a node created in the meantime must not get
+        // this cache ID, else they would remove its entries too (#1848). When the project closes, the entries stay
+        // (in the disk cache, for the next time the project is opened): the cache ID may be used again.
+        appPTR->retireCacheID( getCacheID() );
+    }
 
     if (app) {
         app->recheckInvalidExpressions();

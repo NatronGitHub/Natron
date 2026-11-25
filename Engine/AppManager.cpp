@@ -2667,6 +2667,22 @@ AppManager::waitForCacheThreads()
     }
 }
 
+void
+AppManager::retireCacheID(const std::string& cacheID)
+{
+    QMutexLocker k(&_imp->retiredCacheIDsMutex);
+
+    _imp->retiredCacheIDs.insert(cacheID);
+}
+
+bool
+AppManager::isCacheIDRetired(const std::string& cacheID) const
+{
+    QMutexLocker k(&_imp->retiredCacheIDsMutex);
+
+    return _imp->retiredCacheIDs.find(cacheID) != _imp->retiredCacheIDs.end();
+}
+
 const QString &
 AppManager::getApplicationBinaryPath() const
 {

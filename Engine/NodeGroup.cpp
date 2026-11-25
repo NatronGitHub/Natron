@@ -292,15 +292,18 @@ NodeCollection::quitAnyProcessingForAllNodes_non_blocking()
 bool
 NodeCollection::isCacheIDAlreadyTaken(const std::string& name) const
 {
-    QMutexLocker k(&_imp->nodesMutex);
+    {
+        QMutexLocker k(&_imp->nodesMutex);
 
-    for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ( (*it)->getCacheID() == name ) {
-            return true;
+        for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
+            if ( (*it)->getCacheID() == name ) {
+                return true;
+            }
         }
     }
 
-    return false;
+    // nodesMutex is unlocked: AppManager::isCacheIDRetired() locks its own mutex
+    return appPTR->isCacheIDRetired(name);
 }
 
 bool
