@@ -169,11 +169,18 @@ RotoPaintInteract::isMultiStrokeEnabled() const
 {
     KnobBoolPtr b =  multiStrokeEnabled.lock();
 
-    if (b) {
-        return b->getValue();
-    } else {
+    if ( !b || !b->getValue() ) {
         return false;
     }
+    // A clone or reveal stroke from the foreground copies what the strokes below it painted: it must be a new
+    // stroke, since it does not see what the previous strokes of its own multi-stroke painted (issue #629).
+    if ( (selectedTool == eRotoToolClone) || (selectedTool == eRotoToolReveal) ) {
+        KnobChoicePtr sourceType = sourceTypeChoice.lock();
+
+        return !sourceType || (sourceType->getValue() != 0);
+    }
+
+    return true;
 }
 
 bool

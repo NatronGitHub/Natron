@@ -332,7 +332,8 @@ NATRON_NAMESPACE_ENTER
 #define kRotoUIParamMultiStrokeEnabledLabel "Multi-Stroke"
 #define kRotoUIParamMultiStrokeEnabledHint "When checked, strokes will be appended to the same item " \
     "in the hierarchy as long as the same tool is selected.\n" \
-    "Select another tool to make a new item."
+    "Select another tool to make a new item.\n" \
+    "Clone and Reveal strokes from the foreground always make a new item, so that they can copy what was painted before."
 
 
 // Shortcuts
@@ -642,6 +643,8 @@ public:
 
     bool isStickySelectionEnabled() const;
 
+    // Whether a new stroke is appended to the stroke being painted: the Multi-Stroke option, except for
+    // clone and reveal strokes from the foreground (source type 0), which always start a new stroke.
     bool isMultiStrokeEnabled() const;
 
     bool getRoleForGroup(const KnobGroupPtr& group, RotoRoleEnum* role) const;
