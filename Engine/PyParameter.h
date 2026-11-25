@@ -283,7 +283,8 @@ public:
     /**
      * @brief Sets the left and right derivatives (tangents) of the keyframe at time, which becomes free
      * (eKeyframeTypeFree), as when its tangents are moved in the Curve Editor.
-     * @returns false if there is no keyframe at time.
+     * @returns false if there is no keyframe at time, if dimension doesn't exist, or if the parameter isn't a
+     * floating-point one (see AnimatedParam.rst).
      **/
     bool setDerivativesAtTime(double time, double left, double right, int dimension = 0);
 };
