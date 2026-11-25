@@ -25,6 +25,8 @@
 
 #include "Global/Macros.h"
 
+#include <iostream>
+
 #include <gtest/gtest.h>
 
 #include <QtCore/QFile>
@@ -34,6 +36,7 @@
 #include <QtCore/QTemporaryDir>
 
 #include "Engine/AppManager.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/Settings.h"
 
 NATRON_NAMESPACE_USING
@@ -88,6 +91,7 @@ TEST(Settings, RestoreDefaultKeepsSettingsFileWithNoSettings)
 #endif
 
     settings->restoreDefault();
+    settings->removeSettingsFile(); // what Save does after Restore defaults (#1808)
 
     // saving stays off: a later change of a preference doesn't write the settings file either
     EXPECT_FALSE( settings->getSaveSettings() );
@@ -95,5 +99,91 @@ TEST(Settings, RestoreDefaultKeepsSettingsFileWithNoSettings)
 
 #if defined(Q_OS_UNIX) && !defined(Q_OS_DARWIN)
     EXPECT_TRUE( QFile::exists(fileName) );
+#endif
+}
+
+#if defined(Q_OS_UNIX) && !defined(Q_OS_DARWIN)
+namespace {
+// Turns saving the settings on, and when destroyed, also after a failed ASSERT, turns it off again (the Tests
+// binary runs with --no-settings) and resets the setting the test changes
+class SavingSettingsGuard
+{
+public:
+    SavingSettingsGuard(const SettingsPtr& settings,
+                        const KnobIntPtr& knob)
+        : _settings(settings)
+        , _knob(knob)
+    {
+        _settings->setSaveSettings(true);
+    }
+
+    SavingSettingsGuard(const SavingSettingsGuard&) = delete;
+    SavingSettingsGuard& operator=(const SavingSettingsGuard&) = delete;
+
+    ~SavingSettingsGuard()
+    {
+        _settings->setSaveSettings(false);
+        _knob->resetToDefaultValue(0);
+    }
+
+private:
+    SettingsPtr _settings;
+    KnobIntPtr _knob;
+};
+} // anonymous namespace
+#endif
+
+// #1808: Preferences > Restore defaults, then Discard, must keep the user's settings. Restore defaults resets the
+// settings in memory only: the settings file keeps the saved values, which Discard restores, until Save.
+TEST(Settings, RestoreDefaultKeepsSettingsFileUntilSaved)
+{
+#if defined(Q_OS_UNIX) && !defined(Q_OS_DARWIN)
+    ASSERT_TRUE( appPTR );
+    SettingsPtr settings = appPTR->getCurrentSettings();
+    ASSERT_TRUE( bool(settings) );
+    KnobIntPtr knob = settings->getKnobByNameAndType<KnobInt>("maxUndoRedo");
+    ASSERT_TRUE( bool(knob) );
+    const int defaultValue = knob->getDefaultValue(0);
+    const int savedValue = defaultValue + 1;
+
+    // The native settings are a file, which the test redirects to a temporary directory, with saving on (see
+    // RestoreDefaultKeepsSettingsFileWithNoSettings)
+    QTemporaryDir configDir;
+    ASSERT_TRUE( configDir.isValid() );
+    QSettings::setPath( QSettings::NativeFormat, QSettings::UserScope, configDir.path() );
+    NativeSettingsPathRestorer pathRestorer;
+    QString fileName;
+    {
+        QSettings qsettings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
+        fileName = qsettings.fileName();
+    }
+    ASSERT_TRUE( fileName.startsWith( configDir.path() ) ) << fileName.toStdString();
+    SavingSettingsGuard saving(settings, knob);
+
+    std::vector<KnobI*> changed(1, knob.get());
+    knob->setValue(savedValue);
+    settings->saveSettings(changed, false, false);
+    ASSERT_TRUE( QFile::exists(fileName) );
+
+    settings->restoreDefault();
+    EXPECT_EQ( defaultValue, knob->getValue() );
+    EXPECT_TRUE( settings->getSaveSettings() );
+    EXPECT_TRUE( QFile::exists(fileName) ) << "Restore defaults removed the settings file";
+    {
+        QSettings qsettings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
+        EXPECT_EQ( savedValue, qsettings.value( QString::fromUtf8("maxUndoRedo") ).toInt() );
+    }
+
+    // Discard: the panel restores the changed settings from the file
+    settings->restoreKnobsFromSettings(changed);
+    EXPECT_EQ( savedValue, knob->getValue() );
+
+    // Save: the panel removes the file, then saves the changed settings
+    settings->removeSettingsFile();
+    EXPECT_FALSE( QFile::exists(fileName) );
+#else
+    // On macOS and Windows the native settings are in the system's preferences, which can't be redirected
+    // TODO: Convert to GTEST_SKIP() when gtest updated.
+    std::cerr << "[  SKIPPED ] Settings.RestoreDefaultKeepsSettingsFileUntilSaved: needs file-based native settings (Linux, BSD)" << std::endl;
 #endif
 }

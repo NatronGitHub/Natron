@@ -290,6 +290,7 @@ AppSettings::saveSettings()
 void
 AppSettings::restoreDefaultSettings()
 {
+    _settings->removeSettingsFile();
     _settings->restoreDefault();
 }
 
