@@ -194,11 +194,14 @@ elseif(WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 else()
     set(_natron_openmp_default OFF)
 endif()
-# An explicit -DNATRON_USE_OPENMP=ON fails if OpenMP is missing; the default only warns.
-if(DEFINED NATRON_USE_OPENMP)
-    set(_natron_openmp_explicit ON)
-else()
-    set(_natron_openmp_explicit OFF)
+# An explicit -DNATRON_USE_OPENMP=ON fails if OpenMP is missing; the default only warns. Whether it
+# was explicit is known only at the first configure: later, the option is in the cache anyway.
+if(NOT DEFINED CACHE{_NATRON_OPENMP_EXPLICIT})
+    if(DEFINED NATRON_USE_OPENMP)
+        set(_NATRON_OPENMP_EXPLICIT ON CACHE INTERNAL "NATRON_USE_OPENMP was given at the first configure")
+    else()
+        set(_NATRON_OPENMP_EXPLICIT OFF CACHE INTERNAL "NATRON_USE_OPENMP was given at the first configure")
+    endif()
 endif()
 option(NATRON_USE_OPENMP
     "use OpenMP in the bundled ceres and openMVG (tracker); with Apple clang, needs libomp (MacPorts: found automatically, else set OpenMP_ROOT)"
@@ -431,7 +434,7 @@ if(NATRON_USE_OPENMP)
         set(OpenMP_ROOT "/opt/local/include/libomp;/opt/local/lib/libomp")
     endif()
     find_package(OpenMP COMPONENTS CXX)
-    if(NOT OpenMP_CXX_FOUND AND _natron_openmp_explicit)
+    if(NOT OpenMP_CXX_FOUND AND _NATRON_OPENMP_EXPLICIT)
         message(FATAL_ERROR "NATRON_USE_OPENMP is ON but OpenMP was not found. "
             "Install libomp (or your compiler's OpenMP runtime) and set OpenMP_ROOT to its prefix, or configure with -DNATRON_USE_OPENMP=OFF.")
     elseif(NOT OpenMP_CXX_FOUND)
