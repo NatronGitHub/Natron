@@ -82,3 +82,28 @@ TEST(PluginGrouping,
     EXPECT_EQ( QString::fromUtf8("G'MIC / Colors"), DocumentationGroups::makeGroupLabel( QString::fromUtf8("GMIC/Colors").split( QLatin1Char('/') ) ) );
     EXPECT_EQ( QString::fromUtf8("G'MIC / Colors"), DocumentationGroups::makeGroupLabel( QString::fromUtf8("G'MIC/Colors").split( QLatin1Char('/') ) ) );
 }
+
+static void
+restoreDefaultFlagsAfterClearing(bool isDeprecated)
+{
+    Plugin plugin( 0, QString(), QString::fromUtf8("net.natron.test.Flags"), QString::fromUtf8("Flags"), QString(), QStringList(), QStringList(),
+                   0, 1, 0, false, false, isDeprecated );
+
+    plugin.setActivated(isDeprecated);
+    plugin.setRenderScaleEnabled(false);
+    plugin.setMultiThreadingEnabled(false);
+    plugin.setOpenGLEnabled(false);
+    plugin.restoreDefaultFlags();
+    EXPECT_EQ( !isDeprecated, plugin.isActivated() );
+    EXPECT_TRUE( plugin.isRenderScaleEnabled() );
+    EXPECT_TRUE( plugin.isMultiThreadingEnabled() );
+    EXPECT_TRUE( plugin.isOpenGLEnabled() );
+}
+
+// Preferences > Restore Defaults resets the plug-in flags (#1773); deprecated plug-ins stay deactivated (#171)
+TEST(PluginGrouping,
+     RestoreDefaultFlags)
+{
+    restoreDefaultFlagsAfterClearing(false);
+    restoreDefaultFlagsAfterClearing(true);
+}
