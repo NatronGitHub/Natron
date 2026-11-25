@@ -27,6 +27,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <algorithm>
 #include <deque>
 #include <iostream>
 #include <stdexcept>
@@ -92,6 +93,7 @@ struct GuiTestState
     bool cursorPosSet; // false before the first pen event
     QPointer<QWidget> hovered; // the widget of the last synthetic pen event (for Enter/Leave)
     QPointer<QWidget> focused; // the target of the last synthetic key event or press (for FocusIn/FocusOut)
+    std::vector<QPointer<QWidget> > activated; // the widgets that got a synthetic WindowActivate (updateActivated())
     std::vector<QPointer<QWidget> > openedSubmenus; // submenus opened by a menu answer (not answered again)
 
     GuiTestState()
@@ -103,6 +105,7 @@ struct GuiTestState
         , cursorPosSet(false)
         , hovered()
         , focused()
+        , activated()
         , openedSubmenus()
     {
     }
@@ -715,6 +718,23 @@ updateFocused(QWidget* w)
     QCoreApplication::sendEvent(w, &in);
 }
 
+// A synthetic WindowActivate, once, to the widget of a press in a window that is not active, as the window
+// activation of a real click would send. The window itself is not activated (NATRON_TEST_NO_FOCUS), but e.g.
+// a node graph's scene becomes active, as its items must be: QGraphicsItem::isActive() is false in an inactive
+// scene, and the node graph only picks active nodes (NodeGraph::hasItemNearbyMouse()).
+void
+updateActivated(QWidget* w)
+{
+    std::vector<QPointer<QWidget> >& activated = state().activated;
+
+    if ( !w || w->isActiveWindow() || ( std::find( activated.begin(), activated.end(), QPointer<QWidget>(w) ) != activated.end() ) ) {
+        return;
+    }
+    activated.push_back(w);
+    QEvent activate(QEvent::WindowActivate);
+    QCoreApplication::sendEvent(w, &activate);
+}
+
 PyObject*
 py_penEvent(PyObject* /*self*/,
             PyObject* args,
@@ -767,6 +787,8 @@ py_penEvent(PyObject* /*self*/,
     if (evType == QEvent::MouseButtonPress) {
         // the target, not a graph's viewport
         updateFocused(target);
+        // the widget that gets the mouse events: a graph's viewport sends it to its scene (QGraphicsView::viewportEvent())
+        updateActivated(w);
     }
     QMouseEvent e( evType, pos, QPointF(global), button, pressed, mods );
     QCoreApplication::sendEvent(w, &e);
