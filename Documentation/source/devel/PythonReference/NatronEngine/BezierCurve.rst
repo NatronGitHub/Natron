@@ -103,13 +103,6 @@ Member functions description
 
 
 
-.. attribute:: BezierCurve.CairoOperatorEnum
-
-    This enumeration represents the different blending modes of a shape. See the user interface
-    for the different modes, or type help(NatronEngine.BezierCurve.CairoOperatorEnum) to see
-    the different values.
-
-
 .. method:: BezierCurve.addControlPoint(x, y)
 
 
@@ -174,11 +167,11 @@ Returns the :doc:`Param` controlling the color of the Bezier.
 .. method:: BezierCurve.getCompositingOperator()
 
 
-    :rtype: :attr:`NatronEngine.BezierCurve.CairoOperatorEnum`
+    :rtype: :attr:`MergingFunctionEnum<NatronEngine.Natron.MergingFunctionEnum>`
 
 
-Returns the blending mode for this shape. Type help(NatronEngine.BezierCurve.CairoOperatorEnum)
-to see the different values possible.
+Returns the blending mode for this shape. See :attr:`Natron.MergingFunctionEnum<NatronEngine.Natron.MergingFunctionEnum>`
+for the possible values.
 
 
 
@@ -442,7 +435,7 @@ Set a new keyframe for the *color* parameter at the given *time*
 .. method:: BezierCurve.setCompositingOperator(op)
 
 
-    :param op: :attr:`NatronEngine.BezierCurve.CairoOperatorEnum`
+    :param op: :attr:`MergingFunctionEnum<NatronEngine.Natron.MergingFunctionEnum>`
 
 
 Set the compositing operator for this shape.

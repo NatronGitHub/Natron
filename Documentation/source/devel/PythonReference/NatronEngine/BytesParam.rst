@@ -30,13 +30,13 @@ Functions
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. method:: NatronEngine.BytesParam.getValue()
+.. method:: BytesParam.getValue()
 
     :rtype: :class:`bytes`
 
 Returns the value of the parameter.
 
-.. method:: NatronEngine.BytesParam.setValue(value)
+.. method:: BytesParam.setValue(value)
 
     :param value: :class:`bytes`
 
@@ -44,12 +44,12 @@ Sets the value of the parameter. *value* may be any bytes-like object (``bytes``
 ``bytearray``, ``memoryview``...); a ``str`` raises :class:`TypeError`. A value larger
 than about 1.5 GB raises :class:`MemoryError`.
 
-.. method:: NatronEngine.BytesParam.getDefaultValue()
+.. method:: BytesParam.getDefaultValue()
 
     :rtype: :class:`bytes`
 
 Returns the default value of the parameter, as defined by the plug-in.
 
-.. method:: NatronEngine.BytesParam.restoreDefaultValue()
+.. method:: BytesParam.restoreDefaultValue()
 
 Restores the default value of the parameter.
