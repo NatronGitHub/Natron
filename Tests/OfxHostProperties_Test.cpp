@@ -110,7 +110,6 @@ TEST(OfxHostProperties, NotYetSupported15Features)
     EXPECT_EQ( std::string("false"), props.getStringProperty(kOfxImageEffectPropMetalRenderSupported) );
     EXPECT_EQ( std::string("false"), props.getStringProperty(kOfxImageEffectPropOpenCLRenderSupported) );
     EXPECT_EQ( std::string(kOfxImageEffectColourManagementNone), props.getStringProperty(kOfxImageEffectPropColourManagementStyle) );
-    EXPECT_EQ( 0, props.getIntProperty(kOfxParamHostPropSupportsStrChoice) );
 }
 
 // kOfxImageEffectPropSetableFrameRate is 1, and the output frame rate that a plug-in sets in

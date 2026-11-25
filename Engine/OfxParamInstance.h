@@ -480,6 +480,82 @@ private:
     KnobChoiceWPtr _knob;
 };
 
+/**
+ * @brief OFX 1.5 StrChoice params (kOfxParamTypeStrChoice): a KnobChoice whose entry IDs are the enums
+ * (kOfxParamPropChoiceEnum) and whose labels are the options (kOfxParamPropChoiceOption). The value is the
+ * enum of the selected option: the project saves it (the option string of the KnobChoice) and finds it again
+ * by exact match, else the default (KnobChoice::eOptionRestorationExactIDOrDefault). They don't animate
+ * (kOfxParamHostPropSupportsStrChoiceAnimation is 0): keyframes would hold option indices, which change
+ * when the plug-in reorders its options.
+ **/
+struct OfxStrChoiceInstancePrivate;
+class OfxStrChoiceInstance
+    : public OfxParamToKnob, public OFX::Host::Param::StrChoiceInstance
+{
+public:
+    OfxStrChoiceInstance(const OfxEffectInstancePtr& node,
+                         OFX::Host::Param::Descriptor & descriptor);
+
+    virtual ~OfxStrChoiceInstance();
+
+    virtual OfxStatus get(std::string &) OVERRIDE FINAL;
+    virtual OfxStatus get(OfxTime time, std::string &) OVERRIDE FINAL;
+    /// kOfxStatErrValue if the value is not one of the enums
+    virtual OfxStatus set(const char*) OVERRIDE FINAL;
+    /// as set(const char*): StrChoice params don't animate
+    virtual OfxStatus set(OfxTime time, const char*) OVERRIDE FINAL;
+
+    /// implementation of var args function
+    /// The char* is only valid until the next API call on this param in the same thread.
+    virtual OfxStatus getV(va_list arg) OVERRIDE FINAL;
+
+    /// implementation of var args function
+    /// The char* is only valid until the next API call on this param in the same thread.
+    virtual OfxStatus getV(OfxTime time, va_list arg) OVERRIDE FINAL;
+
+    // callback which should set enabled state as appropriate
+    virtual void setEnabled() OVERRIDE FINAL;
+    virtual void setLabel() OVERRIDE FINAL;
+
+    // callback which should set secret state as appropriate
+    virtual void setSecret() OVERRIDE FINAL;
+    virtual void setHint() OVERRIDE FINAL;
+    virtual void setDefault() OVERRIDE FINAL;
+    // callback which should set option as appropriate
+    virtual void setOption(int num) OVERRIDE FINAL;
+
+    /// callback which should set evaluate on change
+    virtual void setEvaluateOnChange() OVERRIDE FINAL;
+
+    virtual void setInViewportSecret() OVERRIDE FINAL;
+
+    virtual void setInViewportLabel() OVERRIDE FINAL;
+
+    /// overridden from StrChoiceInstance: also kOfxParamPropChoiceOrder (setDisplayOrder())
+    virtual void notify(const std::string &name, bool single, int num) OFX_EXCEPTION_SPEC OVERRIDE FINAL;
+
+    virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
+    virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
+
+private:
+
+    virtual bool hasDoubleMinMaxProps() const OVERRIDE FINAL { return false; }
+
+    // kOfxParamPropChoiceOrder changed: the order of the options in the menu
+    void setDisplayOrder();
+
+    // the index of the option whose enum is value, -1 if there is none
+    int optionIndex(const std::string& value) const;
+
+    // the index of the default option in options (or in the entries of the knob): the enum
+    // kOfxParamPropDefault, else the first option
+    int defaultOptionIndex(const std::vector<ChoiceOption>& options) const;
+    int defaultOptionIndex() const;
+
+    std::unique_ptr<OfxStrChoiceInstancePrivate> _imp;
+};
+
 class OfxRGBAInstance
     :  public OfxParamToKnob, public OFX::Host::Param::RGBAInstance
 {

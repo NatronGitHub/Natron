@@ -532,6 +532,8 @@ public:
 
     std::vector<ChoiceOption> getEntries_mt_safe() const;
     ChoiceOption getEntry(int v) const;
+    /// the ID of the entry index, empty if there is no such entry
+    std::string getEntryID_mt_safe(int index) const;
     ChoiceOption getActiveEntry();
     void setActiveEntry(const ChoiceOption& opt);
 
@@ -549,7 +551,33 @@ public:
     std::string getHintToolTipFull() const;
 
     static int choiceMatch(const std::string& choice, const std::vector<ChoiceOption>& entries, ChoiceOption* matchedEntry);
-    
+
+    /**
+     * @brief How a loaded project finds the saved option (choiceRestorationId(), choiceRestoration()).
+     **/
+    enum OptionRestorationEnum
+    {
+        // choiceMatch(): the option ID, else a similar ID or label. An option that is not found stays the
+        // active entry (shown as missing in the menu) until the options are refreshed.
+        eOptionRestorationMatch = 0,
+        // OFX StrChoice params, whose value is the option ID: "finds and selects the option with the
+        // corresponding enum". An option that is not found (removed by the plug-in) gives the default
+        // value, as the spec recommends. The default is not loaded from the project: it is an option index.
+        // setValueFromID() and the options set again (populateChoices()...) also match the exact ID only;
+        // an option that the plug-in removed from an instance gives the default too.
+        eOptionRestorationExactIDOrDefault
+    };
+
+    void setOptionRestoration(OptionRestorationEnum restoration)
+    {
+        _optionRestoration = restoration;
+    }
+
+    OptionRestorationEnum getOptionRestoration() const
+    {
+        return _optionRestoration;
+    }
+
     int choiceRestorationId(KnobChoice* knob, const std::string& optionID);
     void choiceRestoration(KnobChoice* knob, const std::string& optionID, int id);
 
@@ -597,6 +625,10 @@ private:
 
     void findAndSetOldChoice();
 
+    // the index of the entry that matches optionID (choiceMatch(), or the exact ID for
+    // eOptionRestorationExactIDOrDefault), -1 if none; the caller holds _entriesMutex
+    int matchOption_locked(const std::string& optionID, ChoiceOption* matchedEntry) const;
+
     // displayOrder if it is a permutation of 0..nEntries-1, else an empty vector (the natural order)
     static std::vector<int> validDisplayOrder(const std::vector<int>& displayOrder, std::size_t nEntries);
 
@@ -617,6 +649,7 @@ private:
     bool _addNewChoice;
     static const std::string _typeNameStr;
     bool _isCascading;
+    OptionRestorationEnum _optionRestoration; // set when the knob is created
 };
 
 /******************************KnobSeparator**************************************/
