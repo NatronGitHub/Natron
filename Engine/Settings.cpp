@@ -253,7 +253,7 @@ Settings::initializeKnobsGeneral()
     assert(visibleHostEntries.size() == (int)eKnownHostNameCatalyst);
     visibleHostEntries.push_back(ChoiceOption("com.sony.Catalyst.Edit", "Sony Catalyst Edit", ""));
     assert(visibleHostEntries.size() == (int)eKnownHostNameVegas);
-    visibleHostEntries.push_back(ChoiceOption("com.sonycreativesoftware.vegas", "Sony Vegas", ""));
+    visibleHostEntries.push_back(ChoiceOption("com.vegascreativesoftware.vegas", "VEGAS Pro", ""));
     assert(visibleHostEntries.size() == (int)eKnownHostNameToxik);
     visibleHostEntries.push_back(ChoiceOption("Autodesk Toxik", "Toxik", ""));
     assert(visibleHostEntries.size() == (int)eKnownHostNameScratch);
@@ -2100,6 +2100,10 @@ Settings::restoreKnobsFromSettings(const std::vector<KnobI*>& knobs)
                     if (isChoice) {
                         ///For choices,serialize the choice name instead
                         std::string value = settings.value(qDimName).toString().toStdString();
+                        // Settings saved before 2.6 name the VEGAS host entry by its old Sony ID.
+                        if ( (value == "com.sonycreativesoftware.vegas") && (isChoice == _hostName.get()) ) {
+                            value = "com.vegascreativesoftware.vegas";
+                        }
                         const std::vector<ChoiceOption> entries = isChoice->getEntries_mt_safe();
                         int found = -1;
 

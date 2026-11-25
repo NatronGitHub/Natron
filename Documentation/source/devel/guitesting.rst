@@ -280,7 +280,10 @@ synthetic Qt events to the widgets; the real mouse cursor and the keyboard are n
    A press, and a key sent with :func:`sendKey`, first send *FocusOut* to the previous target and
    *FocusIn* to the new one, as a click or typing would: the window is not activated (no focus is
    taken from the user), but the widgets react as usual, e.g. the node graph becomes the last focused
-   graph, which pasting and rendering with *F7* use.
+   graph, which pasting and rendering with *F7* use. A press in a window that is not active also sends
+   it a *WindowActivate* event, once, as the activation by a real click would, without activating the
+   window: e.g. the node graph's scene becomes active: its items are only active
+   (``QGraphicsItem::isActive()``) in an active scene, and the node graph only picks active items.
 
 .. function:: drag(target, x0, y0, x1, y1, steps=10, button='left', modifiers='')
 
