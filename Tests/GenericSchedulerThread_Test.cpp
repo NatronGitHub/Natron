@@ -41,7 +41,7 @@ NATRON_NAMESPACE_USING
 namespace {
 
 // Works until it is aborted, then takes a while to finish, like a render that must clean up.
-class SlowAbortThread
+class SlowAbortThread final
     : public GenericSchedulerThread
 {
 public:
