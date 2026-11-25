@@ -29,9 +29,7 @@ on:
     tags:
     - 'v*'
 
-# A new manual run cancels the previous manual run of the same branch; scheduled runs, tag pushes
-# and manual runs on a tag are never cancelled. Each event has its own group, so that a manual run
-# doesn't cancel a scheduled or tag-push run either.
+# Only a manual run on a branch cancels the previous manual run of that branch (one group per event).
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'workflow_dispatch' && !startsWith(github.ref, 'refs/tags/') }}
