@@ -58,22 +58,15 @@ const char* const kCounters[] = {
 };
 
 class OfxInstanceChangedTest
-    : public ::testing::Test
+    : public NatronTestPlugin::ParamsNodeTest
 {
 protected:
-    NodePtr _node;
     EffectInstancePtr _effect;
     std::map<std::string, int> _start;
 
     virtual void SetUp() OVERRIDE
     {
-        if ( !NatronTestPlugin::isAvailable(kNatronTestPluginParams) ) {
-            return;
-        }
-        AppInstancePtr app = appPTR->getTopLevelInstance();
-        CreateNodeArgs args( kNatronTestPluginParams, app->getProject() );
-        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-        _node = app->createNode(args);
+        ParamsNodeTest::SetUp();
         if (_node) {
             _effect = _node->getEffectInstance();
         }
@@ -83,21 +76,7 @@ protected:
     virtual void TearDown() OVERRIDE
     {
         _effect.reset();
-        if (_node) {
-            _node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
-            _node.reset();
-        }
-    }
-
-    bool skipped()
-    {
-        if (!_node) {
-            NatronTestPlugin::reportMissing(kNatronTestPluginParams);
-
-            return true;
-        }
-
-        return false;
+        ParamsNodeTest::TearDown();
     }
 
     void resetCounters()
