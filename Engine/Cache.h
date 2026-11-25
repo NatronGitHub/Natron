@@ -2066,7 +2066,7 @@ private:
             entriesToBeDeleted.push_back(evicted.second);
         } else {
 
-            assert( evicted.second.unique() );
+            assert(evicted.second.use_count() == 1);
 
             ///This is EXPENSIVE! it calls msync
             evicted.second->deallocate();
