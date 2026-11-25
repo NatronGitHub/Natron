@@ -55,6 +55,7 @@
 #include "Engine/LibraryBinary.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
+#include "Engine/ParallelRenderArgs.h"
 #include "Engine/Project.h"
 #include "Engine/StringAnimationManager.h"
 #include "Engine/TLSHolder.h"
@@ -4444,6 +4445,40 @@ KnobHelper::getCurrentView() const
     KnobHolder* holder = getHolder();
 
     return ( holder && holder->getApp() ) ? holder->getCurrentView() : ViewIdx(0);
+}
+
+std::optional<KnobHelper::ExpressionResultKey>
+KnobHelper::getExpressionResultKey(double time,
+                                   ViewIdx view) const
+{
+    const EffectInstance* effect = dynamic_cast<const EffectInstance*>( getHolder() );
+    AppInstancePtr app = effect ? effect->getApp() : AppInstancePtr();
+
+    if (!app) {
+        return std::nullopt;
+    }
+
+    ExpressionResultKey key;
+    key.time = time;
+    key.view = view;
+    key.holderTime = effect->getCurrentTime();
+    key.holderView = effect->getCurrentView();
+    // The other nodes of the render have the same render args (ParallelRenderArgsSetter), and get() reads them at
+    // that time and view (EffectInstance::getCurrentTime()); outside a render, at the timeline's frame and view 0
+    // (see ExpressionResultKey for the exceptions).
+    ParallelRenderArgsPtr renderArgs = effect->getParallelRenderArgsTLS();
+    if (renderArgs) {
+        key.renderTime = renderArgs->time;
+        key.renderView = renderArgs->view;
+    } else {
+        key.renderTime = app->getTimeLine()->currentFrame();
+        key.renderView = ViewIdx(0);
+        if (time != key.renderTime) {
+            return std::nullopt;
+        }
+    }
+
+    return key;
 }
 
 double

@@ -20,6 +20,8 @@
 // render args (ParallelRenderArgs) too, so that during the render their parameters are read at the time of the
 // render, not at the time of the timeline. The loop that added them inserted the node itself instead of each
 // dependency, so they never got render args (#1564).
+// The results of these expressions are cached by the frame at which get() reads the other nodes, too: the
+// timeline's frame outside a render, the frame of the render during a render (#1578).
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -36,6 +38,7 @@
 
 #include <gtest/gtest.h>
 
+#include "Engine/AppManager.h" // NATRON_PYTHON_NAMESPACE::interpretPythonScript, getMainModule(), PythonGILLocker
 #include "Engine/Curve.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/NodeGroup.h"
@@ -89,6 +92,9 @@ protected:
         }
         _nodes.clear();
         seek(_savedTimelineTime);
+        // the evaluation counter of ExpressionResultIsCachedPerContext, also if it failed
+        std::string error;
+        (void)NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("globals().pop('natronTest1578Count', None)\n", &error, 0);
     }
 
     bool skipped(const char* pluginID = kNatronTestPluginParams)
@@ -173,9 +179,10 @@ protected:
     }
 
     static ParallelRenderArgsSetter* makeRenderArgs(const NodePtr& root,
-                                                    const AbortableRenderInfoPtr& abortInfo)
+                                                    const AbortableRenderInfoPtr& abortInfo,
+                                                    double time = kRenderTime)
     {
-        return new ParallelRenderArgsSetter( kRenderTime, ViewIdx(0),
+        return new ParallelRenderArgsSetter( time, ViewIdx(0),
                                              true, // isRenderUserInteraction
                                              false, // isSequential
                                              abortInfo,
@@ -450,4 +457,132 @@ TEST_F(ExpressionDepsRenderArgsTest, RenderOnDisk)
     EXPECT_EQ( 1, NatronTestPlugin::counter("ParamRoD.renderWidth.50") - width50 );
     EXPECT_FALSE( bool( renderArgs(gen) ) );
     EXPECT_FALSE( bool( renderArgs(b) ) );
+}
+
+// #1578: a.doubleTo = b.doubleFrom.get() depends on the frame b is read at, not only on the frame a.doubleTo is
+// evaluated at. A result computed outside a render (b read at the timeline's frame) is not used by a render of the
+// same frame (b read at the frame of the render), and the other way round.
+TEST_F(ExpressionDepsRenderArgsTest, ExpressionResultOutsideRenderIsNotUsedByRender)
+{
+    if ( skipped() ) {
+        return;
+    }
+    NodePtr a = createNode();
+    NodePtr b = createNode();
+    ASSERT_TRUE(a && b);
+    setKeys( knob(b, "doubleFrom") );
+    ASSERT_TRUE( setExpressionReading(a, "doubleTo", b, "doubleFrom") );
+    KnobDoublePtr aTo = knob(a, "doubleTo");
+
+    // e.g. the curve editor, or getValueAtTime() from Python: b is read at the timeline's frame
+    EXPECT_EQ( 10., aTo->getValueAtTime(kRenderTime) );
+    EXPECT_EQ( 10., aTo->getValue() );
+    {
+        AbortableRenderInfoPtr abortInfo = makeAbortInfo();
+        std::unique_ptr<ParallelRenderArgsSetter> setter( makeRenderArgs(a, abortInfo) );
+        EXPECT_EQ( 50., aTo->getValueAtTime(kRenderTime) ) << "the render used a result computed at the timeline's frame";
+        EXPECT_EQ( 50., aTo->getValue() ) << "the render used a result computed at the timeline's frame";
+    }
+    EXPECT_EQ( 10., aTo->getValueAtTime(kRenderTime) );
+    EXPECT_EQ( 10., aTo->getValue() );
+}
+
+TEST_F(ExpressionDepsRenderArgsTest, ExpressionResultOfRenderIsNotUsedOutsideRender)
+{
+    if ( skipped() ) {
+        return;
+    }
+    NodePtr a = createNode();
+    NodePtr b = createNode();
+    ASSERT_TRUE(a && b);
+    setKeys( knob(b, "doubleFrom") );
+    ASSERT_TRUE( setExpressionReading(a, "doubleTo", b, "doubleFrom") );
+    KnobDoublePtr aTo = knob(a, "doubleTo");
+
+    {
+        AbortableRenderInfoPtr abortInfo = makeAbortInfo();
+        std::unique_ptr<ParallelRenderArgsSetter> setter( makeRenderArgs(a, abortInfo) );
+        EXPECT_EQ( 50., aTo->getValueAtTime(kRenderTime) );
+        // evaluated at another frame during the render (e.g. motion blur): b is still read at the frame of the render
+        EXPECT_EQ( 50., aTo->getValueAtTime(kTimelineTime) );
+    }
+    EXPECT_EQ( 10., aTo->getValueAtTime(kRenderTime) ) << "a result of the render was used outside the render";
+    EXPECT_EQ( 10., aTo->getValueAtTime(kTimelineTime) ) << "a result of the render was used outside the render";
+    EXPECT_EQ( 10., aTo->getValue() ) << "a result of the render was used outside the render";
+}
+
+// Two renders of different frames evaluate a.doubleTo at the same frame; then the timeline moves.
+TEST_F(ExpressionDepsRenderArgsTest, ExpressionResultOfRenderIsNotUsedByRenderOfAnotherFrame)
+{
+    if ( skipped() ) {
+        return;
+    }
+    NodePtr a = createNode();
+    NodePtr b = createNode();
+    ASSERT_TRUE(a && b);
+    setKeys( knob(b, "doubleFrom") );
+    ASSERT_TRUE( setExpressionReading(a, "doubleTo", b, "doubleFrom") );
+    KnobDoublePtr aTo = knob(a, "doubleTo");
+    const double otherTime = 3.;
+
+    {
+        AbortableRenderInfoPtr abortInfo = makeAbortInfo();
+        std::unique_ptr<ParallelRenderArgsSetter> setter( makeRenderArgs(a, abortInfo, kRenderTime) );
+        EXPECT_EQ( 50., aTo->getValueAtTime(otherTime) );
+    }
+    {
+        AbortableRenderInfoPtr abortInfo = makeAbortInfo();
+        std::unique_ptr<ParallelRenderArgsSetter> setter( makeRenderArgs(a, abortInfo, kTimelineTime) );
+        EXPECT_EQ( 10., aTo->getValueAtTime(otherTime) ) << "the render used a result of the render of another frame";
+    }
+    // outside a render, at the timeline's frame, then after a seek
+    EXPECT_EQ( 10., aTo->getValueAtTime(kTimelineTime) );
+    seek(kRenderTime);
+    EXPECT_EQ( 50., aTo->getValueAtTime(kTimelineTime) ) << "a result computed before the timeline moved was used";
+}
+
+// The results are still cached, in a render and outside a render at the timeline's frame: the expression counts its
+// evaluations in a Python global.
+TEST_F(ExpressionDepsRenderArgsTest, ExpressionResultIsCachedPerContext)
+{
+    if ( skipped() ) {
+        return;
+    }
+    NodePtr a = createNode();
+    NodePtr b = createNode();
+    ASSERT_TRUE(a && b);
+    setKeys( knob(b, "doubleFrom") );
+    KnobDoublePtr aTo = knob(a, "doubleTo");
+    ASSERT_TRUE( bool(aTo) );
+    std::string err;
+    ASSERT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("natronTest1578Count = 0\n", &err, 0) ) << err;
+    aTo->setExpression(0, "global natronTest1578Count\nnatronTest1578Count += 1\nret = " + b->getScriptName_mt_safe() + ".doubleFrom.get()",
+                       true /*hasRetVariable*/, false /*failIfInvalid*/);
+    ASSERT_FALSE( aTo->getExpression(0).empty() );
+    // setExpression() evaluated it once to check it (directly, without the cache)
+    ASSERT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("natronTest1578Count = 0\n", &err, 0) ) << err;
+    // the value of the counter in __main__, where the expression's function has its globals
+    const auto evaluations = []() {
+        PythonGILLocker pgl;
+        PyObject* mainDict = PyModule_GetDict( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::getMainModule() );
+        PyObject* count = mainDict ? PyDict_GetItemString(mainDict, "natronTest1578Count") : NULL; // borrowed
+
+        return ( count && PyLong_Check(count) ) ? (int)PyLong_AsLong(count) : -1;
+    };
+
+    EXPECT_EQ( 10., aTo->getValue() );
+    EXPECT_EQ( 10., aTo->getValueAtTime(kTimelineTime) );
+    EXPECT_EQ( 1, evaluations() ) << "the result at the timeline's frame was not cached";
+    {
+        AbortableRenderInfoPtr abortInfo = makeAbortInfo();
+        std::unique_ptr<ParallelRenderArgsSetter> setter( makeRenderArgs(a, abortInfo) );
+        EXPECT_EQ( 50., aTo->getValueAtTime(kRenderTime) );
+        EXPECT_EQ( 50., aTo->getValueAtTime(kRenderTime) );
+        EXPECT_EQ( 50., aTo->getValueAtTime(kTimelineTime) );
+        EXPECT_EQ( 50., aTo->getValueAtTime(kTimelineTime) );
+        EXPECT_EQ( 3, evaluations() ) << "the results of the render were not cached";
+    }
+    EXPECT_EQ( 10., aTo->getValue() );
+    EXPECT_EQ( 3, evaluations() ) << "the result at the timeline's frame was not cached";
+    aTo->clearExpression(0, true);
 }

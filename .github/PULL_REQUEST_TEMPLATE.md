@@ -31,3 +31,17 @@ Thanks for submitting a pull request! Please provide enough information so that 
 **Futher details of this pull request**
 
 [Your answer]
+
+### CHANGELOG
+
+<!-- Don't edit CHANGELOG.md. List here the lines for it, each under its
+heading (New features:, Known issues:, Changes:, Plugins:), starting with the
+component (Python:, Viewer:, Node graph:, ...) and written for users; or write
+"none" if users won't notice the change (refactoring, tests, CI, docs only).
+A line without a #NNN reference gets this PR's number. Keep this section last.
+Example:
+
+Changes:
+- Viewer: autocontrast works in the Matte display mode.
+-->
+
