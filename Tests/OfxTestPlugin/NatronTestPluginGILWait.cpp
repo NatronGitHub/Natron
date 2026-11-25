@@ -41,11 +41,6 @@
 
 #include "NatronTestPluginRegistry.h"
 
-extern "C" {
-// NatronTestPlugin.cpp
-OfxExport int NatronTestPluginGetCounter(const char* name);
-}
-
 namespace {
 OfxHost* gHost = 0;
 const OfxPropertySuiteV1* gPropSuite = 0;
@@ -180,10 +175,10 @@ sourcePluginMain(const char* action,
         return (stat == kOfxStatOK) ? defineParam(effect, kOfxParamTypeDouble, "value") : stat;
     }
     if (std::strcmp(action, kOfxImageEffectActionRender) == 0) {
-        if (NatronTestPluginGetCounter("GILWait.holdRender") != 0) {
-            natronTestIncrementCounter("GILWait.holdRender", -NatronTestPluginGetCounter("GILWait.holdRender"));
+        // only one render holds: the counter is tested and cleared in one step
+        if (natronTestExchangeCounter("GILWait.holdRender", 0) != 0) {
             natronTestIncrementCounter("GILWait.inRender");
-            for (int i = 0; i < 2000 && NatronTestPluginGetCounter("GILWait.go") == 0; ++i) {
+            for (int i = 0; i < 2000 && natronTestGetCounter("GILWait.go") == 0; ++i) {
                 std::this_thread::sleep_for( std::chrono::milliseconds(10) );
             }
         }
@@ -265,7 +260,7 @@ analysisPluginMain(const char* action,
         } else if ( name && (std::strcmp(name, "threads") == 0) ) {
             unsigned int nCPUs = 0;
             gThreadSuite->multiThreadNumCPUs(&nCPUs);
-            natronTestIncrementCounter("GILWait.numCPUs", (int)nCPUs - NatronTestPluginGetCounter("GILWait.numCPUs"));
+            natronTestSetCounter("GILWait.numCPUs", (int)nCPUs);
             ThreadArgs args = { effect, std::this_thread::get_id() };
             gThreadSuite->multiThread(readValueThread, 2, &args);
         }
