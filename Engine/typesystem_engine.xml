@@ -71,9 +71,30 @@
                 return %out;
             </native-to-target>
             <target-to-native>
+                <!--The generated check (Shiboken::Conversions::convertiblePairTypes) accepts any
+                    sequence of 2 items of the right types, and the call raises TypeError otherwise.
+                    %in may be neither a tuple nor a list: read it with PySequence_GetItem, not
+                    PySequence_Fast_GET_ITEM (#1811). The NULL checks are defensive (the check has
+                    already read both items): on error, the exception is set and the caller checks
+                    PyErr_Occurred(). A str of 2 characters is a sequence of 2 strings, so the
+                    generated check accepts it as a pair of strings, but it is almost certainly a
+                    mistake (e.g. "de" for ("de", "")): reject it with TypeError here. A bytes is
+                    a sequence of ints, rejected the same way for pairs of integer types. -->
                 <add-conversion type="PySequence">
-                    %out.first = %CONVERTTOCPP[%OUTTYPE_0](PySequence_Fast_GET_ITEM(%in, 0));
-                    %out.second = %CONVERTTOCPP[%OUTTYPE_1](PySequence_Fast_GET_ITEM(%in, 1));
+                    if ( PyUnicode_Check(%in) || PyBytes_Check(%in) ) {
+                        PyErr_SetString(PyExc_TypeError, "a pair must be a sequence of 2 items, not a string");
+                        return;
+                    }
+                    Shiboken::AutoDecRef pyFirst( PySequence_GetItem(%in, 0) );
+                    if ( pyFirst.isNull() ) {
+                        return;
+                    }
+                    Shiboken::AutoDecRef pySecond( PySequence_GetItem(%in, 1) );
+                    if ( pySecond.isNull() ) {
+                        return;
+                    }
+                    %out.first = %CONVERTTOCPP[%OUTTYPE_0](pyFirst.object());
+                    %out.second = %CONVERTTOCPP[%OUTTYPE_1](pySecond.object());
                 </add-conversion>
             </target-to-native>
         </conversion-rule>
@@ -92,7 +113,13 @@
     <template name="pyListToStdList">
         for (int i = 0; i &lt; PySequence_Size(%in); i++) {
         Shiboken::AutoDecRef pyItem(PySequence_GetItem(%in, i));
+        if ( pyItem.isNull() ) {
+            break; // __getitem__ raised after the check passed: the exception is set
+        }
         %OUTTYPE_0 cppItem = %CONVERTTOCPP[%OUTTYPE_0](pyItem);
+        if ( PyErr_Occurred() ) {
+            break; // the item conversion raised (e.g. a str given as a pair): stop calling the C-API
+        }
         %out.push_back(cppItem);
         }
     </template>
@@ -111,7 +138,13 @@
         %out.reserve(vectorSize);
         for (int idx = 0; idx &lt; vectorSize; ++idx) {
         Shiboken::AutoDecRef pyItem(PySequence_GetItem(%in, idx));
+        if ( pyItem.isNull() ) {
+            break; // __getitem__ raised after the check passed: the exception is set
+        }
         %OUTTYPE_0 cppItem = %CONVERTTOCPP[%OUTTYPE_0](pyItem);
+        if ( PyErr_Occurred() ) {
+            break; // the item conversion raised (e.g. a str given as a pair): stop calling the C-API
+        }
         %out.push_back(cppItem);
         }
     </template>
