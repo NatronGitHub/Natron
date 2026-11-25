@@ -162,6 +162,27 @@ TEST_F(OfxParamAnimatingTest, OtherDimensions)
     EXPECT_EQ( 0, isAnimating("double2DTo") );
 }
 
+// The position and the size of a Natron rectangle are one knob: each only reports the keyframes of its
+// own two dimensions (the integer rectangle reported those of the whole knob).
+TEST_F(OfxParamAnimatingTest, Rectangles)
+{
+    if ( skipped() ) {
+        return;
+    }
+    KnobIntPtr i = knob<KnobInt>("intRect");
+    KnobDoublePtr d = knob<KnobDouble>("doubleRect");
+    ASSERT_TRUE(i && d);
+
+    i->setValueAtTime(1., 1, ViewSpec::all(), 3);
+    i->setValueAtTime(5., 2, ViewSpec::all(), 3);
+    d->setValueAtTime(1., 1., ViewSpec::all(), 3);
+    d->setValueAtTime(5., 2., ViewSpec::all(), 3);
+    EXPECT_EQ( 1, isAnimating("intRect_size") );
+    EXPECT_EQ( 0, isAnimating("intRect_position") );
+    EXPECT_EQ( 1, isAnimating("doubleRect_size") );
+    EXPECT_EQ( 0, isAnimating("doubleRect_position") );
+}
+
 // an expression makes the value non-constant, but a value change doesn't add a keyframe
 TEST_F(OfxParamAnimatingTest, Expression)
 {

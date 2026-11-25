@@ -340,3 +340,26 @@ TEST_F(OfxParamCopyTest, DifferentTypes)
     EXPECT_EQ( kOfxStatErrBadHandle, paramCopy("double2DTo", "intFrom", 0., NULL) );
     EXPECT_EQ( 1., double2D->getValue(0) );
 }
+
+// The position and the size of a Natron rectangle (kNatronOfxParamPropTypeRectangle) are two parameters on
+// the dimensions 0-1 and 2-3 of one knob: paramCopy(size, position) copies the position to the size. The
+// integer rectangle copied the whole knob onto itself (the dimensions were lost when paramCopy was rewritten).
+TEST_F(OfxParamCopyTest, Rectangles)
+{
+    if ( skipped() ) {
+        return;
+    }
+    for (const char* rect : { "intRect", "doubleRect" }) {
+        const std::string name(rect);
+        KnobIPtr k = knob(name);
+        ASSERT_TRUE( k && (k->getDimension() == 4) ) << name;
+        for (int dim = 0; dim < 4; ++dim) {
+            setValue(k, dim, dim < 2 ? 1 : 2, 1., false); // position 1+dim(+0.5), size 2+dim(+0.5)
+        }
+        const std::string position = valueAt(k, 0, 1.) + ' ' + valueAt(k, 1, 1.);
+
+        EXPECT_EQ( kOfxStatOK, paramCopy(name + "_size", name + "_position", 0., NULL) ) << name;
+        EXPECT_EQ( position, valueAt(k, 2, 1.) + ' ' + valueAt(k, 3, 1.) ) << name;
+        EXPECT_EQ( position, valueAt(k, 0, 1.) + ' ' + valueAt(k, 1, 1.) ) << name;
+    }
+}
