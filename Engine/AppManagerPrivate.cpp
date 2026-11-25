@@ -548,7 +548,6 @@ restoreCache(AppManagerPrivate* p,
         case eRestoreFileStatusRead:
             break;
         case eRestoreFileStatusNotOpened:
-
             return;
         case eRestoreFileStatusOtherVersion:
             // Only load caches with the same version, otherwise wipe it!
