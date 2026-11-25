@@ -1737,6 +1737,13 @@ keyframeTypeToPython(KeyframeTypeEnum type)
     return QString::fromUtf8(NATRON_ENGINE_PYTHON_MODULE_NAME ".Natron.KeyframeTypeEnum.") + QString::fromUtf8(name);
 }
 
+// A free or broken keyframe keeps its derivatives (Curve::evaluateCurveChanged() doesn't compute them)
+static bool
+keepsOwnDerivatives(KeyframeTypeEnum type)
+{
+    return (type == eKeyframeTypeFree) || (type == eKeyframeTypeBroken);
+}
+
 // The keyframes of curve with the derivatives that Natron computes for them (Curve::evaluateCurveChanged()),
 // which a script that only sets the keyframes gets: a keyframe whose derivatives differ (free or broken, or computed
 // by an older Natron) must get its own.
@@ -1748,8 +1755,8 @@ keyFramesWithComputedDerivatives(const Curve& curve)
 
     computed.clearKeyFrames();
     for (KeyFrameSet::const_iterator k = keys.begin(); k != keys.end(); ++k) {
-        // a free or broken keyframe keeps its derivatives, which its neighbours' depend on
-        const bool keepsDerivatives = (k->getInterpolation() == eKeyframeTypeFree) || (k->getInterpolation() == eKeyframeTypeBroken);
+        // its neighbours' derivatives depend on them
+        const bool keepsDerivatives = keepsOwnDerivatives( k->getInterpolation() );
         computed.addKeyFrame( KeyFrame( k->getTime(), k->getValue(), keepsDerivatives ? k->getLeftDerivative() : 0.,
                                         keepsDerivatives ? k->getRightDerivative() : 0., k->getInterpolation() ) );
     }
@@ -1761,7 +1768,7 @@ static bool
 hasOwnDerivatives(const KeyFrame& key,
                   const KeyFrame& computed)
 {
-    return (key.getInterpolation() == eKeyframeTypeFree) || (key.getInterpolation() == eKeyframeTypeBroken) ||
+    return keepsOwnDerivatives( key.getInterpolation() ) ||
            ( key.getLeftDerivative() != computed.getLeftDerivative() ) || ( key.getRightDerivative() != computed.getRightDerivative() );
 }
 
