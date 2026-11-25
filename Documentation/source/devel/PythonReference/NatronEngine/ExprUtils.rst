@@ -10,6 +10,12 @@ Synopsis
 Various functions useful for expressions. Most noise functions have been taken from the
 Walt Disney Animation Studio SeExpr library.
 
+The point *p* (and the *period* of :meth:`pnoise<NatronEngine.ExprUtils.pnoise>`) may be a
+:class:`Double2DTuple<NatronEngine.Double2DTuple>`, a :class:`Double3DTuple<NatronEngine.Double3DTuple>`,
+a :class:`ColorTuple<NatronEngine.ColorTuple>`, or any sequence of numbers (a tuple, a list...) with the
+number of items the function needs. Another number of items, or an item that is not a number,
+raises :class:`TypeError`.
+
 Functions
 ^^^^^^^^^
 

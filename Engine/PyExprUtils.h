@@ -80,7 +80,7 @@ public:
     static double noise(const ColorTuple& p);
 
     // signed noise w/ range -1 to 1 formed with original perlin noise at location (C2 interpolant)
-    double snoise(const Double3DTuple& p);
+    static double snoise(const Double3DTuple& p);
 
     // vector noise formed with original perlin noise at location (C2 interpolant)
     static Double3DTuple vnoise(const Double3DTuple& p);
