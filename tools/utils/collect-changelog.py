@@ -347,19 +347,13 @@ def _parse_section(name: str, body: Sequence[str]) -> _Section:
             if items:
                 gaps.append(blank)
             items.append(_Item([line]))
-        elif not line.strip():
-            if not items:
-                preamble.append(line)
-        elif items and line.startswith('#'):
-            list_only = False
-            items[-1].lines.extend(['', line] if blank else [line])
-        elif items and (not blank or line[:1] in (' ', '\t')):
-            items[-1].lines.extend(['', line] if blank else [line])
-        elif items:
-            list_only = False
-            items[-1].lines.extend(['', line] if blank else [line])
-        else:
+        elif not items:
             preamble.append(line)
+        elif line.strip():
+            # A "#" heading, or a paragraph after a blank line.
+            if line.startswith('#') or (blank and line[:1] not in (' ', '\t')):
+                list_only = False
+            items[-1].lines.extend(['', line] if blank else [line])
         blank = not line.strip()
     while preamble and not preamble[0].strip():
         preamble.pop(0)
@@ -532,8 +526,12 @@ def collect(prs: Sequence[PullRequest], changelog: str,
     problems.extend(Problem('CHANGELOG.md', f'section "{name}" not regrouped '
                             '(it has sub-headings or paragraphs); new lines '
                             'added at its end') for name in kept)
-    for heading, text in missing:
-        pr = next(p for h, t, p in entries if (h, t) == (heading, text))
+    # A line is missing when its heading is: report each PR of such a line,
+    # also when two PRs have the same line.
+    missing_headings = {heading.casefold() for heading, _ in missing}
+    for heading, text, pr in entries:
+        if heading.casefold() not in missing_headings:
+            continue
         problems.append(Problem(
             pr.label, f'heading "{heading}" is not a section of the topmost '
             f'version of CHANGELOG.md: {text}'))
