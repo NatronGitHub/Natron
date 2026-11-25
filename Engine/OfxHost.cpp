@@ -630,10 +630,23 @@ OfxHost::vmessage(const char* msgtype,
     } else if (type == kOfxMessageMessage) {
         Dialogs::informationDialog(NATRON_APPLICATION_NAME, message);
     } else if (type == kOfxMessageQuestion) {
-        if (Dialogs::questionDialog(NATRON_APPLICATION_NAME, message, false) == eStandardButtonYes) {
+        // As for a question posted on an effect (OfxImageEffectInstance::vmessage(), Node::question()): the user's
+        // reply, or an error if nobody can answer, in background mode (where Dialogs::questionDialog() answers yes)
+        // or from another thread: "It is an error to post a question message if the plugin is not in an
+        // interactive session" (ofxMessage.h).
+        if ( appPTR->isBackground() || ( QThread::currentThread() != qApp->thread() ) ) {
+            return kOfxStatFailed;
+        }
+        switch ( Dialogs::questionDialog(NATRON_APPLICATION_NAME, message, false) ) {
+        case eStandardButtonYes:
+
             return kOfxStatReplyYes;
-        } else {
+        case eStandardButtonNo:
+
             return kOfxStatReplyNo;
+        default:
+
+            return kOfxStatFailed;
         }
     } else {
         // not one of the kOfxMessage* types: "kOfxStatFailed - if the message could not be posted for

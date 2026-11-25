@@ -51,9 +51,9 @@ TEST(OfxQuestion, NoReplyIsNeverYes)
     ASSERT_TRUE( bool(node) );
 
     // "ask" posts the question on the thread that calls kOfxActionInstanceChanged (here, the main
-    // thread), "askFromThread" on a thread of the plug-in.
-    const char* buttons[] = { "ask", "askFromThread" };
-    for (int i = 0; i < 2; ++i) {
+    // thread), "askFromThread" on a thread of the plug-in, "askHost" on the host (a NULL handle).
+    const char* buttons[] = { "ask", "askFromThread", "askHost" };
+    for (int i = 0; i < 3; ++i) {
         const std::string prefix = std::string("Question.") + buttons[i];
         KnobButton* button = dynamic_cast<KnobButton*>( node->getKnobByName(buttons[i]).get() );
         ASSERT_TRUE(button != NULL) << buttons[i];
