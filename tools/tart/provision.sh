@@ -370,7 +370,8 @@ ports_https_source() {
     return 1
 }
 
-# Warn (only) if tools/MacPorts/check.sh says the overlay needs an update against this upstream
+# After step_sync (check.sh also compares /opt/MacPorts-Natron with the tree):
+# warn (only) if tools/MacPorts/check.sh says the overlay needs an update against this upstream
 # ports tree (exit status 1), or couldn't check it (2). $1: appended to the warning.
 overlay_check() {
     local rc=0
@@ -382,12 +383,12 @@ overlay_check() {
 
 step_overlay() {
     ports_https_source
-    overlay_check
     sudo mkdir -p /opt/MacPorts-Natron
     sudo chown "$(id -un):staff" /opt/MacPorts-Natron
     grep -q "^file:///opt/MacPorts-Natron" /opt/local/etc/macports/sources.conf ||
         sudo perl -0pi -e 's|^(\S+\s+\[default\])|file:///opt/MacPorts-Natron\n$1|m' /opt/local/etc/macports/sources.conf
     step_sync
+    overlay_check
     port file openimageio | grep -q '^/opt/MacPorts-Natron/' || { echo "overlay not used"; exit 1; }
 }
 
@@ -789,8 +790,8 @@ step_update() {
     # build for $macos_target, from source (also after a MacPorts upgrade)
     step_macports_conf
     ports_https_source
-    overlay_check "; reintegrate it on the host first"
     step_sync
+    overlay_check "; reintegrate it on the host first"
     # pinned ports first, so that their dependents are upgraded against the right versions
     step_pins
     local outdated
