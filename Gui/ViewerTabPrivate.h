@@ -203,6 +203,10 @@ struct ViewerTabPrivate
     ViewerTabPrivate(ViewerTab* publicInterface,
                      ViewerInstance* node);
 
+    // The channels of an item of the channels combo box (see ViewerTab's constructor), RGB for an invalid index
+    static DisplayChannelsEnum channelsForComboIndex(int index);
+    static int channelsComboItemCount();
+
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     // return the tronsform to apply to the overlay as a 3x3 homography in canonical coordinates
     bool getOverlayTransform(double time,
