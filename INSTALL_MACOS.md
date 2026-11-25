@@ -148,7 +148,7 @@ services | while read -r s; do sudo networksetup -setsocksfirewallproxy "$s" 127
 services | while read -r s; do sudo networksetup -setsocksfirewallproxystate "$s" off; done
 ```
 
-The `clt` step of `tools/tart/provision.sh` does this inside the VM, and checks that the default SDK is macOS 14's and that small C++17 and C++20 programs (concepts, ranges, `std::span`, `<=>`, `std::format`) build for macOS 14.0. (On a Mac of your own running macOS 14, `xcode-select --install` installs the newest Command Line Tools offered, 16.x, which is fine for development builds.)
+The `clt` step of `tools/tart/provision.sh` does this inside the VM, and checks that the default SDK is macOS 14's and that small C++17 and C++20 programs (concepts, ranges, `std::span`, `<=>`) build for macOS 14.0; it also reports whether `std::format` is usable. (On a Mac of your own running macOS 14, `xcode-select --install` installs the newest Command Line Tools offered, 16.x, which is fine for development builds.)
 
 If Apple stops offering the Command Line Tools 15.3 through `softwareupdate`, download "Command Line Tools for Xcode 15.3" from <https://developer.apple.com/download/all/> (this needs an Apple ID), copy the `.dmg` into the VM, and install it: `hdiutil attach Command_Line_Tools_for_Xcode_15.3.dmg`, then `sudo installer -pkg "/Volumes/Command Line Developer Tools/Command Line Tools.pkg" -target /`. The version is set by `NATRON_MACOS_CLT_VERSION` in `tools/jenkins/macos-release.sh`.
 
