@@ -74,6 +74,9 @@ struct OSGLContext_egl_dataPrivate
     PFNEGLCHOOSECONFIGPROC ChooseConfig;
     PFNEGLCREATECONTEXTPROC CreateContext;
     PFNEGLGETCURRENTCONTEXTPROC GetCurrentContext;
+    PFNEGLGETCURRENTSURFACEPROC GetCurrentSurface;
+    PFNEGLGETCURRENTDISPLAYPROC GetCurrentDisplay;
+    PFNEGLQUERYAPIPROC QueryAPI;
     PFNEGLDESTROYCONTEXTPROC DestroyContext;
     PFNEGLCREATEWINDOWSURFACEPROC CreateWindowSurface;
     PFNEGLDESTROYSURFACEPROC DestroySurface;
@@ -245,6 +248,9 @@ OSGLContext_wayland::initEGLData(OSGLContext_egl_data* eglInfo)
     eglInfo->_imp->ChooseConfig = (PFNEGLCHOOSECONFIGPROC)dlsym(eglInfo->_imp->handle, "eglChooseConfig");
     eglInfo->_imp->CreateContext = (PFNEGLCREATECONTEXTPROC)dlsym(eglInfo->_imp->handle, "eglCreateContext");
     eglInfo->_imp->GetCurrentContext = (PFNEGLGETCURRENTCONTEXTPROC)dlsym(eglInfo->_imp->handle, "eglGetCurrentContext");
+    eglInfo->_imp->GetCurrentSurface = (PFNEGLGETCURRENTSURFACEPROC)dlsym(eglInfo->_imp->handle, "eglGetCurrentSurface");
+    eglInfo->_imp->GetCurrentDisplay = (PFNEGLGETCURRENTDISPLAYPROC)dlsym(eglInfo->_imp->handle, "eglGetCurrentDisplay");
+    eglInfo->_imp->QueryAPI = (PFNEGLQUERYAPIPROC)dlsym(eglInfo->_imp->handle, "eglQueryAPI");
     eglInfo->_imp->DestroyContext = (PFNEGLDESTROYCONTEXTPROC)dlsym(eglInfo->_imp->handle, "eglDestroyContext");
     eglInfo->_imp->CreateWindowSurface = (PFNEGLCREATEWINDOWSURFACEPROC)dlsym(eglInfo->_imp->handle, "eglCreateWindowSurface");
     eglInfo->_imp->DestroySurface = (PFNEGLDESTROYSURFACEPROC)dlsym(eglInfo->_imp->handle, "eglDestroySurface");
@@ -620,6 +626,48 @@ OSGLContext_wayland::swapInterval(int interval)
     eglInfo->_imp->SwapInterval(eglInfo->_imp->dpy, interval);
 }
 
+namespace {
+// Makes the OpenGL context that is current in the calling thread when it is created (e.g. the context of a
+// QOpenGLWidget, on Qt's own EGL display), with its client API, current again when it is destroyed, or no context if
+// there was none, as OSGLContext_mac::getGPUInfos() and the ScopedGLContext of OSGLContext_win.cpp do (#1502).
+class CurrentEGLContextRestorer
+{
+public:
+    explicit CurrentEGLContextRestorer(const OSGLContext_egl_data* eglInfo)
+        : _eglInfo(eglInfo)
+        , _api( eglInfo->_imp->QueryAPI() )
+        , _display( eglInfo->_imp->GetCurrentDisplay() )
+        , _draw( eglInfo->_imp->GetCurrentSurface(EGL_DRAW) )
+        , _read( eglInfo->_imp->GetCurrentSurface(EGL_READ) )
+        , _context( eglInfo->_imp->GetCurrentContext() )
+    {
+    }
+
+    ~CurrentEGLContextRestorer()
+    {
+        _eglInfo->_imp->BindAPI(_api);
+        if ( (_context != EGL_NO_CONTEXT) && (_display != EGL_NO_DISPLAY) ) {
+            if ( !_eglInfo->_imp->MakeCurrent(_display, _draw, _read, _context) ) {
+                std::cerr << "EGL: could not make the previous OpenGL context current again" << std::endl;
+            }
+        } else {
+            _eglInfo->_imp->MakeCurrent(_eglInfo->_imp->dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+        }
+    }
+
+    CurrentEGLContextRestorer(const CurrentEGLContextRestorer&) = delete;
+    CurrentEGLContextRestorer& operator=(const CurrentEGLContextRestorer&) = delete;
+
+private:
+    const OSGLContext_egl_data* _eglInfo;
+    EGLenum _api;
+    EGLDisplay _display;
+    EGLSurface _draw;
+    EGLSurface _read;
+    EGLContext _context;
+};
+} // anonymous namespace
+
 void
 OSGLContext_wayland::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
 {
@@ -632,6 +680,8 @@ OSGLContext_wayland::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
     if (!eglInfo->_imp->dpy) {
         return;
     }
+    // the context made current below is destroyed before the restorer, which is declared first
+    CurrentEGLContextRestorer restorer(eglInfo);
 
     std::unique_ptr<OSGLContext_wayland> context;
     try {

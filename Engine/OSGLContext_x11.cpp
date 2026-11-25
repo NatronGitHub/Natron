@@ -117,6 +117,9 @@ typedef Bool (*PFNGLXQUERYVERSIONPROC)(Display*, int*, int*);
 typedef void (*PFNGLXDESTROYCONTEXTPROC)(Display*, GLXContext);
 typedef Bool (*PFNGLXMAKECURRENTPROC)(Display*, GLXDrawable, GLXContext);
 typedef GLXContext (*PFNGLXGETCURRENTCONTEXTPROC)();
+typedef GLXDrawable (*PFNGLXGETCURRENTDRAWABLEPROC)();
+typedef GLXDrawable (*PFNGLXGETCURRENTREADDRAWABLEPROC)();
+typedef Display* (*PFNGLXGETCURRENTDISPLAYPROC)();
 typedef void (*PFNGLXSWAPBUFFERSPROC)(Display*, GLXDrawable);
 typedef const char* (*PFNGLXQUERYEXTENSIONSSTRINGPROC)(Display*, int);
 typedef GLXFBConfig* (*PFNGLXGETFBCONFIGSPROC)(Display*, int, int*);
@@ -129,7 +132,7 @@ typedef GLXContext (*PFNGLXCREATECONTEXTATTRIBSARBPROC)(Display*, GLXFBConfig, G
 typedef XVisualInfo* (*PFNGLXGETVISUALFROMFBCONFIGPROC)(Display*, GLXFBConfig);
 typedef GLXWindow (*PFNGLXCREATEWINDOWPROC)(Display*, GLXFBConfig, Window, const int*);
 typedef void (*PFNGLXDESTROYWINDOWPROC)(Display*, GLXWindow);
-typedef void (*PFNGLXMAKECONTEXTCURRENTPROC)(Display*, GLXDrawable, GLXDrawable, GLXContext);
+typedef Bool (*PFNGLXMAKECONTEXTCURRENTPROC)(Display*, GLXDrawable, GLXDrawable, GLXContext);
 typedef Bool (*PFNGLXISDIRECT)(Display*, GLXContext);
 
 // https://www.opengl.org/registry/specs/MESA/glx_query_renderer.txt
@@ -174,6 +177,9 @@ struct OSGLContext_glx_dataPrivate
     PFNGLXDESTROYCONTEXTPROC DestroyContext;
     PFNGLXMAKECURRENTPROC MakeCurrent;
     PFNGLXGETCURRENTCONTEXTPROC GetCurrentContext;
+    PFNGLXGETCURRENTDRAWABLEPROC GetCurrentDrawable;
+    PFNGLXGETCURRENTREADDRAWABLEPROC GetCurrentReadDrawable;
+    PFNGLXGETCURRENTDISPLAYPROC GetCurrentDisplay;
     PFNGLXSWAPBUFFERSPROC SwapBuffers;
     PFNGLXQUERYEXTENSIONSSTRINGPROC QueryExtensionsString;
     PFNGLXCREATENEWCONTEXTPROC CreateNewContext;
@@ -324,6 +330,9 @@ OSGLContext_x11::initGLXData(OSGLContext_glx_data* glxInfo)
     glxInfo->_imp->DestroyContext = (PFNGLXDESTROYCONTEXTPROC)dlsym(glxInfo->_imp->handle, "glXDestroyContext");
     glxInfo->_imp->MakeCurrent = (PFNGLXMAKECURRENTPROC)dlsym(glxInfo->_imp->handle, "glXMakeCurrent");
     glxInfo->_imp->GetCurrentContext = (PFNGLXGETCURRENTCONTEXTPROC)dlsym(glxInfo->_imp->handle, "glXGetCurrentContext");
+    glxInfo->_imp->GetCurrentDrawable = (PFNGLXGETCURRENTDRAWABLEPROC)dlsym(glxInfo->_imp->handle, "glXGetCurrentDrawable");
+    glxInfo->_imp->GetCurrentReadDrawable = (PFNGLXGETCURRENTREADDRAWABLEPROC)dlsym(glxInfo->_imp->handle, "glXGetCurrentReadDrawable");
+    glxInfo->_imp->GetCurrentDisplay = (PFNGLXGETCURRENTDISPLAYPROC)dlsym(glxInfo->_imp->handle, "glXGetCurrentDisplay");
     glxInfo->_imp->SwapBuffers = (PFNGLXSWAPBUFFERSPROC)dlsym(glxInfo->_imp->handle, "glXSwapBuffers");
     glxInfo->_imp->QueryExtensionsString = (PFNGLXQUERYEXTENSIONSSTRINGPROC)dlsym(glxInfo->_imp->handle, "glXQueryExtensionsString");
     glxInfo->_imp->CreateNewContext = (PFNGLXCREATENEWCONTEXTPROC)dlsym(glxInfo->_imp->handle, "glXCreateNewContext");
@@ -880,6 +889,45 @@ OSGLContext_x11::swapInterval(int interval)
     }
 }
 
+namespace {
+// Makes the OpenGL context that is current in the calling thread when it is created (e.g. the context of a
+// QOpenGLWidget, on Qt's own X display) current again when it is destroyed, or no context if there was none, as
+// OSGLContext_mac::getGPUInfos() and the ScopedGLContext of OSGLContext_win.cpp do (#1502).
+class CurrentGLXContextRestorer
+{
+public:
+    explicit CurrentGLXContextRestorer(const OSGLContext_glx_data* glxInfo)
+        : _glxInfo(glxInfo)
+        , _display( glxInfo->_imp->GetCurrentDisplay() )
+        , _draw( glxInfo->_imp->GetCurrentDrawable() )
+        , _read( glxInfo->_imp->GetCurrentReadDrawable() )
+        , _context( glxInfo->_imp->GetCurrentContext() )
+    {
+    }
+
+    ~CurrentGLXContextRestorer()
+    {
+        if (_context && _display) {
+            if ( !_glxInfo->_imp->MakeContextCurrent(_display, _draw, _read, _context) ) {
+                std::cerr << "GLX: could not make the previous OpenGL context current again" << std::endl;
+            }
+        } else {
+            _glxInfo->_imp->MakeCurrent(_glxInfo->_imp->x11.display, None, NULL);
+        }
+    }
+
+    CurrentGLXContextRestorer(const CurrentGLXContextRestorer&) = delete;
+    CurrentGLXContextRestorer& operator=(const CurrentGLXContextRestorer&) = delete;
+
+private:
+    const OSGLContext_glx_data* _glxInfo;
+    Display* _display;
+    GLXDrawable _draw;
+    GLXDrawable _read;
+    GLXContext _context;
+};
+} // anonymous namespace
+
 void
 OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
 {
@@ -892,6 +940,8 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
     if (!glxInfo->_imp->x11.display) {
         return;
     }
+    // the contexts made current below are destroyed before the restorer, which is declared first
+    CurrentGLXContextRestorer restorer(glxInfo);
     if (!glxInfo->_imp->MESA_query_renderer) {
         std::unique_ptr<OSGLContext_x11> context;
         try {
