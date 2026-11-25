@@ -212,8 +212,6 @@ the consolidated list (several are referenced from the P0 leads in
   the "random crash" tail; see the crash-reporting notes in
   :ref:`maint-subsystems`.
 
-.. _maint-ci:
-
 .. _maint-changelog:
 
 CHANGELOG
@@ -240,35 +238,53 @@ Start each line with the component it is about (``Python:``, ``Viewer:``,
 A line without a ``#NNN`` reference gets the number of its pull request. The
 plug-in repositories (openfx-io, openfx-misc, openfx-arena, openfx-gmic) have
 no ``CHANGELOG.md``: their pull requests carry the same section, with
-``Plugins:`` lines such as ``- ReadFFmpeg: ... (openfx-io#NNN)``.
+``Plugins:`` lines such as ``- ReadFFmpeg: ... (openfx-io#NNN)``. In them, a
+bare ``#NNN`` is an issue of that repository and becomes ``openfx-io#NNN``:
+write a Natron reference as ``Natron#NNN``. Pull requests opened against
+RB-2.7 only (Qt 6 work) are not collected: the script reads RB-2.6.
 
 ``tools/utils/collect-changelog.py`` collects the lines of the pull requests
 merged since the last collection into ``CHANGELOG.md``, in one commit, every
 week and always before a pre-release tag. The recurring task is the open
 issue labelled ``changelog`` (`#1835
-<https://github.com/NatronGitHub/Natron/issues/1835>`_). The procedure, from
-an up-to-date RB-2.6 checkout with ``gh`` authenticated:
+<https://github.com/NatronGitHub/Natron/issues/1835>`_). Before you start:
 
-1. ``git fetch origin && git switch -c changelog-collect-$(date +%F) origin/RB-2.6``.
-2. Run the script without options (a dry run, which prints the diff)::
+- The previous collection pull request must be merged: otherwise the new run
+  collects the same pull requests again, and the two pull requests conflict.
+- After a release, add the section of the next version (``## Version x.y.z``
+  with its ``###`` headings) at the top first: the script always writes to,
+  and regroups, the topmost version.
+
+The procedure, from an up-to-date RB-2.6 checkout with ``gh`` authenticated:
+
+1. ``git fetch origin && git switch -c changelog-collect-$(date +%F)
+   origin/RB-2.6``.
+2. Run the script without ``--write`` or ``--commit`` (a dry run, which prints
+   the diff)::
 
        tools/utils/collect-changelog.py --extra-repo NatronGitHub/openfx-io \
            --extra-repo NatronGitHub/openfx-misc \
            --extra-repo NatronGitHub/openfx-arena \
            --extra-repo NatronGitHub/openfx-gmic
 
-   It reports, on the standard error, the pull requests without a
-   ``### CHANGELOG`` section, the lines under a heading that the topmost
-   version of ``CHANGELOG.md`` doesn't have, and the lines it can't parse.
-   Fix those pull request descriptions (``gh pr edit N --body-file ...``) and
-   run it again.
+   The first run needs ``--since <the merge commit of #1836>``, the pull
+   request that started this process; the later runs start where the last
+   collection ended. The script reports, on the standard error, the pull
+   requests without a ``### CHANGELOG`` section, the lines under a heading
+   that the topmost version of ``CHANGELOG.md`` doesn't have, and the lines it
+   can't parse. Fix those pull request descriptions (``gh pr edit N
+   --body-file ...``) and run it again.
 3. Run the same command with ``--write``. The script adds the new lines to the
    topmost version, merges the lines that differ only by their references, and
    groups the entries of each section by component (in the order above, then
    the other components alphabetically, then the lines without one), and in
-   ``Plugins`` by bundle and plug-in. It drops the lines of pull requests that
-   say ``none`` or have an internal label (``commercial``, ``dependencies``;
-   see ``--internal-label`` and ``--include-internal``), and reports them.
+   ``Plugins`` by bundle and plug-in. A section that has ``####`` sub-headings
+   or paragraphs is not regrouped; the new lines go at its end. The script
+   drops the lines of pull requests that say ``none`` or have an internal
+   label (``commercial``, ``dependencies``; see ``--internal-label`` and
+   ``--include-internal``), and reports them. It refuses to run when
+   ``CHANGELOG.md`` has uncommitted changes (``--force`` overrides), since a
+   second ``--write`` would add the lines again.
 4. **Editorial pass**, which can't be automated: a person, or an agent whose
    result a person reviews, rewrites the topmost version for users. One entry
    per user-visible change; related fixes merged into one line; internal items
@@ -281,12 +297,15 @@ an up-to-date RB-2.6 checkout with ``gh`` authenticated:
    nothing.
 6. Push the branch and open a pull request whose ``### CHANGELOG`` section
    says ``none``. Merge it with *Rebase and merge* (or a merge commit), not
-   *Squash and merge*, so that the commit keeps its message: the next run starts after the merge
-   times in its ``Merged-until:`` trailers (``--since`` overrides them).
+   *Squash and merge*, so that the commit keeps its message: the next run
+   starts after the merge times in its ``Merged-until:`` trailers, and stops
+   with an error if it finds none for Natron (``--since`` overrides them).
 
 The script's unit tests (``tools/utils/test_collect_changelog.py``, with
 fixtures in ``tools/utils/testdata/collect_changelog``) run in the Linux CI
 job: ``python3 -m unittest discover -s tools/utils -p 'test_*.py'``.
+
+.. _maint-ci:
 
 Continuous integration
 ----------------------
@@ -344,9 +363,9 @@ standards such as C++23, other compilers or OS versions) are meant to run
 weekly or by hand, never per pull request; none is set up yet.
 
 **Installers and packages are release artifacts.** Before a pre-release tag,
-collect the CHANGELOG (see :ref:`maint-changelog`). Installers and packages are
-built only by hand or for pre-release tags, never for pull requests: ``build_installer.yml``
-builds the Windows installer and ``build_pacman_repo.yml`` the Windows package
+collect the CHANGELOG (see :ref:`maint-changelog`). Installers and packages
+are built only by hand or for pre-release tags, never for pull requests:
+``build_installer.yml`` builds the Windows installer and ``build_pacman_repo.yml`` the Windows package
 repository, both uploaded as workflow artifacts. The macOS and Linux installers
 are built outside GitHub Actions: the macOS release builds with ``tools/tart``
 (in a macOS VM on a maintainer's Apple Silicon Mac), the Linux installers with

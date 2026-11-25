@@ -78,6 +78,24 @@ class ParseTest(unittest.TestCase):
         self.assertEqual([(e.heading, e.text) for e in section.entries],
                          [('Changes', '- A line. #5')])
 
+    def test_sub_bullets_colon_subheading_and_rules(self):
+        body = ('### CHANGELOG\n#### Changes:\n- Viewer: a.\n  - detail.\n'
+                '- Python: b.\n***\n- Not in the section.\n')
+        section = cc.parse_changelog_section(body)
+        self.assertEqual([(e.heading, e.text) for e in section.entries],
+                         [('Changes', '- Viewer: a. - detail.'),
+                          ('Changes', '- Python: b.')])
+        self.assertEqual(section.unparsed, [])
+
+    def test_several_headings(self):
+        body = ('### CHANGELOG\nChanges:\n- Real.\n'
+                '<details>\n### CHANGELOG\nnone\n</details>\n')
+        prs = [cc.PullRequest(cc.MAIN_REPO, 9, body, '2026-11-24T10:00:00Z')]
+        _, problems = cc.collect(prs, _read('CHANGELOG.md'))
+        self.assertEqual([(p.pr, p.message) for p in problems],
+                         [('#9', '2 "### CHANGELOG" headings; only the last '
+                           'one is read')])
+
     def test_line_before_any_heading(self):
         section = cc.parse_changelog_section('### CHANGELOG\n- Orphan.\n')
         self.assertEqual([(e.heading, e.text) for e in section.entries],
@@ -141,6 +159,10 @@ class InsertTest(unittest.TestCase):
         self.assertEqual([p.pr for p in problems], ['#5', '#6'])
         new, _ = cc.collect(prs[:1], old)
         self.assertIn('- Preferences: z. #5', new)
+        # An internal PR without a section (e.g. Dependabot) is no problem.
+        bot = cc.PullRequest(cc.MAIN_REPO, 7, 'Bump x.', '2026-11-24T12:00:00Z',
+                             ('dependencies',))
+        self.assertEqual(cc.collect([bot], old, cc.INTERNAL_LABELS)[1], [])
 
     def test_idempotent(self):
         prs = [_pr('pr_colon_headings.md', 1800, '2026-11-24T10:00:00Z')]
@@ -150,8 +172,8 @@ class InsertTest(unittest.TestCase):
 
     def test_heading_case_and_empty_section(self):
         text = '# History\n\n## Version 3\n\n### Changes\n\n### Plugins\n'
-        new, missing = cc.insert_entries(text, [('changes', '- A. #1'),
-                                                ('PLUGINS', '- B. #2')])
+        new, missing, _ = cc.insert_entries(
+            text, [('changes', '- A. #1'), ('PLUGINS', '- B. #2')])
         self.assertEqual(missing, [])
         self.assertEqual(new, '# History\n\n## Version 3\n\n### Changes\n\n'
                          '- A. #1\n\n### Plugins\n\n- B. #2\n')
@@ -159,8 +181,8 @@ class InsertTest(unittest.TestCase):
     def test_only_topmost_version(self):
         text = ('## Version 3\n\n### Changes\n\n- New.\n\n'
                 '## Version 2\n\n### Plugins\n\n- Old.\n')
-        new, missing = cc.insert_entries(text, [('Plugins', '- P.'),
-                                                ('Changes', '- Old.')])
+        new, missing, _ = cc.insert_entries(
+            text, [('Plugins', '- P.'), ('Changes', '- Old.')])
         self.assertEqual(missing, [('Plugins', '- P.')])
         self.assertEqual(new, '## Version 3\n\n### Changes\n\n- New.\n'
                          '- Old.\n\n## Version 2\n\n### Plugins\n\n- Old.\n')
@@ -203,7 +225,8 @@ class ReorganizeTest(unittest.TestCase):
             '- ReadFFmpeg: i. (openfx-io#13)',
             '- G\'MIC: j (openfx-gmic#14).',
             '', '', '## Version 2', '', '### Changes', '', '- Old.', ''])
-        new, missing = cc.insert_entries(text, [('Changes', '- Python: k. #9')])
+        new, missing, _ = cc.insert_entries(
+            text, [('Changes', '- Python: k. #9')])
         self.assertEqual(missing, [])
         self.assertEqual(new, '\n'.join([
             '## Version 3', '', '### Changes', '',
@@ -222,6 +245,71 @@ class ReorganizeTest(unittest.TestCase):
             '- G\'MIC: j (openfx-gmic#14).',
             '- Some plug-in fix without a bundle. #12',
             '', '', '## Version 2', '', '### Changes', '', '- Old.', '']))
+
+
+class EditorialContentTest(unittest.TestCase):
+
+    def test_section_with_subheadings_is_not_regrouped(self):
+        text = '\n'.join([
+            '## Version 3', '', '### Changes', '',
+            'A preamble.', '', 'Its second paragraph.', '',
+            '- Viewer: b. #2', '', '#### Python', '', '- Python: a. #1', '',
+            '### Plugins', '', '- WriteFFmpeg: c (openfx-io#3).', ''])
+        new, missing, kept = cc.insert_entries(
+            text, [('Changes', '- Build: d. #4'),
+                   ('Plugins', '- ReadFFmpeg: e (openfx-io#5).')])
+        self.assertEqual((missing, kept), ([], ['Changes']))
+        self.assertEqual(new, '\n'.join([
+            '## Version 3', '', '### Changes', '',
+            'A preamble.', '', 'Its second paragraph.', '',
+            '- Viewer: b. #2', '', '#### Python', '', '- Python: a. #1', '',
+            '- Build: d. #4', '',
+            '### Plugins', '', '- ReadFFmpeg: e (openfx-io#5).',
+            '- WriteFFmpeg: c (openfx-io#3).', '']))
+
+
+class LastCollectionTest(unittest.TestCase):
+
+    def test_trailers_from_several_commits(self):
+        def fake_run(args, **unused_kwargs):
+            del args  # Unused.
+            return ('\x01aaa\x002026-11-30T10:00:00+00:00\x00'
+                    'CHANGELOG: collect #10..#12\x00CHANGELOG: collect '
+                    '#10..#12\n\nMerged-until: NatronGitHub/Natron '
+                    '2026-11-30T09:00:00Z\n'
+                    '\x01bbb\x002026-11-27T10:00:00+00:00\x00'
+                    'Fix a typo\x00Fix a typo\n\nCHANGELOG: collect in body\n'
+                    '\x01ccc\x002026-11-25T10:00:00+00:00\x00'
+                    'CHANGELOG: collect #1..#5\x00CHANGELOG: collect #1..#5'
+                    '\n\nMerged-until: NatronGitHub/Natron 2026-11-25T09:00:00Z'
+                    '\nMerged-until: NatronGitHub/openfx-io '
+                    '2026-11-25T08:00:00Z\n')
+        saved = cc._run
+        cc._run = fake_run
+        try:
+            until = cc.last_collection(
+                'origin/RB-2.6', 'CHANGELOG.md',
+                [cc.MAIN_REPO, 'NatronGitHub/openfx-io',
+                 'NatronGitHub/openfx-gmic'])
+        finally:
+            cc._run = saved
+        self.assertEqual(until, {
+            cc.MAIN_REPO: cc.to_utc('2026-11-30T09:00:00Z'),
+            'NatronGitHub/openfx-io': cc.to_utc('2026-11-25T08:00:00Z'),
+            'NatronGitHub/openfx-gmic': cc.to_utc('2026-11-30T10:00:00Z'),
+        })
+
+    def test_no_main_trailer_is_an_error(self):
+        saved = cc._run
+        cc._run = lambda args, **kwargs: (
+            '\x01aaa\x002026-11-30T10:00:00+00:00\x00CHANGELOG: collect '
+            '(#20)\x00CHANGELOG: collect (#20)\n')
+        try:
+            with self.assertRaises(SystemExit):
+                cc.last_collection('origin/RB-2.6', 'CHANGELOG.md',
+                                   [cc.MAIN_REPO])
+        finally:
+            cc._run = saved
 
 
 class CommitMessageTest(unittest.TestCase):

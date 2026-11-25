@@ -27,22 +27,26 @@ section says "none", or that has an internal label (INTERNAL_LABELS), are
 dropped. Then, in every section of that version, the lines that differ only
 by their trailing references are merged into one, and the lines are grouped
 by component (the text before their first ":", see COMPONENTS), or by bundle
-and plug-in in the Plugins section. PRs without a CHANGELOG section, lines
-under a heading that CHANGELOG.md doesn't have, and lines that can't be
-parsed are reported.
+and plug-in in the Plugins section; a section with sub-headings or
+paragraphs is left as it is, with the new lines at its end. PRs without a
+CHANGELOG section, lines under a heading that CHANGELOG.md doesn't have, and
+lines that can't be parsed are reported.
 
 The plug-in repositories have no CHANGELOG.md of their own: --extra-repo
 collects their merged PRs too (base branch master by default). Their lines
 go to the Plugins section unless they name another heading; a bare "#NNN"
-in them becomes "<repo>#NNN" (e.g. "openfx-io#343"), and a line with no
-reference gets " (<repo>#<PR number>)" appended.
+in them becomes "<repo>#NNN" (e.g. "openfx-io#343"; a Natron reference is
+written "Natron#NNN" there), and a line with no reference gets
+" (<repo>#<PR number>)" appended.
 
 The last collection is the last commit of the base branch that changed
 CHANGELOG.md with a message starting with "CHANGELOG: collect". Its
 "Merged-until: <repo> <time>" trailers (written by --write for --commit)
-give, for each repository, the merge time of the last PR it collected; for a
-repository without a trailer, the commit's committer date is used. --since
-gives the starting point explicitly, for every repository.
+give, for each repository, the merge time of the last PR it collected (the
+newest trailer of each repository, over all collection commits). Without a
+trailer for Natron (e.g. a squashed collection), the script stops; an
+--extra-repo without one starts at the date of the newest collection commit.
+--since gives the starting point explicitly, for every repository.
 
 Run it from the top of a Natron checkout, after `git fetch origin`, with
 `gh` authenticated:
@@ -53,8 +57,10 @@ Run it from the top of a Natron checkout, after `git fetch origin`, with
     tools/utils/collect-changelog.py --commit   # commit CHANGELOG.md as is
 
 --commit uses the message that --write saved in the git directory; it
-fetches nothing and pushes nothing. The procedure, editorial pass included,
-is in Documentation/source/maintainers/contributing.rst ("CHANGELOG").
+fetches nothing and pushes nothing. --write refuses to run while
+CHANGELOG.md has uncommitted changes (--force overrides). The procedure,
+editorial pass included, is in
+Documentation/source/maintainers/contributing.rst ("CHANGELOG").
 """
 
 import argparse
@@ -79,7 +85,8 @@ PLUGINS_HEADING = 'Plugins'
 INTERNAL_LABELS = ('commercial', 'dependencies')
 
 _SECTION_RE = re.compile(r'^###\s+CHANGELOG\s*:?\s*$', re.IGNORECASE)
-_END_RE = re.compile(r'^(#{1,3}\s|</?details\b|---+\s*$)', re.IGNORECASE)
+_END_RE = re.compile(r'^(#{1,3}\s|</?details\b|(?:-{3,}|\*{3,}|_{3,})\s*$)',
+                     re.IGNORECASE)
 _SUBHEADING_RE = re.compile(r'^#{4,6}\s+(?P<name>.+?)\s*#*$')
 _COLON_HEADING_RE = re.compile(r'^(?:\*\*)?(?P<name>[^-*\s][^:]*?):(?:\*\*)?$')
 _NONE_RE = re.compile(r'^(?:-\s+)?none\.?$', re.IGNORECASE)
@@ -103,6 +110,7 @@ class ParsedSection:
     none: bool = False
     entries: List[Entry] = dataclasses.field(default_factory=list)
     unparsed: List[str] = dataclasses.field(default_factory=list)
+    headings: int = 0  # Number of "### CHANGELOG" headings.
 
 
 @dataclasses.dataclass
@@ -116,7 +124,7 @@ class PullRequest:
 
     @property
     def label(self) -> str:
-        """Returns "#123" for Natron, "openfx-io#123" for the others."""
+        """The PR's reference: "#123" for Natron, "openfx-io#123" else."""
         return f'{reference_prefix(self.repo)}#{self.number}'
 
 
@@ -166,25 +174,30 @@ def parse_changelog_section(body: str) -> ParsedSection:
     if not starts:
         return section
     section.found = True
+    section.headings = len(starts)
     heading = None
+    in_entry = False
     for raw in lines[starts[-1] + 1:]:
         line = raw.strip()
         if _END_RE.match(line):
             break
         if not line:
             continue
-        if _NONE_RE.match(line):
+        if raw[:1] in (' ', '\t') and in_entry:
+            # An indented continuation (or sub-bullet) of the previous line.
+            section.entries[-1].text += ' ' + line
+        elif _NONE_RE.match(line):
             section.none = True
+            in_entry = False
         elif line.startswith('- '):
             section.entries.append(Entry(heading, '- ' + line[2:].strip()))
-        elif raw[:1] in (' ', '\t') and section.entries:
-            # An indented continuation of the previous line.
-            section.entries[-1].text += ' ' + line
+            in_entry = True
         else:
+            in_entry = False
             match = (_SUBHEADING_RE.match(line) or
                      _COLON_HEADING_RE.match(line))
             if match:
-                heading = match.group('name').strip('* ')
+                heading = match.group('name').strip('* ').rstrip(':').strip()
             else:
                 section.unparsed.append(line)
     return section
@@ -236,7 +249,7 @@ COMPONENTS = (
 # The plug-in bundles, in the order of their groups in the Plugins section.
 BUNDLES = ('openfx-io', 'openfx-misc', 'openfx-arena', 'openfx-gmic')
 
-_PREFIX_RE = re.compile(r'^- (?P<prefix>[^:`]{1,60}?):(?:\s|$)')
+_PREFIX_RE = re.compile(r'^- (?P<prefix>[^:]{1,60}?):(?:\s|$)')
 _PAREN_RE = re.compile(r'\s*\([^)]*\)')
 _REF_TOKEN = r'\(?(?:[\w.-]+/)?[\w.-]*#\d+\)?'
 _TRAILING_REFS_RE = re.compile(rf'(?:\s+{_REF_TOKEN})+\s*$')
@@ -246,8 +259,8 @@ _BUNDLE_RE = re.compile(r'\b(openfx-[\w-]+)#\d+')
 def component_of(text: str) -> Optional[str]:
     """Returns the component of a CHANGELOG line, or None if it has none.
 
-    The component is the text before the first ":" (no code), up to its
-    first ">" or ",", without parentheses, if it has at most six words; e.g.
+    The component is the text before the first ":", without parentheses,
+    up to its first ">" or ",", if it has no code and at most six words; e.g.
     "Preferences > Plug-ins: ..." gives "Preferences" and "Unix (Linux,
     macOS): ..." gives "Unix".
     """
@@ -256,7 +269,9 @@ def component_of(text: str) -> Optional[str]:
         return None
     prefix = _PAREN_RE.sub('', match.group('prefix'))
     component = re.split(r'[>,]', prefix)[0].strip()
-    return component if 0 < len(component.split()) <= 6 else None
+    if '`' in component or not 0 < len(component.split()) <= 6:
+        return None
+    return component
 
 
 def _component_rank(text: str) -> Tuple[int, str]:
@@ -272,7 +287,7 @@ def _component_rank(text: str) -> Tuple[int, str]:
     return (len(COMPONENTS), key)
 
 
-def _plugin_rank(text: str) -> Tuple[int, str]:
+def _plugin_rank(text: str) -> Tuple[int, str, str]:
     """Returns the sort key of a line of the Plugins section."""
     match = _BUNDLE_RE.search(text)
     bundle = match.group(1) if match else ''
@@ -304,32 +319,48 @@ class _Item:
 
 @dataclasses.dataclass
 class _Section:
+    """A "### " section of the topmost version of CHANGELOG.md."""
     name: str
     preamble: List[str]  # Lines before the first item.
     items: List[_Item]
     spaced: bool  # Items are separated by blank lines.
-    trailing_blanks: int
+    trailing_blanks: int  # Blank lines before the next heading.
+    list_only: bool  # Only items after the preamble: it can be regrouped.
 
 
 def _parse_section(name: str, body: Sequence[str]) -> _Section:
+    """Splits the lines of a section (after its heading) into items.
+
+    An item is a "- " line with the lines that follow it without a blank
+    line, or indented. Any other line after the first item (a sub-heading,
+    a paragraph) makes the section not list_only.
+    """
     preamble = []
     items = []
     gaps = []  # For each item after the first: is a blank line before it?
+    list_only = True
     blank = False
     for line in body:
         if line.startswith('- '):
             if items:
                 gaps.append(blank)
             items.append(_Item([line]))
-        elif line.strip() and items:
-            # Continuation (or a later paragraph) of the previous item.
+        elif not line.strip():
+            if not items:
+                preamble.append(line)
+        elif items and (not blank or line[:1] in (' ', '\t')):
             items[-1].lines.extend(['', line] if blank else [line])
-        elif line.strip():
+        elif items:
+            list_only = False
+            items[-1].lines.extend(['', line] if blank else [line])
+        else:
             preamble.append(line)
         blank = not line.strip()
+    while preamble and not preamble[0].strip():
+        preamble.pop(0)
     trailing = len(body) - len(_rstrip_blank(body))
     return _Section(name, _rstrip_blank(preamble), items,
-                    bool(gaps) and all(gaps), trailing)
+                    bool(gaps) and all(gaps), trailing, list_only)
 
 
 def _rstrip_blank(lines: Sequence[str]) -> List[str]:
@@ -340,6 +371,7 @@ def _rstrip_blank(lines: Sequence[str]) -> List[str]:
 
 
 def _render_section(section: _Section) -> List[str]:
+    """Returns the lines of a section, its heading included."""
     out = ['### ' + section.name, '']
     if section.preamble:
         out += section.preamble + ['']
@@ -353,10 +385,11 @@ def _render_section(section: _Section) -> List[str]:
 
 
 def reorganize(section: _Section) -> None:
-    """Merges the items of a section that differ only by their references,
-    then groups them by component (by bundle and plug-in in Plugins).
+    """Merges the items that differ only by references, and groups them.
 
-    The sort is stable: the items of a group keep their order.
+    Items are grouped by component (see COMPONENTS), or by bundle and
+    plug-in in the Plugins section. The sort is stable: the items of a group
+    keep their order.
     """
     merged: Dict[str, _Item] = {}
     items = []
@@ -373,7 +406,7 @@ def reorganize(section: _Section) -> None:
 
 def insert_entries(
         changelog: str, entries: Sequence[Tuple[str, str]]
-) -> Tuple[str, List[Tuple[str, str]]]:
+) -> Tuple[str, List[Tuple[str, str]], List[str]]:
     """Inserts CHANGELOG lines into the topmost version and reorganizes it.
 
     Each line is added to the "### " section of the topmost "## " version
@@ -382,27 +415,30 @@ def insert_entries(
     references (e.g. "#1743" and "#1767") are merged into one line with all
     the references, and the lines are grouped by component (see
     COMPONENTS), or by bundle and plug-in in the Plugins section. Items keep
-    their blank-line separation (as in "Known issues"). The rest of the file
-    is unchanged.
+    their blank-line separation (as in "Known issues"). A section with
+    other content than a list (e.g. "#### " sub-headings or paragraphs
+    written in the editorial pass) is not regrouped: the new lines are added
+    at its end. The rest of the file is unchanged.
 
     Args:
         changelog: The text of CHANGELOG.md.
         entries: (heading, line) pairs, in merge order.
 
     Returns:
-        The new text, and the (heading, line) pairs whose heading is not a
-        section of the topmost version.
+        The new text, the (heading, line) pairs whose heading is not a
+        section of the topmost version, and the names of the sections that
+        were not regrouped.
     """
     lines = changelog.split('\n')
     top = next((i for i, line in enumerate(lines) if line.startswith('## ')),
                None)
     if top is None:
-        return changelog, list(entries)
+        return changelog, list(entries), []
     end = next((i for i in range(top + 1, len(lines))
                 if lines[i].startswith(('## ', '# '))), len(lines))
     starts = [i for i in range(top + 1, end) if lines[i].startswith('### ')]
     if not starts:
-        return changelog, list(entries)
+        return changelog, list(entries), []
     sections = [_parse_section(lines[s][4:].strip(), lines[s + 1:e])
                 for s, e in zip(starts, starts[1:] + [end])]
     by_name = {s.name.casefold(): s for s in sections}
@@ -413,10 +449,14 @@ def insert_entries(
             missing.append((heading, text))
         else:
             section.items.append(_Item([text]))
+    kept = []
     for section in sections:
-        reorganize(section)
+        if section.list_only:
+            reorganize(section)
+        else:
+            kept.append(section.name)
     body = [line for s in sections for line in _render_section(s)]
-    return '\n'.join(lines[:starts[0]] + body + lines[end:]), missing
+    return '\n'.join(lines[:starts[0]] + body + lines[end:]), missing, kept
 
 
 def collect(prs: Sequence[PullRequest], changelog: str,
@@ -439,21 +479,26 @@ def collect(prs: Sequence[PullRequest], changelog: str,
     entries = []  # (heading, line, PullRequest)
     for pr in prs:
         section = parse_changelog_section(pr.body)
+        internal = sorted(set(pr.labels) & set(internal_labels))
+        if internal and not section.entries:
+            continue  # E.g. a Dependabot PR: nothing to report.
         if not section.found:
             problems.append(Problem(pr.label, 'no "### CHANGELOG" section'))
             continue
+        if section.headings > 1:
+            problems.append(Problem(
+                pr.label, f'{section.headings} "### CHANGELOG" headings; '
+                'only the last one is read'))
         if not section.entries and not section.none:
             problems.append(Problem(
                 pr.label, 'empty "### CHANGELOG" section (no line, no "none")'))
         problems.extend(Problem(pr.label, f'line not parsed: {line}')
                         for line in section.unparsed)
-        internal = sorted(set(pr.labels) & set(internal_labels))
         if section.entries and (section.none or internal):
-            why = (f'label {", ".join(internal)}' if internal
-                   else 'its section also says "none"')
+            why = (f'label {", ".join(internal)}, see --include-internal'
+                   if internal else 'its section also says "none"')
             problems.append(Problem(
-                pr.label, f'{len(section.entries)} line(s) dropped ({why}; '
-                'see --include-internal)'))
+                pr.label, f'{len(section.entries)} line(s) dropped ({why})'))
             continue
         for entry in section.entries:
             text = with_reference(entry.text, pr.repo, pr.number)
@@ -465,8 +510,11 @@ def collect(prs: Sequence[PullRequest], changelog: str,
                                         f'line without a heading: {text}'))
             else:
                 entries.append((heading, text, pr))
-    new_text, missing = insert_entries(changelog,
-                                       [(h, t) for h, t, _ in entries])
+    new_text, missing, kept = insert_entries(
+        changelog, [(h, t) for h, t, _ in entries])
+    problems.extend(Problem('CHANGELOG.md', f'section "{name}" not regrouped '
+                            '(it has sub-headings or paragraphs); new lines '
+                            'added at its end') for name in kept)
     for heading, text in missing:
         pr = next(p for h, t, p in entries if (h, t) == (heading, text))
         problems.append(Problem(
@@ -511,21 +559,41 @@ def parse_merged_until(message: str) -> Dict[str, datetime.datetime]:
 
 def last_collection(ref: str, changelog_path: str,
                     repos: Sequence[str]) -> Dict[str, datetime.datetime]:
-    """Returns, for each repo, the time of the last collection on ref."""
-    log = _run(['git', 'log', '-1', '--format=%H%x00%cI%x00%B',
+    """Returns, for each repo, the time of its last collection on ref.
+
+    Walks the collection commits (subject starting with COLLECT_PREFIX) from
+    the newest, and takes for each repo its newest "Merged-until:" trailer.
+    A repo of --extra-repo that no trailer mentions (its first collection)
+    starts at the committer date of the newest collection commit.
+
+    Raises:
+        SystemExit: no collection commit, or none with a trailer for the
+            main repository (e.g. squashed): --since is needed.
+    """
+    log = _run(['git', 'log', '--format=%x01%H%x00%cI%x00%s%x00%B',
                 f'--grep=^{COLLECT_PREFIX}', ref, '--', changelog_path])
-    if not log.strip():
+    commits = [record.split('\x00', 3) for record in log.split('\x01')[1:]]
+    commits = [c for c in commits if c[2].startswith(COLLECT_PREFIX)]
+    if not commits:
         raise SystemExit(
             f'error: no "{COLLECT_PREFIX}" commit changed {changelog_path} '
             f'on {ref}; give the starting point with --since')
-    sha, date, message = log.split('\x00', 2)
-    until = parse_merged_until(message)
+    until: Dict[str, datetime.datetime] = {}
+    for _, _, _, message in commits:
+        for repo, when in parse_merged_until(message).items():
+            until.setdefault(repo, when)
+    if MAIN_REPO in repos and MAIN_REPO not in until:
+        raise SystemExit(
+            f'error: no "{COLLECT_PREFIX}" commit on {ref} has a '
+            f'"{MERGED_UNTIL} {MAIN_REPO}" trailer (squashed?); give the '
+            'starting point with --since')
+    sha, date = commits[0][0], commits[0][1]
     for repo in repos:
         if repo not in until:
-            print(f'note: {sha[:10]} has no "{MERGED_UNTIL} {repo}" trailer; '
-                  'using its committer date', file=sys.stderr)
+            print(f'note: no "{MERGED_UNTIL} {repo}" trailer: starting at '
+                  f'the date of {sha[:10]}', file=sys.stderr)
             until[repo] = to_utc(date)
-    return until
+    return {repo: until[repo] for repo in repos}
 
 
 def resolve_since(since: Optional[str], ref: str, changelog_path: str,
@@ -533,11 +601,17 @@ def resolve_since(since: Optional[str], ref: str, changelog_path: str,
     """Turns --since (a date, a timestamp or a commit) into per-repo times."""
     if since is None:
         return last_collection(ref, changelog_path, repos)
-    try:
-        when = to_utc(since)
-    except ValueError:
-        when = to_utc(_run(['git', 'log', '-1', '--format=%cI', since,
-                            '--']).strip())
+    commit = subprocess.run(
+        ['git', 'log', '-1', '--format=%cI', f'{since}^{{commit}}', '--'],
+        capture_output=True, text=True, check=False)
+    if commit.returncode == 0:
+        when = to_utc(commit.stdout.strip())
+    else:
+        try:
+            when = to_utc(since)
+        except ValueError:
+            raise SystemExit(f'error: --since {since}: not a commit or a '
+                             'date') from None
     return {repo: when for repo in repos}
 
 
@@ -635,6 +709,9 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
                       '(after --write and the editorial pass) with the '
                       f'message saved by --write, "{COLLECT_PREFIX} #a..#b"; '
                       'nothing is fetched, nothing is pushed')
+    parser.add_argument('--force', action='store_true',
+                        help='--write even if the CHANGELOG has uncommitted '
+                        'changes')
     parser.set_defaults(mode='dry-run')
     return parser.parse_args(argv)
 
@@ -663,6 +740,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     args = parse_args(sys.argv[1:] if argv is None else argv)
     if args.mode == 'commit':
         return _commit(args.changelog)
+    if args.mode == 'write' and not args.force and subprocess.run(
+            ['git', 'diff', '--quiet', 'HEAD', '--', args.changelog],
+            check=False).returncode != 0:
+        raise SystemExit(
+            f'error: {args.changelog} has uncommitted changes (an earlier '
+            '--write, or the editorial pass): a new --write would add the '
+            'lines again. Commit or restore it first, or use --force.')
     branches = dict([(args.repo, args.base)] + args.extra_repo)
     since = resolve_since(args.since, _git_ref(args.base), args.changelog,
                           list(branches))
