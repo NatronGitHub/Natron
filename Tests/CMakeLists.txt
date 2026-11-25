@@ -522,6 +522,14 @@ add_test(NAME LayerPassThroughHeadless
 set_tests_properties(LayerPassThroughHeadless PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 300
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/layer-passthrough-headless-cache")
 
+# A Write node writes its files only when it is rendered itself, not when another Write node pulls images
+# through it (#815): NatronRenderer runs the script, which exits with natron.quit(status), 77 when openfx-io is
+# not in OFX_PLUGIN_PATH.
+add_test(NAME WriterPassThroughHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_writer_pass_through.py")
+set_tests_properties(WriterPassThroughHeadless PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 300
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/writer-pass-through-headless-cache")
+
 # Effect.getFrameRange() and Effect.getAvailableLayers(inputNb, time, view) (#1799): NatronRenderer runs the
 # script, which exits with natron.quit(status).
 add_test(NAME FrameRangeHeadless
