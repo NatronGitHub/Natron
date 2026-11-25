@@ -699,13 +699,26 @@ TEST(DiskCacheNode, ProjectFrameRangeFollowsTheProject)
     args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
     NodePtr node = app->createNode(args);
     ASSERT_TRUE( bool(node) );
+    KnobIntPtr projectRange = std::dynamic_pointer_cast<KnobInt>( project->getKnobByName("frameRange") );
+    ASSERT_TRUE( bool(projectRange) );
+    // Restores the project range and destroys the node, also when an assertion fails
+    struct Restore
+    {
+        NodePtr node;
+        KnobIntPtr range;
+        int first, last;
+
+        ~Restore()
+        {
+            range->setValue(first, ViewSpec::all(), 0);
+            range->setValue(last, ViewSpec::all(), 1);
+            node->destroyNode(true, false);
+        }
+    } restore = { node, projectRange, projectRange->getValue(0), projectRange->getValue(1) };
+
     KnobChoicePtr frameRange = std::dynamic_pointer_cast<KnobChoice>( node->getKnobByName("frameRange") );
     ASSERT_TRUE( bool(frameRange) );
     frameRange->setValue(1); // Project frame range
-    KnobIntPtr projectRange = std::dynamic_pointer_cast<KnobInt>( project->getKnobByName("frameRange") );
-    ASSERT_TRUE( bool(projectRange) );
-    const int oldFirst = projectRange->getValue(0);
-    const int oldLast = projectRange->getValue(1);
 
     EffectInstancePtr effect = node->getEffectInstance();
     projectRange->setValue(1, ViewSpec::all(), 0);
@@ -720,8 +733,4 @@ TEST(DiskCacheNode, ProjectFrameRangeFollowsTheProject)
     effect->getFrameRange_public(effect->getHash(), &first, &last);
     EXPECT_EQ(5., first);
     EXPECT_EQ(20., last);
-
-    projectRange->setValue(oldFirst, ViewSpec::all(), 0);
-    projectRange->setValue(oldLast, ViewSpec::all(), 1);
-    node->destroyNode(true, false);
 }
