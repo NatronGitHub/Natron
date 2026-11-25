@@ -411,7 +411,7 @@ PyObject* initializePython3(const std::vector<wchar_t*>& commandLineArgsWide,
 #define DUMP_SYS(NAME) \
             do { \
                 obj = PySys_GetObject(#NAME); \
-                PySys_FormatStderr("  sys.%s = ", #NAME); \
+                PySys_FormatStdout("  sys.%s = ", #NAME); \
                 if (obj != NULL) { \
                     PySys_FormatStdout("%A", obj); \
                 } \
