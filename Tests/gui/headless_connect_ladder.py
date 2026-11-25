@@ -19,9 +19,6 @@
 
 """Headless test: connecting an input stays fast when many paths lead to the same node.
 
-Run by NatronRenderer -t (the UndoGroupHeadless test is run the same way). It exits with
-natron.quit(status): 0 on success, 1 on failure.
-
 The script builds a ladder: each node has its two inputs connected to the previous node, so
 2^n paths lead from the n-th node to the first one. The cycle check of a connection
 (Node::isNodeUpstream()) visited a node once per path, so each level about doubled the time of
@@ -33,17 +30,10 @@ The nodes are Groups with two Input nodes, so that no OpenFX plug-in is needed.
 
 import time
 
-import NatronEngine
-from NatronEngine import natron
+from natronheadless import check, run
 
 LEVELS = 30
 MAX_SECONDS = 10  # the whole ladder takes well under a second
-
-
-def check(condition, message=""):
-    """Like assert, but not removed by python -O."""
-    if not condition:
-        raise AssertionError(message)
 
 
 def two_input_group(app):
@@ -56,9 +46,7 @@ def two_input_group(app):
     return group
 
 
-status = 1
-try:
-    app = natron.getInstance(0)
+def main(app):
     first = app.createNode("fr.inria.built-in.Dot")
     check(first is not None, "no Dot node")
     start = time.monotonic()
@@ -85,8 +73,6 @@ try:
     connected = other.connectInput(0, previous)
     check(connected, "a valid connection failed")
     check(not first.canConnectInput(0, other), "a cycle can be connected")
-    status = 0
-except BaseException:
-    import traceback
-    traceback.print_exc()
-natron.quit(status)
+
+
+run(main)

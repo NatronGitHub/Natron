@@ -1,6 +1,9 @@
-# ColorParam.get(frame) returns the four channels of an RGBA color at that frame; it returned the blue value
-# as the alpha (#1712). Run by NatronRenderer -t (see Tests/CMakeLists.txt).
-from NatronEngine import natron
+"""ColorParam.get(frame) returns the four channels of an RGBA color at that frame (#1712).
+
+It returned the blue value as the alpha.
+"""
+
+import natronheadless
 
 
 def check(param, frame, rgba):
@@ -9,9 +12,7 @@ def check(param, frame, rgba):
     assert all(abs(g - e) < 1e-6 for g, e in zip(got, rgba)), "get(%d) is %r, expected %r" % (frame, got, rgba)
 
 
-status = 1
-try:
-    app = natron.getInstance(0)
+def main(app):
     node = app.createNode("fr.inria.built-in.Dot")
     assert node is not None, "createNode(Dot) failed"
     # not animated
@@ -28,8 +29,6 @@ try:
         animated.set(r, g, b, a, frame)
     for frame, rgba in keys.items():
         check(animated, frame, rgba)
-    status = 0
-except BaseException:
-    import traceback
-    traceback.print_exc()
-natron.quit(status)
+
+
+natronheadless.run(main)
