@@ -695,7 +695,7 @@ deps_order() {
 # again when its version changes; the minos check of the DMG (check-minos.sh, natron-build.sh)
 # tells whether that matters. Never marked done: run after every update.
 step_rebuild_target() {
-    local skip=$LOGDIR/rebuild_target.skip p v bdeps variants vfile todo=() failed=() n=0
+    local skip=$LOGDIR/rebuild_target.skip p v bdeps variants vfile out todo=() failed=() n=0
     touch "$skip"
     pango_no_x11   # SDKs made before step_libs had it
     # a rebuild below interrupted between the uninstall and the install: install the port again
@@ -731,13 +731,23 @@ step_rebuild_target() {
             # shellcheck disable=SC2086
             [ -z "${bdeps// /}" ] || $PORT install $bdeps || true   # a failure shows up in the rebuild below
         fi
-        if ! $PORT -n -s upgrade --force "$p"; then
-            # Some ports can't be built while they are active (flite links the installed
+        out=$LOGDIR/rebuild-$p.out
+        if ! $PORT -n -s upgrade --force "$p" 2>&1 | tee "$out"; then
+            # A port that can't be built while it is active (flite links the installed
             # libflite.dylib: "can't link a dylib with itself"): uninstall, build, or put the
-            # binary archive back if the build fails
+            # binary archive back if the build fails. Any other failure: keep the installed port.
+            if ! grep -q "can't link a dylib with itself" "$out"; then
+                rm -f "$out"
+                echo "ERROR: could not rebuild $p"
+                failed+=("$p")
+                continue
+            fi
+            # its variants: the positive ones, and the requested ones, with the negative ones
+            # (e.g. -x11), which "port -q installed" doesn't show
             v=$(port -q installed "$p" | awk '/\(active\)/ {print $2}')
-            variants=$(echo "$v" | sed -e 's/^@[^+]*//' -e 's/+/ +/g')
-            echo "===== rebuilding $p $v again, uninstalled first"
+            variants="$(echo "$v" | sed -e 's/^@[^+]*//' -e 's/+/ +/g') $(port -v installed "$p" |
+                sed -n "/(active)/s/.*requested_variants='\([^']*\)'.*/\1/p" | sed 's/\([+-]\)/ \1/g')"
+            echo "===== rebuilding $p $v again, uninstalled first, with$variants"
             echo "$variants" > "$LOGDIR/rebuild-$p.variants"
             # shellcheck disable=SC2086
             if ! { $SUDO port -v -N -f uninstall "$p" "$v" && $PORT -n -s install "$p" $variants; }; then
@@ -751,6 +761,7 @@ step_rebuild_target() {
             fi
             rm -f "$LOGDIR/rebuild-$p.variants"
         fi
+        rm -f "$out"
         if port -q contents "$p" | "$CHECK_MINOS" -N -t "$macos_target" -l; then :; else
             v=$(port -q installed "$p" | awk '/\(active\)/ {print $2}')
             echo "WARNING: $p $v is still built for a macOS newer than $macos_target"

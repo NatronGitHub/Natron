@@ -86,7 +86,7 @@ status=0
     env -i HOME="$HOME" USER="$USER" LOGNAME="$USER" SHELL=/bin/bash TMPDIR="${TMPDIR:-/tmp}" LANG=en_US.UTF-8 \
         PATH="$work/bin:/usr/bin:/bin:/usr/sbin:/sbin" \
         ${ALL_PROXY:+ALL_PROXY=$ALL_PROXY NO_PROXY=localhost,127.0.0.1} \
-        ${TEST:+TEST=$TEST} ${TESTCUSTOM:+TESTCUSTOM=$TESTCUSTOM} \
+        ${TEST:+"TEST=$TEST"} ${TESTCUSTOM:+"TESTCUSTOM=$TESTCUSTOM"} \
         NATRON_DISK_CACHE_PATH="$work/NatronTmpCacheDir" \
         OCIO="$APP/Contents/Resources/OpenColorIO-Configs/blender/config.ocio" \
         FFMPEG="$APP/Contents/MacOS/ffmpeg" COMPARE="$APP/Contents/MacOS/idiff" \
@@ -102,12 +102,12 @@ if [ -f "$TESTS/result.txt" ]; then
         case $t in */*)
             d=${t%%/*}/formats/${t#*/}
             if [ -d "$d" ]; then   # TestWriteFFmpeg/<format>: all the frames of that format
-                for f in "$d"/reference*.jpg "$d"/output*.jpg "$d"/comp*.jpg; do
+                for f in "$d"/reference*.jpg "$d"/output*.jpg "$d"/comp*.jpg "$d"/reference*.png "$d"/output*.png "$d"/comp*.png; do
                     [ -f "$f" ] && cp "$f" "failed/$(echo "$t" | tr / -)-$(basename "$f")"
                 done
             else                   # TestCMD/<n>: frame n of the test
                 d=${t%/*}; n=${t##*/}
-                for f in "$d/reference$n.jpg" "$d/output$n.jpg" "$d/comp$n.jpg"; do
+                for f in "$d/reference$n.jpg" "$d/output$n.jpg" "$d/comp$n.jpg" "$d/reference$n.png" "$d/output$n.png" "$d/comp$n.png"; do
                     [ -f "$f" ] && cp "$f" "failed/$(echo "$d" | tr / -)-$(basename "$f")"
                 done
             fi ;;

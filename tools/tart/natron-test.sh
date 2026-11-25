@@ -112,7 +112,7 @@ vm_rsync "$VM" "$NATRON_TESTS_SRC/" Natron-Tests/ --exclude .git --exclude /resu
 
 log "running Natron-Tests in $VM (TEST=${TEST:-all})"
 status=0
-vm_ssh "$VM" "rm -rf results && env ALL_PROXY=$GUEST_PROXY TEST_TIMEOUT=$TEST_TIMEOUT ${TEST:+TEST=$TEST} ${TESTCUSTOM:+TESTCUSTOM=$TESTCUSTOM} \
+vm_ssh "$VM" "rm -rf results && env ALL_PROXY=$GUEST_PROXY TEST_TIMEOUT=$TEST_TIMEOUT ${TEST:+TEST=\"$TEST\"} ${TESTCUSTOM:+TESTCUSTOM=\"$TESTCUSTOM\"} \
     /bin/bash run-natron-tests.sh natron.dmg Natron-Tests results '$NAME'" || status=$?
 
 log "copying the results to $OUT"
