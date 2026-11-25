@@ -25,8 +25,6 @@
 
 #include "KnobSerialization.h"
 
-#include <boost/serialization/map.hpp> // copyKnobSerializations() writes the maps of the parameter values
-
 #include <iostream>
 
 #include <algorithm> // min, max
