@@ -361,7 +361,7 @@ if [ "$BUILD_MISC" = "1" ] && [ -d "$TMP_PATH/openfx-misc" ]; then
     if [ -s "$OSMESA_PATH/lib/libMangledOSMesa32.a" ]; then
         MESALIB="-lMangledOSMesa32"
         if [ "$PKGOS" = "Windows" ]; then
-            # The static OSMesa (Mesa 25.0.7, mingw-w64-osmesa) needs the Windows system
+            # The static OSMesa (Mesa >= 25, mingw-w64-osmesa) needs the Windows system
             # libraries of its osmesa.pc's Libs.private: synchronization (WaitOnAddress and
             # WakeByAddress* in Mesa's futex.c) and ws2_32 (#1858).
             MESALIB="${MESALIB} -lsynchronization -lws2_32"
