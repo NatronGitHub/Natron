@@ -321,7 +321,9 @@ sudo port -v -N install opencolorio1 -quartz -python27 -python38 -python39 -pyth
 # openfx-io (SeExpr 2.11 only, for SEEXPR_HOME)
 sudo port -v -N install seexpr211
 
-# openfx-arena
+# openfx-arena (pango without X11, like cairo: its default +x11 can't be rebuilt from source
+# against cairo -x11, and would bundle libX11, libXft... in the DMG)
+sudo port -v -N install pango -x11
 sudo port -v -N install librsvg -quartz
 sudo port -v -N install poppler librevenge libcdr-0.1 sox libzip
 sudo sed -i '' -e 's/Zstd::Zstd/zstd/' /opt/local/lib/pkgconfig/libzip.pc
