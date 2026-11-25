@@ -403,8 +403,11 @@ jobs:
           fi
 
       - name: Upload the files for the pre-release
-        # tag pushes only (push has only tags here); the release job attaches them on pre-release tags
-        if: github.event_name == 'push'
+        # pre-release tags only (as the release job, which attaches them)
+        if: >-
+          github.event_name == 'push' &&
+          (contains(github.ref_name, '-alpha') || contains(github.ref_name, '-beta') ||
+          contains(github.ref_name, '-rc') || contains(github.ref_name, '-RC'))
         uses: actions/upload-artifact@v4.3.1
         with:
           name: Natron-Windows-${{ matrix.msystem }}-prerelease
