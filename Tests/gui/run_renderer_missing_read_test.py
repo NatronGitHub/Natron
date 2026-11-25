@@ -48,7 +48,7 @@ import shutil
 import sys
 import tempfile
 
-from natronrunner import SKIP, natron_env, run, wrapper, write_png
+import natronrunner
 
 MODE_SKIPPED = "mode skipped"
 TIMEOUT = 120  # seconds per run; five runs stay below the ctest TIMEOUT (660)
@@ -98,15 +98,15 @@ def run_mode(renderer, cmd_wrapper, out_dir, script, mode):
         True on success, False on failure, SKIP if the whole test is skipped (no PNG plug-ins), or
         MODE_SKIPPED if only this mode is (no openfx-misc plug-in).
     """
-    env = natron_env(out_dir, NATRON_MISSING_READ_TEST_DIR=out_dir, NATRON_MISSING_READ_TEST_MODE=mode)
+    env = natronrunner.natron_env(out_dir, NATRON_MISSING_READ_TEST_DIR=out_dir, NATRON_MISSING_READ_TEST_MODE=mode)
     print("Mode %s:" % mode)
-    status, out = run(cmd_wrapper + [renderer, "--no-settings", "-b", script], env, TIMEOUT)
+    status, out = natronrunner.run(cmd_wrapper + [renderer, "--no-settings", "-b", script], env, TIMEOUT)
     sys.stdout.write(out)
     if status is None:
         print("FAILED (%s): timeout after %d s" % (mode, TIMEOUT))
         return False
     if "SKIP:" in out:
-        return SKIP
+        return natronrunner.SKIP
     if "SKIP MODE: no openfx-misc plug-in" in [line.strip() for line in out.splitlines()]:
         print("skipped (%s): no openfx-misc plug-in" % mode)
         return MODE_SKIPPED
@@ -148,14 +148,14 @@ def main(argv):
     if not os.environ.get("OCIO"):
         # the Write node fails without an OCIO config ("Invalid OCIO config"), as for the Tests binary
         print("renderer missing Read test skipped: set OCIO to an OpenColorIO config")
-        return SKIP
-    cmd_wrapper = wrapper(argv[2:])
+        return natronrunner.SKIP
+    cmd_wrapper = natronrunner.wrapper(argv[2:])
     out_dir = tempfile.mkdtemp(prefix="natron-missing-read-test-")
     try:
-        write_png(os.path.join(out_dir, "input.png"), 64, 48)
+        natronrunner.write_png(os.path.join(out_dir, "input.png"), 64, 48)
         os.mkdir(os.path.join(out_dir, "seq"))
         for frame in (1, 3):  # frame 2 is missing
-            write_png(os.path.join(out_dir, "seq", "plate.%04d.png" % frame), 64, 48)
+            natronrunner.write_png(os.path.join(out_dir, "seq", "plate.%04d.png" % frame), 64, 48)
         script = os.path.join(out_dir, "missing_read_test.py")
         with open(script, "w") as f:
             f.write(SCRIPT)
@@ -166,9 +166,9 @@ def main(argv):
             if ret == MODE_SKIPPED:
                 skipped.append(mode)
                 continue
-            if ret == SKIP:
+            if ret == natronrunner.SKIP:
                 print("skipped: the PNG Read/Write plug-ins are not available (set OFX_PLUGIN_PATH to openfx-io)")
-                return SKIP
+                return natronrunner.SKIP
             if not ret:
                 ok = False
         if ok:

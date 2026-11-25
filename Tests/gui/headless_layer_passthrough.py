@@ -38,7 +38,7 @@ import tempfile
 
 import NatronEngine
 
-from natronheadless import check, check_rendered, read_pfm_pixels, require_plugins, run
+import natronheadless
 
 COLOUR = "uk.co.thefoundry.OfxImagePlaneColour"
 NEEDED = ("net.sf.openfx.ConstantPlugin", "net.sf.openfx.ShufflePlugin", "fr.inria.openfx.WritePFM")
@@ -46,16 +46,16 @@ NEEDED = ("net.sf.openfx.ConstantPlugin", "net.sf.openfx.ShufflePlugin", "fr.inr
 
 def set_option(node, name, option):
     param = node.getParam(name)
-    check(param is not None, name)
+    natronheadless.check(param is not None, name)
     options = list(param.getOptions())
-    check(option in options, "%s: no option %s in %s" % (name, option, options))
+    natronheadless.check(option in options, "%s: no option %s in %s" % (name, option, options))
     param.set(options.index(option))
 
 
 def render_pixel(app, write, node, path):
     write.disconnectInput(0)
     connected = write.connectInput(0, node)
-    check(connected, "the Write node cannot be connected")
+    natronheadless.check(connected, "the Write node cannot be connected")
     write.getParam("filename").set(path)
     # the PFM writer (the default for .pfm is the OpenImageIO one, which writes PNM), three channels
     set_option(write, "encodingPluginChoice", "fr.inria.openfx.WritePFM")
@@ -63,22 +63,22 @@ def render_pixel(app, write, node, path):
     if os.path.exists(path):
         os.remove(path)
     app.render(write, 1, 1)
-    check_rendered(path)
-    return read_pfm_pixels(path)[0]  # the pixel in the middle
+    natronheadless.check_rendered(path)
+    return natronheadless.read_pfm_pixels(path)[0]  # the pixel in the middle
 
 
 def near(pixel, expected):
-    return all(abs(a - b) < 1e-4 for a, b in zip(pixel, expected))
+    return len(pixel) == len(expected) and all(abs(a - b) < 1e-4 for a, b in zip(pixel, expected))
 
 
 def main(app):
-    require_plugins(*NEEDED)
-    with tempfile.TemporaryDirectory(prefix="natron_layer_passthrough_") as tmp:
+    natronheadless.require_plugins(*NEEDED)
+    with tempfile.TemporaryDirectory(prefix="natron_layer_passthrough_", ignore_cleanup_errors=True) as tmp:
         out = tmp.replace("\\", "/")
         app.addProjectLayer(NatronEngine.ImageLayer("testLayer", "testLayer", ["matte"]))
 
         constant = app.createNode("net.sf.openfx.ConstantPlugin")
-        check(constant is not None, "no Constant node")
+        natronheadless.check(constant is not None, "no Constant node")
         color = constant.getParam("color")
         for dim, value in enumerate((0.2, 0.4, 0.6, 1.0)):
             color.setValue(value, dim)
@@ -86,26 +86,26 @@ def main(app):
         # writes the green of the Constant to the only channel of testLayer
         to_layer = app.createNode("net.sf.openfx.ShufflePlugin")
         connected = to_layer.connectInput(0, constant)
-        check(connected, "the Shuffle cannot be connected")
+        natronheadless.check(connected, "the Shuffle cannot be connected")
         set_option(to_layer, "outputLayer", "testLayer")
         set_option(to_layer, "outputA", "B.%s.G" % COLOUR)
 
         write = app.createNode("fr.inria.built-in.Write")
-        check(write is not None, "no Write node")
+        natronheadless.check(write is not None, "no Write node")
 
         pixel = render_pixel(app, write, to_layer, out + "/color.pfm")
-        check(near(pixel, (0.2, 0.4, 0.6)), "color after the Shuffle that writes a layer: %s" % (pixel,))
+        natronheadless.check(near(pixel, (0.2, 0.4, 0.6)), "color after the Shuffle that writes a layer: %s" % (pixel,))
 
         # the layer in the red channel, green and blue from the color plane
         from_layer = app.createNode("net.sf.openfx.ShufflePlugin")
         connected = from_layer.connectInput(0, to_layer)
-        check(connected, "the second Shuffle cannot be connected")
+        natronheadless.check(connected, "the second Shuffle cannot be connected")
         auto = from_layer.getParam("setGBAFromR")
         if auto is not None:
             auto.set(False)
         set_option(from_layer, "outputR", "B.testLayer.matte")
         pixel = render_pixel(app, write, from_layer, out + "/layer.pfm")
-        check(near(pixel, (0.4, 0.4, 0.6)), "layer in red, color in green and blue: %s" % (pixel,))
+        natronheadless.check(near(pixel, (0.4, 0.4, 0.6)), "layer in red, color in green and blue: %s" % (pixel,))
 
 
-run(main)
+natronheadless.run(main)

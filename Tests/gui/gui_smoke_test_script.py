@@ -24,6 +24,7 @@
 # The test runs once the event loop has started, and ends with natron.quit(status):
 # 0 on success, 1 on failure, 77 if the plug-ins it needs are not available.
 
+import importlib
 import os
 import sys
 import traceback
@@ -32,10 +33,9 @@ import NatronEngine
 import NatronGui
 from NatronGui import natron
 
-try:
-    from PySide2 import QtCore, QtGui, QtWidgets
-except ImportError:
-    from PySide6 import QtCore, QtGui, QtWidgets
+# the PySide that NatronGui loaded (the one of Natron's Qt), as natrontest.qt_modules() does
+_PYSIDE = "PySide6" if "PySide6.QtCore" in sys.modules else "PySide2"
+QtCore, QtGui, QtWidgets = (importlib.import_module(_PYSIDE + "." + m) for m in ("QtCore", "QtGui", "QtWidgets"))
 
 SKIP = 77
 READ_ID = "fr.inria.built-in.Read"

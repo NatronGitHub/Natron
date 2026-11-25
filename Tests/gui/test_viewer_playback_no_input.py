@@ -20,6 +20,7 @@ v.seek(1)
 v.startForward()
 try:
     # the playback starts asynchronously: wait until it has played the range and stopped
+    # waitForRenders(1) is the step and the first half of the predicate: it is true when no render runs
     ended = wait_until(lambda: app.waitForRenders(1) and v.getCurrentFrame() == 10, 30, step=lambda: None)
 finally:
     # stop a playback that didn't end, so that Natron can quit

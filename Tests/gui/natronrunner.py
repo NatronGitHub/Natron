@@ -18,6 +18,8 @@
 
 """Helpers shared by the test drivers of Tests/gui (run_*.py), which ctest runs with the host Python.
 
+write_png() is also used by GUI tests, inside Natron.
+
 A driver starts Natron or NatronRenderer (the path is its first argument), checks the exit status
 and the output, and exits with 0 (pass), SKIP (77, skipped) or 1 (fail). The option --debugger
 runs Natron under natron-lldb.sh, which prints a backtrace on a crash; the environment variable
@@ -46,7 +48,7 @@ def wrapper(options):
 
 
 def natron_env(out_dir, **variables):
-    """The environment of a Natron run: a copy of os.environ, with variables added.
+    """The environment of a Natron run: a copy of os.environ, with variables added (None: removed).
 
     The disk cache (and the OFX plug-in cache) is in out_dir unless NATRON_DISK_CACHE_PATH is set: the
     user's one is shared by every Natron of this version, e.g. a concurrent test run (#1569). Debug
@@ -56,7 +58,11 @@ def natron_env(out_dir, **variables):
     if not env.get("NATRON_DISK_CACHE_PATH"):
         env["NATRON_DISK_CACHE_PATH"] = os.path.join(out_dir, "cache")
     env["NATRON_NO_FP_TRAPS"] = "1"
-    env.update(variables)
+    for name, value in variables.items():
+        if value is None:
+            env.pop(name, None)
+        else:
+            env[name] = value
     return env
 
 
@@ -128,8 +134,13 @@ def run(cmd, env, timeout, stdin=None):
             status = proc.returncode
         except subprocess.TimeoutExpired:
             print("timeout after %g s: killing the process and its wrapper" % timeout)
-            kill_tree(proc)
-            out, _ = proc.communicate()
+            # a wrapper such as natron-lldb.sh kills its inferior and prints its log: keep reading it
+            proc.terminate()
+            try:
+                out, _ = proc.communicate(timeout=10)
+            except subprocess.TimeoutExpired:
+                kill_tree(proc)
+                out, _ = proc.communicate()
             status = None
     return status, out.decode(errors="replace").replace("\r\n", "\n")
 

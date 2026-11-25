@@ -63,7 +63,7 @@ import shutil
 import sys
 import tempfile
 
-from natronrunner import natron_env, run, wrapper
+import natronrunner
 
 TIMEOUT = 120  # seconds, for each run of NatronRenderer
 
@@ -513,7 +513,7 @@ def _run_renderer(cmd, env):
     Returns:
       True if it exited with status 0.
     """
-    status, output = run(cmd, env, TIMEOUT)
+    status, output = natronrunner.run(cmd, env, TIMEOUT)
     sys.stdout.write(output)
     if status is None:
         print("FAILED: timeout")
@@ -653,11 +653,12 @@ def main(argv):
     if len(argv) < 2:
         sys.stderr.write(__doc__)
         return 2
-    renderer = wrapper(argv[2:]) + [argv[1], "--no-settings"]
+    renderer = natronrunner.wrapper(argv[2:]) + [argv[1], "--no-settings"]
     tmp_dir = os.path.realpath(
         tempfile.mkdtemp(prefix="natron-project-python-test-"))
     try:
-        env = natron_env(tmp_dir)
+        env = natronrunner.natron_env(
+            tmp_dir, NATRON_DISK_CACHE_PATH=os.path.join(tmp_dir, "cache"))
         files = _write_test_files(tmp_dir, env)
         if not (_run_renderer(renderer + ["-t", files["build"]], env)
                 and _run_renderer(renderer + ["-t", files["load"]], env)

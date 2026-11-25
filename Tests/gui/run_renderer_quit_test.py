@@ -42,7 +42,7 @@ import shutil
 import sys
 import tempfile
 
-from natronrunner import SKIP, natron_env, run, wrapper, write_png
+import natronrunner
 
 TIMEOUT = 300  # seconds, for each run of NatronRenderer
 LAST_FRAME = 200
@@ -104,8 +104,8 @@ def run_prompt_quit(renderer, cmd_wrapper, out_dir):
     stdin_path = os.path.join(out_dir, "prompt_stdin.py")
     with open(stdin_path, "w") as f:
         f.write(PROMPT_STDIN)
-    status, out = run(cmd_wrapper + [renderer, "--no-settings", "-t", setup], natron_env(out_dir), TIMEOUT,
-                      stdin=stdin_path)
+    cmd = cmd_wrapper + [renderer, "--no-settings", "-t", setup]
+    status, out = natronrunner.run(cmd, natronrunner.natron_env(out_dir), TIMEOUT, stdin=stdin_path)
     sys.stdout.write(out)
     if status is None:
         print("FAILED: timeout (-t prompt)")
@@ -128,16 +128,16 @@ def main(argv):
     if len(argv) < 2:
         sys.stderr.write(__doc__)
         return 2
-    cmd_wrapper = wrapper(argv[2:])
+    cmd_wrapper = natronrunner.wrapper(argv[2:])
     out_dir = tempfile.mkdtemp(prefix="natron-quit-test-")
     try:
-        write_png(os.path.join(out_dir, "input.png"), 64, 48)
+        natronrunner.write_png(os.path.join(out_dir, "input.png"), 64, 48)
         script = os.path.join(out_dir, "quit_test.py")
         with open(script, "w") as f:
             f.write(SCRIPT)
-        env = natron_env(out_dir, NATRON_QUIT_TEST_DIR=out_dir)
-        status, out = run(cmd_wrapper + [argv[1], "--no-settings", "-w", "Write1", "1-%d" % LAST_FRAME, script],
-                          env, TIMEOUT)
+        env = natronrunner.natron_env(out_dir, NATRON_QUIT_TEST_DIR=out_dir)
+        cmd = cmd_wrapper + [argv[1], "--no-settings", "-w", "Write1", "1-%d" % LAST_FRAME, script]
+        status, out = natronrunner.run(cmd, env, TIMEOUT)
         sys.stdout.write(out)
         if status is None:
             print("FAILED: timeout")
@@ -145,7 +145,7 @@ def main(argv):
         if "SKIP:" in out:
             print("render part skipped: the PNG Read/Write plug-ins are not available (set OFX_PLUGIN_PATH to "
                   "openfx-io); the -t prompt part needs no plug-in")
-            return SKIP if run_prompt_quit(argv[1], cmd_wrapper, out_dir) else 1
+            return natronrunner.SKIP if run_prompt_quit(argv[1], cmd_wrapper, out_dir) else 1
         frames = [f for f in os.listdir(out_dir) if f.startswith("out_") and f.endswith(".png")]
         print("NatronRenderer exited with status %d after rendering %d of %d frames" % (status, len(frames), LAST_FRAME))
         ok = True

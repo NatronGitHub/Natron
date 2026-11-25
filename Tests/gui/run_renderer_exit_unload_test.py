@@ -46,7 +46,7 @@ import shutil
 import sys
 import tempfile
 
-from natronrunner import natron_env, run, wrapper
+import natronrunner
 
 PLUGIN_ID = "net.natron.test.Sequential"
 CASE_TIMEOUT = 100  # seconds per NatronRenderer run: the 5 runs (plus 10 s grace each) must fit in the ctest TIMEOUT (660 s)
@@ -105,7 +105,9 @@ def run_case(renderer, cmd_wrapper, plugin_dir, out_dir, index, case):
     with open(script, "w") as f:
         f.write(SCRIPT + ending)
     log_path = os.path.join(out_dir, "actions_%d.log" % index)
-    env = natron_env(out_dir, OFX_PLUGIN_PATH=plugin_dir, NATRON_TEST_PLUGIN_ACTION_LOG=log_path)
+    # always a private cache: the OFX plug-in cache affects what the plug-ins get
+    env = natronrunner.natron_env(out_dir, OFX_PLUGIN_PATH=plugin_dir, NATRON_TEST_PLUGIN_ACTION_LOG=log_path,
+                     NATRON_DISK_CACHE_PATH=os.path.join(out_dir, "cache"))
     cmd = cmd_wrapper + [renderer, "--no-settings"] + (["-t"] if interpreter else []) + [script]
     stdin_path = None
     if interpreter:
@@ -113,7 +115,7 @@ def run_case(renderer, cmd_wrapper, plugin_dir, out_dir, index, case):
         with open(stdin_path, "w") as f:
             f.write(stdin_text)
     print("=== %s" % name)
-    status, out = run(cmd, env, CASE_TIMEOUT, stdin=stdin_path)
+    status, out = natronrunner.run(cmd, env, CASE_TIMEOUT, stdin=stdin_path)
     sys.stdout.write(out)
     if status is None:
         print("FAILED (%s): timeout after %d s" % (name, CASE_TIMEOUT))
@@ -145,7 +147,7 @@ def main(argv):
         # it is built with the Tests: missing, it is a broken build, not a reason to skip
         print("FAILED: the test plug-in is not in %s" % plugin_dir)
         return 1
-    cmd_wrapper = wrapper(argv[3:])
+    cmd_wrapper = natronrunner.wrapper(argv[3:])
     out_dir = tempfile.mkdtemp(prefix="natron-exit-unload-test-")
     try:
         ok = True

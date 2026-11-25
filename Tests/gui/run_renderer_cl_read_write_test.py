@@ -38,7 +38,7 @@ import shutil
 import sys
 import tempfile
 
-from natronrunner import SKIP, natron_env, run, wrapper, write_png
+import natronrunner
 
 TIMEOUT = 120  # seconds per run; two runs stay below the ctest TIMEOUT (660)
 SEQUENCE = range(10, 21)  # the frames of plate.####.png
@@ -71,7 +71,7 @@ else:
 
 def run_and_print(cmd, env):
     """Runs cmd and prints its output: returns (exit status, output), or None on a timeout."""
-    status, out = run(cmd, env, TIMEOUT)
+    status, out = natronrunner.run(cmd, env, TIMEOUT)
     sys.stdout.write(out)
     if status is None:
         print("FAILED: timeout after %d s" % TIMEOUT)
@@ -92,15 +92,15 @@ def main(argv):
     if not os.environ.get("OCIO"):
         # the Write node fails without an OCIO config ("Invalid OCIO config"), as for the Tests binary
         print("renderer -i/-w test skipped: set OCIO to an OpenColorIO config")
-        return SKIP
-    cmd_wrapper = wrapper(argv[2:])
+        return natronrunner.SKIP
+    cmd_wrapper = natronrunner.wrapper(argv[2:])
     out_dir = tempfile.mkdtemp(prefix="natron-cl-read-write-test-")
-    env = natron_env(out_dir, NATRON_CL_READ_WRITE_TEST_DIR=out_dir)
+    env = natronrunner.natron_env(out_dir, NATRON_CL_READ_WRITE_TEST_DIR=out_dir)
     project = os.path.join(out_dir, "project.ntp")
     try:
         os.mkdir(os.path.join(out_dir, "plate"))
         for frame in SEQUENCE:
-            write_png(os.path.join(out_dir, "plate", "plate.%04d.png" % frame), frame, 8)
+            natronrunner.write_png(os.path.join(out_dir, "plate", "plate.%04d.png" % frame), frame, 8)
         script = os.path.join(out_dir, "save_project.py")
         with open(script, "w") as f:
             f.write(SAVE_SCRIPT)
@@ -110,7 +110,7 @@ def main(argv):
         status, out = ret
         if "SKIP:" in out:
             print("skipped: the PNG Read/Write plug-ins are not available (set OFX_PLUGIN_PATH to openfx-io)")
-            return SKIP
+            return natronrunner.SKIP
         if status != 0 or "SAVED" not in out or not os.path.exists(project):
             print("FAILED: the project was not saved")
             return 1

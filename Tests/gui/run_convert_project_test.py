@@ -48,9 +48,7 @@ import shutil
 import sys
 import tempfile
 
-from natronrunner import (BACKGROUND_TAG, DOT_PLUGIN_TAG, GUI_TAG,
-                          MISSING_PLUGIN_TAG, TEST_PROJECT, natron_env,
-                          replace_first, run, wrapper)
+import natronrunner
 
 BINARY_MAGIC = b"\x01\x16serialization::archive"
 # Given to the -t prompt, which must not start after convert_and_quit()
@@ -130,7 +128,8 @@ class Runner:
     def __init__(self, renderer, cmd_wrapper, tmp_dir):
         self.renderer = renderer
         self.wrapper = cmd_wrapper
-        self.env = natron_env(tmp_dir)
+        self.env = natronrunner.natron_env(
+            tmp_dir, NATRON_DISK_CACHE_PATH=os.path.join(tmp_dir, "cache"))
         self.stdin = os.path.join(tmp_dir, "prompt_stdin.py")
         with open(self.stdin, "w") as f:
             f.write(PROMPT_STDIN)
@@ -145,8 +144,8 @@ class Runner:
             print("With %s:" % " ".join("%s=%s" % kv
                                         for kv in sorted(extra_env.items())))
         cmd = self.wrapper + [self.renderer, "--no-settings"] + args
-        status, out = run(cmd, dict(self.env, **extra_env), TIMEOUT,
-                          stdin=self.stdin)
+        status, out = natronrunner.run(cmd, dict(self.env, **extra_env),
+                                       TIMEOUT, stdin=self.stdin)
         # the plug-in loading messages are not interesting
         sys.stdout.write("".join(line for line in out.splitlines(True)
                                  if not line.startswith("OpenFX: loading")))
@@ -178,7 +177,7 @@ def file_format(path):
 def write_variant(data, old, new, path):
     """Writes data, with its first old replaced by new, to path."""
     with open(path, "wb") as f:
-        f.write(replace_first(data, old, new))
+        f.write(natronrunner.replace_first(data, old, new))
 
 
 class ConvertProjectTest:
@@ -192,7 +191,7 @@ class ConvertProjectTest:
         with open(self.dump_script, "w") as f:
             f.write(DUMP_SCRIPT)
         self.src = self.path("original.ntp")
-        shutil.copyfile(TEST_PROJECT, self.src)
+        shutil.copyfile(natronrunner.TEST_PROJECT, self.src)
         with open(self.src, "rb") as f:
             self.data = f.read()
 
@@ -264,7 +263,8 @@ class ConvertProjectTest:
         """A project with GUI data is converted only with discard_gui."""
         # Only the flag: NatronRenderer does not read the GUI part
         with_gui = self.path("withgui.ntp")
-        write_variant(self.data, BACKGROUND_TAG, GUI_TAG, with_gui)
+        write_variant(self.data, natronrunner.BACKGROUND_TAG,
+                      natronrunner.GUI_TAG, with_gui)
         dst = self.path("withgui.bin.ntp")
         self.check_refused(self.runner.convert(with_gui, dst, "binary"), dst,
                            "RuntimeError: %s has GUI data" % with_gui,
@@ -277,7 +277,8 @@ class ConvertProjectTest:
     def test_load_error(self):
         """A project that loads with errors (a missing plug-in) is refused."""
         missing = self.path("missingplugin.ntp")
-        write_variant(self.data, DOT_PLUGIN_TAG, MISSING_PLUGIN_TAG, missing)
+        write_variant(self.data, natronrunner.DOT_PLUGIN_TAG,
+                      natronrunner.MISSING_PLUGIN_TAG, missing)
         dst = self.path("missingplugin.bin.ntp")
         self.check_refused(self.runner.convert(missing, dst, "binary"), dst,
                            "RuntimeError: there were errors while loading %s"
@@ -289,7 +290,7 @@ def main(argv):
     if len(argv) < 2:
         sys.stderr.write(__doc__)
         return 2
-    cmd_wrapper = wrapper(argv[2:])
+    cmd_wrapper = natronrunner.wrapper(argv[2:])
     tmp_dir = tempfile.mkdtemp(prefix="natron-convert-project-test-")
     try:
         runner = Runner(argv[1], cmd_wrapper, tmp_dir)

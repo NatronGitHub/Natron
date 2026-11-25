@@ -59,9 +59,7 @@ import shutil
 import sys
 import tempfile
 
-from natronrunner import (BACKGROUND_TAG, DOT_PLUGIN_TAG, GUI_TAG,
-                          MISSING_PLUGIN_TAG, TEST_PROJECT, natron_env,
-                          replace_first, run, wrapper)
+import natronrunner
 
 TIMEOUT = 300  # seconds
 
@@ -199,22 +197,25 @@ def _variants(data):
     Raises:
       ValueError: the test project doesn't have the expected contents.
     """
-    replace = replace_first
-    missing_in_group = replace(data, INPUT_PLUGIN_TAG, MISSING_PLUGIN_TAG)
-    callback = replace(replace(missing_in_group, BACKGROUND_TAG, GUI_TAG),
+    # short names for the table below
+    replace = natronrunner.replace_first
+    background, gui = natronrunner.BACKGROUND_TAG, natronrunner.GUI_TAG
+    dot, missing = natronrunner.DOT_PLUGIN_TAG, natronrunner.MISSING_PLUGIN_TAG
+    missing_in_group = replace(data, INPUT_PLUGIN_TAG, missing)
+    callback = replace(replace(missing_in_group, background, gui),
                        KNOBS_COUNT_TAG,
                        b"<ProjectKnobsCount>5</ProjectKnobsCount>")
     callback = replace(callback, FORMATS_TAG, CALLBACK_KNOB + FORMATS_TAG)
     return {
         "background": data,
-        "gui": replace(data, BACKGROUND_TAG, GUI_TAG),
-        "missingplugin": replace(data, DOT_PLUGIN_TAG, MISSING_PLUGIN_TAG),
+        "gui": replace(data, background, gui),
+        "missingplugin": replace(data, dot, missing),
         "aftererrors": data,
         "missingingroup": missing_in_group,
         "missinginput": replace(data, SOURCE_INPUT_TAG, MISSING_INPUT_TAG),
         "majorversion": replace(data, MAJOR_VERSION_TAG,
                                 OTHER_MAJOR_VERSION_TAG,
-                                after=DOT_PLUGIN_TAG),
+                                after=dot),
         "missingpyplug": replace(data, GROUP_PYTHON_MODULE_TAG,
                                  MISSING_PYTHON_MODULE_TAG),
         "pyplug": replace(data, GROUP_PYTHON_MODULE_TAG, PYTHON_MODULE_TAG),
@@ -236,7 +237,7 @@ def _write_test_files(tmp_dir, env):
       OSError: a file can't be read or written.
       ValueError: the test project doesn't have the expected contents.
     """
-    with open(TEST_PROJECT, "rb") as f:
+    with open(natronrunner.TEST_PROJECT, "rb") as f:
         data = f.read()
     for label, contents in _variants(data).items():
         path = os.path.join(tmp_dir, label + ".ntp")
@@ -261,7 +262,7 @@ def _run_renderer(cmd, env):
     Returns:
       Its output, or None if it failed or timed out.
     """
-    status, output = run(cmd, env, TIMEOUT)
+    status, output = natronrunner.run(cmd, env, TIMEOUT)
     sys.stdout.write(output)
     if status is None:
         print("FAILED: timeout")
@@ -300,10 +301,11 @@ def main(argv):
     if len(argv) < 2:
         sys.stderr.write(__doc__)
         return 2
-    cmd_wrapper = wrapper(argv[2:])
+    cmd_wrapper = natronrunner.wrapper(argv[2:])
     tmp_dir = tempfile.mkdtemp(prefix="natron-project-load-info-test-")
     try:
-        env = natron_env(tmp_dir)
+        env = natronrunner.natron_env(
+            tmp_dir, NATRON_DISK_CACHE_PATH=os.path.join(tmp_dir, "cache"))
         script = _write_test_files(tmp_dir, env)
         output = _run_renderer(
             cmd_wrapper + [argv[1], "--no-settings", "-t", script], env)

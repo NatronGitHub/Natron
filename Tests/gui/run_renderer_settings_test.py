@@ -37,7 +37,7 @@ import shutil
 import sys
 import tempfile
 
-from natronrunner import natron_env, run, wrapper
+import natronrunner
 
 TIMEOUT = 300  # seconds
 
@@ -86,14 +86,14 @@ def main(argv):
     if len(argv) < 2:
         sys.stderr.write(__doc__)
         return 2
-    cmd_wrapper = wrapper(argv[2:])
+    cmd_wrapper = natronrunner.wrapper(argv[2:])
     out_dir = tempfile.mkdtemp(prefix="natron-settings-test-")
     try:
         cache_dir = os.path.join(out_dir, "cache").replace("\\", "/")
         script = os.path.join(out_dir, "settings_test.py")
         with open(script, "w") as f:
             f.write(SCRIPT % {"expected": [(name, expected) for name, _, expected in SETTINGS]})
-        env = natron_env(out_dir, XDG_CACHE_HOME=os.path.join(out_dir, "xdg-cache"),
+        env = natronrunner.natron_env(out_dir, XDG_CACHE_HOME=os.path.join(out_dir, "xdg-cache"),
                          NATRON_SETTINGS_TEST_CACHE=cache_dir)
         # the environment variable takes precedence over the diskCachePath setting (#1265): unset, so that the
         # test checks the setting. Before the setting applies, the first refreshDiskCacheLocation() uses the
@@ -106,7 +106,7 @@ def main(argv):
         for name, value, _ in SETTINGS:
             cmd += ["--setting", "%s=%s" % (name, value)]
         cmd += ["-t", script]
-        status, out = run(cmd, env, TIMEOUT)
+        status, out = natronrunner.run(cmd, env, TIMEOUT)
         sys.stdout.write(out)
         if status is None:
             print("FAILED: timeout")
