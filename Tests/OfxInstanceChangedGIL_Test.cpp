@@ -216,7 +216,7 @@ public:
 TEST(OfxInstanceChangedGIL, FetchWhileAnotherRenderNeedsTheGIL)
 {
     if ( !NatronTestPlugin::isAvailable(kGILWaitSource) || !NatronTestPlugin::isAvailable(kGILWaitAnalysis) ) {
-        NatronTestPlugin::reportSkipped(kGILWaitAnalysis);
+        NatronTestPlugin::reportMissing(kGILWaitAnalysis);
 
         return;
     }
@@ -271,7 +271,7 @@ TEST(OfxInstanceChangedGIL, FetchWhileAnotherRenderNeedsTheGIL)
 TEST(OfxInstanceChangedGIL, MultiThreadSuiteThreadsNeedTheGIL)
 {
     if ( !NatronTestPlugin::isAvailable(kGILWaitAnalysis) ) {
-        NatronTestPlugin::reportSkipped(kGILWaitAnalysis);
+        NatronTestPlugin::reportMissing(kGILWaitAnalysis);
 
         return;
     }

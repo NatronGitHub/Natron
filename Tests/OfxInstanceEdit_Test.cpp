@@ -98,7 +98,7 @@ isInteractive(const NodePtr& node)
 TEST(OfxInstanceEdit, NoEndWithoutBegin)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginInstanceEdit) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginInstanceEdit);
+        NatronTestPlugin::reportMissing(kNatronTestPluginInstanceEdit);
 
         return;
     }
@@ -124,7 +124,7 @@ TEST(OfxInstanceEdit, NoEndWithoutBegin)
 TEST(OfxInstanceEdit, BeginEndAlternate)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginInstanceEdit) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginInstanceEdit);
+        NatronTestPlugin::reportMissing(kNatronTestPluginInstanceEdit);
 
         return;
     }
@@ -177,7 +177,7 @@ TEST(OfxInstanceEdit, BeginEndAlternate)
 TEST(OfxInstanceEdit, EndBeforeDestroy)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginInstanceEdit) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginInstanceEdit);
+        NatronTestPlugin::reportMissing(kNatronTestPluginInstanceEdit);
 
         return;
     }

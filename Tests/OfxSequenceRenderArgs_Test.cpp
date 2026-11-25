@@ -59,7 +59,7 @@ resetCounters()
 TEST(OfxSequenceRenderArgs, SingleFrameRender)
 {
     if ( !NatronTestPlugin::isAvailable(kSequenceArgsPluginID) ) {
-        NatronTestPlugin::reportSkipped(kSequenceArgsPluginID);
+        NatronTestPlugin::reportMissing(kSequenceArgsPluginID);
 
         return;
     }

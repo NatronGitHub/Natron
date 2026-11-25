@@ -118,7 +118,7 @@ bool
 canRunTest(const char* pluginID)
 {
     if ( !NatronTestPlugin::isAvailable(pluginID) || !NatronTestPlugin::isAvailable(kNatronTestPluginGenerator) ) {
-        NatronTestPlugin::reportSkipped(pluginID);
+        NatronTestPlugin::reportMissing(pluginID);
 
         return false;
     }

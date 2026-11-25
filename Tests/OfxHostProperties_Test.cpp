@@ -125,12 +125,12 @@ TEST(OfxHostProperties, SetableFrameRate)
     EXPECT_EQ( 0, props.getIntProperty(kOfxImageEffectPropSetableFielding) );
 
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginGenerator) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginGenerator);
+        NatronTestPlugin::reportMissing(kNatronTestPluginGenerator);
 
         return;
     }
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginMultiPAR) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginMultiPAR);
+        NatronTestPlugin::reportMissing(kNatronTestPluginMultiPAR);
 
         return;
     }
@@ -274,7 +274,7 @@ createTestNode(const char* pluginID)
 TEST(OfxHostProperties, OfxSetHostOncePerBinary)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginParamInteract) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginParamInteract);
+        NatronTestPlugin::reportMissing(kNatronTestPluginParamInteract);
 
         return;
     }
@@ -303,7 +303,7 @@ TEST(OfxHostProperties, OfxSetHostOncePerBinary)
 TEST(OfxHostProperties, ClipGetHandleInDescribe)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginParamInteract) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginParamInteract);
+        NatronTestPlugin::reportMissing(kNatronTestPluginParamInteract);
 
         return;
     }
@@ -385,7 +385,7 @@ TEST(OfxHostProperties, ActionCallerStack)
 TEST(OfxHostProperties, HostNameAfterEffectDestroyed)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginParamInteract) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginParamInteract);
+        NatronTestPlugin::reportMissing(kNatronTestPluginParamInteract);
 
         return;
     }
@@ -476,7 +476,7 @@ public:
 TEST(OfxHostProperties, HostNameInInteractAndThreads)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginHostName) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginHostName);
+        NatronTestPlugin::reportMissing(kNatronTestPluginHostName);
 
         return;
     }

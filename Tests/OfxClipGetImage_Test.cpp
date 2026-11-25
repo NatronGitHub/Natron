@@ -36,7 +36,7 @@ NATRON_NAMESPACE_USING
 TEST(OfxClipGetImage, LargerRegionAndSeparateHandles)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginClipGetImage) || !NatronTestPlugin::isAvailable(kNatronTestPluginGenerator) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginClipGetImage);
+        NatronTestPlugin::reportMissing(kNatronTestPluginClipGetImage);
 
         return;
     }

@@ -96,7 +96,7 @@ destroy(NodePtr& node)
 TEST(OfxSingleInstance, OnlyOneInstance)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginSingleInstance) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginSingleInstance);
+        NatronTestPlugin::reportMissing(kNatronTestPluginSingleInstance);
 
         return;
     }
@@ -127,7 +127,7 @@ TEST(OfxSingleInstance, OnlyOneInstance)
 TEST(OfxSingleInstance, OutOfProjectNode)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginSingleInstance) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginSingleInstance);
+        NatronTestPlugin::reportMissing(kNatronTestPluginSingleInstance);
 
         return;
     }
@@ -153,7 +153,7 @@ TEST(OfxSingleInstance, OutOfProjectNode)
 TEST(OfxSingleInstance, DeactivatedNodeDoesNotCount)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginSingleInstance) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginSingleInstance);
+        NatronTestPlugin::reportMissing(kNatronTestPluginSingleInstance);
 
         return;
     }
@@ -179,7 +179,7 @@ TEST(OfxSingleInstance, DeactivatedNodeDoesNotCount)
 TEST(OfxSingleInstance, UndoDeleteRecreatesTheInstance)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginSingleInstance) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginSingleInstance);
+        NatronTestPlugin::reportMissing(kNatronTestPluginSingleInstance);
 
         return;
     }
@@ -236,7 +236,7 @@ TEST(OfxSingleInstance, UndoDeleteRecreatesTheInstance)
 TEST(OfxSingleInstance, ActivateWithAnotherActiveInstance)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginSingleInstance) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginSingleInstance);
+        NatronTestPlugin::reportMissing(kNatronTestPluginSingleInstance);
 
         return;
     }
@@ -264,7 +264,7 @@ TEST(OfxSingleInstance, ActivateWithAnotherActiveInstance)
 TEST(OfxSingleInstance, LoadProjectWithTwoInstances)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginSingleInstance) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginSingleInstance);
+        NatronTestPlugin::reportMissing(kNatronTestPluginSingleInstance);
 
         return;
     }
@@ -307,7 +307,7 @@ TEST(OfxSingleInstance, LoadProjectWithTwoInstances)
 TEST(OfxSingleInstance, GroupDeactivationSuspendsItsNodes)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginSingleInstance) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginSingleInstance);
+        NatronTestPlugin::reportMissing(kNatronTestPluginSingleInstance);
 
         return;
     }
@@ -368,7 +368,7 @@ TEST(OfxSingleInstance, GroupDeactivationSuspendsItsNodes)
 TEST(OfxSingleInstance, DeleteWhileRendering)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginSingleInstance) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginSingleInstance);
+        NatronTestPlugin::reportMissing(kNatronTestPluginSingleInstance);
 
         return;
     }
@@ -407,7 +407,7 @@ TEST(OfxSingleInstance, DeleteWhileRendering)
 TEST(OfxSingleInstance, DeleteWhileAnotherThreadIsInAnAction)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginSingleInstance) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginSingleInstance);
+        NatronTestPlugin::reportMissing(kNatronTestPluginSingleInstance);
 
         return;
     }

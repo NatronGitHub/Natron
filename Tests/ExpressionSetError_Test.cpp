@@ -73,7 +73,7 @@ protected:
     bool skipped()
     {
         if (!_node) {
-            NatronTestPlugin::reportSkipped(kNatronTestPluginParams);
+            NatronTestPlugin::reportMissing(kNatronTestPluginParams);
 
             return true;
         }
