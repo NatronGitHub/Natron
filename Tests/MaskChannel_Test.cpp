@@ -92,15 +92,6 @@ connectMask(const NodePtr& masked,
 
     return (mask >= 0) && masked->connectInput(source, mask);
 }
-
-// Resets the shared app's project when the test ends, also when an ASSERT fails
-struct ResetProjectOnExit
-{
-    ~ResetProjectOnExit()
-    {
-        appPTR->getTopLevelInstance()->getProject()->resetProject();
-    }
-};
 } // anonymous namespace
 
 TEST(MaskChannel, DefaultIsAlpha)
@@ -108,7 +99,7 @@ TEST(MaskChannel, DefaultIsAlpha)
     if ( !pluginsAvailable() ) {
         return;
     }
-    const ResetProjectOnExit resetProject;
+    const NatronTest::ProjectResetScope resetProject;
     const std::string alphaID = ImagePlaneDesc::getRGBAComponents().getChannelOption(3).id;
     NodePtr alphaGenerator = NatronTestPlugin::createNode(kNatronTestPluginAlphaGenerator);
     NodePtr rgbaGenerator = NatronTestPlugin::createNode(kNatronTestPluginGenerator);

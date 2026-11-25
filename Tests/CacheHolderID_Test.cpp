@@ -50,20 +50,11 @@
 #include "Engine/TextureRect.h"
 #include "Engine/ViewIdx.h"
 
+#include "TestUtils.h"
+
 NATRON_NAMESPACE_USING
 
 namespace {
-NodePtr
-createDot()
-{
-    AppInstancePtr app = appPTR->getTopLevelInstance();
-    CreateNodeArgs args(PLUGINID_NATRON_DOT, app->getProject());
-    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-
-    return app->createNode(args);
-}
-
 // The owner of the cache entries of a destroyed node: the requests of the cleaner threads of the caches only
 // carry the cache ID of their holder.
 class DestroyedHolder
@@ -118,14 +109,14 @@ TEST_F(CacheHolderID, CleanupOfDestroyedNodeKeepsEntriesOfNewNodeWithSameName)
     // No request left by the previous tests
     appPTR->waitForCacheThreads();
 
-    NodePtr destroyed = createDot();
+    NodePtr destroyed = NatronTest::createNode(PLUGINID_NATRON_DOT);
     ASSERT_TRUE( bool(destroyed) );
     const std::string scriptName = destroyed->getScriptName();
     const std::string destroyedCacheID = destroyed->getCacheID();
     destroyed->destroyNode(true, false);
     destroyed.reset();
 
-    _node = createDot();
+    _node = NatronTest::createNode(PLUGINID_NATRON_DOT);
     const NodePtr& node = _node;
     ASSERT_TRUE( bool(node) );
     // The new node gets the name of the destroyed one

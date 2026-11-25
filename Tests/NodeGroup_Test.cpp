@@ -60,22 +60,11 @@
 #include "Engine/NodeGroup.h"
 #include "Engine/Project.h"
 
+#include "TestUtils.h"
+
 NATRON_NAMESPACE_USING
 
 namespace {
-NodePtr
-createNodeIn(const AppInstancePtr& app,
-             const std::string& pluginID,
-             const NodeCollectionPtr& group,
-             bool createInitialNodes)
-{
-    CreateNodeArgs args(pluginID, group);
-    args.setProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes, !createInitialNodes);
-    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-
-    return app->createNode(args);
-}
 
 // If the threads deadlock, nothing else can report it: abort after a while.
 // Stops (and joins its thread) when destroyed, also when the test exits early.
@@ -140,11 +129,11 @@ TEST(NodeGroup, InitializeInputsDoesNotDeadlockWithRenderThread)
     AppInstancePtr app = appPTR->getTopLevelInstance();
     ASSERT_TRUE( bool(app) );
 
-    NodePtr groupNode = createNodeIn(app, PLUGINID_NATRON_GROUP, app->getProject(), false);
+    NodePtr groupNode = NatronTest::createNode(PLUGINID_NATRON_GROUP, app->getProject());
     ASSERT_TRUE( bool(groupNode) );
     NodeGroupPtr group = std::dynamic_pointer_cast<NodeGroup>( groupNode->getEffectInstance() );
     ASSERT_TRUE( bool(group) );
-    NodePtr inputNode = createNodeIn(app, PLUGINID_NATRON_INPUT, group, false);
+    NodePtr inputNode = NatronTest::createNode(PLUGINID_NATRON_INPUT, group);
     ASSERT_TRUE( bool(inputNode) );
     ASSERT_EQ(1, groupNode->getNInputs());
 
@@ -172,17 +161,17 @@ TEST(NodeGroup, DeactivateGroupInputDoesNotDeadlockWithRenderThread)
     ASSERT_TRUE( bool(app) );
 
     // source -> [ group: inputA, inputB -> dot ]
-    NodePtr source = createNodeIn(app, PLUGINID_NATRON_DOT, app->getProject(), false);
+    NodePtr source = NatronTest::createNode(PLUGINID_NATRON_DOT, app->getProject());
     ASSERT_TRUE( bool(source) );
-    NodePtr groupNode = createNodeIn(app, PLUGINID_NATRON_GROUP, app->getProject(), false);
+    NodePtr groupNode = NatronTest::createNode(PLUGINID_NATRON_GROUP, app->getProject());
     ASSERT_TRUE( bool(groupNode) );
     NodeGroupPtr group = std::dynamic_pointer_cast<NodeGroup>( groupNode->getEffectInstance() );
     ASSERT_TRUE( bool(group) );
-    NodePtr inputA = createNodeIn(app, PLUGINID_NATRON_INPUT, group, false);
+    NodePtr inputA = NatronTest::createNode(PLUGINID_NATRON_INPUT, group);
     ASSERT_TRUE( bool(inputA) );
-    NodePtr inputB = createNodeIn(app, PLUGINID_NATRON_INPUT, group, false);
+    NodePtr inputB = NatronTest::createNode(PLUGINID_NATRON_INPUT, group);
     ASSERT_TRUE( bool(inputB) );
-    NodePtr dot = createNodeIn(app, PLUGINID_NATRON_DOT, group, false);
+    NodePtr dot = NatronTest::createNode(PLUGINID_NATRON_DOT, group);
     ASSERT_TRUE( bool(dot) );
     ASSERT_TRUE( dot->connectInput(inputB, 0) );
     ASSERT_EQ(2, groupNode->getNInputs());
@@ -237,7 +226,7 @@ TEST(NodeGroup, ExportedPyPlugLinksToVersionDocumentation)
     AppInstancePtr app = appPTR->getTopLevelInstance();
     ASSERT_TRUE( bool(app) );
 
-    NodePtr groupNode = createNodeIn(app, PLUGINID_NATRON_GROUP, app->getProject(), false);
+    NodePtr groupNode = NatronTest::createNode(PLUGINID_NATRON_GROUP, app->getProject());
     ASSERT_TRUE( bool(groupNode) );
     NodeGroupPtr group = std::dynamic_pointer_cast<NodeGroup>( groupNode->getEffectInstance() );
     ASSERT_TRUE( bool(group) );
@@ -261,7 +250,7 @@ TEST(NodeGroup, ExportedPyPlugKeepsUsePointInteract)
     AppInstancePtr app = appPTR->getTopLevelInstance();
     ASSERT_TRUE( bool(app) );
 
-    NodePtr groupNode = createNodeIn(app, PLUGINID_NATRON_GROUP, app->getProject(), false);
+    NodePtr groupNode = NatronTest::createNode(PLUGINID_NATRON_GROUP, app->getProject());
     ASSERT_TRUE( bool(groupNode) );
     NodeGroupPtr group = std::dynamic_pointer_cast<NodeGroup>( groupNode->getEffectInstance() );
     ASSERT_TRUE( bool(group) );
@@ -294,21 +283,21 @@ TEST(NodeGroup, ActivateGroupKeepsNodesDeletedBeforeTheGroupDeactivated)
     ASSERT_TRUE( bool(app) );
 
     // group: [ kept, deleted, deletedInput, inner group: [ innerKept, innerDeleted ] ]
-    NodePtr groupNode = createNodeIn(app, PLUGINID_NATRON_GROUP, app->getProject(), false);
+    NodePtr groupNode = NatronTest::createNode(PLUGINID_NATRON_GROUP, app->getProject());
     ASSERT_TRUE( bool(groupNode) );
     NodeGroupPtr group = std::dynamic_pointer_cast<NodeGroup>( groupNode->getEffectInstance() );
     ASSERT_TRUE( bool(group) );
-    NodePtr kept = createNodeIn(app, PLUGINID_NATRON_DOT, group, false);
-    NodePtr deleted = createNodeIn(app, PLUGINID_NATRON_DOT, group, false);
-    NodePtr deletedInput = createNodeIn(app, PLUGINID_NATRON_INPUT, group, false);
+    NodePtr kept = NatronTest::createNode(PLUGINID_NATRON_DOT, group);
+    NodePtr deleted = NatronTest::createNode(PLUGINID_NATRON_DOT, group);
+    NodePtr deletedInput = NatronTest::createNode(PLUGINID_NATRON_INPUT, group);
     ASSERT_TRUE( bool(deletedInput) );
     ASSERT_EQ(1, groupNode->getNInputs());
-    NodePtr innerGroupNode = createNodeIn(app, PLUGINID_NATRON_GROUP, group, false);
+    NodePtr innerGroupNode = NatronTest::createNode(PLUGINID_NATRON_GROUP, group);
     ASSERT_TRUE( kept && deleted && innerGroupNode );
     NodeGroupPtr innerGroup = std::dynamic_pointer_cast<NodeGroup>( innerGroupNode->getEffectInstance() );
     ASSERT_TRUE( bool(innerGroup) );
-    NodePtr innerKept = createNodeIn(app, PLUGINID_NATRON_DOT, innerGroup, false);
-    NodePtr innerDeleted = createNodeIn(app, PLUGINID_NATRON_DOT, innerGroup, false);
+    NodePtr innerKept = NatronTest::createNode(PLUGINID_NATRON_DOT, innerGroup);
+    NodePtr innerDeleted = NatronTest::createNode(PLUGINID_NATRON_DOT, innerGroup);
     ASSERT_TRUE( innerKept && innerDeleted );
     ASSERT_TRUE( deleted->connectInput(kept, 0) );
 
