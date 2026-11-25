@@ -95,6 +95,9 @@ Name: "sgl"; Description: "OpenGL Software Renderer (FOR LEGACY HARDWARE ONLY)"
 ; that choosing an existing folder (e.g. D:\Tools) never deletes its bin\.
 [InstallDelete]
 Type: files; Name: "{app}\bin\*.dll"; Check: IsNatronInstall
+; PIKColor came with Natron up to 2.6.0-rc: it comes with openfx-misc (Misc.ofx.bundle) since, and an old copy
+; in Plugins\PyPlugs would hide it (the PyPlugs of the OFX bundles are searched last, #1854)
+Type: files; Name: "{app}\Plugins\PyPlugs\PIKColor.*"; Check: IsNatronInstall
 Type: filesandordirs; Name: "{app}\bin\audio"; Check: IsNatronInstall
 Type: filesandordirs; Name: "{app}\bin\bearer"; Check: IsNatronInstall
 Type: filesandordirs; Name: "{app}\bin\generic"; Check: IsNatronInstall

@@ -480,6 +480,12 @@ if [ "$BUILD_MISC" = "1" ] && [ -d "$TMP_PATH/openfx-misc" ]; then
             echo "Error: $misc_pyplugs/PIKColor.py is missing, and openfx-misc has no PIK/PIKColor.py to copy there"
             exit 1
         fi
+        # Natron 2.6 projects have PIKColor version 2 (#1679): an older openfx-misc (version 1) would downgrade them
+        pikcolor_version="$(sed -n '/^def getVersion/,/return/s/^ *return *\([0-9][0-9]*\).*/\1/p' PIK/PIKColor.py)"
+        if [ -z "$pikcolor_version" ] || [ "$pikcolor_version" -lt 2 ]; then
+            echo "Error: openfx-misc's PIK/PIKColor.py is version ${pikcolor_version:-unknown}, Natron needs version 2 or later (openfx-misc#414)"
+            exit 1
+        fi
         echo "Info: copying the PIKColor PyPlug from openfx-misc/PIK to $misc_pyplugs"
         mkdir -p "$misc_pyplugs"
         for f in PIK/PIKColor.py PIK/fr.inria.PIKColor.png PIK/fr.inria.PIKColor.svg PIK/PIKColor.gizmo; do
