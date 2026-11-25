@@ -28,11 +28,14 @@
 
 #include <limits>
 
+#include "Engine/AppInstance.h"
+#include "Engine/AppManager.h"
 #include "Engine/Image.h"
 #include "Engine/Lut.h"
 #include "Engine/Node.h"
 #include "Engine/OpenGLViewerI.h"
 #include "Engine/OutputSchedulerThread.h"
+#include "Engine/Project.h"
 #include "Engine/TimeLine.h"
 #include "Engine/TrackerNode.h"
 #include "Engine/TrackerContext.h"
@@ -109,16 +112,46 @@ TrackerNodeInteract::getContext() const
     return _p->publicInterface->getNode()->getTrackerContext();
 }
 
-void
-TrackerNodeInteract::onTrackRangeClicked()
+ViewerInstance*
+TrackerNodeInteract::getViewer() const
 {
     OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
 
-    assert(overlay);
-    ViewerInstance* viewer = overlay->getInternalViewerNode();
-    assert(viewer);
-    int viewerFirst, viewerLast;
-    viewer->getUiContext()->getViewerFrameRange(&viewerFirst, &viewerLast);
+    return overlay ? overlay->getInternalViewerNode() : NULL;
+}
+
+std::pair<int, int>
+TrackerNodeInteract::getFrameRange() const
+{
+    ViewerInstance* viewer = getViewer();
+
+    if (viewer) {
+        int first, last;
+        viewer->getTimelineBounds(&first, &last);
+
+        return std::make_pair(first, last);
+    }
+    double first, last;
+    _p->publicInterface->getApp()->getProject()->getFrameRange(&first, &last);
+
+    return std::make_pair( (int)first, (int)last );
+}
+
+int
+TrackerNodeInteract::getCurrentFrame() const
+{
+    ViewerInstance* viewer = getViewer();
+    TimeLinePtr timeline = viewer ? viewer->getTimeline() : _p->publicInterface->getApp()->getTimeLine();
+
+    return timeline->currentFrame();
+}
+
+void
+TrackerNodeInteract::onTrackRangeClicked()
+{
+    const std::pair<int, int> range = getFrameRange();
+    const int viewerFirst = range.first;
+    const int viewerLast = range.second;
 
     int first = trackRangeDialogFirstFrame.lock()->getValue();
     int last = trackRangeDialogLastFrame.lock()->getValue();
@@ -204,34 +237,23 @@ TrackerNodeInteract::onTrackCurrentKeyframeClicked()
 void
 TrackerNodeInteract::onTrackBwClicked()
 {
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
-
-    assert(overlay);
-    ViewerInstance* viewer = overlay->getInternalViewerNode();
-    assert(viewer);
-    int first, last;
-    viewer->getUiContext()->getViewerFrameRange(&first, &last);
-
-    int startFrame = viewer->getTimeline()->currentFrame();
+    const int first = getFrameRange().first;
+    const int startFrame = getCurrentFrame();
     TrackerContextPtr ctx = getContext();
+
     if ( ctx->isCurrentlyTracking() ) {
         ctx->abortTracking();
     } else {
-        ctx->trackSelectedMarkers( startFrame, first - 1, -1,  overlay );
+        ctx->trackSelectedMarkers( startFrame, first - 1, -1, _p->publicInterface->getCurrentViewportForOverlays() );
     }
 }
 
 void
 TrackerNodeInteract::onTrackPrevClicked()
 {
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    const int startFrame = getCurrentFrame();
 
-    assert(overlay);
-    ViewerInstance* viewer = overlay->getInternalViewerNode();
-    assert(viewer);
-    int startFrame = viewer->getTimeline()->currentFrame();
-    TrackerContextPtr ctx = getContext();
-    ctx->trackSelectedMarkers( startFrame, startFrame - 2, -1, overlay );
+    getContext()->trackSelectedMarkers( startFrame, startFrame - 2, -1, _p->publicInterface->getCurrentViewportForOverlays() );
 }
 
 void
@@ -243,33 +265,22 @@ TrackerNodeInteract::onStopButtonClicked()
 void
 TrackerNodeInteract::onTrackNextClicked()
 {
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    const int startFrame = getCurrentFrame();
 
-    assert(overlay);
-    ViewerInstance* viewer = overlay->getInternalViewerNode();
-    assert(viewer);
-    int startFrame = viewer->getTimeline()->currentFrame();
-    TrackerContextPtr ctx = getContext();
-    ctx->trackSelectedMarkers( startFrame, startFrame + 2, true, overlay );
+    getContext()->trackSelectedMarkers( startFrame, startFrame + 2, 1, _p->publicInterface->getCurrentViewportForOverlays() );
 }
 
 void
 TrackerNodeInteract::onTrackFwClicked()
 {
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
-
-    assert(overlay);
-    ViewerInstance* viewer = overlay->getInternalViewerNode();
-    assert(viewer);
-    int first, last;
-    viewer->getUiContext()->getViewerFrameRange(&first, &last);
-
-    int startFrame = viewer->getTimeline()->currentFrame();
+    const int last = getFrameRange().second;
+    const int startFrame = getCurrentFrame();
     TrackerContextPtr ctx = getContext();
+
     if ( ctx->isCurrentlyTracking() ) {
         ctx->abortTracking();
     } else {
-        ctx->trackSelectedMarkers( startFrame, last + 1, true,  overlay );
+        ctx->trackSelectedMarkers( startFrame, last + 1, 1, _p->publicInterface->getCurrentViewportForOverlays() );
     }
 }
 
@@ -1079,7 +1090,9 @@ void
 TrackerNodeInteract::refreshSelectedMarkerTexture()
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if (isTracking) {
+    // The texture is only drawn by the overlay in a viewer: none in background mode, where rendering it in a
+    // thread of the pool could outlive the node (#1256)
+    if ( isTracking || appPTR->isBackground() ) {
         return;
     }
     TrackMarkerPtr marker = selectedMarker.lock();
@@ -1438,7 +1451,8 @@ bool
 TrackerNodeInteract::nudgeSelectedTracks(int x,
                                          int y)
 {
-    if (!isInsideSelectedMarkerTexture(lastMousePos)) {
+    // The keyboard nudge moves the tracks by one screen pixel of the viewer that has the mouse
+    if ( !getViewer() || !isInsideSelectedMarkerTexture(lastMousePos) ) {
         return false;
     }
     std::list<TrackMarkerPtr> markers;

@@ -34,6 +34,7 @@
 #include <QThreadPool>
 
 #include "Engine/AppInstance.h"
+#include "Engine/AppManager.h"
 #include "Engine/Curve.h"
 #include "Engine/Project.h"
 #include "Engine/TimeLine.h"
@@ -2393,20 +2394,26 @@ void
 TrackerContextPrivate::computeCornerParamsFromTracks()
 {
 #ifndef TRACKER_GENERATE_DATA_SEQUENTIALLY
-    lastSolveRequest.tWatcher.reset();
-    lastSolveRequest.cpWatcher.reset( new QFutureWatcher<CornerPinData>() );
-    QObject::connect( lastSolveRequest.cpWatcher.get(), SIGNAL(finished()), this, SLOT(onCornerPinSolverWatcherFinished()) );
-    QObject::connect( lastSolveRequest.cpWatcher.get(), SIGNAL(progressValueChanged(int)), this, SLOT(onCornerPinSolverWatcherProgress(int)) );
-    std::function<CornerPinData (const double&)> compute = [this](const double &keyframe) {
-        return computeCornerPinParamsFromTracksAtTime(lastSolveRequest.refTime,
-                                                      keyframe,
-                                                      lastSolveRequest.jitterPeriod,
-                                                      lastSolveRequest.jitterAdd,
-                                                      lastSolveRequest.robustModel,
-                                                      lastSolveRequest.allMarkers);
-    };
-    lastSolveRequest.cpWatcher->setFuture( QtConcurrent::mapped( lastSolveRequest.keyframes, compute ) );
-#else
+    // In background mode (NatronRenderer, Python scripts), no event loop delivers the watcher's finished()
+    // signal: solve in this thread, so that the solved parameters are set when the solve returns (#1256)
+    if ( !appPTR->isBackground() ) {
+        lastSolveRequest.tWatcher.reset();
+        lastSolveRequest.cpWatcher.reset( new QFutureWatcher<CornerPinData>() );
+        QObject::connect( lastSolveRequest.cpWatcher.get(), SIGNAL(finished()), this, SLOT(onCornerPinSolverWatcherFinished()) );
+        QObject::connect( lastSolveRequest.cpWatcher.get(), SIGNAL(progressValueChanged(int)), this, SLOT(onCornerPinSolverWatcherProgress(int)) );
+        std::function<CornerPinData (const double&)> compute = [this](const double &keyframe) {
+            return computeCornerPinParamsFromTracksAtTime(lastSolveRequest.refTime,
+                                                          keyframe,
+                                                          lastSolveRequest.jitterPeriod,
+                                                          lastSolveRequest.jitterAdd,
+                                                          lastSolveRequest.robustModel,
+                                                          lastSolveRequest.allMarkers);
+        };
+        lastSolveRequest.cpWatcher->setFuture( QtConcurrent::mapped( lastSolveRequest.keyframes, compute ) );
+
+        return;
+    }
+#endif
     NodePtr thisNode = node.lock();
     QList<CornerPinData> validResults;
     {
@@ -2422,7 +2429,6 @@ TrackerContextPrivate::computeCornerParamsFromTracks()
         }
     }
     computeCornerParamsFromTracksEnd(lastSolveRequest.refTime, lastSolveRequest.maxFittingError, validResults);
-#endif
 } // TrackerContext::computeCornerParamsFromTracks
 
 void
@@ -2603,20 +2609,26 @@ void
 TrackerContextPrivate::computeTransformParamsFromTracks()
 {
 #ifndef TRACKER_GENERATE_DATA_SEQUENTIALLY
-    lastSolveRequest.cpWatcher.reset();
-    lastSolveRequest.tWatcher.reset( new QFutureWatcher<TransformData>() );
-    QObject::connect( lastSolveRequest.tWatcher.get(), SIGNAL(finished()), this, SLOT(onTransformSolverWatcherFinished()) );
-    QObject::connect( lastSolveRequest.tWatcher.get(), SIGNAL(progressValueChanged(int)), this, SLOT(onTransformSolverWatcherProgress(int)) );
-    std::function<TransformData (const double&)> compute = [this](const double &keyframe) {
-        return computeTransformParamsFromTracksAtTime(lastSolveRequest.refTime,
-                                                      keyframe,
-                                                      lastSolveRequest.jitterPeriod,
-                                                      lastSolveRequest.jitterAdd,
-                                                      lastSolveRequest.robustModel,
-                                                      lastSolveRequest.allMarkers);
-    };
-    lastSolveRequest.tWatcher->setFuture( QtConcurrent::mapped( lastSolveRequest.keyframes, compute ) );
-#else
+    // In background mode (NatronRenderer, Python scripts), no event loop delivers the watcher's finished()
+    // signal: solve in this thread, so that the solved parameters are set when the solve returns (#1256)
+    if ( !appPTR->isBackground() ) {
+        lastSolveRequest.cpWatcher.reset();
+        lastSolveRequest.tWatcher.reset( new QFutureWatcher<TransformData>() );
+        QObject::connect( lastSolveRequest.tWatcher.get(), SIGNAL(finished()), this, SLOT(onTransformSolverWatcherFinished()) );
+        QObject::connect( lastSolveRequest.tWatcher.get(), SIGNAL(progressValueChanged(int)), this, SLOT(onTransformSolverWatcherProgress(int)) );
+        std::function<TransformData (const double&)> compute = [this](const double &keyframe) {
+            return computeTransformParamsFromTracksAtTime(lastSolveRequest.refTime,
+                                                          keyframe,
+                                                          lastSolveRequest.jitterPeriod,
+                                                          lastSolveRequest.jitterAdd,
+                                                          lastSolveRequest.robustModel,
+                                                          lastSolveRequest.allMarkers);
+        };
+        lastSolveRequest.tWatcher->setFuture( QtConcurrent::mapped( lastSolveRequest.keyframes, compute ) );
+
+        return;
+    }
+#endif
     NodePtr thisNode = node.lock();
     QList<TransformData> validResults;
     {
@@ -2632,7 +2644,6 @@ TrackerContextPrivate::computeTransformParamsFromTracks()
         }
     }
     computeTransformParamsFromTracksEnd(lastSolveRequest.refTime, lastSolveRequest.maxFittingError, validResults);
-#endif
 } // TrackerContextPrivate::computeTransformParamsFromTracks
 
 void

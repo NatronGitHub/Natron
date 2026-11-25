@@ -2007,7 +2007,12 @@ TrackScheduler::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
     } // IsTrackingFlagSetter_RAII
     TrackerContext* isContext = dynamic_cast<TrackerContext*>(_imp->paramsProvider);
     if (isContext) {
-        isContext->solveTransformParams();
+        // Solve on the main thread, as the other solves: the solve sets parameters, whose change handlers must
+        // run on the main thread, and in background mode it no longer runs in the thread pool (#1256).
+        // The context is the receiver, so the call is dropped if the context is deleted first.
+        QMetaObject::invokeMethod(isContext, [isContext]() {
+            isContext->solveTransformParams();
+        }, Qt::QueuedConnection);
     }
 
     appPTR->getAppTLS()->cleanupTLSForThread();
