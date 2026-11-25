@@ -164,7 +164,8 @@ jobs:
       - name: Compare with the previous Windows installer
         # Informative: the file list and the DLLs of the new portable zip against those of
         # BASELINE_INSTALLER_URL. The report is the compare-<installer> artifact, and the DLL
-        # differences are in the job summary.
+        # differences are in the job summary. x86-64 only, as the baseline.
+        if: matrix.msystem == 'UCRT64'
         continue-on-error: true
         run: |
           INSTALLER_DIR=$(cygpath -u '${{ steps.build.outputs.INSTALLER_DIR }}')/${{ steps.build.outputs.INSTALLER_NAME }}
@@ -390,7 +391,9 @@ jobs:
           exit ${errors}
 
       - name: Compare the passing tests with the 2.5.0 release
-        # Informative: 2.5.0 was a Qt4 MINGW64 build, so differences are expected
+        # Informative: 2.5.0 was a Qt4 MINGW64 (x86-64) build, so differences are expected
+        if: matrix.msystem == 'UCRT64'
+        continue-on-error: true
         run: |
           wget -q https://github.com/NatronGitHub/Natron/releases/download/v2.5.0/Natron-2.5.0-Windows-x86_64-tests.txt
           if diff Natron-2.5.0-Windows-x86_64-tests.txt '${{ steps.build.outputs.TEST_RESULTS_FILE }}'; then
