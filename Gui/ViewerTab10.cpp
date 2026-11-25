@@ -913,7 +913,8 @@ ViewerTab::keyReleaseEvent(QKeyEvent* e)
     }
 }
 
-// The channels of the items of the channels combo box, in their order
+// The channels of the items of the channels combo box, in their order: the order of the actions added in
+// ViewerTab's constructor, and of the indices of the channel shortcuts in keyPressEvent()
 static const DisplayChannelsEnum channelsComboItems[] = {
     eDisplayChannelsY, eDisplayChannelsRGB, eDisplayChannelsR, eDisplayChannelsG, eDisplayChannelsB, eDisplayChannelsA,
     eDisplayChannelsMatte

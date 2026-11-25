@@ -21,8 +21,8 @@ v.fit()
 check(app.waitForRenders(30), "waitForRenders()")
 check(not NatronGuiTest.isRendering(), "no render after waitForRenders()")
 
-# the functions that change the viewer raise RuntimeError outside the main thread (e.g. in a callback that
-# runs in a render thread), as getPixel() and getImage() do
+# fit(), setZoom() and setCenter() raise RuntimeError outside the main thread (e.g. in a callback that runs
+# in a render thread), as getPixel() and getImage() do
 outside = []
 
 
