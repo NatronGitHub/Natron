@@ -218,7 +218,10 @@ endif()
 # every source file of OfxTestPlugin/ is part of the bundle (see OfxTestPlugin/NatronTestPluginRegistry.h)
 file(GLOB NatronTestPlugin_SOURCES CONFIGURE_DEPENDS OfxTestPlugin/*.cpp OfxTestPlugin/*.h)
 add_library(NatronTestPlugin MODULE ${NatronTestPlugin_SOURCES})
-target_include_directories(NatronTestPlugin SYSTEM PRIVATE ../libs/OpenFX/include)
+# openfx::Api: the OpenFX headers and the OFX_EXTENSIONS_*/OFX_SUPPORTS_* definitions that Natron is
+# built with (e.g. the reader and writer contexts of OfxTestPlugin/NatronTestPluginVersions.cpp, only
+# defined with OFX_EXTENSIONS_TUTTLE), as global.pri gives them to OfxTestPlugin/OfxTestPlugin.pro
+target_link_libraries(NatronTestPlugin PRIVATE openfx::Api)
 set_target_properties(NatronTestPlugin PROPERTIES
     PREFIX ""
     SUFFIX ".ofx"
