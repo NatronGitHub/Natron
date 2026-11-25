@@ -746,37 +746,32 @@ AppManagerPrivate::setMaxCacheFiles()
     maxCacheFiles = hardMax * 0.9;
 }
 
-#ifdef DEBUG
+#if defined(GLAD_DEBUG) && defined(GL_TRACE_CALLS)
 // logs every gl call to the console
 static void
-pre_gl_call(const char */*name*/,
+pre_gl_call(const char *name,
             void */*funcptr*/,
-            int /*len_args*/,
+            int len_args,
             ...)
 {
-#ifdef GL_TRACE_CALLS
     printf("Calling: %s (%d arguments)\n", name, len_args);
-#endif
 }
 
-// logs every gl call to the console
+// logs every gl error to the console
 static void
 post_gl_call(const char *name,
              void */*funcptr*/,
              int /*len_args*/,
              ...)
 {
-#ifdef GL_TRACE_CALLS
-    GLenum error_code;
-    error_code = glad_glGetError();
+    const GLenum error_code = glad_glGetError();
 
     if (error_code != GL_NO_ERROR) {
-        fprintf(stderr, "ERROR %d(%s) in %s\n", error_code, gluErrorString(error_code), name);
+        fprintf(stderr, "ERROR %d(%s) in %s\n", error_code, glErrorString(error_code), name);
     }
-#endif
 }
 
-#endif // debug
+#endif // GLAD_DEBUG && GL_TRACE_CALLS
 
 #if defined(__NATRON_LINUX__) && defined(__NATRON_WAYLAND__)
 // Does dir contain a Qt Wayland platform plug-in?

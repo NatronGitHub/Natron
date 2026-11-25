@@ -148,18 +148,6 @@ const ButtonName buttonNames[] = {
     { eStandardButtonNoButton, "none" },
 };
 
-std::string
-buttonName(StandardButtonEnum b)
-{
-    for (const ButtonName& n : buttonNames) {
-        if (n.button == b) {
-            return n.name;
-        }
-    }
-
-    return "unknown";
-}
-
 bool
 buttonFromName(const QString& name,
                StandardButtonEnum* b)
