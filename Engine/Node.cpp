@@ -1413,61 +1413,45 @@ Node::isRenderingPreview() const
 
 
 void
-Node::Implementation::abortPreview_non_blocking()
-{
-    bool computing;
-    {
-        QMutexLocker locker(&computingPreviewMutex);
-        computing = computingPreview;
-    }
-
-    if (computing) {
-        QMutexLocker l(&mustQuitPreviewMutex);
-        ++mustQuitPreview;
-    }
-}
-
-void
 Node::Implementation::abortPreview_blocking(bool allowPreviewRenders)
 {
-    bool computing;
-    {
-        QMutexLocker locker(&computingPreviewMutex);
-        computing = computingPreview;
-        previewThreadQuit = !allowPreviewRenders;
-    }
+    QMutexLocker l(&computingPreviewMutex);
 
-    if (computing) {
-        QMutexLocker l(&mustQuitPreviewMutex);
-        assert(!mustQuitPreview);
-        ++mustQuitPreview;
-        while (mustQuitPreview) {
-            mustQuitPreviewCond.wait(l.mutex());
-        }
+    // No preview starts while this waits
+    previewThreadQuit = true;
+    while (computingPreview) {
+        computingPreviewCond.wait( l.mutex() );
     }
+    previewThreadQuit = !allowPreviewRenders;
 }
 
 bool
-Node::Implementation::checkForExitPreview()
+Node::Implementation::tryBeginPreview()
 {
-    {
-        QMutexLocker locker(&mustQuitPreviewMutex);
-        if (mustQuitPreview || previewThreadQuit) {
-            mustQuitPreview = 0;
-            mustQuitPreviewCond.wakeOne();
+    QMutexLocker l(&computingPreviewMutex);
 
-            return true;
-        }
-
+    if (previewThreadQuit) {
         return false;
     }
+    computingPreview = true;
+
+    return true;
+}
+
+void
+Node::Implementation::endPreview()
+{
+    QMutexLocker l(&computingPreviewMutex);
+
+    computingPreview = false;
+    computingPreviewCond.wakeAll();
 }
 
 bool
 Node::areAllProcessingThreadsQuit() const
 {
     {
-        QMutexLocker locker(&_imp->mustQuitPreviewMutex);
+        QMutexLocker locker(&_imp->computingPreviewMutex);
         if (!_imp->previewThreadQuit) {
             return false;
         }
@@ -1501,9 +1485,6 @@ Node::quitAnyProcessing_non_blocking()
     if (isOutput) {
         isOutput->getRenderEngine()->quitEngine(true);
     }
-
-    //Returns when the preview is done computign
-    _imp->abortPreview_non_blocking();
 
     TrackerContextPtr trackerContext = getTrackerContext();
     if (trackerContext) {
@@ -1573,8 +1554,6 @@ Node::abortAnyProcessing_non_blocking()
     if (trackerContext) {
         trackerContext->abortTracking();
     }
-
-    _imp->abortPreview_non_blocking();
 }
 
 void
@@ -2912,7 +2891,6 @@ Node::deactivate(const std::list<NodePtr> & outputsToDisconnect,
     //quitAnyProcessing();
     if (!beingDestroyed) {
         _imp->effect->abortAnyEvaluation(false /*keepOldestRender*/);
-        _imp->abortPreview_non_blocking();
     }
 
     NodeCollectionPtr parentCol = getGroup();
@@ -3393,20 +3371,28 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 class ComputingPreviewSetter_RAII
 {
     Node::Implementation* _imp;
+    const bool _started;
 
 public:
-    ComputingPreviewSetter_RAII(Node::Implementation* imp)
+    explicit ComputingPreviewSetter_RAII(Node::Implementation* imp)
         : _imp(imp)
+        , _started( imp->tryBeginPreview() )
     {
-        _imp->setComputingPreview(true);
     }
+
+    ComputingPreviewSetter_RAII(const ComputingPreviewSetter_RAII&) = delete;
+    ComputingPreviewSetter_RAII& operator=(const ComputingPreviewSetter_RAII&) = delete;
 
     ~ComputingPreviewSetter_RAII()
     {
-        _imp->setComputingPreview(false);
+        if (_started) {
+            _imp->endPreview();
+        }
+    }
 
-        bool mustQuitPreview = _imp->checkForExitPreview();
-        Q_UNUSED(mustQuitPreview);
+    bool started() const
+    {
+        return _started;
     }
 };
 
@@ -3426,12 +3412,11 @@ Node::makePreviewImage(SequenceTime time,
         }
     }
 
-    if ( _imp->checkForExitPreview() ) {
+    ComputingPreviewSetter_RAII computingPreviewRAII( _imp.get() );
+    if ( !computingPreviewRAII.started() ) {
         return false;
     }
 
-    /// prevent 2 previews to occur at the same time since there's only 1 preview instance
-    ComputingPreviewSetter_RAII computingPreviewRAII( _imp.get() );
     RectD rod;
     bool isProjectFormat;
     if (!_imp->effect) {
