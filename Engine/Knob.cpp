@@ -4707,7 +4707,7 @@ KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
     } else if (isChoice) {
         KnobChoicePtr newKnob = otherHolder->createChoiceKnob(newScriptName, newLabel, isUserKnob);
         if (!makeAlias) {
-            newKnob->populateChoices( isChoice->getEntries_mt_safe() );
+            newKnob->populateChoices( isChoice->getEntries_mt_safe(), isChoice->getExplicitDisplayOrder_mt_safe() );
         }
         output = newKnob;
     } else if (isColor) {

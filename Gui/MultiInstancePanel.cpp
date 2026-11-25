@@ -192,7 +192,7 @@ public:
         } else if (isChoice) {
             KnobChoicePtr choice = AppManager::createKnob<KnobChoice>(publicInterface,
                                                                                       ref->getLabel(), ref->getDimension(), declaredByPlugin);
-            choice->populateChoices( isChoice->getEntries_mt_safe() );
+            choice->populateChoices( isChoice->getEntries_mt_safe(), isChoice->getExplicitDisplayOrder_mt_safe() );
             ret = choice;
         } else if (isString) {
             KnobStringPtr strKnob = AppManager::createKnob<KnobString>(publicInterface,
