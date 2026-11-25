@@ -55,7 +55,7 @@ pluginsAvailable()
 
     for (int i = 0; i < 3; ++i) {
         if ( !NatronTestPlugin::isAvailable(ids[i]) ) {
-            NatronTestPlugin::reportSkipped(ids[i]);
+            NatronTestPlugin::reportMissing(ids[i]);
 
             return false;
         }

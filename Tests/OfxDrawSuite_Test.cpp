@@ -782,7 +782,7 @@ drawOverlay(const NodePtr& node,
 TEST(OfxDrawSuite, OverlayPlugins)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginOverlayV1V2) || !NatronTestPlugin::isAvailable(kNatronTestPluginOverlayV2) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginOverlayV1V2);
+        NatronTestPlugin::reportMissing(kNatronTestPluginOverlayV1V2);
 
         return;
     }

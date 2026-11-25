@@ -88,7 +88,7 @@ protected:
 TEST_F(OfxClipComponentsView, ViewOfGetClipComponents)
 {
     if ( !NatronTestPlugin::isAvailable(kClipComponentsViewPluginID) ) {
-        NatronTestPlugin::reportSkipped(kClipComponentsViewPluginID);
+        NatronTestPlugin::reportMissing(kClipComponentsViewPluginID);
 
         return;
     }

@@ -181,7 +181,7 @@ TEST(OfxBundlePyPlugs, BundlePyPlugIsFound)
     NatronTest::skip("no test plug-in bundle");
 #else
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginParams) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginParams);
+        NatronTestPlugin::reportMissing(kNatronTestPluginParams);
 
         return;
     }
@@ -240,7 +240,7 @@ TEST(OfxBundlePyPlugs, NoDuplicateSearchPath)
     NatronTest::skip("no test plug-in bundle");
 #else
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginParams) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginParams);
+        NatronTestPlugin::reportMissing(kNatronTestPluginParams);
 
         return;
     }

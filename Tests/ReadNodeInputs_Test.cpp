@@ -99,7 +99,7 @@ TEST(ReadNodeInputs, DecoderWithoutSourceClip)
         plugin = 0;
     }
     if (!plugin) {
-        NatronTestPlugin::reportSkipped(PLUGINID_OFX_READPDF);
+        NatronTestPlugin::reportMissing(PLUGINID_OFX_READPDF);
 
         return;
     }

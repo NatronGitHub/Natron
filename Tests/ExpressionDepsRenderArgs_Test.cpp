@@ -100,7 +100,7 @@ protected:
     bool skipped(const char* pluginID = kNatronTestPluginParams)
     {
         if ( !NatronTestPlugin::isAvailable(pluginID) ) {
-            NatronTestPlugin::reportSkipped(pluginID);
+            NatronTestPlugin::reportMissing(pluginID);
 
             return true;
         }

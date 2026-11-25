@@ -119,7 +119,7 @@ protected:
 TEST_F(OfxSyncPrivateDataTest, SaveInMainThread)
 {
     if (!_node) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginSyncPrivateData);
+        NatronTestPlugin::reportMissing(kNatronTestPluginSyncPrivateData);
 
         return;
     }
@@ -132,7 +132,7 @@ TEST_F(OfxSyncPrivateDataTest, SaveInMainThread)
 TEST_F(OfxSyncPrivateDataTest, AutoSave)
 {
     if (!_node) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginSyncPrivateData);
+        NatronTestPlugin::reportMissing(kNatronTestPluginSyncPrivateData);
 
         return;
     }

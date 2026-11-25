@@ -73,7 +73,7 @@ canRunTest(const char* pluginID,
            bool needsOpenGL)
 {
     if ( !NatronTestPlugin::isAvailable(pluginID) ) {
-        NatronTestPlugin::reportSkipped(pluginID);
+        NatronTestPlugin::reportMissing(pluginID);
 
         return false;
     }

@@ -51,10 +51,10 @@ NATRON_NAMESPACE_USING
 TEST(OfxPluginScan, SkipsAtNamesAndNonBundles)
 {
 #ifndef NATRON_TESTS_OFX_PLUGIN_DIR
-    NatronTestPlugin::reportSkipped(kNatronTestPluginParams);
+    NatronTestPlugin::reportMissing(kNatronTestPluginParams);
 #else
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginParams) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginParams);
+        NatronTestPlugin::reportMissing(kNatronTestPluginParams);
 
         return;
     }

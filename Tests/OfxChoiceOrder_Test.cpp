@@ -174,7 +174,7 @@ protected:
 
 #define SKIP_IF_NO_PLUGIN() \
     if (!_node) { \
-        NatronTestPlugin::reportSkipped(kNatronTestPluginChoiceOrder); \
+        NatronTestPlugin::reportMissing(kNatronTestPluginChoiceOrder); \
         return; \
     }
 

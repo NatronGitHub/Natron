@@ -109,7 +109,7 @@ TEST(OfxPluginObsolete, FormerNatronDeprecatedIgnored)
 TEST(OfxPluginObsolete, HiddenButCreatableByID)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginObsolete) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginObsolete);
+        NatronTestPlugin::reportMissing(kNatronTestPluginObsolete);
 
         return;
     }
@@ -143,7 +143,7 @@ TEST(OfxPluginObsolete, HiddenButCreatableByID)
 TEST(OfxPluginObsolete, EnabledDeprecatedPluginIsUserCreatable)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginObsolete) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginObsolete);
+        NatronTestPlugin::reportMissing(kNatronTestPluginObsolete);
 
         return;
     }
@@ -163,7 +163,7 @@ TEST(OfxPluginObsolete, EnabledDeprecatedPluginIsUserCreatable)
 TEST(OfxPluginObsolete, FormerNatronDeprecatedPluginIsUserCreatable)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginNatronDeprecated) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginNatronDeprecated);
+        NatronTestPlugin::reportMissing(kNatronTestPluginNatronDeprecated);
 
         return;
     }

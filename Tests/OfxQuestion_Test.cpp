@@ -42,7 +42,7 @@ NATRON_NAMESPACE_USING
 TEST(OfxQuestion, NoReplyIsNeverYes)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginQuestion) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginQuestion);
+        NatronTestPlugin::reportMissing(kNatronTestPluginQuestion);
 
         return;
     }

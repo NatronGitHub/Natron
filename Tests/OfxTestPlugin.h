@@ -86,10 +86,20 @@ isAvailable(const char* pluginID)
     return NatronTest::isPluginAvailable(pluginID);
 }
 
+// A test plug-in was not loaded. The test plug-ins are built with the tests, in NATRON_TESTS_OFX_PLUGIN_DIR,
+// which wmain.cpp puts in OFX_PLUGIN_PATH: when they were built, this is a failure (e.g. a plug-in ID that
+// changed, or a plug-in that failed to load). The test is skipped only when Tests runs without them.
 inline void
-reportSkipped(const char* pluginID)
+reportMissing(const char* pluginID)
 {
-    NatronTest::skip(std::string("plug-in ") + pluginID + " not found (the test plug-in built with the tests, NatronTestPlugin.ofx.bundle)");
+#ifdef NATRON_TESTS_OFX_PLUGIN_DIR
+    if ( QDir( QString::fromUtf8(NATRON_TESTS_OFX_PLUGIN_DIR "/NatronTestPlugin.ofx.bundle") ).exists() ) {
+        ADD_FAILURE() << "test plug-in " << pluginID << " not loaded from " NATRON_TESTS_OFX_PLUGIN_DIR "/NatronTestPlugin.ofx.bundle";
+
+        return;
+    }
+#endif
+    NatronTest::skip(std::string("test plug-in ") + pluginID + " not found (NatronTestPlugin.ofx.bundle, built with the tests)");
 }
 
 #ifdef NATRON_TESTS_OFX_PLUGIN_BINARY

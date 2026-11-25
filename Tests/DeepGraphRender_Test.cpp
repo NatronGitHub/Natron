@@ -263,12 +263,12 @@ bool
 canRunTest()
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginGenerator) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginGenerator);
+        NatronTestPlugin::reportMissing(kNatronTestPluginGenerator);
 
         return false;
     }
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginMultiPAR) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginMultiPAR);
+        NatronTestPlugin::reportMissing(kNatronTestPluginMultiPAR);
 
         return false;
     }
@@ -849,7 +849,7 @@ TEST(DeepGraphRender, IterativeTraversalsKeepResults)
         return;
     }
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginParams) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginParams);
+        NatronTestPlugin::reportMissing(kNatronTestPluginParams);
 
         return;
     }

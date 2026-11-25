@@ -44,7 +44,7 @@ NATRON_NAMESPACE_USING
 TEST(OfxParamInteract, DestroyedBeforeEffect)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginParamInteract) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginParamInteract);
+        NatronTestPlugin::reportMissing(kNatronTestPluginParamInteract);
 
         return;
     }

@@ -50,7 +50,7 @@ NATRON_NAMESPACE_USING
 TEST(OfxParamUndo, CanUndoIsTheOfxProperty)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginParams) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginParams);
+        NatronTestPlugin::reportMissing(kNatronTestPluginParams);
 
         return;
     }
@@ -97,7 +97,7 @@ TEST(OfxParamUndo, NatronKnobs)
 TEST(OfxParamUndo, UnmatchedParamEditEnd)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginParams) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginParams);
+        NatronTestPlugin::reportMissing(kNatronTestPluginParams);
 
         return;
     }

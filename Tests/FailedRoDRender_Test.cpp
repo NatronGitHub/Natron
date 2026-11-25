@@ -59,7 +59,7 @@ canRunTest()
 
     for (const char* id : ids) {
         if ( !NatronTestPlugin::isAvailable(id) ) {
-            NatronTestPlugin::reportSkipped(id);
+            NatronTestPlugin::reportMissing(id);
 
             return false;
         }

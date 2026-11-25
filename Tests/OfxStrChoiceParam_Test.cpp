@@ -230,7 +230,7 @@ protected:
 
 #define SKIP_IF_NO_PLUGIN() \
     if (!_node) { \
-        NatronTestPlugin::reportSkipped(kNatronTestPluginStrChoice); \
+        NatronTestPlugin::reportMissing(kNatronTestPluginStrChoice); \
         return; \
     }
 

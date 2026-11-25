@@ -67,7 +67,7 @@ versionsAvailable()
             Plugin* oldPlugin = appPTR->getPluginBinary(QString::fromUtf8(ids[i]), kOldMajor, 0, false);
             Plugin* newestPlugin = appPTR->getPluginBinary(QString::fromUtf8(ids[i]), -1, -1, false);
             if ( !oldPlugin || !newestPlugin ) {
-                NatronTestPlugin::reportSkipped(ids[i]);
+                NatronTestPlugin::reportMissing(ids[i]);
 
                 return false;
             }
@@ -78,7 +78,7 @@ versionsAvailable()
                 return false;
             }
         } catch (...) {
-            NatronTestPlugin::reportSkipped(ids[i]);
+            NatronTestPlugin::reportMissing(ids[i]);
 
             return false;
         }
