@@ -171,7 +171,7 @@ version: two test runs at the same time would rewrite each other's (#1569).
 - ``Tests`` also enables Qt's test mode (``QStandardPaths::setTestModeEnabled()``): the
   auto-saves that the tests write go to ``~/.qttest/...``, not to the user's ``Autosaves``
   directory (on Linux, the native ``QSettings`` also go to ``~/.qttest/config``).
-- The GUI tests (``gui.*``) and *UndoGroupHeadless* use a cache directory of the build tree,
+- The GUI tests (``gui.*``) and the headless tests (``headless.*``) use a cache directory of the build tree,
   and the driver scripts of ``Tests/gui`` (``run_*.py``) a temporary one, removed at the end,
   unless ``NATRON_DISK_CACHE_PATH`` is set.
 
