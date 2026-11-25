@@ -732,8 +732,25 @@ PyViewer::redraw()
     _viewer->redrawGLWidgets();
 }
 
-// defined below, with saveScreenshot()
-static bool isMainThread();
+// The GUI functions may only run in the main thread: some Python callbacks (e.g. afterFrameRender) run in
+// render threads
+static bool
+isMainThread()
+{
+    return QThread::currentThread() == QCoreApplication::instance()->thread();
+}
+
+// True in the main thread, else raises RuntimeError
+static bool
+checkMainThread(const char* function)
+{
+    if ( isMainThread() ) {
+        return true;
+    }
+    PyErr_Format(PyExc_RuntimeError, "%s must be called from the main thread", function);
+
+    return false;
+}
 
 ViewerGL*
 PyViewer::getViewerGL() const
@@ -750,7 +767,7 @@ PyViewer::getViewerGL() const
 void
 PyViewer::fit()
 {
-    if ( getViewerGL() ) {
+    if ( checkMainThread("PyViewer.fit()") && getViewerGL() ) {
         _viewer->centerViewer();
     }
 }
@@ -766,14 +783,16 @@ PyViewer::getZoom() const
 void
 PyViewer::setZoom(double zoom)
 {
-    ViewerGL* gl = getViewerGL();
-
-    if (!gl) {
-        return;
-    }
     if ( !(zoom > 0.) ) {
         PyErr_SetString(PyExc_ValueError, "the zoom factor must be positive");
 
+        return;
+    }
+    if ( !checkMainThread("PyViewer.setZoom()") ) {
+        return;
+    }
+    ViewerGL* gl = getViewerGL();
+    if (!gl) {
         return;
     }
     gl->setZoomFactorAroundCenter(zoom);
@@ -800,8 +819,10 @@ void
 PyViewer::setCenter(double x,
                     double y)
 {
+    if ( !checkMainThread("PyViewer.setCenter()") ) {
+        return;
+    }
     ViewerGL* gl = getViewerGL();
-
     if (gl) {
         gl->setCenter(x, y);
     }
@@ -852,9 +873,7 @@ PyViewer::getPixel(double x,
 
         return ret;
     }
-    if ( !isMainThread() ) {
-        PyErr_SetString(PyExc_RuntimeError, "PyViewer.getPixel() must be called from the main thread");
-
+    if ( !checkMainThread("PyViewer.getPixel()") ) {
         return ret;
     }
     float r, g, b, a;
@@ -887,9 +906,7 @@ PyViewer::getImage(RectD* bounds,
 
         return false;
     }
-    if ( !isMainThread() ) {
-        PyErr_SetString(PyExc_RuntimeError, "PyViewer.getImage() must be called from the main thread");
-
+    if ( !checkMainThread("PyViewer.getImage()") ) {
         return false;
     }
     if ( !gl || !gl->getLinearImage(input, region ? *region : RectD(), bounds, pixels) ) {
@@ -1100,14 +1117,6 @@ PyViewer::getCurrentView() const
     }
 
     return _viewer->getCurrentView().value();
-}
-
-// The GUI functions below may only run in the main thread: some Python callbacks (e.g.
-// afterFrameRender) run in render threads
-static bool
-isMainThread()
-{
-    return QThread::currentThread() == QCoreApplication::instance()->thread();
 }
 
 /**
