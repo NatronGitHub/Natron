@@ -21,7 +21,7 @@
 # run). Unexpected passes are reported, and don't fail the run.
 set -euo pipefail
 
-[ $# = 4 ] || { sed -n 2,23p "$0"; exit 2; }
+[ $# = 4 ] || { sed -n 2,21p "$0"; exit 2; }
 SRC=$1
 TESTS=$(cd "$2" && pwd)
 mkdir -p "$3"
@@ -80,7 +80,7 @@ chmod +x "$work/bin/gtimeout"
 
 log "running Natron-Tests on $APP (TEST=${TEST:-${TESTCUSTOM:-all}})"
 rm -rf "$TESTS/result.txt" "$TESTS/summary.txt" "$TESTS/failed"
-rm -rf "$HOME/Library/Caches/INRIA/Natron" && mkdir -p "$HOME/Library/Caches/INRIA/Natron/"{ViewerCache,DiskCache}
+# NATRON_DISK_CACHE_PATH keeps Natron's caches in $work, not in the user's ~/Library/Caches
 status=0
 (cd "$TESTS" &&
     env -i HOME="$HOME" USER="$USER" LOGNAME="$USER" SHELL=/bin/bash TMPDIR="${TMPDIR:-/tmp}" LANG=en_US.UTF-8 \
