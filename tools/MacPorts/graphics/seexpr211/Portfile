@@ -35,6 +35,7 @@ worksrcdir          SeExpr-${version}
 
 depends_lib         port:libpng
 depends_build       port:doxygen
+depends_build-append port:flex port:bison
 
 patchfiles          0001-seexpr-2.11-fix-cxxflags.patch \
                     0002-seexpr-2.11-fix-inline-error.patch \
