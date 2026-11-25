@@ -107,19 +107,15 @@ jobs:
 
       - name: Download the SDK to update
         if: needs.find.outputs.what == 'update'
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ needs.find.outputs.name }}
-          run-id: ${{ needs.find.outputs.run }}
-          github-token: ${{ github.token }}
-          path: ${{ runner.temp }}/sdk
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: '"$SDK_TOOL" download "${{ needs.find.outputs.name }}" "${{ needs.find.outputs.run }}" "$RUNNER_TEMP/sdk"'
 
       - name: Download the state of the previous stage
         if: inputs.stage > 1
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ inputs.state }}
-          path: ${{ runner.temp }}/sdk
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: '"$SDK_TOOL" download "${{ inputs.state }}" "$GITHUB_RUN_ID" "$RUNNER_TEMP/sdk"'
 
       - name: Restore
         if: needs.find.outputs.what == 'update' || inputs.stage > 1

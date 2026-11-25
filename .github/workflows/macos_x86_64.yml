@@ -166,12 +166,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Download the SDK
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ env.SDK }}
-          run-id: ${{ env.SDK_RUN_ID }}
-          github-token: ${{ github.token }}
-          path: ${{ runner.temp }}/sdk
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: '"$SDK_TOOL" download "$SDK" "$SDK_RUN_ID" "$RUNNER_TEMP/sdk"'
 
       - name: Restore the SDK
         run: |

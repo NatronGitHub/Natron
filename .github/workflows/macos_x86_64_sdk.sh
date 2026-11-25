@@ -8,6 +8,9 @@
 #                                        (what: reuse, update or scratch; see below)
 #   macos_x86_64_sdk.sh hide-homebrew    move the runner's Homebrew (/usr/local) out of the way
 #   macos_x86_64_sdk.sh unhide-homebrew  put it back (its zstd and git are used to save the SDK)
+#   macos_x86_64_sdk.sh download NAME RUN DIR   download the SDK or state artifact NAME of run RUN into
+#                                        DIR, checked with zstd -t, with retries (needs Homebrew's gh
+#                                        and zstd, and GH_TOKEN)
 #   macos_x86_64_sdk.sh restore FILE     extract a saved SDK (needs Homebrew's zstd)
 #   macos_x86_64_sdk.sh run DEADLINE STEP...  run provision.sh STEPs; stop them at DEADLINE (seconds
 #                                        since the epoch): exit status 0 if all done, 3 if stopped
@@ -65,6 +68,20 @@ unhide-homebrew)
     [ -d "$hidden" ] || exit 0
     sudo find "$hidden" -mindepth 1 -maxdepth 1 -exec mv {} /usr/local/ \;
     sudo rmdir "$hidden"
+    ;;
+download)
+    # not actions/download-artifact: it once ended "successfully" after 71 MB of a 4.3 GB SDK
+    name=$1 run=$2 dir=$3
+    for i in 1 2 3; do
+        rm -rf "$dir"; mkdir -p "$dir"
+        if gh run download "$run" -R "$GITHUB_REPOSITORY" -n "$name" -D "$dir" && zstd -tq "$dir/natron-sdk.tar.zst"; then
+            ls -l "$dir"
+            exit 0
+        fi
+        echo "download of $name from run $run failed or is incomplete (attempt $i)"
+        sleep 30
+    done
+    exit 1
     ;;
 restore)
     file=$1
