@@ -292,7 +292,12 @@ public:
 
     void cloneGenericKnobs();
 
+    // Refreshes the decoders offered for the file's format. It doesn't change the plug-in ID: after a
+    // load, the ID of a decoder that isn't installed is kept, with its version (#1825).
     void refreshPluginSelectorKnob();
+
+    // The user chose another file: the plug-in ID becomes the default decoder of its format.
+    void setDefaultPluginIDForFile();
 
     void refreshFileInfoVisibility(const std::string& pluginID);
 
@@ -940,9 +945,7 @@ ReadNodePrivate::refreshPluginSelectorKnob()
 
     QString qpattern = QString::fromUtf8( filePattern.c_str() );
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
-    std::string pluginID;
     if ( !ext.empty() ) {
-        pluginID = appPTR->getReaderPluginIDForFileType(ext);
         IOPluginSetForFormat readersForFormat;
         appPTR->getReadersForFormat(ext, &readersForFormat);
 
@@ -969,15 +972,29 @@ ReadNodePrivate::refreshPluginSelectorKnob()
         pluginChoice->setSecret(false);
     }
 
+    refreshFileInfoVisibility( pluginIDStringKnob.lock()->getValue() );
+} // ReadNodePrivate::refreshPluginSelectorKnob
+
+void
+ReadNodePrivate::setDefaultPluginIDForFile()
+{
+    KnobFilePtr fileKnob = inputFileKnob.lock();
+
+    assert(fileKnob);
+    QString qpattern = QString::fromUtf8( fileKnob->getValue().c_str() );
+    std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
+    std::string pluginID;
+    if ( !ext.empty() ) {
+        pluginID = appPTR->getReaderPluginIDForFileType(ext);
+    }
+
     KnobStringPtr pluginIDKnob = pluginIDStringKnob.lock();
     pluginIDKnob->blockValueChanges();
     pluginIDKnob->setValue(pluginID);
     pluginIDKnob->unblockValueChanges();
     syncVersionKnob();
-
     refreshFileInfoVisibility(pluginID);
-
-} // ReadNodePrivate::refreshPluginSelectorKnob
+}
 
 bool
 ReadNode::isReader() const
@@ -1373,6 +1390,7 @@ ReadNode::knobChanged(KnobI* k,
         }
         try {
             _imp->refreshPluginSelectorKnob();
+            _imp->setDefaultPluginIDForFile();
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
