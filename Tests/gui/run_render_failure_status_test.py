@@ -112,8 +112,8 @@ def render_case(renderer, tmp, case, writers, renderer_args=(), quit_after=False
         f.write(SCRIPT)
     # FP traps on, as before (the other drivers disable them, as Natron --test does)
     env = natronrunner.natron_env(tmp, NATRON_FAILURE_TEST_DIR=out.replace("\\", "/"),
-                     NATRON_FAILURE_TEST_WRITERS=",".join(writers),
-                     NATRON_NO_FP_TRAPS=os.environ.get("NATRON_NO_FP_TRAPS"))
+                                  NATRON_FAILURE_TEST_WRITERS=",".join(writers),
+                                  NATRON_NO_FP_TRAPS=os.environ.get("NATRON_NO_FP_TRAPS"))
     env.pop("NATRON_FAILURE_TEST_QUIT", None)
     if quit_after:
         env["NATRON_FAILURE_TEST_QUIT"] = "1"

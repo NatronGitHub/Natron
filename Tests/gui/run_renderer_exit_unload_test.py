@@ -107,7 +107,7 @@ def run_case(renderer, cmd_wrapper, plugin_dir, out_dir, index, case):
     log_path = os.path.join(out_dir, "actions_%d.log" % index)
     # always a private cache: the OFX plug-in cache affects what the plug-ins get
     env = natronrunner.natron_env(out_dir, OFX_PLUGIN_PATH=plugin_dir, NATRON_TEST_PLUGIN_ACTION_LOG=log_path,
-                     NATRON_DISK_CACHE_PATH=os.path.join(out_dir, "cache"))
+                                  NATRON_DISK_CACHE_PATH=os.path.join(out_dir, "cache"))
     cmd = cmd_wrapper + [renderer, "--no-settings"] + (["-t"] if interpreter else []) + [script]
     stdin_path = None
     if interpreter:

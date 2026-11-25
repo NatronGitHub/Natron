@@ -94,7 +94,7 @@ def main(argv):
         with open(script, "w") as f:
             f.write(SCRIPT % {"expected": [(name, expected) for name, _, expected in SETTINGS]})
         env = natronrunner.natron_env(out_dir, XDG_CACHE_HOME=os.path.join(out_dir, "xdg-cache"),
-                         NATRON_SETTINGS_TEST_CACHE=cache_dir)
+                                      NATRON_SETTINGS_TEST_CACHE=cache_dir)
         # the environment variable takes precedence over the diskCachePath setting (#1265): unset, so that the
         # test checks the setting. Before the setting applies, the first refreshDiskCacheLocation() uses the
         # default location: on Linux, a private one (XDG_CACHE_HOME), not the user's (#1569). macOS and Windows
