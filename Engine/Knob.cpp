@@ -3180,9 +3180,6 @@ KnobHelper::executeExpression(const std::string& expr,
 
         return false;
     }
-    if ( !catchErrors(mainModule, error) ) {
-        return false;
-    }
 
     return true;
 }
