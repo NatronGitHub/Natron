@@ -127,8 +127,11 @@ jobs:
           # provision.sh's layout (tools/tart/tart-common.sh)
           mkdir -p ~/Documents/third_party
           ln -sfn "$GITHUB_WORKSPACE" ~/Documents/third_party/Natron
-          [ -d ~/Documents/third_party/osmesa-install ] ||
-            /usr/bin/git clone -q --depth 1 https://github.com/devernay/osmesa-install.git ~/Documents/third_party/osmesa-install
+          if [ ! -d ~/Documents/third_party/osmesa-install ]; then
+            . tools/jenkins/macos-release.sh
+            /usr/bin/git clone -q https://github.com/devernay/osmesa-install.git ~/Documents/third_party/osmesa-install
+            /usr/bin/git -C ~/Documents/third_party/osmesa-install checkout -q "$NATRON_OSMESA_INSTALL_COMMIT"
+          fi
           /usr/bin/git -C ~/Documents/third_party/osmesa-install log -1 --format='osmesa-install %h %cs %s'
 
       - name: Provision (stage ${{ inputs.stage }})
