@@ -104,7 +104,6 @@ def hasDisplay():
 # test can check that the auto-save was removed.
 QUIT_SCRIPT = """
 import os
-import NatronEngine
 from NatronGui import natron
 try:
     from PySide2 import QtCore, QtWidgets
