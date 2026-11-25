@@ -841,6 +841,11 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 
 OfxEffectInstance::~OfxEffectInstance()
 {
+    // The render clones (createRenderClone()) share the parameter and clip instances of this instance,
+    // which _imp->effect owns: destroy them first. Otherwise ~EffectInstance() destroys them, after
+    // this object and its parameters are gone, and their destroyInteracts() reads freed parameters (#1801).
+    clearRenderInstances();
+
     // "kOfxActionEndInstanceEdit ... \post no user interface is open on the instance": the last editor
     // is closed before the instance is destroyed (e.g. when the project is closed with the panel open).
     // Normally the node was deactivated before (Node::deactivate() sends End), so this is a safety net.

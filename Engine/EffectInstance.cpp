@@ -4130,8 +4130,12 @@ EffectInstance::getOrCreateRenderInstance()
 void
 EffectInstance::clearRenderInstances()
 {
-    QMutexLocker k(&_imp->renderClonesMutex);
-    _imp->renderClonesPool.clear();
+    std::list<EffectInstancePtr> clones;
+    {
+        QMutexLocker k(&_imp->renderClonesMutex);
+        clones.swap(_imp->renderClonesPool);
+    }
+    // the clones are destroyed here, outside the lock: their destructor calls the plug-in
 }
 
 void
