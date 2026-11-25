@@ -389,6 +389,13 @@ add_test(NAME TimelineSetTimeHeadless
 set_tests_properties(TimelineSetTimeHeadless PROPERTIES TIMEOUT 120
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/timeline-set-time-headless-cache")
 
+# Effect.destroy() takes effect before it returns: the node is no longer found and its name is free (#1805):
+# NatronRenderer runs the script, which exits with natron.quit(status).
+add_test(NAME DestroyNodeHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_destroy_node.py")
+set_tests_properties(DestroyNodeHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/destroy-node-headless-cache")
+
 # ColorParam.get(frame) returns the alpha of an RGBA color, not its blue (#1712): NatronRenderer runs the
 # script, which exits with natron.quit(status).
 add_test(NAME ColorGetFrameHeadless

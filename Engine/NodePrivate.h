@@ -273,6 +273,14 @@ public:
     bool tryBeginPreview();
     void endPreview();
 
+    // No preview starts after this (destroyNode())
+    void forbidPreviews()
+    {
+        QMutexLocker l(&computingPreviewMutex);
+
+        previewThreadQuit = true;
+    }
+
     void restoreUserKnobsRecursive(const std::list<KnobSerializationBasePtr>& knobs,
                                    const KnobGroupPtr& group,
                                    const KnobPagePtr& page);

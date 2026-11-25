@@ -15,8 +15,8 @@ try:
     names = [n.getScriptName() for n in nodes]
     assert names == ["Dot%d" % (i + 1) for i in range(count)], names[:10]
 
-    # a freed name is reused, the smallest first. The names are freed by renaming the nodes: Effect.destroy()
-    # only removes a node once the event loop runs, after this script.
+    # a freed name is reused, the smallest first. The names are freed by renaming the nodes (for Effect.destroy(),
+    # see headless_destroy_node.py).
     renamed10 = nodes[9].setScriptName("Renamed10")
     renamed7 = nodes[6].setScriptName("Renamed7")
     assert renamed10 and renamed7
