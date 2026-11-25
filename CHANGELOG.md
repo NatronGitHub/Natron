@@ -21,6 +21,9 @@
 
 ### Changes
 
+- Auto-save restore: when several auto-saves are restored at startup and one of the later windows fails to load, the first window keeps its restored project, without an extra Viewer or a second `onProjectCreated` callback. #1743
+- Python: `getDerivativeAtTime()` and `getIntegrateFromTimeToTime()` return 0 for a dimension out of range, as `getValue()` does, instead of crashing Natron. #1743
+- Preferences: Restore defaults no longer deletes the user's settings file when Natron runs with `--no-settings`, `--test` or `--setting`, and no longer turns saving the settings back on for the rest of the session. #1728
 - Python: renaming a node, e.g. a PyPlug instance with `setScriptName()`, no longer breaks the expressions of its parameters and of the nodes inside it that don't read one of its parameters (e.g. `thisGroup.getInput(1) is None` in the Glow PyPlug, or `thisNode.getScriptName()`): they kept the old name and failed with `AttributeError: 'NatronEngine.App' object has no attribute 'Glow1'`. #1686
 - File dialog: a folder typed with a project variable, e.g. `[Project]/plates`, is recognised as a folder (Enter opens it) instead of being taken for a file name. #1744
 - Node graph: undoing the resize of a backdrop restores its exact previous size, instead of a slightly larger one. #1744
@@ -85,6 +88,7 @@
 - OpenFX: the text of plug-in messages with arguments (errors, warnings, logs, and the messages shown on nodes and in the viewer) is no longer garbage. #1483
 - OpenFX: the multithread, message, progress, timeline and OpenGL render suites return the status codes of OFX 1.5.1. #1385
 - OpenFX: when the plug-in cache is stale because a plug-in binary's list of plug-ins changed but not its modification time and size, a project or a new node no longer gets another plug-in of that binary: it gets the right plug-in, or else a new node gives an error that says to clear the plug-in cache (Cache > Clear Plug-ins Load Cache and restart, or `--clear-openfx-cache`), and a project reports the node as missing. (openfx#318) #1742
+- OpenFX, Windows: OpenFX plug-ins are now also looked for in `Common Files\OFX\Natron`; when the same plug-in, at the same version, is in both `Common Files\OFX\Plugins` and `Common Files\OFX\Natron`, the copy in `OFX\Plugins` is used, as on Linux and macOS. (openfx#339)
 - OpenFX, multi-view projects: a multi-planar plug-in (e.g. Shuffle, Premult or IDistort from openfx-misc) now gets the view that is rendered when Natron asks for the planes it needs (it always got the first view), so the layers that it passes through in the other views (e.g. a depth or motion vector layer) come from that view instead of the first one. (openfx#331) #1742
 - OpenFX: a plug-in that asks for a dialog (OfxDialogSuite `requestDialog`) from a render thread could crash Natron if the node was destroyed (e.g. the project closed) before the request was processed; an internal error while handling the request now makes the request fail, instead of propagating into the plug-in. #1608
 - OpenFX: `kOfxImageEffectActionBeginSequenceRender` and `EndSequenceRender` get the same arguments and a positive frame step; `kOfxPropIsInteractive` is 0 in a render to disk (a writer or a DiskCache), also from the GUI, where it used to be 1, and 1 in other GUI renders. #1385
