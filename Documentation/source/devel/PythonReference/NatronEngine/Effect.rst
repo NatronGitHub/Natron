@@ -22,11 +22,13 @@ Functions
 - def :meth:`connectInput<NatronEngine.Effect.connectInput>` (inputNumber, input)
 - def :meth:`destroy<NatronEngine.Effect.destroy>` ([autoReconnect=true])
 - def :meth:`disconnectInput<NatronEngine.Effect.disconnectInput>` (inputNumber)
-- def :meth:`getAvailableLayers<NatronEngine.Effect.getAvailableLayers>` ()
+- def :meth:`getAvailableLayers<NatronEngine.Effect.getAvailableLayers>` (inputNb)
+- def :meth:`getAvailableLayers<NatronEngine.Effect.getAvailableLayers>` (inputNb, time[, view=0])
 - def :meth:`getBitDepth<NatronEngine.Effect.getBitDepth>` ()
 - def :meth:`getColor<NatronEngine.Effect.getColor>` ()
 - def :meth:`getCurrentTime<NatronEngine.Effect.getCurrentTime>` ()
 - def :meth:`getOutputFormat<NatronEngine.Effect.getOutputFormat>` ()
+- def :meth:`getFrameRange<NatronEngine.Effect.getFrameRange>` ()
 - def :meth:`getFrameRate<NatronEngine.Effect.getFrameRate>` ()
 - def :meth:`getInput<NatronEngine.Effect.getInput>` (inputNumber)
 - def :meth:`getInput<NatronEngine.Effect.getInput>` (inputName)
@@ -227,18 +229,32 @@ their input to the input of this node instead.
 Removes any input Effect connected to the given *inputNumber* of this node.
 
 
-.. method:: Effect.getAvailableLayers()
+.. method:: Effect.getAvailableLayers(inputNb)
 
-    :rtype: :class:`dict`
+    :param inputNb: :class:`int`
+    :rtype: :class:`list` of :class:`ImageLayer<NatronEngine.ImageLayer>`
 
-    Returns the layer available on this node. This is a dict with a :class:`ImageLayer<NatronEngine.ImageLayer>`
-    as key and :class:`Effect<NatronEngine.Effect>` as value. The Effect is the closest node in
-    the upstream tree (including this node) that produced that layer.
+    Returns the layers available in the input *inputNb* of this node, or in its output if *inputNb*
+    is -1, at the current frame of the timeline and in the first view. The color layer, if
+    available, is first. The list also contains the layers created on this node with
+    :func:`addUserPlane()<NatronEngine.Effect.addUserPlane>` and, in output, the layers that this
+    node passes through from its inputs and the default layers of the project.
 
     For example, in a simple graph Read --> Blur, if the Read node has a layer available
-    named "RenderLayer.combined" but Blur is set to process only the color layer (RGBA), then
-    calling this function on the Blur will return a dict containing for key "RenderLayer.combined"
-    the Read node, whereas the dict will have for the key "RGBA" the Blur node.
+    named "RenderLayer.combined" and Blur processes only the color layer (RGBA), then
+    the list returned by ``Blur.getAvailableLayers(-1)`` contains both the color layer and
+    "RenderLayer.combined".
+
+.. method:: Effect.getAvailableLayers(inputNb, time[, view=0])
+    :noindex:
+
+    :param inputNb: :class:`int`
+    :param time: :class:`float`
+    :param view: :class:`int`
+    :rtype: :class:`list` of :class:`ImageLayer<NatronEngine.ImageLayer>`
+
+    Same as :func:`getAvailableLayers(inputNb)<NatronEngine.Effect.getAvailableLayers>`, at the given
+    *time* and *view*. A negative *view* gives an empty list.
 
 .. method:: Effect.getBitDepth()
 
@@ -272,6 +288,15 @@ thread.
 
     Returns the output format of this node in pixel units.
 
+
+.. method:: Effect.getFrameRange()
+
+    :rtype: :class:`tuple` of two :class:`float`
+
+    Returns the frame range *(first, last)* of the sequence in output of this node, e.g. the
+    frames of the sequence read by a Read node. A node that has no frame range of its own has the
+    frame range of its inputs, and an infinite range (the minimum and maximum 32-bit integers)
+    if it has no input. The frame range of this node is computed at each call.
 
 .. method:: Effect.getFrameRate()
 

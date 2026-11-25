@@ -389,7 +389,22 @@ public:
 
     bool addUserPlane(const QString& planeName, const QStringList& channels);
 
+    /**
+     * @brief Returns the layers available in input inputNb of the node (in its output if inputNb is -1),
+     * at the current frame of the timeline and in the first view.
+     **/
     std::list<ImageLayer> getAvailableLayers(int inputNb) const;
+
+    /**
+     * @brief Same as getAvailableLayers(inputNb), at the given time and view.
+     **/
+    std::list<ImageLayer> getAvailableLayers(int inputNb, double time, int /* Python API: do not use ViewIdx */ view = 0) const;
+
+    /**
+     * @brief Returns the frame range (first, last) of the node, which is infinite if the node has no frame range
+     * and no input.
+     **/
+    std::pair<double, double> getFrameRange() const;
 
     RectI getOutputFormat() const;
 
