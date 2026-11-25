@@ -103,6 +103,7 @@ SOURCES += \
     OfxHostProperties_Test.cpp \
     OfxImageMemory_Test.cpp \
     OfxInstanceChanged_Test.cpp \
+    OfxInstanceChangedGIL_Test.cpp \
     OfxInstanceEdit_Test.cpp \
     OfxMultiThreadSuite_Test.cpp \
     OfxMultiplePAR_Test.cpp \
