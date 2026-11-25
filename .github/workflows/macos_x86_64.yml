@@ -275,6 +275,11 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/workflows/attach_to_prerelease.sh
+          sparse-checkout-cone-mode: false
       - uses: actions/download-artifact@v4
         with:
           pattern: Natron-macOS-x86_64-{dmg,tests}
@@ -288,10 +293,6 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           ls -l assets
-          # the release may also be created by the other OSes' workflows
-          gh release view "$TAG" > /dev/null 2>&1 ||
-            gh release create "$TAG" --verify-tag --prerelease --title "$TAG" --notes "Natron $TAG (pre-release)" ||
-            gh release view "$TAG" > /dev/null
           # as linux_packages.yml: the DMG, <dmg>-tests.txt, -tests-summary.txt and -unit_tests_failures.zip
           shopt -s nullglob
-          gh release upload "$TAG" --clobber assets/*.dmg assets/*-tests.txt assets/*-tests-summary.txt assets/*-unit_tests_failures.zip
+          .github/workflows/attach_to_prerelease.sh "$TAG" assets/*.dmg assets/*-tests.txt assets/*-tests-summary.txt assets/*-unit_tests_failures.zip

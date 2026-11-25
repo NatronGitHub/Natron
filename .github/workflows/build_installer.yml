@@ -1,7 +1,8 @@
 name: Build Installer
 
 # The Windows installer (Setup.exe and the portable zip, #1498): built weekly (Sunday, on the
-# default branch), on demand, and for release tags; never on pull requests. The weekly run is never
+# default branch), on demand, and for release tags; never on pull requests. On pre-release tags, the
+# zip and the test results are attached to the GitHub pre-release (the release job). The weekly run is never
 # skipped, even if the branch didn't change: MSYS2 (setup-msys2 with update: true) is a rolling
 # toolchain. Every run uses the package repository pinned by
 # tools/MINGW-packages/windows_pacman_repo_version.txt (natron_package_repo-<version>.zip on the
@@ -47,8 +48,7 @@ env:
   # built by these scripts (MINGW64, qmake)
   BASELINE_INSTALLER_URL: 'https://github.com/NatronGitHub/Natron/releases/download/v2.6.0-alpha1/Natron-RB-2.6-202305242302-b9a9b81-Windows-x86_64.zip'
   # how long the artifacts are kept: 14 days for the weekly runs (enough to compare two of them), the
-  # repository's maximum (90) for the manual and tag runs, whose installers no job attaches to a
-  # release yet
+  # repository's maximum (90) for the manual and tag runs
   ARTIFACT_RETENTION_DAYS: ${{ github.event_name == 'schedule' && '14' || '90' }}
 
 jobs:
@@ -142,6 +142,7 @@ jobs:
 
           echo "INSTALLER_NAME=${INSTALLER_NAME}" >> $GITHUB_OUTPUT
           echo "INSTALLER_DIR=$(cygpath -m ${INSTALLER_DIR})" >> $GITHUB_OUTPUT
+          echo "INSTALLER_ZIP=$(cygpath -m ${INSTALLER_ZIP_UNIX})" >> $GITHUB_OUTPUT
           # the bundled DLLs and where they come from (genDllVersions.sh)
           echo "DLL_LIST=$(cygpath -m ${ARCHIVE_DIR}/${INSTALLER_NAME}-dlls.txt)" >> $GITHUB_OUTPUT
 
@@ -399,3 +400,48 @@ jobs:
           else
             echo "::warning::Natron-Tests results differ from the 2.5.0 release (see the diff above)"
           fi
+
+      - name: Upload the files for the pre-release
+        # tag pushes only (push has only tags here); the release job attaches them on pre-release tags
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name: Natron-Windows-${{ matrix.msystem }}-prerelease
+          path: |
+            ${{ steps.build.outputs.INSTALLER_ZIP }}
+            ${{ steps.build.outputs.TEST_RESULTS_FILE }}
+            ${{ steps.build.outputs.TEST_FAILURES_ZIP }}
+          compression-level: 0
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+
+  # pre-release tags only (v*-alpha*, -beta*, -rc*, -RC*, as linux_packages.yml and macos_x86_64.yml):
+  # attach the portable zip (with Setup.exe) and the test results to the GitHub pre-release
+  release:
+    name: Attach to the pre-release
+    needs: win-installer
+    if: >-
+      ${{ !cancelled() && needs.win-installer.result == 'success' && github.event_name == 'push' &&
+      (contains(github.ref_name, '-alpha') || contains(github.ref_name, '-beta') ||
+      contains(github.ref_name, '-rc') || contains(github.ref_name, '-RC')) }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/workflows/attach_to_prerelease.sh
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: Natron-Windows-*-prerelease
+          path: assets
+          merge-multiple: true
+      - name: Attach to the pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          ls -l assets
+          shopt -s nullglob
+          .github/workflows/attach_to_prerelease.sh "$GITHUB_REF_NAME" assets/*.zip assets/*-tests.txt

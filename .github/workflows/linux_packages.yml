@@ -296,6 +296,11 @@ jobs:
     permissions:
       contents: write
     steps:
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+        sparse-checkout: .github/workflows/attach_to_prerelease.sh
+        sparse-checkout-cone-mode: false
     - uses: actions/download-artifact@v4
       with:
         pattern: Natron-Linux-*
@@ -308,7 +313,5 @@ jobs:
       run: |
         # no archive at all (both arches failed): no release
         ls -l dist/*.tar.xz
-        gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1 ||
-            gh release create "$GITHUB_REF_NAME" --verify-tag --prerelease --title "$GITHUB_REF_NAME" --notes "Natron $GITHUB_REF_NAME (pre-release)"
         shopt -s nullglob
-        gh release upload "$GITHUB_REF_NAME" dist/*.tar.xz dist/*-tests.txt dist/*-tests-summary.txt dist/*-unit_tests_failures.zip --clobber
+        .github/workflows/attach_to_prerelease.sh "$GITHUB_REF_NAME" dist/*.tar.xz dist/*-tests.txt dist/*-tests-summary.txt dist/*-unit_tests_failures.zip
