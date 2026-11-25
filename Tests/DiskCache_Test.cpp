@@ -25,6 +25,7 @@
 // - the unreferenced files are not deleted while another Natron process uses the cache.
 // - #1594: the table of contents is replaced atomically, so a reader never sees a partial one.
 // - #1815: the table of contents is read back as it was written.
+// - #1812: the frame range of a DiskCache node follows the project range.
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -66,6 +67,7 @@
 #include "Engine/Cache.h"
 #include "Engine/CacheSerialization.h"
 #include "Engine/CreateNodeArgs.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/FrameKey.h"
 #include "Engine/FrameParams.h"
@@ -684,4 +686,42 @@ TEST(DiskCacheLocation, InstanceFileIsTouchedWithoutEventLoop)
     }
     appPTR->setDiskCacheInstanceFileTouchInterval(10 * 60 * 1000);
     EXPECT_TRUE(touched);
+}
+
+// #1812: the frame range of a DiskCache node set to "Project frame range" follows the project's. The frame range of a
+// node is cached under its hash, which doesn't depend on the project range, so the old range was returned.
+TEST(DiskCacheNode, ProjectFrameRangeFollowsTheProject)
+{
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+    CreateNodeArgs args(PLUGINID_NATRON_DISKCACHE, project);
+    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+    NodePtr node = app->createNode(args);
+    ASSERT_TRUE( bool(node) );
+    KnobChoicePtr frameRange = std::dynamic_pointer_cast<KnobChoice>( node->getKnobByName("frameRange") );
+    ASSERT_TRUE( bool(frameRange) );
+    frameRange->setValue(1); // Project frame range
+    KnobIntPtr projectRange = std::dynamic_pointer_cast<KnobInt>( project->getKnobByName("frameRange") );
+    ASSERT_TRUE( bool(projectRange) );
+    const int oldFirst = projectRange->getValue(0);
+    const int oldLast = projectRange->getValue(1);
+
+    EffectInstancePtr effect = node->getEffectInstance();
+    projectRange->setValue(1, ViewSpec::all(), 0);
+    projectRange->setValue(10, ViewSpec::all(), 1);
+    double first = 0., last = 0.;
+    effect->getFrameRange_public(effect->getHash(), &first, &last);
+    EXPECT_EQ(1., first);
+    EXPECT_EQ(10., last);
+
+    projectRange->setValue(5, ViewSpec::all(), 0);
+    projectRange->setValue(20, ViewSpec::all(), 1);
+    effect->getFrameRange_public(effect->getHash(), &first, &last);
+    EXPECT_EQ(5., first);
+    EXPECT_EQ(20., last);
+
+    projectRange->setValue(oldFirst, ViewSpec::all(), 0);
+    projectRange->setValue(oldLast, ViewSpec::all(), 1);
+    node->destroyNode(true, false);
 }

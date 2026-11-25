@@ -2409,6 +2409,17 @@ Project::onKnobValueChanged(KnobI* knob,
         forceComputeInputDependentDataOnAllTrees();
         shouldAutoSave = true;
     } else if ( knob == _imp->frameRange.get() ) {
+        // The frame range of a node may follow the project's (e.g. a DiskCache node set to "Project frame range"),
+        // but the node hash, under which the frame range is cached, doesn't depend on it (#1812)
+        NodesList nodes;
+        getNodes_recursive(nodes, false);
+        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            EffectInstancePtr effect = (*it)->getEffectInstance();
+            // A node is in its group before load() creates its effect, and loading a Read node may change the project range
+            if (effect) {
+                effect->clearActionsCache();
+            }
+        }
         int first = _imp->frameRange->getValue(0);
         int last = _imp->frameRange->getValue(1);
         Q_EMIT frameRangeChanged(first, last);
