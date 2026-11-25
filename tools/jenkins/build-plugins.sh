@@ -642,14 +642,6 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
             # no AudioCurve: libsox links GPL libraries (libmad, libid3tag; libao on Windows)
             arena_args+=(-DAUDIO=OFF)
         fi
-        if [ "$PKGOS" = "Windows" ] && ! pkg-config --static --libs Magick++ 2>/dev/null | grep -q -- '-lurlmon'; then
-            # A static MagickCore's URL coder calls URLDownloadToFileA (urlmon), but
-            # ImageMagick links urlmon only into its URL module, so a build without modules
-            # (natron_imagemagick 7.1.2.36-2) leaves it out of MagickCore.pc's Libs.private.
-            # A static archive needs its libraries after it on the link line, so urlmon goes
-            # at the very end: CMake's default MinGW standard libraries, plus urlmon (#1863).
-            arena_args+=(-DCMAKE_CXX_STANDARD_LIBRARIES="-lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32 -lurlmon")
-        fi
         ofx_cmake_build ${arena_args[@]+"${arena_args[@]}"}
         echo "Info: build openfx-arena using cmake... done!"
     else
