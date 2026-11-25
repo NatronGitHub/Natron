@@ -262,10 +262,11 @@ Suggested sequence
    input, multiple monitors, and the Python console/panels. Mirror the
    checklist the Qt5 tracker (#827) used. To do: so far the Qt 6 GUI has only
    been launched and used to connect nodes and render.
-6. **Build Qt 6 in CI.** To do. Per the CI policy, each PR gets one Qt 5 build
-   per platform, so the Qt 6 build will run weekly or on demand, not on every
-   PR. The Windows job also needs a ``natron-build-deps-qt6`` package in
-   Natron's pacman repository.
+6. **Build Qt 6 in CI.** Linux: done on RB-2.7, whose Linux job builds Qt 6
+   and PySide6; its log is checked after each forward merge of RB-2.6, and the
+   fixes go to RB-2.6, which has no Qt 6 job. To do: Windows and macOS, weekly
+   or on demand (the Windows job also needs a ``natron-build-deps-qt6`` package
+   in Natron's pacman repository).
 7. **Switch Qt 6 builds to C++20.** Done in PRs #1469 and #1148.
 
 Qt 6 work that keeps Qt 5 unchanged goes to RB-2.6, and reaches RB-2.7 by the

@@ -3,8 +3,8 @@
 # macOS version: the minimum macOS of each architecture (LC_BUILD_VERSION minos, or the older
 # LC_VERSION_MIN_MACOSX) must not be newer than the target.
 #
-#   check-minos.sh [-t TARGET] [-v] PATH...   PATH: a directory, a file, or a .dmg (mounted read-only)
-#   check-minos.sh [-t TARGET] [-v] -l        read the paths to check from stdin, one per line
+#   check-minos.sh [-t TARGET] [-v] [-N] PATH...   PATH: a directory, a file, or a .dmg (mounted read-only)
+#   check-minos.sh [-t TARGET] [-v] [-N] -l        read the paths to check from stdin, one per line
 #                                             (paths that can't be found are skipped)
 #
 #   -t TARGET   oldest macOS that must be supported (default: $MACOSX_DEPLOYMENT_TARGET, else

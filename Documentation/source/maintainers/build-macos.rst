@@ -66,7 +66,10 @@ The release scripts build Natron and the plug-ins with the system (Xcode or
 Command Line Tools) clang, ``/usr/bin/clang++``, with OpenMP from MacPorts'
 ``libomp`` (#1134). ``tools/jenkins/compiler-common.sh`` checks that it
 compiles the C++ standard of the build (C++17 with Qt5, C++20 with Qt6) and
-links with ``libomp``; otherwise it warns and falls back to a MacPorts clang.
+links with ``libomp``; otherwise it warns and falls back to a MacPorts clang
+if one is installed, else to Apple clang without OpenMP for Natron (the
+plug-ins still get OpenMP if ``libomp`` is installed, and their build stops if
+it is not).
 
 A MacPorts clang (``clang-mp-*``) is used by the builds that pass ``-fopenmp``
 themselves (Apple's driver has no ``-fopenmp``, only ``-Xpreprocessor

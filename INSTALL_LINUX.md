@@ -89,7 +89,7 @@ These are the system libraries of openfx's `Support/include/linuxCheckBundle.sh`
 
 Everything else comes from the SDK and is bundled. In particular, Python's `crypt` module (deprecated since Python 3.11) is not included: it needs libcrypt.so.2, which Debian and Ubuntu don't have. libva (VA-API) is neither bundled nor needed: the SDK image has no libva-devel, so the SDK's FFmpeg is built without VA-API (and `checkBundle` would fail if a bundled file needed the system's libva). A bundled libva would only find the VA-API drivers at the paths of the distribution it was built on.
 
-`tools/jenkins/build-Linux-installer.sh` checks this (`checkBundle`, on the portable tree and on the installer packages). It fails if:
+`tools/jenkins/build-Linux-installer.sh` checks this (`checkBundle`, on the portable tree). It fails if:
 - the directory doesn't exist or contains no ELF file;
 - one of the system libraries above is bundled;
 - an ELF file needs (DT_NEEDED) a library that is neither bundled nor one of the system libraries above;

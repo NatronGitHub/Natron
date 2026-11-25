@@ -77,7 +77,7 @@ trap tart_unlock EXIT   # replaced by cleanup once the clone exists
 VM=natron-test-$(date +%Y%m%d-%H%M%S)-$$
 cleanup() {
     # the tart guest agent (used by vm_stop) ran from /opt/homebrew: shut down through ssh, if
-    # the VM got an address (vm_addr would otherwise search for one for 15 minutes)
+    # the VM got an address (vm_addr would otherwise search for one for up to 25 minutes)
     if vm_running "$VM" && [ -s "$(vm_addr_cache "$VM")" ]; then
         vm_ssh "$VM" 'sudo /sbin/shutdown -h now' > /dev/null 2>&1 || true
         for _ in $(seq 30); do vm_running "$VM" || break; sleep 5; done
