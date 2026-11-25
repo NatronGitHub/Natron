@@ -1,6 +1,12 @@
 name: Build Installer
 
-# Installers are release artifacts: built on demand or for (pre-)release tags only.
+# The Windows installer (Setup.exe and the portable zip, #1498): built weekly (Sunday, on the
+# default branch), on demand, and for release tags; never on pull requests. The weekly run is never
+# skipped, even if the branch didn't change: MSYS2 (setup-msys2 with update: true) is a rolling
+# toolchain. Every run uses the package repository pinned by
+# tools/MINGW-packages/windows_pacman_repo_version.txt (natron_package_repo-<version>.zip on the
+# windows-mingw-package-repo release) and fails at once if that zip isn't published; a manual run
+# can use the artifact of a "Build pacman repo" run instead (pacman_repo_run_id).
 # GPL only: COMMERCIAL (non-GPL) builds are never made in CI, weekly builds or releases, only by hand
 # (NATRON_LICENSE=COMMERCIAL, see tools/jenkins/README.md).
 on:
@@ -15,13 +21,18 @@ on:
         type: choice
         options: [UCRT64, CLANGARM64, both]
         default: UCRT64
+  schedule:
+  # Sunday, after ci.yml (03:17), linux_packages.yml (04:47) and macos_x86_64.yml (05:17)
+  - cron: '17 6 * * 0'
   push:
     tags:
     - 'v*'
 
+# A new manual run cancels the previous manual run of the same branch; scheduled and tag runs are
+# never cancelled, and are in their own groups, so that a manual run doesn't cancel them either.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'workflow_dispatch' }}
 
 permissions:
   contents: read
@@ -34,6 +45,10 @@ env:
   # the Windows installer whose file list and DLLs the new one is compared with: the last one
   # built by these scripts (MINGW64, qmake)
   BASELINE_INSTALLER_URL: 'https://github.com/NatronGitHub/Natron/releases/download/v2.6.0-alpha1/Natron-RB-2.6-202305242302-b9a9b81-Windows-x86_64.zip'
+  # how long the artifacts are kept: 14 days for the weekly runs (the next one replaces them), the
+  # repository's maximum (90) for the manual and tag runs, whose installers no job attaches to a
+  # release yet
+  ARTIFACT_RETENTION_DAYS: ${{ github.event_name == 'schedule' && '14' || '90' }}
 
 jobs:
   win-installer:
@@ -189,6 +204,7 @@ jobs:
           name:  compare-${{ steps.build.outputs.INSTALLER_NAME }}
           path:  ${{ github.workspace }}/compare
           if-no-files-found: ignore
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
 
       - name: Uninstall Natron dependencies
         run: |
@@ -199,18 +215,21 @@ jobs:
         with:
           name:  ${{ steps.build.outputs.INSTALLER_NAME }}
           path:  ${{ steps.build.outputs.INSTALLER_DIR }}
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
 
       - name: Upload test results
         uses: actions/upload-artifact@v4.3.1
         with:
           name:  ${{ steps.build.outputs.TEST_RESULTS_NAME }}
           path:  ${{ steps.build.outputs.TEST_RESULTS_FILE }}
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
 
       - name: Upload test failures
         uses: actions/upload-artifact@v4.3.1
         with:
           name:  ${{ steps.build.outputs.TEST_FAILURES_NAME }}
           path:  ${{ steps.build.outputs.TEST_FAILURES_DIR }}
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
 
       - name: Verify plugin loading
         run: |

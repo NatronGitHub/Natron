@@ -362,17 +362,21 @@ run is never skipped: every job uses rolling toolchains. Any branch can also be 
 standards such as C++23, other compilers or OS versions) are meant to run
 weekly or by hand, never per pull request; none is set up yet.
 
-**Installers and packages are release artifacts.** Before a pre-release tag,
-collect the CHANGELOG (see :ref:`maint-changelog`). Installers and packages are
-built only by hand or for pre-release tags, never for pull requests:
-``build_installer.yml`` builds the Windows installer and
-``build_pacman_repo.yml`` the Windows package repository, both uploaded as
-workflow artifacts. The macOS and Linux installers are built outside GitHub
-Actions: the macOS release builds with ``tools/tart`` (in a macOS VM on a
-maintainer's Apple Silicon Mac), the Linux installers with the
-``tools/jenkins`` scripts in the Rocky Linux 9 SDK Docker image (being adapted
-from ``tools/docker/natron-sdk-rockylinux8``, see `#1343
-<https://github.com/NatronGitHub/Natron/pull/1343>`_).
+**Installers and packages are built weekly, on demand and for tags, never for
+pull requests.** Before a pre-release tag, collect the CHANGELOG (see
+:ref:`maint-changelog`). ``build_installer.yml`` builds the Windows installer
+(Setup.exe and the portable zip) every Sunday (06:17 UTC), by hand and for
+``v*`` tags, with the package repository pinned by
+``tools/MINGW-packages/windows_pacman_repo_version.txt``; the weekly run is never
+skipped (MSYS2 is a rolling toolchain) and fails if that repository's zip isn't
+published. Its artifacts are kept 14 days for the weekly runs, 90 days
+otherwise. ``build_pacman_repo.yml`` builds the Windows package repository, by
+hand or for ``v*`` tags (see ``tools/MINGW-packages/README.md``).
+``linux_packages.yml`` builds the Linux portable archives weekly, by hand and
+for pre-release tags, in the Rocky Linux 9 SDK Docker image, and
+``macos_x86_64.yml`` the macOS x86_64 DMG on the same schedule. The macOS arm64
+release builds are made outside GitHub Actions, with ``tools/tart`` (in a macOS
+VM on a maintainer's Apple Silicon Mac).
 
 Where to start
 --------------
