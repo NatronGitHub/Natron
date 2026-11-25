@@ -93,17 +93,6 @@ typedef std::shared_ptr<ImageCache> ImageCachePtr;
 // A 16x16 RGBA 8-bit image: 1024 bytes of data
 const std::size_t kImageBytes = 16 * 16 * 4;
 
-NodePtr
-createDot()
-{
-    AppInstancePtr app = appPTR->getTopLevelInstance();
-    CreateNodeArgs args(PLUGINID_NATRON_DOT, app->getProject());
-    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-
-    return app->createNode(args);
-}
-
 // The folder of a cache, with the 256 sub-folders 00..ff of a non-tiled cache (see AppManagerPrivate::cleanUpCacheDiskStructure)
 void
 createCacheFolder(const QString& cachePath)
@@ -136,7 +125,7 @@ class DiskCacheTest
 protected:
     virtual void SetUp() OVERRIDE
     {
-        _holder = createDot();
+        _holder = NatronTest::createNode(PLUGINID_NATRON_DOT);
         ASSERT_TRUE( bool(_holder) );
         _cacheName = std::string("TestDiskCache") + QString::number( QCoreApplication::applicationPid() ).toStdString();
         _cache = makeCache();

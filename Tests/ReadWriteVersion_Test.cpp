@@ -174,16 +174,6 @@ pluginIDKnobValue(const NodePtr& node,
 
     return knob ? knob->getValue() : "<no knob>";
 }
-
-// Resets the shared app's project when the test ends, also when an ASSERT fails, so that the next
-// tests get an untitled empty project, not one in a removed directory.
-struct ResetProjectOnExit
-{
-    ~ResetProjectOnExit()
-    {
-        appPTR->getTopLevelInstance()->getProject()->resetProject();
-    }
-};
 } // anonymous namespace
 
 TEST(ReadWriteVersion, ProjectLoadsSavedVersion)
@@ -193,7 +183,7 @@ TEST(ReadWriteVersion, ProjectLoadsSavedVersion)
     }
     QTemporaryDir tmpDir;
     ASSERT_TRUE( tmpDir.isValid() );
-    const ResetProjectOnExit resetProject; // destroyed before tmpDir
+    const NatronTest::ProjectResetScope resetProject; // destroyed before tmpDir
     ProjectPtr project = appPTR->getTopLevelInstance()->getProject();
     const QString dir = tmpDir.path() + QLatin1Char('/');
     const std::string filename = dir.toStdString() + "image.natrontestversion";
@@ -257,7 +247,7 @@ TEST(ReadWriteVersion, ProjectWithoutVersionLoadsLowestMajor)
     ASSERT_TRUE( (0 <= writeLowest) && (writeLowest <= kOldMajor) );
     QTemporaryDir tmpDir;
     ASSERT_TRUE( tmpDir.isValid() );
-    const ResetProjectOnExit resetProject; // destroyed before tmpDir
+    const NatronTest::ProjectResetScope resetProject; // destroyed before tmpDir
     ProjectPtr project = appPTR->getTopLevelInstance()->getProject();
     const QString dir = tmpDir.path() + QLatin1Char('/');
     const std::string filename = dir.toStdString() + "image.natrontestversion";
@@ -311,7 +301,7 @@ TEST(ReadWriteVersion, MissingPluginKeepsVersion)
     }
     QTemporaryDir tmpDir;
     ASSERT_TRUE( tmpDir.isValid() );
-    const ResetProjectOnExit resetProject; // destroyed before tmpDir
+    const NatronTest::ProjectResetScope resetProject; // destroyed before tmpDir
     ProjectPtr project = appPTR->getTopLevelInstance()->getProject();
     const QString dir = tmpDir.path() + QLatin1Char('/');
     const QString projectName = QString::fromUtf8("ReadWriteMissing.ntp");
