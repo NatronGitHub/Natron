@@ -23,5 +23,6 @@ NATRON_MACOS_CLT_VERSION=15.3
 NATRON_MACOS_BASE_IMAGE=ghcr.io/cirruslabs/macos-sonoma-base@sha256:e2ebdfc4d354b336fe00d729c11a8136a019b8046f41cc183a2fe51b85d18f49
 # osmesa-install commit that builds OSMesa and LLVM in the SDK of the GitHub macOS x86_64 workflow
 # (.github/workflows/macos_x86_64_sdk.yml), so that this SDK doesn't change with osmesa-install
-# master; the tart VMs use the host's osmesa-install checkout (tools/tart/tart-common.sh).
+# master; the tart VMs use the host's osmesa-install checkout (tools/tart/tart-common.sh). An SDK
+# update keeps the OSMesa it restores: after moving the pin, run the workflow with sdk=scratch.
 NATRON_OSMESA_INSTALL_COMMIT=26c97553387d61502d07a43bb2e02c561f911e67
