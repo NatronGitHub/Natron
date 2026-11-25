@@ -370,12 +370,19 @@ ports_https_source() {
     return 1
 }
 
+# Warn (only) if tools/MacPorts/check.sh says the overlay needs an update against this upstream
+# ports tree (exit status 1), or couldn't check it (2). $1: appended to the warning.
+overlay_check() {
+    local rc=0
+    (cd "$NATRON/tools/MacPorts" && ./check.sh --all) > "$LOGDIR/check.txt" 2>&1 || rc=$?
+    cat "$LOGDIR/check.txt"
+    [ "$rc" = 0 ] ||
+        echo "WARNING: overlay is out of date with upstream, or could not be checked (check.sh exit status $rc, see $LOGDIR/check.txt)${1:-}"
+}
+
 step_overlay() {
     ports_https_source
-    (cd "$NATRON/tools/MacPorts" && { ./check.sh --all || true; }) | tee "$LOGDIR/check.txt"
-    if grep -q "is obsolete\|is missing\|differs from upstream\|is unused\|has no Portfile" "$LOGDIR/check.txt"; then
-        echo "WARNING: overlay is out of date with this upstream tree (see $LOGDIR/check.txt)"
-    fi
+    overlay_check
     sudo mkdir -p /opt/MacPorts-Natron
     sudo chown "$(id -un):staff" /opt/MacPorts-Natron
     grep -q "^file:///opt/MacPorts-Natron" /opt/local/etc/macports/sources.conf ||
@@ -782,10 +789,7 @@ step_update() {
     # build for $macos_target, from source (also after a MacPorts upgrade)
     step_macports_conf
     ports_https_source
-    (cd "$NATRON/tools/MacPorts" && { ./check.sh --all || true; }) | tee "$LOGDIR/check.txt"
-    if grep -q "is obsolete\|is missing\|differs from upstream\|is unused\|has no Portfile" "$LOGDIR/check.txt"; then
-        echo "WARNING: overlay is out of date with upstream (see $LOGDIR/check.txt); reintegrate it on the host first"
-    fi
+    overlay_check "; reintegrate it on the host first"
     step_sync
     # pinned ports first, so that their dependents are upgraded against the right versions
     step_pins
