@@ -62,12 +62,12 @@ TEST(KnobDimensionRange, DerivativeAndIntegral)
         knob->setValueAtTime(10., 10., ViewSpec::all(), 1);
 
         // the last dimension is in range
-        EXPECT_NO_THROW( static_cast<void>( knob->getDerivativeAtTime( 5., ViewSpec::current(), 1 ) ) );
-        EXPECT_NO_THROW( static_cast<void>( knob->getIntegrateFromTimeToTime( 0., 10., ViewSpec::current(), 1 ) ) );
-        EXPECT_THROW( static_cast<void>( knob->getDerivativeAtTime( 5., ViewSpec::current(), 2 ) ), std::invalid_argument );
-        EXPECT_THROW( static_cast<void>( knob->getIntegrateFromTimeToTime( 0., 10., ViewSpec::current(), 2 ) ), std::invalid_argument );
-        EXPECT_THROW( static_cast<void>( knob->getDerivativeAtTime( 5., ViewSpec::current(), -1 ) ), std::invalid_argument );
-        EXPECT_THROW( static_cast<void>( knob->getIntegrateFromTimeToTime( 0., 10., ViewSpec::current(), -1 ) ), std::invalid_argument );
+        EXPECT_NO_THROW( ignore_result( knob->getDerivativeAtTime( 5., ViewSpec::current(), 1 ) ) );
+        EXPECT_NO_THROW( ignore_result( knob->getIntegrateFromTimeToTime( 0., 10., ViewSpec::current(), 1 ) ) );
+        EXPECT_THROW( ignore_result( knob->getDerivativeAtTime( 5., ViewSpec::current(), 2 ) ), std::invalid_argument );
+        EXPECT_THROW( ignore_result( knob->getIntegrateFromTimeToTime( 0., 10., ViewSpec::current(), 2 ) ), std::invalid_argument );
+        EXPECT_THROW( ignore_result( knob->getDerivativeAtTime( 5., ViewSpec::current(), -1 ) ), std::invalid_argument );
+        EXPECT_THROW( ignore_result( knob->getIntegrateFromTimeToTime( 0., 10., ViewSpec::current(), -1 ) ), std::invalid_argument );
         // the same off-by-one in the keyframe edits
         // (KnobHelper's override is private: call it through KnobI, as KnobSlave_Test.cpp does)
         EXPECT_THROW( static_cast<KnobI*>( knob.get() )->deleteValueAtTime( eCurveChangeReasonInternal, 10., ViewSpec::all(), 2, false ), std::invalid_argument );
