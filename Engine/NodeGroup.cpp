@@ -1009,57 +1009,6 @@ NodeCollection::forceComputeInputDependentDataOnAllTrees()
     }
 }
 
-void
-NodeCollection::getParallelRenderArgs(std::map<NodePtr, ParallelRenderArgsPtr>& argsMap) const
-{
-    NodesList nodes = getNodes();
-
-    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( !(*it)->isActivated() ) {
-            continue;
-        }
-        ParallelRenderArgsPtr args = (*it)->getEffectInstance()->getParallelRenderArgsTLS();
-        if (args) {
-            argsMap.insert( std::make_pair(*it, args) );
-        }
-
-        if ( (*it)->isMultiInstance() ) {
-            ///If the node has children, set the thread-local storage on them too, even if they do not render, it can be useful for expressions
-            ///on parameters.
-            NodesList children;
-            (*it)->getChildrenMultiInstance(&children);
-            for (NodesList::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
-                ParallelRenderArgsPtr childArgs = (*it2)->getEffectInstance()->getParallelRenderArgsTLS();
-                if (childArgs) {
-                    argsMap.insert( std::make_pair(*it2, childArgs) );
-                }
-            }
-        }
-
-        //If the node has an attached stroke, that means it belongs to the roto paint tree, hence it is not in the project.
-        RotoContextPtr rotoContext = (*it)->getRotoContext();
-        if (args && rotoContext) {
-            for (NodesList::const_iterator it2 = args->rotoPaintNodes.begin(); it2 != args->rotoPaintNodes.end(); ++it2) {
-                ParallelRenderArgsPtr args2 = (*it2)->getEffectInstance()->getParallelRenderArgsTLS();
-                if (args2) {
-                    argsMap.insert( std::make_pair(*it2, args2) );
-                }
-            }
-        }
-
-
-        const NodeGroup* isGrp = (*it)->isEffectGroup();
-        if (isGrp) {
-            isGrp->getParallelRenderArgs(argsMap);
-        }
-
-        const PrecompNode* isPrecomp = dynamic_cast<const PrecompNode*>( (*it)->getEffectInstance().get() );
-        if (isPrecomp) {
-            isPrecomp->getPrecompApp()->getProject()->getParallelRenderArgs(argsMap);
-        }
-    }
-}
-
 struct NodeGroupPrivate
 {
     mutable QRecursiveMutex nodesLock;

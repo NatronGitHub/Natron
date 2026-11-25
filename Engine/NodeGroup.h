@@ -241,10 +241,6 @@ public:
      **/
     void recomputeFrameRangeForAllReaders(int* firstFrame, int* lastFrame);
 
-
-    void getParallelRenderArgs(std::map<NodePtr, ParallelRenderArgsPtr>& argsMap) const;
-
-
     void forceComputeInputDependentDataOnAllTrees();
 
     /**

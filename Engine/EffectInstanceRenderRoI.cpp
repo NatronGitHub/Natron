@@ -2100,16 +2100,6 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
 
 
 
-    std::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr> > tlsCopy;
-    if (safety == eRenderSafetyFullySafeFrame) {
-        tlsCopy = std::make_shared<std::map<NodePtr, ParallelRenderArgsPtr> >();
-        /*
-         * Since we're about to start new threads potentially, copy all the thread-local storage on all nodes (any node may be involved in
-         * expressions, and we need to retrieve the exact local time of render).
-         */
-        self->getApp()->getProject()->getParallelRenderArgs(*tlsCopy);
-    }
-
     double firstFrame, lastFrame;
     self->getFrameRange_public(nodeHash, &firstFrame, &lastFrame);
 
