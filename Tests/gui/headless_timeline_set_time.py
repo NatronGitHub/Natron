@@ -1,5 +1,4 @@
-"""App.timelineSetTime(frame) moves the current frame, also in background mode (#1796).
-"""
+"""App.timelineSetTime(frame) moves the current frame, also in background mode (#1796)."""
 
 import natronheadless
 

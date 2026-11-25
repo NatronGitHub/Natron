@@ -7,7 +7,7 @@ import natronheadless
 ImageLayer = NatronEngine.ImageLayer
 
 
-def main(app):
+def main(_):
     rgba = ImageLayer.getRGBAComponents()
     assert rgba == ImageLayer.getRGBAComponents()
     assert not rgba != ImageLayer.getRGBAComponents()

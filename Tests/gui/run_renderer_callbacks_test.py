@@ -45,7 +45,7 @@ import shutil
 import sys
 import tempfile
 
-from natronrunner import SKIP, natron_env, run, wrapper, write_png
+import natronrunner
 
 TIMEOUT = 120  # seconds per run (a few seconds; a deadlock never ends), 5 runs within the ctest TIMEOUT
 FRAMES = [1, 2, 3]
@@ -134,19 +134,20 @@ else:
 
 def run_mode(renderer, cmd_wrapper, out_dir, script, mode):
     """Runs the script with the given mode: returns True on success, SKIP if skipped, False on failure."""
-    env = natron_env(out_dir, NATRON_CALLBACKS_TEST_DIR=out_dir, NATRON_CALLBACKS_TEST_MODE=mode)
+    env = natronrunner.natron_env(out_dir, NATRON_CALLBACKS_TEST_DIR=out_dir, NATRON_CALLBACKS_TEST_MODE=mode)
     # the -t prompt reads its commands from stdin after the script: none
     stdin_path = os.path.join(out_dir, "empty_stdin.py")
     with open(stdin_path, "w") as f:
         f.write("")
     print("Mode %s:" % mode)
-    status, out = run(cmd_wrapper + [renderer, "--no-settings", "-t", script], env, TIMEOUT, stdin=stdin_path)
+    cmd = cmd_wrapper + [renderer, "--no-settings", "-t", script]
+    status, out = natronrunner.run(cmd, env, TIMEOUT, stdin=stdin_path)
     sys.stdout.write(out)
     if status is None:
         print("FAILED (%s): timeout after %d s: deadlock?" % (mode, TIMEOUT))
         return False
     if "SKIP:" in out:
-        return SKIP
+        return natronrunner.SKIP
     print("NatronRenderer -t (%s) exited with status %d" % (mode, status))
     lines = [line.strip() for line in out.splitlines()]
     ok = True
@@ -184,20 +185,20 @@ def main(argv):
     if not os.environ.get("OCIO"):
         # the Write node fails without an OCIO config ("Invalid OCIO config"), as for the Tests binary
         print("renderer callbacks test skipped: set OCIO to an OpenColorIO config")
-        return SKIP
-    cmd_wrapper = wrapper(argv[2:])
+        return natronrunner.SKIP
+    cmd_wrapper = natronrunner.wrapper(argv[2:])
     out_dir = tempfile.mkdtemp(prefix="natron-callbacks-test-")
     try:
-        write_png(os.path.join(out_dir, "input.png"), 64, 48)
+        natronrunner.write_png(os.path.join(out_dir, "input.png"), 64, 48)
         script = os.path.join(out_dir, "callbacks_test.py")
         with open(script, "w") as f:
             f.write(SCRIPT)
         ok = True
         for mode in ("button", "apprender", "expression", "precompsave", "precomp"):
             ret = run_mode(argv[1], cmd_wrapper, out_dir, script, mode)
-            if ret == SKIP:
+            if ret == natronrunner.SKIP:
                 print("skipped: the PNG Read/Write plug-ins are not available (set OFX_PLUGIN_PATH to openfx-io)")
-                return SKIP
+                return natronrunner.SKIP
             if not ret:
                 ok = False
         if ok:

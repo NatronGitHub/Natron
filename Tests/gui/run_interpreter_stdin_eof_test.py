@@ -39,7 +39,7 @@ import sys
 import tempfile
 import time
 
-from natronrunner import natron_env
+import natronrunner
 
 TIMEOUT = 120  # seconds, for a run that takes a few seconds
 MAX_OUTPUT = 1 << 20  # bytes: the failure printed megabytes of tracebacks per second
@@ -63,7 +63,10 @@ def run(renderer, script, out_path, stdin, stdin_data=None):
     MAX_OUTPUT or after TIMEOUT: status is then None.
     """
     with open(out_path, "wb") as out:
-        p = subprocess.Popen([renderer, "--no-settings", "-t", script], env=natron_env(os.path.dirname(out_path)),
+        # FP traps on, as before (the other drivers disable them, as Natron --test does)
+        env = natronrunner.natron_env(os.path.dirname(out_path),
+                                      NATRON_NO_FP_TRAPS=os.environ.get("NATRON_NO_FP_TRAPS"))
+        p = subprocess.Popen([renderer, "--no-settings", "-t", script], env=env,
                              stdin=stdin, stdout=out, stderr=subprocess.STDOUT)
         if stdin_data is not None:
             p.stdin.write(stdin_data)

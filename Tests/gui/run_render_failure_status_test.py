@@ -44,10 +44,10 @@ import os
 import sys
 import tempfile
 
-from natronrunner import SKIP, natron_env, run, wrapper, write_png
+import natronrunner
 
 SKIP_CASE = 78
-TIMEOUT = 100  # seconds for one run; six runs stay below the ctest timeout (660)
+TIMEOUT = 90  # seconds for one run; six runs (plus 10 s to kill each) stay below the ctest timeout (660)
 ERROR_TEXT = "Error while rendering"
 # printed when the sequence render of a writer cannot begin (a movie writer that cannot open its file)
 BEGIN_ERROR_TEXT = "could not start the render of the sequence"
@@ -103,19 +103,21 @@ def render_case(renderer, tmp, case, writers, renderer_args=(), quit_after=False
     """
     out = os.path.join(tmp, case)
     os.makedirs(os.path.join(out, "frames"))
-    write_png(os.path.join(out, "input.png"))
+    natronrunner.write_png(os.path.join(out, "input.png"))
     # a regular file where the output directory of WriteBad should be
     with open(os.path.join(out, "blocked"), "w") as f:
         f.write("not a directory")
     script = os.path.join(out, "script.py")
     with open(script, "w") as f:
         f.write(SCRIPT)
-    env = natron_env(tmp, NATRON_FAILURE_TEST_DIR=out.replace("\\", "/"),
-                     NATRON_FAILURE_TEST_WRITERS=",".join(writers))
+    # FP traps on, as before (the other drivers disable them, as Natron --test does)
+    env = natronrunner.natron_env(tmp, NATRON_FAILURE_TEST_DIR=out.replace("\\", "/"),
+                     NATRON_FAILURE_TEST_WRITERS=",".join(writers),
+                     NATRON_NO_FP_TRAPS=os.environ.get("NATRON_NO_FP_TRAPS"))
     env.pop("NATRON_FAILURE_TEST_QUIT", None)
     if quit_after:
         env["NATRON_FAILURE_TEST_QUIT"] = "1"
-    status, output = run(renderer + ["--no-settings"] + list(renderer_args) + [script], env, TIMEOUT)
+    status, output = natronrunner.run(renderer + ["--no-settings"] + list(renderer_args) + [script], env, TIMEOUT)
     frames = len([f for f in os.listdir(os.path.join(out, "frames")) if f.startswith("out_")])
     return status, output, frames
 
@@ -154,13 +156,13 @@ def main():
     if len(sys.argv) < 2:
         sys.stderr.write(__doc__)
         return 2
-    renderer = wrapper(sys.argv[2:]) + [sys.argv[1]]
+    renderer = natronrunner.wrapper(sys.argv[2:]) + [sys.argv[1]]
     ok = True
     with tempfile.TemporaryDirectory() as tmp:
         result = render_case(renderer, tmp, "good", ["WriteGood"])
-        if result[0] == SKIP:
+        if result[0] == natronrunner.SKIP:
             print("skipped: no PNG reader or writer (set OFX_PLUGIN_PATH)")
-            return SKIP
+            return natronrunner.SKIP
         ok &= check("a render to an existing directory", result, 0, 3, False)
         ok &= check("a render to a path that cannot be created",
                     render_case(renderer, tmp, "bad", ["WriteBad"]), 1, 0, True)

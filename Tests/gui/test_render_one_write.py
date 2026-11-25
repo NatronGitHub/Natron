@@ -10,7 +10,7 @@ import tempfile
 
 from natrontest import *
 
-from natronrunner import write_png
+import natronrunner
 
 require_ocio()
 require_plugin("fr.inria.openfx.ReadPNG")
@@ -21,7 +21,7 @@ FRAMES = (1, 2)
 outDir = tempfile.mkdtemp(prefix="natron-render-one-write-")
 try:
     app.getProjectParam("frameRange").set(FRAMES[0], FRAMES[-1])
-    write_png(os.path.join(outDir, "input.png"), 64, 48)
+    natronrunner.write_png(os.path.join(outDir, "input.png"), 64, 48)
     read = app.createNode("fr.inria.built-in.Read")
     read.getParam("filename").set(os.path.join(outDir, "input.png"))
     first = app.createNode("fr.inria.built-in.Write")

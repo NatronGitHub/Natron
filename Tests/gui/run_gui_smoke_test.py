@@ -55,7 +55,7 @@ import subprocess
 import sys
 import tempfile
 
-from natronrunner import HERE, SKIP, kill_tree, wrapper, write_png
+import natronrunner
 
 
 def has_display():
@@ -76,12 +76,12 @@ def has_display():
 # for the auto-save of the project (--setting autoSaveDelay=1), then quits, so that the
 # test can check that the auto-save was removed.
 QUIT_SCRIPT = """
-import os
+import importlib, os, sys
 from NatronGui import natron
-try:
-    from PySide2 import QtCore, QtWidgets
-except ImportError:
-    from PySide6 import QtCore, QtWidgets
+# the PySide that NatronGui loaded (the one of Natron's Qt)
+_pyside = "PySide6" if "PySide6.QtCore" in sys.modules else "PySide2"
+QtCore = importlib.import_module(_pyside + ".QtCore")
+QtWidgets = importlib.import_module(_pyside + ".QtWidgets")
 
 autosaves = os.path.join(QtCore.QStandardPaths.writableLocation(QtCore.QStandardPaths.AppLocalDataLocation), "Autosaves")
 waited = [0]
@@ -140,7 +140,7 @@ def run(cmd, env):
         return p.wait(timeout=RUN_TIMEOUT)
     except subprocess.TimeoutExpired:
         print("timeout: killing Natron and its wrapper")
-        kill_tree(p)
+        natronrunner.kill_tree(p)
         return None
 
 
@@ -166,15 +166,15 @@ def main(argv):
     if len(argv) < 2:
         sys.stderr.write(__doc__)
         return 2
-    natron_bin = wrapper(argv[2:]) + [argv[1]]
+    natron_bin = natronrunner.wrapper(argv[2:]) + [argv[1]]
     keep = "--keep" in argv[2:]
     strict = "--strict-exit" in argv[2:]
     if os.environ.get("CI") and os.environ.get("NATRON_GUI_TESTS") != "1":
         print("GUI smoke test skipped in CI (set NATRON_GUI_TESTS=1 to run it)")
-        return SKIP
+        return natronrunner.SKIP
     if not has_display():
         print("GUI smoke test skipped: no display")
-        return SKIP
+        return natronrunner.SKIP
 
     # Debug builds: no trapped floating point exception (Mesa llvmpipe's threads inherit the trapping and
     # its shaders raise exceptions, #1537), as with Natron --test
@@ -206,11 +206,12 @@ def main(argv):
 
         # 3. the smoke test
         image = os.path.join(out_dir, "input.png")
-        write_png(image)
+        natronrunner.write_png(image)
         env = dict(os.environ)
         env["NATRON_GUI_TEST_OUTDIR"] = out_dir
         env["NATRON_GUI_TEST_IMAGE"] = image
-        status = run(natron_bin + ["--no-dialogs", "--no-settings", os.path.join(HERE, "gui_smoke_test_script.py")], env)
+        script = os.path.join(natronrunner.HERE, "gui_smoke_test_script.py")
+        status = run(natron_bin + ["--no-dialogs", "--no-settings", script], env)
         print("Natron exited with status %s" % status)
         if status is None:
             return 1
@@ -233,7 +234,7 @@ def main(argv):
                     print("FAILED: missing screenshot " + name)
                     return 1
             print("GUI smoke test passed")
-        elif script_status == SKIP:
+        elif script_status == natronrunner.SKIP:
             print("GUI smoke test: runs 1 and 2 passed, run 3 (the smoke test script) skipped")
         if keep:
             print("screenshots kept in " + out_dir)

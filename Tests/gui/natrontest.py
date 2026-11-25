@@ -3,6 +3,7 @@
 import ctypes
 import importlib
 import os
+import sys
 import time
 
 import NatronGui
@@ -34,8 +35,11 @@ def require_ocio():
 
 
 def qt_modules():
-    """QtCore, QtGui and QtWidgets, from the PySide of Natron's Qt (QT_API, which Natron sets)."""
-    pyside = {"pyside6": "PySide6", "pyside2": "PySide2"}[os.environ["QT_API"]]
+    """QtCore, QtGui and QtWidgets, from the PySide that NatronGui loaded (the one of Natron's Qt).
+
+    Not QT_API: Python reads the environment before Natron sets it.
+    """
+    pyside = "PySide6" if "PySide6.QtCore" in sys.modules else "PySide2"
     return tuple(importlib.import_module(pyside + "." + name) for name in ("QtCore", "QtGui", "QtWidgets"))
 
 
