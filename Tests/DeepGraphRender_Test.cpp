@@ -34,8 +34,10 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstdlib>
 #include <future>
 #include <iostream>
+#include <limits>
 #include <string>
 #include <utility>
 #include <vector>
@@ -46,6 +48,7 @@
 #include <QThread>
 #include <QThreadPool>
 
+#include "Engine/AppInstance.h"
 #include "Engine/GraphDepthGuard.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
@@ -63,8 +66,30 @@ const int kChainLength = 600;
 // Number of filters of a chain that is too deep for the stacks of Natron's threads (#1440): with
 // 8 MB stacks, a render of about 3500 MultiPAR nodes overflowed it, and with GraphDepthGuard the
 // limit is between 3000 and 3200 (macOS arm64). Such a chain must either render, or fail with the
-// error "Node graph too deep", but never crash.
-const int kVeryDeepChainLength = 5000;
+// error "Node graph too deep", but never crash. The default length is above that limit on macOS
+// arm64; on Linux, even 5000 filters render. NATRON_TEST_VERY_DEEP_CHAIN_LENGTH sets another
+// length, e.g. 5000: creating and loading the nodes take most of the time, and grow faster than
+// linearly (each new node looks for its name among the others), from 6 s for 3500 filters to 9 s
+// for 5000 on macOS arm64.
+int
+getVeryDeepChainLength()
+{
+    const int kDefaultLength = 3500;
+    const char* value = std::getenv("NATRON_TEST_VERY_DEEP_CHAIN_LENGTH");
+    if (!value) {
+        return kDefaultLength;
+    }
+    char* end = nullptr;
+    const long length = std::strtol(value, &end, 10);
+    if ( (end == value) || (*end != '\0') || (length < 1) || (length > 1000000) ) {
+        std::cerr << "DeepGraphRender: NATRON_TEST_VERY_DEEP_CHAIN_LENGTH=" << value << " is not a length, using "
+                  << kDefaultLength << std::endl;
+
+        return kDefaultLength;
+    }
+
+    return (int)length;
+}
 
 // Create a node with a unique script name: finding a free default name ("MultiPAR1", "MultiPAR2"...)
 // tries every number in turn, and each try scans every node, so that building a chain of thousands of
@@ -85,6 +110,12 @@ createChainNode(const char* pluginID)
 }
 
 // net.natron.test.Generator -> length x filter (net.natron.test.MultiPAR, or another plug-in) -> DiskCache
+//
+// The generator and the filters are created and connected as one node tree, as when nodes are pasted
+// or a PyPlug is created: connecting them one at a time runs the "input changed" action of each new
+// filter with render args on the whole chain upstream of it, which is quadratic in the length of the
+// chain (5000 filters took 161 s on Linux CI). Their input-related data and their hashes are then
+// computed once for the whole chain. The output is connected as usual, with the chain upstream of it.
 struct DeepChain
 {
     std::vector<NodePtr> nodes; // from the generator to the output
@@ -95,19 +126,27 @@ struct DeepChain
         : nodes()
         , length(length)
     {
-        NodePtr generator = createChainNode(kNatronTestPluginGenerator);
-        if (!generator) {
-            return;
-        }
-        nodes.push_back(generator);
-        ProjectPtr project = generator->getApp()->getProject();
-        for (int i = 0; i < length; ++i) {
-            NodePtr filter = createChainNode(filterID);
-            if ( !filter || !project->connectNodes(0, nodes.back(), filter) ) {
+        AppInstancePtr app = appPTR->getTopLevelInstance();
+        ProjectPtr project = app->getProject();
+        {
+            CreatingNodeTreeFlag_RAII creatingNodeTree(app);
+            NodePtr generator = createChainNode(kNatronTestPluginGenerator);
+            if (!generator) {
                 return;
             }
-            nodes.push_back(filter);
+            nodes.push_back(generator);
+            for (int i = 0; i < length; ++i) {
+                NodePtr filter = createChainNode(filterID);
+                if ( !filter || !project->connectNodes(0, nodes.back(), filter) ) {
+                    return;
+                }
+                nodes.push_back(filter);
+            }
         }
+        project->forceComputeInputDependentDataOnAllTrees();
+        // The connections made while the tree was created did not refresh the hashes downstream, and
+        // forceComputeInputDependentDataOnAllTrees() doesn't either (pasting nodes doesn't refresh them).
+        nodes.front()->incrementKnobsAge();
         NodePtr output = createChainNode(PLUGINID_NATRON_DISKCACHE);
         if ( !output || !project->connectNodes(0, nodes.back(), output) ) {
             return;
@@ -153,6 +192,28 @@ struct MaxGraphDepthSetter
     ~MaxGraphDepthSetter()
     {
         GraphDepthGuard::setMaxDepth(saved);
+    }
+};
+
+// Starts from an empty project (other tests may have left nodes in it) with a 16x16 format, and resets
+// the project at the end, even if an ASSERT fails. The generator's RoD is the project format: with
+// the default HD format, each render of a chain of 5000 filters took minutes.
+struct SmallProject
+{
+    ProjectPtr project;
+
+    SmallProject()
+        : project( appPTR->getTopLevelInstance()->getProject() )
+    {
+        project->reset(false, true);
+        // setOrAddProjectFormat() only changes the format if it may be auto-set, a user setting
+        project->setAutoSetProjectFormatEnabled(true);
+        project->setOrAddProjectFormat( Format(0, 0, 16, 16, "DeepGraphRender", 1.) );
+    }
+
+    ~SmallProject()
+    {
+        project->reset(false, true);
     }
 };
 
@@ -254,6 +315,7 @@ TEST(DeepGraphRender, RenderThread)
     if ( !canRunTest() ) {
         return;
     }
+    SmallProject smallProject;
     appPTR->clearAllCaches();
     DeepChain chain;
     ASSERT_TRUE( chain.isValid() );
@@ -269,6 +331,7 @@ TEST(DeepGraphRender, GlobalThreadPool)
     if ( !canRunTest() ) {
         return;
     }
+    SmallProject smallProject;
     appPTR->clearAllCaches();
     DeepChain chain;
     ASSERT_TRUE( chain.isValid() );
@@ -346,6 +409,7 @@ TEST(DeepGraphRender, TooDeepIsReported)
     if ( !canRunTest() ) {
         return;
     }
+    SmallProject smallProject;
     appPTR->clearAllCaches();
     DeepChain chain;
     ASSERT_TRUE( chain.isValid() );
@@ -405,11 +469,19 @@ TEST(DeepGraphRender, TooDeepIsReported)
 }
 
 namespace {
+// The renders of checkVeryDeepChain()
+enum class DeepChainRenders
+{
+    eAllThreads, // on the main thread, on a thread of the global thread pool and on a render thread
+    eRenderThread, // on a render thread only, as NatronRenderer does
+};
+
 // Each operation on a very deep chain either works or fails with the "Node graph too deep" error.
 void
 checkVeryDeepChain(const NodePtr& output,
                    const NodePtr& lastFilter,
-                   int length)
+                   int length,
+                   DeepChainRenders threads)
 {
     // the region of definition, on the main thread
     {
@@ -425,7 +497,7 @@ checkVeryDeepChain(const NodePtr& output,
     // renders all the filters if it works.
 
     // render on the main thread
-    {
+    if (threads == DeepChainRenders::eAllThreads) {
         appPTR->clearAllCaches();
         const int rendersBefore = NatronTestPlugin::counter("MultiPAR.render");
         testing::internal::CaptureStdout();
@@ -437,7 +509,7 @@ checkVeryDeepChain(const NodePtr& output,
     }
 
     // render on a thread of the global thread pool
-    {
+    if (threads == DeepChainRenders::eAllThreads) {
         appPTR->clearAllCaches();
         const int rendersBefore = NatronTestPlugin::counter("MultiPAR.render");
         testing::internal::CaptureStdout();
@@ -463,8 +535,9 @@ checkVeryDeepChain(const NodePtr& output,
 }
 } // anon namespace
 
-// A chain of kVeryDeepChainLength nodes, deeper than the stack allows: building it (each connection
-// refreshes the hash and the metadata downstream), a change at its top, its region of definition, its
+// A chain of getVeryDeepChainLength() filters, deeper than the stack allows: building it (the refresh
+// of its input-related data, and the connection of its output), a change at its top, its
+// reconnection (which refreshes the hash and the metadata downstream), its region of definition, its
 // renders, and saving and loading it work or report the "Node graph too deep" error, but never crash
 // (#1440).
 TEST(DeepGraphRender, VeryDeepChain)
@@ -477,36 +550,22 @@ TEST(DeepGraphRender, VeryDeepChain)
     ASSERT_TRUE( dir.isValid() );
     const QString path = dir.path() + QLatin1Char('/');
     const QString name = QString::fromUtf8("deep.ntp");
-    ProjectPtr project = appPTR->getTopLevelInstance()->getProject();
-    // resets the project even if an ASSERT fails: declared after dir, so the project is reset
-    // before the directory it was saved to is removed
-    struct Restore
-    {
-        ProjectPtr project;
-        ~Restore()
-        {
-            project->reset(false, true);
-        }
-    } restore = { project };
-    // start from an empty project: other tests may have left nodes in it
-    project->reset(false, true);
+    // declared after dir, so that the project is reset before the directory it was saved to is removed
+    SmallProject smallProject;
+    const ProjectPtr& project = smallProject.project;
     ASSERT_EQ( 0, (int)project->getNodes().size() );
-    // Where the stack allows it (Linux CI), the chain renders: with the default HD format, each render
-    // of 5000 filters took minutes. The generator's RoD is the project format.
-    // (setOrAddProjectFormat() only changes the format if it may be auto-set, a user setting)
-    project->setAutoSetProjectFormatEnabled(true);
-    project->setOrAddProjectFormat( Format(0, 0, 16, 16, "DeepGraphRender", 1.) );
     {
         Format format;
         project->getProjectDefaultFormat(&format);
         EXPECT_EQ( 16, format.width() );
         EXPECT_EQ( 16, format.height() );
     }
+    const int length = getVeryDeepChainLength();
     std::string outputName, lastFilterName;
 
     printStep("start");
     {
-        DeepChain chain(kVeryDeepChainLength);
+        DeepChain chain(length);
         ASSERT_TRUE( chain.isValid() );
         printStep("chain built");
 
@@ -523,7 +582,7 @@ TEST(DeepGraphRender, VeryDeepChain)
         EXPECT_EQ( chain.nodes[0], chain.nodes[1]->getInput(0) );
         printStep("generator reconnected");
 
-        checkVeryDeepChain(chain.output(), chain.lastFilter(), kVeryDeepChainLength);
+        checkVeryDeepChain(chain.output(), chain.lastFilter(), length, DeepChainRenders::eAllThreads);
 
         outputName = chain.output()->getScriptName();
         lastFilterName = chain.lastFilter()->getScriptName();
@@ -537,20 +596,104 @@ TEST(DeepGraphRender, VeryDeepChain)
     NodePtr lastFilter = project->getNodeByName(lastFilterName);
     ASSERT_TRUE( bool(output) );
     ASSERT_TRUE( bool(lastFilter) );
-    EXPECT_EQ( kVeryDeepChainLength + 2, (int)project->getNodes().size() );
+    EXPECT_EQ( length + 2, (int)project->getNodes().size() );
 
-    checkVeryDeepChain(output, lastFilter, kVeryDeepChainLength);
+    // the loaded chain: its region of definition and one render (the other renders run the same
+    // code as before the save)
+    checkVeryDeepChain(output, lastFilter, length, DeepChainRenders::eRenderThread);
+}
+
+// The time to render a chain is linear in its length. renderRoI() walked the whole graph upstream of
+// each node it rendered (in isFrameVaryingOrAnimated_Recursive(), and to copy the render args of every
+// node of the project), so that the render of a chain was quadratic in its length: 5000 filters took
+// 30 s on Linux CI.
+TEST(DeepGraphRender, RenderTimeIsLinear)
+{
+    if ( !canRunTest() ) {
+        return;
+    }
+    // Well below the limit of GraphDepthGuard, which is lower in debug builds (larger stack frames):
+    // the other tests render 600 filters, and a chain of 2000 filters rendered on macOS arm64.
+    const int shortLength = 50;
+    const int longLength = 24 * shortLength;
+    SmallProject smallProject;
+
+    // the shortest of a few renders of a chain, each from empty caches. One chain at a time: the
+    // render used to walk every node of the project for each rendered node.
+    const auto renderTime = [](int length) {
+        DeepChain chain(length);
+        EXPECT_TRUE( chain.isValid() );
+        double best = std::numeric_limits<double>::infinity();
+        for (int i = 0; chain.isValid() && i < 5; ++i) {
+            appPTR->clearAllCaches();
+            const std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+            EXPECT_TRUE( bool( NatronTestPlugin::renderFrame(chain.lastFilter(), 1.) ) );
+            best = std::min( best, std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count() );
+        }
+
+        return best;
+    };
+    const double shortTime = renderTime(shortLength);
+    const double longTime = renderTime(longLength);
+    // 24 times longer if linear, 576 times if quadratic. Measured on macOS arm64: 30 to 38 times, and
+    // 140 times with only the walk of isFrameVaryingOrAnimated_Recursive() quadratic.
+    EXPECT_LT(longTime, 80 * shortTime) << "rendering " << shortLength << " filters took " << shortTime
+                                        << " s, and " << longLength << " filters " << longTime << " s";
+    std::cerr << "DeepGraphRender: rendering " << shortLength << " filters took " << shortTime << " s, and "
+              << longLength << " filters " << longTime << " s" << std::endl;
+}
+
+// The region of definition and the frame range of a Dot (and of the other effects that use the default
+// implementations of EffectInstance) are those of its input, from the cache of the input: the RoD of
+// the input was cached under the hash of the Dot, which the lookups of the input never find, and its
+// frame range was not cached, so that the RoD and the frame range of a chain of Dots were computed
+// again over the whole chain upstream of each Dot, quadratic in the length of the chain.
+TEST(DeepGraphRender, DotsUseTheCacheOfTheirInput)
+{
+    if ( !canRunTest() ) {
+        return;
+    }
+    SmallProject smallProject;
+    const int length = 3;
+    DeepChain chain(length, PLUGINID_NATRON_DOT);
+    ASSERT_TRUE( chain.isValid() );
+    // new hashes: nothing is cached yet
+    chain.nodes.front()->incrementKnobsAge();
+
+    const EffectInstancePtr lastDot = chain.lastFilter()->getEffectInstance();
+    RectD rod;
+    ASSERT_EQ( eStatusOK, lastDot->getRegionOfDefinition_public(lastDot->getHash(), 1., RenderScale::identity, ViewIdx(0), &rod, nullptr) );
+    // the generator and the Dots upstream of the last one
+    for (int i = 0; i < length; ++i) {
+        const EffectInstancePtr effect = chain.nodes[i]->getEffectInstance();
+        RectD cached;
+        EXPECT_EQ( eStatusOK, effect->getRegionOfDefinitionFromCache(effect->getHash(), 1., RenderScale::identity, ViewIdx(0), &cached, nullptr) )
+            << "the RoD of " << chain.nodes[i]->getScriptName() << " is not in its cache";
+        EXPECT_EQ(rod, cached);
+    }
+
+    // the frame range of each Dot, from the last one: the time domain of the generator is computed once
+    const int before = NatronTestPlugin::counter("Generator.getTimeDomain");
+    for (int i = length; i > 0; --i) {
+        const EffectInstancePtr effect = chain.nodes[i]->getEffectInstance();
+        double first = 0., last = 0.;
+        effect->getFrameRange_public(effect->getHash(), &first, &last);
+    }
+    EXPECT_EQ( 1, NatronTestPlugin::counter("Generator.getTimeDomain") - before );
 }
 
 // A chain of Dot nodes, which are identities: renderRoI goes straight to the input. Rendering very
-// deep Dot chains is slow (a 4000-node chain takes about 40 s), so this uses a shorter chain and a
-// lower maximum depth.
+// deep Dot chains is still quadratic (tryConcatenateTransforms() walks up through every Dot, an
+// identity transform, for each node), so this uses a shorter chain (the test takes 0.6 s with 1000
+// Dots on macOS arm64, 1.1 s with 1500), still deeper than the 440 nodes that overflowed 512 KB
+// stacks (#1434), and a lower maximum depth.
 TEST(DeepGraphRender, DotChain)
 {
     if ( !canRunTest() ) {
         return;
     }
-    const int length = 1500;
+    SmallProject smallProject;
+    const int length = 1000;
     appPTR->clearAllCaches();
     DeepChain chain(length, PLUGINID_NATRON_DOT);
     ASSERT_TRUE( chain.isValid() );

@@ -302,6 +302,12 @@ commonAction(const char* action,
 
         return kOfxStatOK;
     }
+    if (std::strcmp(action, kOfxImageEffectActionGetTimeDomain) == 0) {
+        // the default time domain: counted, to check that the host caches it
+        incrementCounter(id + ".getTimeDomain");
+
+        return kOfxStatReplyDefault;
+    }
     if (std::strcmp(action, kOfxActionDialog) == 0) {
         std::lock_guard<std::mutex> l(gMutex);
         ++gCounters[id + ".dialog"];
