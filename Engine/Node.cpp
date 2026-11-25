@@ -7022,15 +7022,18 @@ Node::Implementation::runOnNodeCreatedCB(bool userEdited)
         runOnNodeCreatedCBInternal(cb, userEdited);
     }
 
+    // Then the Group's own callback: that of the Group containing this node, or that of this node if it is a Group.
+    // A node at the top level of the project has none: the project's callback must not run again (#488).
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>( group.get() );
     KnobStringPtr nodeCreatedCbKnob = nodeCreatedCallback.lock();
+    std::string groupCb;
     if (!nodeCreatedCbKnob && isGroup) {
-        cb = isGroup->getNode()->getAfterNodeCreatedCallback();
+        groupCb = isGroup->getNode()->getAfterNodeCreatedCallback();
     } else if (nodeCreatedCbKnob) {
-        cb = nodeCreatedCbKnob->getValue();
+        groupCb = nodeCreatedCbKnob->getValue();
     }
-    if ( !cb.empty() ) {
-        runOnNodeCreatedCBInternal(cb, userEdited);
+    if ( !groupCb.empty() ) {
+        runOnNodeCreatedCBInternal(groupCb, userEdited);
     }
 }
 
@@ -7055,18 +7058,20 @@ Node::Implementation::runOnNodeDeleteCB()
     }
 
 
+    // Then the Group's own callback, as in runOnNodeCreatedCB(): never the project's callback again (#488).
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>( group.get() );
     KnobStringPtr nodeDeletedKnob = nodeRemovalCallback.lock();
+    std::string groupCb;
     if (!nodeDeletedKnob && isGroup) {
         NodePtr grpNode = isGroup->getNode();
         if (grpNode) {
-            cb = grpNode->getBeforeNodeRemovalCallback();
+            groupCb = grpNode->getBeforeNodeRemovalCallback();
         }
     } else if (nodeDeletedKnob) {
-        cb = nodeDeletedKnob->getValue();
+        groupCb = nodeDeletedKnob->getValue();
     }
-    if ( !cb.empty() ) {
-        runOnNodeDeleteCBInternal(cb);
+    if ( !groupCb.empty() ) {
+        runOnNodeDeleteCBInternal(groupCb);
     }
 }
 

@@ -53,6 +53,7 @@ set(Tests_SOURCES
     MultiInputLinks_Test.cpp
     NaNGuards_FastMath.cpp
     NaNGuards_Test.cpp
+    NodeCreatedCallback_Test.cpp
     NodeGroup_Test.cpp
     NodePresets_Test.cpp
     NodePreview_Test.cpp
