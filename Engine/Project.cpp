@@ -290,6 +290,22 @@ Project::isPythonProjectFile(const QString& filePath)
     return false;
 }
 
+bool
+Project::hasPythonFileExtension(const QString& filePath)
+{
+    return QFileInfo(filePath).suffix().compare(QString::fromUtf8(NATRON_PYTHON_FILE_EXT), Qt::CaseInsensitive) == 0;
+}
+
+bool
+Project::isProjectFile(const QString& filePath)
+{
+    if ( QFileInfo(filePath).suffix().compare(QString::fromUtf8(NATRON_PROJECT_FILE_EXT), Qt::CaseInsensitive) == 0 ) {
+        return true;
+    }
+
+    return hasPythonFileExtension(filePath) && isPythonProjectFile(filePath);
+}
+
 // The suffix of the auto-saves, after ".ntp". Binary auto-saves don't use the ".autosave" suffix of
 // Natron 2.5 and earlier, which would offer to restore them and fail to load them (see findAutoSaveSuffix()).
 #define kAutoSaveSuffixText ".autosave"
@@ -301,7 +317,7 @@ Project::findAutoSaveSuffix(const QString& fileName,
                             int* projectNameSize)
 {
     // a Python project (eProjectFileFormatPython) is a .py file, and only has binary auto-saves
-    const QString pyExt = QString::fromUtf8(".py");
+    const QString pyExt = QString::fromUtf8("." NATRON_PYTHON_FILE_EXT);
     const QString ntpExt = QLatin1Char('.') + QString::fromUtf8(NATRON_PROJECT_FILE_EXT);
     const std::pair<QString, const char*> patterns[] = {
         { ntpExt, kAutoSaveSuffixBinary }, { ntpExt, kAutoSaveSuffixText }, { pyExt, kAutoSaveSuffixBinary }
@@ -366,11 +382,10 @@ Project::getFileFormatForSave(const QString& fileName,
     if (format != eProjectFileFormatNone) {
         return format;
     }
-    const QString suffix = QFileInfo(fileName).suffix();
-    if ( suffix.compare(QString::fromUtf8("py"), Qt::CaseInsensitive) == 0 ) {
+    if ( hasPythonFileExtension(fileName) ) {
         return eProjectFileFormatPython;
     }
-    if ( suffix.compare(QString::fromUtf8(NATRON_PROJECT_FILE_EXT), Qt::CaseInsensitive) == 0 ) {
+    if ( QFileInfo(fileName).suffix().compare(QString::fromUtf8(NATRON_PROJECT_FILE_EXT), Qt::CaseInsensitive) == 0 ) {
         const ProjectFileFormatEnum current = getFileFormat();
         if ( (current == eProjectFileFormatText) || (current == eProjectFileFormatBinary) ) {
             return current;
@@ -502,7 +517,7 @@ Project::loadProjectImpl(const QString & path,
         if ( isPythonProjectFile(realPath + realName) ) {
             // a project saved in eProjectFileFormatPython (its auto-saves are binary)
             loadPythonProjectInternal(realPath, realName);
-        } else if ( realName.endsWith( QString::fromUtf8(".py"), Qt::CaseInsensitive ) ) {
+        } else if ( hasPythonFileExtension(realName) ) {
             // e.g. a script chosen in File > Open, which offers the Python projects
             throw std::invalid_argument( tr("%1 is not a %2 project file: it doesn't start with the \"%3\" header.")
                                          .arg( realPath + realName, QString::fromUtf8(NATRON_APPLICATION_NAME), QString::fromUtf8(NATRON_PROJECT_PYTHON_MAGIC) ).toStdString() );

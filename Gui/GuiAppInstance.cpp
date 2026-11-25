@@ -413,13 +413,14 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
             handleFileOpenEvent( imageFile.toStdString() );
         }
     } else {
-        if ( ( info.suffix() == QString::fromUtf8("py") ) && !Project::isPythonProjectFile( info.absoluteFilePath() ) ) {
+        const bool isProject = Project::isProjectFile( info.absoluteFilePath() );
+        if ( !isProject && Project::hasPythonFileExtension( info.fileName() ) ) {
             appPTR->setLoadingStatus( tr("Loading script: ") + cl.getScriptFilename() );
 
             ///If this is a Python script, execute it
             loadPythonScript(info);
             execOnProjectCreatedCallback();
-        } else if ( ( info.suffix() == QString::fromUtf8(NATRON_PROJECT_FILE_EXT) ) || ( info.suffix() == QString::fromUtf8("py") ) ) {
+        } else if (isProject) {
             ///Otherwise just load the project specified (a .ntp file, or a project saved as a Python script).
             QString name = info.fileName();
             QString path = info.path();
@@ -1342,9 +1343,7 @@ GuiAppInstance::handleFileOpenEvent(const std::string &filename)
     QString fileCopy( QString::fromUtf8( filename.c_str() ) );
 
     fileCopy.replace( QLatin1Char('\\'), QLatin1Char('/') );
-    QString ext = QtCompat::removeFileExtension(fileCopy);
-    if ( ( ext == QString::fromUtf8(NATRON_PROJECT_FILE_EXT) ) ||
-         ( ( ext == QString::fromUtf8("py") ) && Project::isPythonProjectFile( QString::fromUtf8( filename.c_str() ) ) ) ) {
+    if ( Project::isProjectFile(fileCopy) ) {
         AppInstancePtr app = getGui()->openProject(filename);
         if (!app) {
             Dialogs::errorDialog(tr("Project").toStdString(), tr("Failed to open project").toStdString() + ' ' + filename);
