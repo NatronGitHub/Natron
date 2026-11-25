@@ -297,13 +297,15 @@ Project::hasPythonFileExtension(const QString& filePath)
 }
 
 bool
+Project::hasProjectFileExtension(const QString& filePath)
+{
+    return QFileInfo(filePath).suffix().compare(QString::fromUtf8(NATRON_PROJECT_FILE_EXT), Qt::CaseInsensitive) == 0;
+}
+
+bool
 Project::isProjectFile(const QString& filePath)
 {
-    if ( QFileInfo(filePath).suffix().compare(QString::fromUtf8(NATRON_PROJECT_FILE_EXT), Qt::CaseInsensitive) == 0 ) {
-        return true;
-    }
-
-    return hasPythonFileExtension(filePath) && isPythonProjectFile(filePath);
+    return hasProjectFileExtension(filePath) || ( hasPythonFileExtension(filePath) && isPythonProjectFile(filePath) );
 }
 
 // The suffix of the auto-saves, after ".ntp". Binary auto-saves don't use the ".autosave" suffix of
@@ -385,7 +387,7 @@ Project::getFileFormatForSave(const QString& fileName,
     if ( hasPythonFileExtension(fileName) ) {
         return eProjectFileFormatPython;
     }
-    if ( QFileInfo(fileName).suffix().compare(QString::fromUtf8(NATRON_PROJECT_FILE_EXT), Qt::CaseInsensitive) == 0 ) {
+    if ( hasProjectFileExtension(fileName) ) {
         const ProjectFileFormatEnum current = getFileFormat();
         if ( (current == eProjectFileFormatText) || (current == eProjectFileFormatBinary) ) {
             return current;

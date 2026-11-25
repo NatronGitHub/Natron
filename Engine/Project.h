@@ -236,14 +236,15 @@ public:
     static bool isPythonProjectFile(const QString& filePath) WARN_UNUSED_RETURN;
 
     /**
-     * @brief Whether filePath, chosen by the user (command line, File > Open, drop), is opened as a project:
+     * @brief Whether filePath, chosen by the user (command line, macOS file-open event, drop), is opened as a project:
      * a .ntp file, or a .py file that isPythonProjectFile(). Suffixes are compared case-insensitively, as on
      * the file systems of macOS and Windows; other .py files are Python scripts (hasPythonFileExtension()).
      **/
     static bool isProjectFile(const QString& filePath) WARN_UNUSED_RETURN;
 
-    // Whether the suffix of filePath is NATRON_PYTHON_FILE_EXT, case-insensitively
+    // Whether the suffix of filePath is NATRON_PYTHON_FILE_EXT (resp. NATRON_PROJECT_FILE_EXT), case-insensitively
     static bool hasPythonFileExtension(const QString& filePath) WARN_UNUSED_RETURN;
+    static bool hasProjectFileExtension(const QString& filePath) WARN_UNUSED_RETURN;
 
     /**
      * @brief The file written by a save in eProjectFileFormatPython: the project settings, then the nodes

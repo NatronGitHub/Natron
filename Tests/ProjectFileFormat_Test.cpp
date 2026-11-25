@@ -370,7 +370,7 @@ TEST(ProjectFileFormat, Detection)
     EXPECT_EQ( eProjectFileFormatNone, Project::detectFileFormat( QString::fromUtf8("/nonexistent/project.ntp") ) );
 }
 
-// The command line, File > Open, the macOS file-open event and drops all use Project::isProjectFile(): a
+// The command line, the macOS file-open event and drops all use Project::isProjectFile(): a
 // .ntp file, or a .py file that starts with NATRON_PROJECT_PYTHON_MAGIC; suffixes are case-insensitive.
 TEST(ProjectFileFormat, IsProjectFile)
 {

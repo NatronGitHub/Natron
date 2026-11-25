@@ -1046,6 +1046,7 @@
                     %PYARG_0 = %CONVERTTOPYTHON[App*](app);
                 } else {
                     assert(!group); // getContainerGroup() returns an Effect, an App or NULL
+                    delete group;
                     Py_RETURN_NONE;
                 }
                 // Ownership transferences.
