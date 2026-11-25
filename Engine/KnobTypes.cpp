@@ -679,13 +679,33 @@ KnobChoice::findAndSetOldChoice()
     }
 }
 
+std::vector<int>
+KnobChoice::validDisplayOrder(const std::vector<int>& displayOrder,
+                              std::size_t nEntries)
+{
+    if ( displayOrder.size() != nEntries ) {
+        return std::vector<int>();
+    }
+    std::vector<bool> seen(nEntries, false);
+    for (int index : displayOrder) {
+        if ( (index < 0) || ( index >= (int)nEntries ) || seen[index] ) {
+            return std::vector<int>();
+        }
+        seen[index] = true;
+    }
+
+    return displayOrder;
+}
+
 bool
-KnobChoice::populateChoices(const std::vector<ChoiceOption> &entries)
+KnobChoice::populateChoices(const std::vector<ChoiceOption> &entries,
+                            const std::vector<int>& displayOrder)
 {
     bool hasChanged = false;
     {
         QMutexLocker l(&_entriesMutex);
         _entries = entries;
+        _displayOrder = validDisplayOrder( displayOrder, entries.size() );
         for (std::size_t i = 0; i < _entries.size(); ++i) {
 
             // The ID cannot be empty, this is the only way to uniquely identify the choice.
@@ -722,6 +742,7 @@ KnobChoice::resetChoices()
     {
         QMutexLocker l(&_entriesMutex);
         _entries.clear();
+        _displayOrder.clear();
     }
     findAndSetOldChoice();
     if (_signalSlotHandler) {
@@ -736,6 +757,9 @@ KnobChoice::appendChoice(const ChoiceOption& entry)
     {
         QMutexLocker l(&_entriesMutex);
         _entries.push_back(entry);
+        if ( !_displayOrder.empty() ) {
+            _displayOrder.push_back( (int)_entries.size() - 1 );
+        }
         ChoiceOption& opt = _entries.back();
 
         // If label is empty, set to the option id
@@ -759,6 +783,44 @@ KnobChoice::getEntries_mt_safe() const
     return _entries;
 }
 
+void
+KnobChoice::setDisplayOrder(const std::vector<int>& displayOrder)
+{
+    {
+        QMutexLocker l(&_entriesMutex);
+        std::vector<int> order = validDisplayOrder( displayOrder, _entries.size() );
+        if (order == _displayOrder) {
+            return;
+        }
+        _displayOrder.swap(order);
+    }
+    Q_EMIT populated();
+}
+
+std::vector<int>
+KnobChoice::getExplicitDisplayOrder_mt_safe() const
+{
+    QMutexLocker l(&_entriesMutex);
+
+    return _displayOrder;
+}
+
+std::vector<int>
+KnobChoice::getDisplayOrder_mt_safe() const
+{
+    QMutexLocker l(&_entriesMutex);
+
+    if ( !_displayOrder.empty() ) {
+        return _displayOrder;
+    }
+    std::vector<int> order( _entries.size() );
+    for (std::size_t i = 0; i < order.size(); ++i) {
+        order[i] = (int)i;
+    }
+
+    return order;
+}
+
 bool
 KnobChoice::isActiveEntryPresentInEntries() const
 {
@@ -779,6 +841,8 @@ KnobChoice::isActiveEntryPresentInEntries() const
 ChoiceOption
 KnobChoice::getEntry(int v) const
 {
+    QMutexLocker l(&_entriesMutex);
+
     if ( (int)_entries.size() <= v || v < 0) {
         throw std::runtime_error( std::string("KnobChoice::getEntry: index out of range") );
     }
@@ -865,13 +929,21 @@ KnobChoice::getHintToolTipFull() const
 {
     assert( QThread::currentThread() == qApp->thread() );
 
+    // a copy: the other mutexes (hint...) are not taken while _entriesMutex is held
+    std::vector<ChoiceOption> entries;
+    std::vector<int> displayOrder;
+    {
+        QMutexLocker l(&_entriesMutex);
+        entries = _entries;
+        displayOrder = _displayOrder;
+    }
     int gothelp = 0;
 
     // list values that either have help or have label != id
-    if ( !_entries.empty() ) {
-        assert( _entries.size() == _entries.size() );
-        for (U32 i = 0; i < _entries.size(); ++i) {
-            if ( !_entries.empty() && ( (_entries[i].id != _entries[i].label) || !_entries[i].tooltip.empty() ) ) {
+    if ( !entries.empty() ) {
+        assert( entries.size() == entries.size() );
+        for (U32 i = 0; i < entries.size(); ++i) {
+            if ( !entries.empty() && ( (entries[i].id != entries[i].label) || !entries[i].tooltip.empty() ) ) {
                 ++gothelp;
             }
         }
@@ -891,14 +963,17 @@ KnobChoice::getHintToolTipFull() const
     }
     // param may have no hint but still have per-option help
     if (gothelp) {
-        for (U32 i = 0; i < _entries.size(); ++i) {
-            if ( !_entries[i].tooltip.empty() ) { // no help line is needed if help is unavailable for this option
-                std::string entry = StrUtils::trim_copy(_entries[i].label);
+        // in the order of the menu (kOfxParamPropChoiceOrder)
+        const bool natural = ( displayOrder.size() != entries.size() );
+        for (U32 k = 0; k < entries.size(); ++k) {
+            const U32 i = natural ? k : (U32)displayOrder[k];
+            if ( !entries[i].tooltip.empty() ) { // no help line is needed if help is unavailable for this option
+                std::string entry = StrUtils::trim_copy(entries[i].label);
                 std::replace_if(entry.begin(), entry.end(), ::isspace, ' ');
-                if (_entries[i].label != _entries[i].id) {
-                    entry += "  (" + _entries[i].id + ")";
+                if (entries[i].label != entries[i].id) {
+                    entry += "  (" + entries[i].id + ")";
                 }
-                std::string help = StrUtils::trim_copy(_entries[i].tooltip);
+                std::string help = StrUtils::trim_copy(entries[i].tooltip);
                 std::replace_if(help.begin(), help.end(), ::isspace, ' ');
                 if ( isHintInMarkdown() ) {
                     ss << "* **" << entry << "**";
@@ -907,7 +982,7 @@ KnobChoice::getHintToolTipFull() const
                 }
                 ss << ": ";
                 ss << help;
-                if (i < _entries.size() - 1) {
+                if (k < entries.size() - 1) {
                     ss << '\n';
                 }
             }
@@ -1168,7 +1243,7 @@ KnobChoice::onKnobAboutToAlias(const KnobIPtr &slave)
     KnobChoice* isChoice = dynamic_cast<KnobChoice*>( slave.get() );
 
     if (isChoice) {
-        populateChoices(isChoice->getEntries_mt_safe());
+        populateChoices( isChoice->getEntries_mt_safe(), isChoice->getExplicitDisplayOrder_mt_safe() );
     }
 }
 
@@ -1180,7 +1255,7 @@ KnobChoice::onOriginalKnobPopulated()
     if (!isChoice) {
         return;
     }
-    populateChoices(isChoice->_entries);
+    populateChoices( isChoice->getEntries_mt_safe(), isChoice->getExplicitDisplayOrder_mt_safe() );
 }
 
 void
@@ -1198,7 +1273,7 @@ KnobChoice::onOriginalKnobEntryAppend()
         return;
     }
 
-    populateChoices(isChoice->_entries);
+    populateChoices( isChoice->getEntries_mt_safe(), isChoice->getExplicitDisplayOrder_mt_safe() );
 }
 
 void

@@ -456,6 +456,9 @@ public:
 
     virtual void setInViewportLabel() OVERRIDE FINAL;
 
+    /// overridden from ChoiceInstance: also kOfxParamPropChoiceOrder (setDisplayOrder())
+    virtual void notify(const std::string &name, bool single, int num) OFX_EXCEPTION_SPEC OVERRIDE FINAL;
+
 
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
@@ -470,6 +473,9 @@ public:
 private:
 
     virtual bool hasDoubleMinMaxProps() const OVERRIDE FINAL { return false; }
+
+    // kOfxParamPropChoiceOrder changed: the order of the options in the menu
+    void setDisplayOrder();
 
     KnobChoiceWPtr _knob;
 };

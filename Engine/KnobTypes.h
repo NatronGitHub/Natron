@@ -504,13 +504,29 @@ public:
      * Otherwise the internal menu entries will be merged with the given entries according to this equality functor.
      * @param mergingData Can be passed when mergingFunctor is not null to speed up the comparisons.
      *
+     * @param displayOrder The order in which menus show the entries: the indices of entries, each once
+     * (OFX kOfxParamPropChoiceOrder). Empty, or not such a permutation: the natural order. It only affects
+     * the menus: the value of the knob is still the index in entries.
+     *
      * @returns true if something changed, false otherwise.
      **/
-    bool populateChoices(const std::vector<ChoiceOption> &entries);
+    bool populateChoices(const std::vector<ChoiceOption> &entries,
+                         const std::vector<int>& displayOrder = std::vector<int>());
 
     void resetChoices();
 
+    /// The new entry is displayed last.
     void appendChoice( const ChoiceOption& entry);
+
+    /// Change the display order of the current entries (see populateChoices()); emits populated() if it changed.
+    void setDisplayOrder(const std::vector<int>& displayOrder);
+
+    /// The indices of the entries, in the order in which menus show them (0..n-1 unless a display order is set).
+    std::vector<int> getDisplayOrder_mt_safe() const;
+
+    /// The display order that was set (populateChoices(), setDisplayOrder()), empty if there is none: the
+    /// order to copy to another knob (a copy of a knob without an order has none either).
+    std::vector<int> getExplicitDisplayOrder_mt_safe() const;
 
     bool isActiveEntryPresentInEntries() const;
 
@@ -581,6 +597,9 @@ private:
 
     void findAndSetOldChoice();
 
+    // displayOrder if it is a permutation of 0..nEntries-1, else an empty vector (the natural order)
+    static std::vector<int> validDisplayOrder(const std::vector<int>& displayOrder, std::size_t nEntries);
+
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
     virtual void handleSignalSlotsForAliasLink(const KnobIPtr& alias, bool connect) OVERRIDE FINAL;
@@ -593,6 +612,7 @@ private:
 
     mutable QMutex _entriesMutex;
     std::vector<ChoiceOption> _entries;
+    std::vector<int> _displayOrder; // protected by _entriesMutex; empty: the natural order
     ChoiceOption _currentEntry; // protected by _entriesMutex
     bool _addNewChoice;
     static const std::string _typeNameStr;

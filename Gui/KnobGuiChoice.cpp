@@ -254,7 +254,19 @@ KnobGuiChoice::onCurrentIndexChanged(int i)
     if (!knob) {
         return;
     }
-    pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(), knob->getValue(0), i, 0, false, 0) );
+    // the menu item i shows the entry _menuEntries[i] (the "New" item emits itemNewSelected() instead)
+    if ( (i < 0) || ( i >= (int)_menuEntries.size() ) ) {
+        return;
+    }
+    pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(), knob->getValue(0), _menuEntries[i], 0, false, 0) );
+}
+
+int
+KnobGuiChoice::menuIndexOfEntry(int entryIndex) const
+{
+    std::vector<int>::const_iterator found = std::find(_menuEntries.begin(), _menuEntries.end(), entryIndex);
+
+    return ( found == _menuEntries.end() ) ? -1 : (int)( found - _menuEntries.begin() );
 }
 
 void
@@ -266,14 +278,23 @@ KnobGuiChoice::onEntryAppended()
     }
 
     std::vector<ChoiceOption> options = knob->getEntries_mt_safe();
+    std::vector<int> order = knob->getDisplayOrder_mt_safe();
+    // KnobChoice::appendChoice() displays the new entries last: the menu items stay in place
+    if ( ( order.size() != options.size() ) || ( order.size() < _menuEntries.size() ) ||
+         !std::equal( _menuEntries.begin(), _menuEntries.end(), order.begin() ) ) {
+        onEntriesPopulated();
 
-    for (int i = _comboBox->count(); i < (int)options.size(); ++i) {
+        return;
+    }
+
+    for (std::size_t i = _menuEntries.size(); i < order.size(); ++i) {
+        const ChoiceOption& option = options[order[i]];
         if ( knob->getHostCanAddOptions()) {
-            _comboBox->insertItem(_comboBox->count() - 1, QString::fromUtf8(options[i].label.c_str()), QIcon(), QKeySequence(), QString::fromUtf8(options[i].tooltip.c_str()));
+            _comboBox->insertItem(_comboBox->count() - 1, QString::fromUtf8(option.label.c_str()), QIcon(), QKeySequence(), QString::fromUtf8(option.tooltip.c_str()));
         } else {
-            _comboBox->addItem(QString::fromUtf8(options[i].label.c_str()), QIcon(), QKeySequence(), QString::fromUtf8(options[i].tooltip.c_str()));
+            _comboBox->addItem(QString::fromUtf8(option.label.c_str()), QIcon(), QKeySequence(), QString::fromUtf8(option.tooltip.c_str()));
         }
-
+        _menuEntries.push_back(order[i]);
     }
 
     updateGUI(0);
@@ -292,13 +313,23 @@ KnobGuiChoice::onEntriesPopulated()
     KnobChoicePtr knob = _knob.lock();
 
     _comboBox->clear();
+    _menuEntries.clear();
     std::vector<ChoiceOption> entries = knob->getEntries_mt_safe();
+    std::vector<int> order = knob->getDisplayOrder_mt_safe();
+    if ( order.size() != entries.size() ) {
+        // the entries changed in between (another thread): show them in their natural order, populated() follows
+        order.resize( entries.size() );
+        for (std::size_t i = 0; i < order.size(); ++i) {
+            order[i] = (int)i;
+        }
+    }
 
-
-
-    for (U32 i = 0; i < entries.size(); ++i) {
-        _comboBox->addItem( QString::fromUtf8( entries[i].label.c_str() ), QIcon(), QKeySequence(), QString::fromUtf8( entries[i].tooltip.c_str() ) );
+    // the entries in their display order (kOfxParamPropChoiceOrder)
+    for (int index : order) {
+        const ChoiceOption& entry = entries[index];
+        _comboBox->addItem( QString::fromUtf8( entry.label.c_str() ), QIcon(), QKeySequence(), QString::fromUtf8( entry.tooltip.c_str() ) );
     } // for all entries
+    _menuEntries.swap(order);
 
     // the "New" menu is only added to known parameters (e.g. the choice of output channels)
     if (knob->getHostCanAddOptions()) {
@@ -406,7 +437,7 @@ KnobGuiChoice::updateGUI(int /*dimension*/)
         }
     }
     if ( _comboBox->isCascading() || activeEntry.id.empty() ) {
-        _comboBox->setCurrentIndex_no_emit( knob->getValue() );
+        _comboBox->setCurrentIndex_no_emit( menuIndexOfEntry( knob->getValue() ) );
     } else {
         ensureUnknownChocieIsNotInternalPlaneID(activeEntryLabel);
         _comboBox->setCurrentText_no_emit( activeEntryLabel );

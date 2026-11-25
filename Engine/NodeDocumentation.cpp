@@ -253,7 +253,10 @@ Node::makeDocumentation(bool genHTML) const
                             valueStr = QString::fromUtf8( entries[index].label.c_str() );
                         }
                         bool first = true;
-                        for (size_t i = 0; i < entries.size(); i++) {
+                        // in the order of the menu (kOfxParamPropChoiceOrder)
+                        const std::vector<int> displayOrder = isChoice->getDisplayOrder_mt_safe();
+                        for (size_t k = 0; k < entries.size(); k++) {
+                            const size_t i = ( displayOrder.size() == entries.size() ) ? (size_t)displayOrder[k] : k;
                             QString entryHelp = QString::fromUtf8( entries[i].tooltip.c_str() );
                             QString entry;
                             if (entries[i].id != entries[i].label) {

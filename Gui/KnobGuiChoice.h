@@ -133,8 +133,17 @@ private:
     virtual void reflectExpressionState(int dimension, bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
     virtual void reflectModificationsState() OVERRIDE FINAL;
+
+    // the index of the menu item that shows the entry entryIndex of the knob, -1 if there is none
+    int menuIndexOfEntry(int entryIndex) const;
+
     KnobComboBox *_comboBox;
     KnobChoiceWPtr _knob;
+    // the entry index of the knob shown by each menu item (KnobChoice::getDisplayOrder_mt_safe()): the
+    // menu shows the entries in their display order, the knob value is still the entry index. Cascading
+    // menus show their items in the order they are added (each submenu at the place of its first item), so
+    // they show the display order too.
+    std::vector<int> _menuEntries;
 };
 
 NATRON_NAMESPACE_EXIT

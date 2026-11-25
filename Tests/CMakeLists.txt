@@ -61,6 +61,7 @@ set(Tests_SOURCES
     NoDialogs_Test.cpp
     OfxBundlePyPlugs_Test.cpp
     OfxBytesParam_Test.cpp
+    OfxChoiceOrder_Test.cpp
     OfxContexts_Test.cpp
     OfxCPURenderSupport_Test.cpp
     OfxClipComponentsView_Test.cpp

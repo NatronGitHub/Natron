@@ -152,10 +152,8 @@ Table 2: ofxParam.h, parameter types
    * - T9
      - `ofxParameter.rst:197-261 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxParameter.rst?plain=1#L197-L261>`__, `ofxParam.h:630-666 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L630-L666>`__ ChoiceOrder (1.5): "If the host supports this property, it should sort the options... display in increasing order"; "To query whether a host supports this, a plugin should attempt to set the property and check the return status"
      - SHOULD
-     - HostSupport declares the property on Choice and StrChoice descriptors (hP.cpp:334,342), so setting it **succeeds**, but nothing in Engine/Gui reads it (``git grep ChoiceOrder`` in Engine/Gui finds nothing). The host signals "supported" and then ignores it. Project storage is safe because Natron restores by option string (T8); only the UI order is wrong. Issues `#1137 <https://github.com/NatronGitHub/Natron/issues/1137>`__, `#1106 <https://github.com/NatronGitHub/Natron/issues/1106>`__
-     - PARTIAL
-
-       Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
+     - HostSupport declares the property on Choice and StrChoice descriptors (hP.cpp:334,342), so setting it **succeeds**. Natron sorts the options by it (stable sort; no order, or not one value per option: the natural order) into ``KnobChoice``'s display order (``OfxChoiceInstance``, ``KnobChoice::getDisplayOrder_mt_safe()``), which the menus (cascading ones included: they show their items in the order they are added), the tooltip and the generated documentation use (Gui/KnobGuiChoice.cpp); changes on an instance are followed (notify hook). Options with negative values are shown ("some hosts may choose to hide" them). The value stays the option index, and projects restore by option string (T8). Issues `#1137 <https://github.com/NatronGitHub/Natron/issues/1137>`__, `#1106 <https://github.com/NatronGitHub/Natron/issues/1106>`__
+     - OK (fixed by `#1137 <https://github.com/NatronGitHub/Natron/issues/1137>`__)
    * - T10
      - `ofxParameter.rst:264-309 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxParameter.rst?plain=1#L264-L309>`__ StrChoice behaviour (store the enum, restore by enum, unknown enum → default)
      - SHOULD
@@ -376,9 +374,7 @@ Table 3: ofxParam.h, parameter properties
      - `ofxParam.h:630-666 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L630-L666>`__ ChoiceOrder
      - SHOULD
      - See T9
-     - PARTIAL
-
-       Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
+     - OK (fixed by `#1137 <https://github.com/NatronGitHub/Natron/issues/1137>`__)
    * - P26
      - `ofxParam.h:668-682 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L668-L682>`__ ChoiceEnum (StrChoice)
      - MAY
@@ -756,7 +752,7 @@ Spec-only / UI / return codes
 
 **Problem 13. kOfxPropParamSetNeedsSyncing can't be set by the plug-in (PARTIAL).** Spec `ofxParam.h:271-295 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L271-L295>`__. Not declared on instance properties, so propSet returns ErrUnknown (hPS.cpp:860-864); hIE.cpp:1327 never finds it, so the host always calls SyncPrivateData (allowed by the "not set" branch). *Second check:* ``git grep`` in HostSupport and Engine. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
-**Problem 14. kOfxParamPropChoiceOrder is accepted but ignored (PARTIAL).** Spec `ofxParam.h:630-666 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L630-L666>`__, `ofxParameter.rst:197-261 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxParameter.rst?plain=1#L197-L261>`__ (plug-ins detect support by setting the property). HostSupport declares it (hP.cpp:334,342), so the set succeeds, but Natron never reads it. No project risk (Natron restores choices by option string, Node.cpp:1176-1192); the menu order is wrong. *Issues:* `#1137 <https://github.com/NatronGitHub/Natron/issues/1137>`__, `#1106 <https://github.com/NatronGitHub/Natron/issues/1106>`__. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__, `#1137 <https://github.com/NatronGitHub/Natron/issues/1137>`__, `#1106 <https://github.com/NatronGitHub/Natron/issues/1106>`__.
+**Problem 14. kOfxParamPropChoiceOrder was accepted but ignored (fixed).** Spec `ofxParam.h:630-666 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L630-L666>`__, `ofxParameter.rst:197-261 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxParameter.rst?plain=1#L197-L261>`__ (plug-ins detect support by setting the property). HostSupport declares it (hP.cpp:334,342), so the set succeeds; Natron ignored it, so the menu order was wrong (no project risk: Natron restores choices by option string, Node.cpp:1176-1192). Fixed by `#1137 <https://github.com/NatronGitHub/Natron/issues/1137>`__: the menus show the options in that order (T9). *Issues:* `#1137 <https://github.com/NatronGitHub/Natron/issues/1137>`__, `#1106 <https://github.com/NatronGitHub/Natron/issues/1106>`__, `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
 **Problem 15. Custom params are always hidden and disabled, so their InteractV1 is never shown (PARTIAL).** Spec `ofxParameter.rst:381-394 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxParameter.rst?plain=1#L381-L394>`__. OIEI.cpp:618-619 forces it; OPI.cpp custom setSecret/setEnabled are no-ops. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
@@ -775,6 +771,6 @@ NEXT items seen (out of scope): kOfxParamInterpType (HostSupport hP.cpp:629-635,
 Counts
 ------
 
-Table rows (105): OK 76, PARTIAL 15, WRONG 8, N/A 4, NEXT 2. Some bugs appear in more than one row: paramCopy in S15 and R13, custom interpolation in T15 and P32, ChoiceOrder in T9 and P25.
+Table rows (105): OK 78, PARTIAL 13, WRONG 8, N/A 4, NEXT 2. Some bugs appear in more than one row: paramCopy in S15 and R13, custom interpolation in T15 and P32, ChoiceOrder in T9 and P25.
 
-Distinct problems (1-20): 9 WRONG (1, 2, 3, 4, 5, 7, 9, 10, 11), 11 PARTIAL (6, 8, 12-20).
+Distinct problems (1-20): 9 WRONG (1, 2, 3, 4, 5, 7, 9, 10, 11), 10 PARTIAL (6, 8, 12, 13, 15-20); 14 is fixed.
