@@ -471,6 +471,14 @@ add_test(NAME ImageLayerCompareHeadless
 set_tests_properties(ImageLayerCompareHeadless PROPERTIES TIMEOUT 120
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/image-layer-compare-headless-cache")
 
+# A std::pair argument (ChoiceParam.setOptions()) may be any sequence of 2 items, and a wrong argument
+# raises TypeError instead of crashing (#1811): NatronRenderer runs the script, which exits with
+# natron.quit(status).
+add_test(NAME PairArgsHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_pair_args.py")
+set_tests_properties(PairArgsHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/pair-args-headless-cache")
+
 # A PyPlug is created after the script rebinds the global "app" (#1525)
 add_test(NAME PyPlugReboundAppHeadless
     COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_pyplug_rebound_app.py")

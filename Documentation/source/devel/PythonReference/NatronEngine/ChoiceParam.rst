@@ -212,7 +212,9 @@ Strings will be compared without case sensitivity. If not found, nothing happens
     :param options: class::`sequence`
 
 Clears all existing entries in the menu and add all entries contained in *options*
-to the menu.
+to the menu. *options* is a sequence of ``(option, help)`` pairs of strings; each pair
+may be a tuple, a list or any other sequence of 2 items, but not a string. A string,
+or a pair of another length or type, raises :class:`TypeError`.
 
 
 
