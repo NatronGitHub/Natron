@@ -236,12 +236,18 @@ TEST(NodePresets, TrackerLoadPatternMatchingTracks)
     }
     AppInstancePtr app = appPTR->getTopLevelInstance();
     CreateNodeArgs args( PLUGINID_NATRON_TRACKER, app->getProject() );
-    NodePtr node = app->createNode(args);
+    NatronTest::NodeScope nodes;
+    NodePtr node = nodes.add( app->createNode(args) );
     ASSERT_TRUE( bool(node) );
     TrackerContextPtr context = node->getTrackerContext();
     ASSERT_TRUE( bool(context) );
     KnobBoolPtr usePM = std::dynamic_pointer_cast<KnobBool>( node->getKnobByName("usePatternMatching") );
-    ASSERT_TRUE( bool(usePM) );
+    if (!usePM) {
+        // the parameter exists only in DEBUG builds (NATRON_TRACKER_ENABLE_TRACKER_PM in TrackerContextPrivate.h)
+        NatronTest::skip("no usePatternMatching parameter: pattern-matching tracks are only in DEBUG builds");
+
+        return;
+    }
     usePM->setValue(true);
     ASSERT_TRUE( context->isTrackerPMEnabled() );
 
@@ -258,8 +264,6 @@ TEST(NodePresets, TrackerLoadPatternMatchingTracks)
     context->getAllMarkers(&markers);
     ASSERT_EQ( 1u, markers.size() );
     EXPECT_TRUE( dynamic_cast<TrackMarkerPM*>( markers[0].get() ) != NULL );
-
-    node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
 }
 
 // A PyPlug script makes a shape on a Roto node inside the PyPlug; the project saved the node with that
