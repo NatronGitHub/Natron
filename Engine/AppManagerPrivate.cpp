@@ -507,38 +507,19 @@ template <typename T>
 void
 saveCache(Cache<T>* cache)
 {
-    if (!cache) {
-        return;
-    }
-
-    std::string cacheRestoreFilePath = cache->getRestoreFilePath();
-    FStreamsSupport::ofstream ofile;
-    FStreamsSupport::open(&ofile, cacheRestoreFilePath);
-
-    if (!ofile) {
-        std::cerr << "Failed to save cache to " << cacheRestoreFilePath.c_str() << std::endl;
-
-        return;
-    }
-
-
-    typename Cache<T>::CacheTOC toc;
-    cache->save(&toc);
-    unsigned int version = cache->cacheVersion();
-    try {
-        boost::archive::binary_oarchive oArchive(ofile);
-        oArchive << version;
-        oArchive << toc;
-    } catch (const std::exception & e) {
-        qDebug() << "Failed to serialize the cache table of contents:" << e.what();
+    if (cache) {
+        // Prints the error, if any: the previous restore file is kept
+        cache->writeRestoreFile();
     }
 }
 
 void
 AppManagerPrivate::saveCaches()
 {
-    // Every project save calls this, and two projects may be saved at the same time (#1590): they would write
-    // the same files. Two processes that share a cache directory still can.
+    // Every project save calls this, and two projects may be saved at the same time (#1590). Each restore file is
+    // replaced atomically (#1594, see Cache::writeRestoreFile()), so concurrent writers, in this process or in another
+    // one sharing the cache directory, never corrupt it: saveCachesMutex only keeps this process's saves from
+    // running (and clearing the in-memory portions of the caches) at the same time.
     static std::mutex saveCachesMutex;
     std::lock_guard<std::mutex> lock(saveCachesMutex);
 
@@ -564,7 +545,8 @@ restoreCache(AppManagerPrivate* p,
     if ( p->checkForCacheDiskStructure( cache->getCachePath(), cache->isTileCache() ) ) {
         std::string settingsFilePath = cache->getRestoreFilePath();
         FStreamsSupport::ifstream ifile;
-        FStreamsSupport::open(&ifile, settingsFilePath);
+        // Binary: on Windows, a text-mode read would turn CR-LF into LF and stop at the first 0x1A (#1594)
+        FStreamsSupport::open(&ifile, settingsFilePath, std::ios_base::in | std::ios_base::binary);
         if (!ifile) {
             std::cerr << "Failure to open cache restore file at: " << settingsFilePath << std::endl;
 

@@ -43,6 +43,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
+#include "Engine/TimeLine.h"
 
 #include "OfxTestPlugin.h"
 
@@ -54,6 +55,7 @@ class KnobExpressionCacheTest
 {
 protected:
     NodePtr _node;
+    SequenceTime _savedTimelineTime = 0;
 
     virtual void SetUp() OVERRIDE
     {
@@ -61,6 +63,9 @@ protected:
             return;
         }
         AppInstancePtr app = appPTR->getTopLevelInstance();
+        // Outside a render, the results are cached only at the timeline's frame (#1578): the tests evaluate at frame 1
+        _savedTimelineTime = app->getTimeLine()->currentFrame();
+        app->getTimeLine()->seekFrame(1, false, NULL, eTimelineChangeReasonOtherSeek);
         CreateNodeArgs args( kNatronTestPluginParams, app->getProject() );
         args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
         _node = app->createNode(args);
@@ -71,6 +76,9 @@ protected:
         if (_node) {
             _node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
             _node.reset();
+        }
+        if ( NatronTestPlugin::isAvailable(kNatronTestPluginParams) ) {
+            appPTR->getTopLevelInstance()->getTimeLine()->seekFrame(_savedTimelineTime, false, NULL, eTimelineChangeReasonOtherSeek);
         }
     }
 
@@ -116,7 +124,7 @@ TEST_F(KnobExpressionCacheTest, ResultIsNotStoredIfAnInputChangedDuringTheEvalua
     to->clearExpression(0, true);
 }
 
-// Without changes, a result is computed once per frame (the cache still works)
+// Without changes, the cached results are those of the expression; a change clears them
 TEST_F(KnobExpressionCacheTest, ResultIsStored)
 {
     if ( skipped() ) {
