@@ -496,7 +496,7 @@ Knob<T>::cacheExpressionResult(int dimension,
     // GUI evaluated the expression at the timeline's frame): the result may have been read in the new context.
     const std::optional<ExpressionResultKey> keyAfter = getExpressionResultKey(time, view);
 
-    if ( !keyAfter || !(*keyAfter == key) ) {
+    if ( !keyAfter || (*keyAfter != key) ) {
         return;
     }
     std::lock_guard<std::mutex> k(_exprResMutex);

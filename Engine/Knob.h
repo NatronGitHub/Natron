@@ -1793,18 +1793,27 @@ protected:
         double renderTime = 0.;
         ViewIdx renderView;
 
+        auto tied() const
+        {
+            return std::tie(time, view, holderTime, holderView, renderTime, renderView);
+        }
+
         friend bool operator<(const ExpressionResultKey& a,
                               const ExpressionResultKey& b)
         {
-            return std::tie(a.time, a.view, a.holderTime, a.holderView, a.renderTime, a.renderView) <
-                   std::tie(b.time, b.view, b.holderTime, b.holderView, b.renderTime, b.renderView);
+            return a.tied() < b.tied();
         }
 
         friend bool operator==(const ExpressionResultKey& a,
                                const ExpressionResultKey& b)
         {
-            return std::tie(a.time, a.view, a.holderTime, a.holderView, a.renderTime, a.renderView) ==
-                   std::tie(b.time, b.view, b.holderTime, b.holderView, b.renderTime, b.renderView);
+            return a.tied() == b.tied();
+        }
+
+        friend bool operator!=(const ExpressionResultKey& a,
+                               const ExpressionResultKey& b)
+        {
+            return !(a == b);
         }
     };
 
