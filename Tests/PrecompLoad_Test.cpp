@@ -54,32 +54,11 @@
 #include "Engine/Project.h"
 #include "Engine/WriteNode.h"
 
+#include "TestUtils.h"
+
 NATRON_NAMESPACE_USING
 
 namespace {
-bool
-isPluginAvailable(const char* pluginID)
-{
-    try {
-        Plugin* p = appPTR->getPluginBinary(QString::fromUtf8(pluginID), -1, -1, false);
-
-        return p && p->getLibraryBinary();
-    } catch (...) {
-        return false;
-    }
-}
-
-// The bundled google-test predates GTEST_SKIP(): the tests return early and are reported as passed,
-// so say clearly that they did not run, as RotoPaint_Test does.
-// TODO: Convert to GTEST_SKIP() when gtest updated.
-void
-reportSkipped(const std::string& why)
-{
-    const testing::TestInfo* info = testing::UnitTest::GetInstance()->current_test_info();
-
-    std::cerr << "[  SKIPPED ] " << info->test_case_name() << '.' << info->name() << ": " << why << std::endl;
-}
-
 // What Python says of the attribute: "node" (a Natron node), "None", or "undefined".
 std::string
 pythonAttribute(const std::string& appVar,
@@ -233,9 +212,7 @@ TEST_F(PrecompLoadTest, GroupChildren)
 // The case of #1501: a Write node in the Precomp's project crashed while its Output node was created.
 TEST_F(PrecompLoadTest, WriteNode)
 {
-    if ( !isPluginAvailable(PLUGINID_OFX_WRITEOIIO) ) {
-        reportSkipped("plug-in not found (needs " PLUGINID_OFX_WRITEOIIO " from openfx-io in OFX_PLUGIN_PATH)");
-
+    if ( !NatronTest::requirePlugins({ PLUGINID_OFX_WRITEOIIO }, "openfx-io") ) {
         return;
     }
     {

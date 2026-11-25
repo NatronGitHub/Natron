@@ -39,6 +39,8 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/Settings.h"
 
+#include "TestUtils.h"
+
 NATRON_NAMESPACE_USING
 
 #if defined(Q_OS_UNIX) && !defined(Q_OS_DARWIN)
@@ -183,7 +185,6 @@ TEST(Settings, RestoreDefaultKeepsSettingsFileUntilSaved)
     EXPECT_FALSE( QFile::exists(fileName) );
 #else
     // On macOS and Windows the native settings are in the system's preferences, which can't be redirected
-    // TODO: Convert to GTEST_SKIP() when gtest updated.
-    std::cerr << "[  SKIPPED ] Settings.RestoreDefaultKeepsSettingsFileUntilSaved: needs file-based native settings (Linux, BSD)" << std::endl;
+    NatronTest::skip("needs file-based native settings (Linux, BSD)");
 #endif
 }

@@ -17,7 +17,7 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-set(Tests_HEADERS BaseTest.h NaNGuards_FastMath.h OfxTestPlugin.h)
+set(Tests_HEADERS BaseTest.h NaNGuards_FastMath.h OfxTestPlugin.h TestUtils.h)
 set(Tests_SOURCES
     google-test/src/gtest-all.cc
     google-mock/src/gmock-all.cc

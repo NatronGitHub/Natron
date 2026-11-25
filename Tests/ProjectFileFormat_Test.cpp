@@ -82,6 +82,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ProjectSerialization.h"
 #include "Engine/Settings.h"
 
+#include "TestUtils.h"
+
 NATRON_NAMESPACE_USING
 
 namespace {
@@ -134,16 +136,6 @@ saveCopy(const ProjectPtr& project,
          ProjectFileFormatEnum format)
 {
     return project->saveProject_imp(dir, name, false /*autoSave*/, false /*updateProjectProperties*/, 0, 0, format);
-}
-
-// The bundled google-test predates GTEST_SKIP(): say clearly that the test did not run.
-// TODO: Convert to GTEST_SKIP() when gtest updated.
-void
-reportSkipped(const char* reason)
-{
-    const testing::TestInfo* info = testing::UnitTest::GetInstance()->current_test_info();
-
-    std::cerr << "[  SKIPPED ] " << info->test_case_name() << '.' << info->name() << ": " << reason << std::endl;
 }
 
 // The directory of the committed project files (Tests/data), or an empty string if it isn't there
@@ -616,7 +608,7 @@ TEST(ProjectFileFormat, AutoSaveNames)
 TEST(ProjectFileFormat, RestoreNatron25AutoSave)
 {
     if ( dataDir().isEmpty() ) {
-        reportSkipped("Tests/data not found");
+        NatronTest::skip("Tests/data not found");
 
         return;
     }
@@ -954,7 +946,7 @@ TEST(PortableBinaryArchive, DamagedSizes)
 TEST(ProjectFileFormat, Natron25Project)
 {
     if ( dataDir().isEmpty() ) {
-        reportSkipped("Tests/data not found");
+        NatronTest::skip("Tests/data not found");
 
         return;
     }
@@ -993,7 +985,7 @@ TEST(ProjectFileFormat, Natron25Project)
 TEST(ProjectFileFormat, CommittedBinaryProject)
 {
     if ( dataDir().isEmpty() ) {
-        reportSkipped("Tests/data not found");
+        NatronTest::skip("Tests/data not found");
 
         return;
     }
@@ -1321,7 +1313,7 @@ TEST(ProjectSave, FailedSaveKeepsThePreviousFile)
     const QFileDevice::Permissions permissions = QFile::permissions(path);
     ASSERT_TRUE( QFile::setPermissions(path, QFileDevice::ReadOwner | QFileDevice::ReadUser | QFileDevice::ReadGroup | QFileDevice::ReadOther) );
     if ( canWriteReadOnly(path) ) {
-        reportSkipped("the read-only file is writable (root?)");
+        NatronTest::skip("the read-only file is writable (root?)");
     } else {
         failedSave("read-only file");
     }
@@ -1332,7 +1324,7 @@ TEST(ProjectSave, FailedSaveKeepsThePreviousFile)
     const QFileDevice::Permissions dirPermissions = QFile::permissions(tmpDir.path());
     ASSERT_TRUE( QFile::setPermissions(tmpDir.path(), QFileDevice::ReadOwner | QFileDevice::ExeOwner | QFileDevice::ReadUser | QFileDevice::ExeUser) );
     if ( canWriteReadOnly( tmpDir.path() ) ) {
-        reportSkipped("the read-only directory is writable (root?)");
+        NatronTest::skip("the read-only directory is writable (root?)");
     } else {
         failedSave("read-only directory");
     }
@@ -1432,7 +1424,7 @@ TEST(ProjectSave, FailedRollbackSaysWhereThePreviousVersionIs)
         const bool rootCanWrite = canWriteReadOnly( scratch.path() );
         ASSERT_TRUE( QFile::setPermissions(scratch.path(), scratchPermissions) );
         if (rootCanWrite) {
-            reportSkipped("a read-only directory is writable (root?)");
+            NatronTest::skip("a read-only directory is writable (root?)");
             project->resetProject();
 
             return;
@@ -1669,7 +1661,7 @@ TEST(ProjectFileFormat, LargeProject)
 {
     const char* largeProject = std::getenv("NATRON_TEST_LARGE_PROJECT");
     if (!largeProject) {
-        reportSkipped("NATRON_TEST_LARGE_PROJECT is not set");
+        NatronTest::skip("NATRON_TEST_LARGE_PROJECT is not set");
 
         return;
     }

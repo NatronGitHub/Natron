@@ -46,31 +46,11 @@
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 
+#include "TestUtils.h"
+
 NATRON_NAMESPACE_USING
 
 namespace {
-bool
-isPluginAvailable(const char* pluginID)
-{
-    try {
-        Plugin* p = appPTR->getPluginBinary(QString::fromUtf8(pluginID), -1, -1, false);
-
-        return p && p->getLibraryBinary();
-    } catch (...) {
-        return false;
-    }
-}
-
-// The bundled google-test predates GTEST_SKIP(): the tests return early and are reported as passed,
-// so say clearly that they did not run.
-void
-reportSkipped(const std::string& why)
-{
-    const testing::TestInfo* info = testing::UnitTest::GetInstance()->current_test_info();
-
-    std::cerr << "[  SKIPPED ] " << info->test_case_name() << '.' << info->name() << ": " << why << std::endl;
-}
-
 class ShuffleAutoConnectTest
     : public testing::Test
 {
@@ -121,9 +101,7 @@ protected:
 
 TEST_F(ShuffleAutoConnectTest, ShuffleConnectsB)
 {
-    if ( !isPluginAvailable(PLUGINID_OFX_SHUFFLE) ) {
-        reportSkipped("needs " PLUGINID_OFX_SHUFFLE " (openfx-misc) in OFX_PLUGIN_PATH");
-
+    if ( !NatronTest::requirePlugins({ PLUGINID_OFX_SHUFFLE }, "openfx-misc") ) {
         return;
     }
     ASSERT_TRUE( bool(_connectToA) );
@@ -137,9 +115,7 @@ TEST_F(ShuffleAutoConnectTest, ShuffleConnectsB)
 // the preference still applies to Merge
 TEST_F(ShuffleAutoConnectTest, MergeFollowsThePreference)
 {
-    if ( !isPluginAvailable(PLUGINID_OFX_MERGE) ) {
-        reportSkipped("needs " PLUGINID_OFX_MERGE " (openfx-misc) in OFX_PLUGIN_PATH");
-
+    if ( !NatronTest::requirePlugins({ PLUGINID_OFX_MERGE }, "openfx-misc") ) {
         return;
     }
     ASSERT_TRUE( bool(_connectToA) );

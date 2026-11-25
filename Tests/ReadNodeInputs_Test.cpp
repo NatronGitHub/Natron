@@ -105,10 +105,8 @@ TEST(ReadNodeInputs, DecoderWithoutSourceClip)
     }
     if (plugin->getMajorVersion() != kNoSourceMajor) {
         // a real ReadPDF with a major of 91 or more is installed
-        const testing::TestInfo* info = testing::UnitTest::GetInstance()->current_test_info();
-        std::cerr << "[  SKIPPED ] " << info->test_case_name() << '.' << info->name() << ": the newest "
-                  << PLUGINID_OFX_READPDF << " is version " << plugin->getMajorVersion() << ", not the test reader"
-                  << std::endl;
+        NatronTest::skip("the newest " PLUGINID_OFX_READPDF " is version " + std::to_string( plugin->getMajorVersion() ) +
+                         ", not the test reader");
 
         return;
     }

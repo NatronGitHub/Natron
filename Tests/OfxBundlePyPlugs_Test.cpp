@@ -178,7 +178,7 @@ TEST(OfxBundlePyPlugs, MakeBundlesPyPlugsPaths)
 TEST(OfxBundlePyPlugs, BundlePyPlugIsFound)
 {
 #ifndef NATRON_TESTS_OFX_PLUGIN_DIR
-    std::cerr << "[  SKIPPED ] OfxBundlePyPlugs.BundlePyPlugIsFound: no test plug-in bundle" << std::endl;
+    NatronTest::skip("no test plug-in bundle");
 #else
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginParams) ) {
         NatronTestPlugin::reportSkipped(kNatronTestPluginParams);
@@ -237,7 +237,7 @@ TEST(OfxBundlePyPlugs, BundlePyPlugIsFound)
 TEST(OfxBundlePyPlugs, NoDuplicateSearchPath)
 {
 #ifndef NATRON_TESTS_OFX_PLUGIN_DIR
-    std::cerr << "[  SKIPPED ] OfxBundlePyPlugs.NoDuplicateSearchPath: no test plug-in bundle" << std::endl;
+    NatronTest::skip("no test plug-in bundle");
 #else
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginParams) ) {
         NatronTestPlugin::reportSkipped(kNatronTestPluginParams);

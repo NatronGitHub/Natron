@@ -53,6 +53,8 @@
 #include "Engine/TrackMarker.h"
 #include "Engine/TrackerContext.h"
 
+#include "TestUtils.h"
+
 #define PLUGINID_OFX_CHECKERBOARD "net.sf.openfx.CheckerBoardPlugin"
 
 // From Engine/TrackerContextPrivate.h and Engine/TrackerNodeInteract.h, which need headers that the tests
@@ -71,43 +73,7 @@ const int kTransformTypeTransform = 0; // eTrackerTransformNodeTransform
 NATRON_NAMESPACE_USING
 
 namespace {
-bool
-isPluginAvailable(const char* pluginID)
-{
-    try {
-        Plugin* p = appPTR->getPluginBinary(QString::fromUtf8(pluginID), -1, -1, false);
-
-        return p && p->getLibraryBinary();
-    } catch (...) {
-        return false;
-    }
-}
-
-// The bundled google-test predates GTEST_SKIP(): say clearly that the test did not run
-bool
-skipIfMissing(const char* pluginID)
-{
-    if ( isPluginAvailable(pluginID) ) {
-        return false;
-    }
-    const testing::TestInfo* info = testing::UnitTest::GetInstance()->current_test_info();
-    std::cerr << "[  SKIPPED ] " << info->test_case_name() << '.' << info->name()
-              << ": plug-in " << pluginID << " not found (needs openfx-misc in OFX_PLUGIN_PATH)" << std::endl;
-
-    return true;
-}
-
-NodePtr
-createNode(const char* pluginID)
-{
-    AppInstancePtr app = appPTR->getTopLevelInstance();
-    CreateNodeArgs args( pluginID, app->getProject() );
-
-    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-
-    return app->createNode(args);
-}
+using NatronTest::createNode;
 
 class TrackerHeadlessTest
     : public ::testing::Test
@@ -119,7 +85,7 @@ protected:
 
     virtual void SetUp() OVERRIDE
     {
-        if ( !isPluginAvailable(PLUGINID_OFX_TRANSFORM) || !isPluginAvailable(PLUGINID_OFX_CORNERPIN) ) {
+        if ( !NatronTest::isPluginAvailable(PLUGINID_OFX_TRANSFORM) || !NatronTest::isPluginAvailable(PLUGINID_OFX_CORNERPIN) ) {
             return;
         }
         _tracker = createNode(PLUGINID_NATRON_TRACKER);
@@ -148,13 +114,15 @@ protected:
         }
     }
 
+    // true if the test must return: the plug-ins are missing (skipped), or the tracker was not created (failed)
     bool skipped()
     {
-        if ( skipIfMissing(PLUGINID_OFX_TRANSFORM) || skipIfMissing(PLUGINID_OFX_CORNERPIN) ) {
+        if ( !NatronTest::requirePlugins({ PLUGINID_OFX_TRANSFORM, PLUGINID_OFX_CORNERPIN }, "openfx-misc") ) {
             return true;
         }
+        EXPECT_TRUE( bool(_track) ) << "the Tracker node or its track was not created";
 
-        return false;
+        return !_track;
     }
 
     template <typename K>
@@ -265,7 +233,7 @@ trackNextOnCheckerBoard(const NodePtr& tracker,
 // The Track Next button tracks the selected tracks without a viewer, from the timeline's current frame
 TEST_F(TrackerHeadlessTest, TrackNextButtonWithoutViewer)
 {
-    if ( skipped() || skipIfMissing(PLUGINID_OFX_CHECKERBOARD) ) {
+    if ( skipped() || !NatronTest::requirePlugins({ PLUGINID_OFX_CHECKERBOARD }, "openfx-misc") ) {
         return;
     }
     ASSERT_TRUE(_tracker && _context && _track);
@@ -275,7 +243,7 @@ TEST_F(TrackerHeadlessTest, TrackNextButtonWithoutViewer)
 // The transform is solved after a tracking (the motion type is not None), without a viewer
 TEST_F(TrackerHeadlessTest, SolveAfterTrackingWithoutViewer)
 {
-    if ( skipped() || skipIfMissing(PLUGINID_OFX_CHECKERBOARD) ) {
+    if ( skipped() || !NatronTest::requirePlugins({ PLUGINID_OFX_CHECKERBOARD }, "openfx-misc") ) {
         return;
     }
     ASSERT_TRUE(_tracker && _context && _track);

@@ -62,6 +62,8 @@
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/ViewIdx.h"
 
+#include "TestUtils.h"
+
 NATRON_NAMESPACE_USING
 
 namespace {
@@ -135,18 +137,6 @@ public:
     }
 };
 
-bool
-isPluginAvailable(const char* pluginID)
-{
-    try {
-        Plugin* p = appPTR->getPluginBinary(QString::fromUtf8(pluginID), -1, -1, false);
-
-        return p && p->getLibraryBinary();
-    } catch (...) {
-        return false;
-    }
-}
-
 // The overlay actions are protected in EffectInstance (and private in RotoPaint), and the public
 // EffectInstance::onOverlayPen*_public() wrappers only forward them when the node has a GUI (hasHostOverlay()).
 // A pointer to a protected member can be formed from a derived class: calling through it still dispatches
@@ -185,16 +175,8 @@ protected:
         _app = appPTR->getTopLevelInstance();
 
         // Every shape is backed by OpenFX nodes (see RotoDrawableItem::createNodes()).
-        _havePlugins = isPluginAvailable(PLUGINID_OFX_MERGE) && isPluginAvailable(PLUGINID_OFX_ROTO);
+        _havePlugins = NatronTest::requirePlugins({ PLUGINID_OFX_MERGE, PLUGINID_OFX_ROTO }, "openfx-misc");
         if (!_havePlugins) {
-            // The bundled google-test predates GTEST_SKIP(): the tests return early and are reported as passed,
-            // so say clearly that they did not run, as OSGLContext_Test does.
-            // TODO: Convert to GTEST_SKIP() when gtest updated.
-            const testing::TestInfo* info = testing::UnitTest::GetInstance()->current_test_info();
-            std::cerr << "[  SKIPPED ] " << info->test_case_name() << '.' << info->name()
-                      << ": plug-ins not found (needs " PLUGINID_OFX_MERGE " and " PLUGINID_OFX_ROTO
-                " from openfx-misc in OFX_PLUGIN_PATH)" << std::endl;
-
             return;
         }
 

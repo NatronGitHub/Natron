@@ -53,6 +53,8 @@
 #include "Engine/Project.h"
 #include "Engine/TimeLine.h"
 
+#include "TestUtils.h"
+
 // The OFX plug-ins of Tests/OfxTestPlugin/NatronTestPlugin.cpp, built with the tests (see
 // Tests/CMakeLists.txt) and loaded by the host like any other OFX plug-in.
 #define kNatronTestPluginParamInteract "net.natron.test.ParamInteract"
@@ -75,28 +77,19 @@
 #define kNatronTestPluginMaskIdentityNoTiles "net.natron.test.MaskIdentityNoTiles"
 
 namespace NatronTestPlugin {
-// true if the host loaded the plug-in
+using NatronTest::createNode;
+
+// true if the host loaded the test plug-in
 inline bool
 isAvailable(const char* pluginID)
 {
-    try {
-        NATRON_NAMESPACE::Plugin* p = NATRON_NAMESPACE::appPTR->getPluginBinary(QString::fromUtf8(pluginID), -1, -1, false);
-
-        return p && p->getOfxPlugin();
-    } catch (...) {
-        return false;
-    }
+    return NatronTest::isPluginAvailable(pluginID);
 }
 
-// The bundled google-test predates GTEST_SKIP(): the tests return early and are reported as passed,
-// so say clearly that they did not run.
 inline void
 reportSkipped(const char* pluginID)
 {
-    const testing::TestInfo* info = testing::UnitTest::GetInstance()->current_test_info();
-
-    std::cerr << "[  SKIPPED ] " << info->test_case_name() << '.' << info->name() << ": plug-in " << pluginID
-              << " not found (the test plug-in built with the tests, NatronTestPlugin.ofx.bundle)" << std::endl;
+    NatronTest::skip(std::string("plug-in ") + pluginID + " not found (the test plug-in built with the tests, NatronTestPlugin.ofx.bundle)");
 }
 
 #ifdef NATRON_TESTS_OFX_PLUGIN_BINARY
@@ -173,20 +166,6 @@ setCounter(const std::string& name,
     (void)name;
     (void)value;
 #endif
-}
-
-// Create a node of the top-level app's project, without undo/redo command and without connecting it.
-inline NATRON_NAMESPACE::NodePtr
-createNode(const char* pluginID)
-{
-    NATRON_NAMESPACE::AppInstancePtr app = NATRON_NAMESPACE::appPTR->getTopLevelInstance();
-    NATRON_NAMESPACE::CreateNodeArgs args( pluginID, app->getProject() );
-
-    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-    args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
-
-    return app->createNode(args);
 }
 
 // Render the output of node at time, view 0 and scale 1, as an interactive render (like the preview

@@ -56,36 +56,11 @@
 #include "Engine/TrackMarker.h"
 #include "Engine/TrackerContext.h"
 
+#include "TestUtils.h"
+
 NATRON_NAMESPACE_USING
 
 namespace {
-bool
-isPluginAvailable(const char* pluginID)
-{
-    try {
-        Plugin* p = appPTR->getPluginBinary(QString::fromUtf8(pluginID), -1, -1, false);
-
-        return p && p->getLibraryBinary();
-    } catch (...) {
-        return false;
-    }
-}
-
-bool
-skipIfMissing(const char* pluginID)
-{
-    if ( isPluginAvailable(pluginID) ) {
-        return false;
-    }
-    // The bundled google-test predates GTEST_SKIP(): say clearly that the test did not run.
-    // TODO: Convert to GTEST_SKIP() when gtest updated.
-    const testing::TestInfo* info = testing::UnitTest::GetInstance()->current_test_info();
-    std::cerr << "[  SKIPPED ] " << info->test_case_name() << '.' << info->name()
-              << ": plug-in " << pluginID << " not found (needs openfx-misc in OFX_PLUGIN_PATH)" << std::endl;
-
-    return true;
-}
-
 std::list<std::string>
 shapeNames(const RotoContextPtr& context)
 {
@@ -189,7 +164,7 @@ checkRotoLoadReplacesShapes(const char* pluginID)
 TEST(NodePresets, RotoLoadReplacesShapes)
 {
     // Roto shapes are backed by OpenFX nodes (see RotoDrawableItem::createNodes())
-    if ( skipIfMissing(PLUGINID_OFX_ROTO) || skipIfMissing(PLUGINID_OFX_MERGE) ) {
+    if ( !NatronTest::requirePlugins({ PLUGINID_OFX_ROTO, PLUGINID_OFX_MERGE }, "openfx-misc") ) {
         return;
     }
     checkRotoLoadReplacesShapes(PLUGINID_NATRON_ROTO);
@@ -197,7 +172,7 @@ TEST(NodePresets, RotoLoadReplacesShapes)
 
 TEST(NodePresets, RotoPaintLoadReplacesShapes)
 {
-    if ( skipIfMissing(PLUGINID_OFX_ROTO) || skipIfMissing(PLUGINID_OFX_MERGE) ) {
+    if ( !NatronTest::requirePlugins({ PLUGINID_OFX_ROTO, PLUGINID_OFX_MERGE }, "openfx-misc") ) {
         return;
     }
     checkRotoLoadReplacesShapes(PLUGINID_NATRON_ROTOPAINT);
@@ -206,7 +181,7 @@ TEST(NodePresets, RotoPaintLoadReplacesShapes)
 TEST(NodePresets, TrackerLoadReplacesTracks)
 {
     // The Tracker node creates internal Transform and CornerPin nodes
-    if ( skipIfMissing(PLUGINID_OFX_TRANSFORM) || skipIfMissing(PLUGINID_OFX_CORNERPIN) ) {
+    if ( !NatronTest::requirePlugins({ PLUGINID_OFX_TRANSFORM, PLUGINID_OFX_CORNERPIN }, "openfx-misc") ) {
         return;
     }
     AppInstancePtr app = appPTR->getTopLevelInstance();
@@ -256,8 +231,7 @@ TEST(NodePresets, TrackerLoadReplacesTracks)
 // or loading such a track threw (#1513).
 TEST(NodePresets, TrackerLoadPatternMatchingTracks)
 {
-    if ( skipIfMissing(PLUGINID_OFX_TRANSFORM) || skipIfMissing(PLUGINID_OFX_CORNERPIN) ||
-         skipIfMissing(PLUGINID_OFX_TRACKERPM) ) {
+    if ( !NatronTest::requirePlugins({ PLUGINID_OFX_TRANSFORM, PLUGINID_OFX_CORNERPIN, PLUGINID_OFX_TRACKERPM }, "openfx-misc") ) {
         return;
     }
     AppInstancePtr app = appPTR->getTopLevelInstance();
@@ -294,7 +268,7 @@ TEST(NodePresets, TrackerLoadPatternMatchingTracks)
 // see it.
 TEST(NodePresets, ScriptMadeRotoRestoredFromProject)
 {
-    if ( skipIfMissing(PLUGINID_OFX_ROTO) || skipIfMissing(PLUGINID_OFX_MERGE) ) {
+    if ( !NatronTest::requirePlugins({ PLUGINID_OFX_ROTO, PLUGINID_OFX_MERGE }, "openfx-misc") ) {
         return;
     }
     AppInstancePtr app = appPTR->getTopLevelInstance();

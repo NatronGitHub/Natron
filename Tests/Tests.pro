@@ -163,7 +163,8 @@ SOURCES += \
 HEADERS += \
     BaseTest.h \
     NaNGuards_FastMath.h \
-    OfxTestPlugin.h
+    OfxTestPlugin.h \
+    TestUtils.h
 
 # the OFX test plug-in (OfxTestPlugin/OfxTestPlugin.pro), loaded through OFX_PLUGIN_PATH by wmain.cpp
 include(OfxTestPlugin/OfxTestPlugin.pri)
