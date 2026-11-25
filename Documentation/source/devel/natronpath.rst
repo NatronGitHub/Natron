@@ -52,15 +52,29 @@ PyPlugs (Python group plug-ins and toolsets), Natron looks into the following se
 6. The bundled PyPlugs (see 1.), if "Use bundled plug-ins" is checked and
    "Prefer bundled plug-ins over system-wide plug-ins" is not.
 
-If "Use bundled plug-ins" is unchecked, Natron loads no bundled PyPlugs at all.
+7. The PyPlugs that ship with OpenFX plug-ins: the ``Contents/Resources/PyPlugs`` directory of each
+   OpenFX plug-in bundle that Natron loaded (for example
+   ``Misc.ofx.bundle/Contents/Resources/PyPlugs``, which has PIKColor), in the order of the OpenFX
+   plug-in search path. These come last, so that a copy of one of these PyPlugs in any of the
+   directories above overrides it. A directory that is already in the list above is not searched
+   twice.
+
+If "Use bundled plug-ins" is unchecked, Natron loads no bundled PyPlugs at all (the PyPlugs of the
+OpenFX plug-in bundles are still loaded, if their OpenFX plug-ins are).
+
+When two PyPlugs have the same ID and version, the first one found wins. A PyPlug with a higher
+version is also loaded, wherever it is, and new nodes use the highest version. A PyPlug whose
+file name was already loaded from an earlier directory is skipped (see below).
 
 .. mermaid::
    :alt: The search order is: the bundled PyPlugs if "Use bundled plug-ins" and "Prefer
          bundled plug-ins" are both checked; ~/.Natron; the system location; the directories of
-         NATRON_PLUGIN_PATH; the "PyPlugs search path" preference; and last the bundled PyPlugs
-         if "Use bundled plug-ins" is checked but "Prefer bundled plug-ins" is not.
-   :caption: Order of the PyPlug search paths. The bundled PyPlugs are searched first or last,
-             depending on the preferences, or not at all.
+         NATRON_PLUGIN_PATH; the "PyPlugs search path" preference; the bundled PyPlugs
+         if "Use bundled plug-ins" is checked but "Prefer bundled plug-ins" is not; and last the
+         PyPlugs of the OpenFX plug-in bundles.
+   :caption: Order of the PyPlug search paths. The bundled PyPlugs are searched first or after the
+             preferences, depending on the preferences, or not at all; the PyPlugs of the OpenFX
+             plug-in bundles always come last.
 
    flowchart LR
        b1["Bundled PyPlugs<br/>(if Use bundled and<br/>Prefer bundled)"] --> user["~/.Natron"]
@@ -68,6 +82,7 @@ If "Use bundled plug-ins" is unchecked, Natron loads no bundled PyPlugs at all.
        sys --> env["NATRON_PLUGIN_PATH<br/>(; on Windows, : elsewhere)"]
        env --> pref["Preferences:<br/>PyPlugs search path"]
        pref --> b2["Bundled PyPlugs<br/>(if Use bundled and<br/>not Prefer bundled)"]
+       b2 --> ofx["OpenFX plug-in bundles:<br/>Contents/Resources/PyPlugs"]
 
 
 Each of these directories is searched **recursively**: Natron also looks into all its sub-directories.

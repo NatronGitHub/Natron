@@ -473,6 +473,11 @@ location for all the users of a computer, or a shared directory listed in ``NATR
 or in the "PyPlugs search path" preference (see :ref:`natronPath`). PyPlugs are registered at
 startup, so restart Natron after installing one.
 
+An OpenFX plug-in bundle can ship the PyPlugs that use its plug-ins: put them, with their icons,
+in the ``Contents/Resources/PyPlugs`` directory of the bundle (``Foo.ofx.bundle/Contents/Resources/PyPlugs``).
+Natron searches that directory after all the other search paths, so a user's copy of such a PyPlug
+overrides it.
+
 Since all the directories of the search paths are added to the Python path, a PyPlug can import
 Python modules installed next to it.
 
