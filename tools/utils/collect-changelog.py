@@ -183,12 +183,12 @@ def parse_changelog_section(body: str) -> ParsedSection:
             break
         if not line:
             continue
-        if raw[:1] in (' ', '\t') and in_entry:
-            # An indented continuation (or sub-bullet) of the previous line.
-            section.entries[-1].text += ' ' + line
-        elif _NONE_RE.match(line):
+        if _NONE_RE.match(line):
             section.none = True
             in_entry = False
+        elif raw[:1] in (' ', '\t') and in_entry:
+            # An indented continuation (or sub-bullet) of the previous line.
+            section.entries[-1].text += ' ' + line
         elif line.startswith('- '):
             section.entries.append(Entry(heading, '- ' + line[2:].strip()))
             in_entry = True
@@ -326,14 +326,16 @@ class _Section:
     spaced: bool  # Items are separated by blank lines.
     trailing_blanks: int  # Blank lines before the next heading.
     list_only: bool  # Only items after the preamble: it can be regrouped.
+    raw: List[str]  # The lines after the heading, as they were.
+    parsed_items: int  # len(items) before new lines were added.
 
 
 def _parse_section(name: str, body: Sequence[str]) -> _Section:
     """Splits the lines of a section (after its heading) into items.
 
     An item is a "- " line with the lines that follow it without a blank
-    line, or indented. Any other line after the first item (a sub-heading,
-    a paragraph) makes the section not list_only.
+    line, or indented. Any other line after the first item (a "#" heading,
+    or a paragraph after a blank line) makes the section not list_only.
     """
     preamble = []
     items = []
@@ -348,6 +350,9 @@ def _parse_section(name: str, body: Sequence[str]) -> _Section:
         elif not line.strip():
             if not items:
                 preamble.append(line)
+        elif items and line.startswith('#'):
+            list_only = False
+            items[-1].lines.extend(['', line] if blank else [line])
         elif items and (not blank or line[:1] in (' ', '\t')):
             items[-1].lines.extend(['', line] if blank else [line])
         elif items:
@@ -360,7 +365,8 @@ def _parse_section(name: str, body: Sequence[str]) -> _Section:
         preamble.pop(0)
     trailing = len(body) - len(_rstrip_blank(body))
     return _Section(name, _rstrip_blank(preamble), items,
-                    bool(gaps) and all(gaps), trailing, list_only)
+                    bool(gaps) and all(gaps), trailing, list_only,
+                    list(body), len(items))
 
 
 def _rstrip_blank(lines: Sequence[str]) -> List[str]:
@@ -371,7 +377,18 @@ def _rstrip_blank(lines: Sequence[str]) -> List[str]:
 
 
 def _render_section(section: _Section) -> List[str]:
-    """Returns the lines of a section, its heading included."""
+    """Returns the lines of a section, its heading included.
+
+    A section that is not list_only keeps its lines as they were, followed
+    by the new items.
+    """
+    if not section.list_only:
+        out = ['### ' + section.name] + _rstrip_blank(section.raw)
+        for item in section.items[section.parsed_items:]:
+            if section.spaced or len(out) == 1:
+                out.append('')
+            out += item.lines
+        return out + [''] * max(1, section.trailing_blanks)
     out = ['### ' + section.name, '']
     if section.preamble:
         out += section.preamble + ['']
@@ -562,13 +579,14 @@ def last_collection(ref: str, changelog_path: str,
     """Returns, for each repo, the time of its last collection on ref.
 
     Walks the collection commits (subject starting with COLLECT_PREFIX) from
-    the newest, and takes for each repo its newest "Merged-until:" trailer.
+    the newest, and takes for each repo its newest "Merged-until:" trailer;
+    Natron's must be in the newest collection commit.
     A repo of --extra-repo that no trailer mentions (its first collection)
     starts at the committer date of the newest collection commit.
 
     Raises:
-        SystemExit: no collection commit, or none with a trailer for the
-            main repository (e.g. squashed): --since is needed.
+        SystemExit: no collection commit, or the newest one has no trailer
+            for the main repository (e.g. squashed): --since is needed.
     """
     log = _run(['git', 'log', '--format=%x01%H%x00%cI%x00%s%x00%B',
                 f'--grep=^{COLLECT_PREFIX}', ref, '--', changelog_path])
@@ -578,15 +596,16 @@ def last_collection(ref: str, changelog_path: str,
         raise SystemExit(
             f'error: no "{COLLECT_PREFIX}" commit changed {changelog_path} '
             f'on {ref}; give the starting point with --since')
+    newest = parse_merged_until(commits[0][3])
+    if MAIN_REPO in repos and MAIN_REPO not in newest:
+        raise SystemExit(
+            f'error: the last "{COLLECT_PREFIX}" commit on {ref} '
+            f'({commits[0][0][:10]}) has no "{MERGED_UNTIL} {MAIN_REPO}" '
+            'trailer (squashed?); give the starting point with --since')
     until: Dict[str, datetime.datetime] = {}
     for _, _, _, message in commits:
         for repo, when in parse_merged_until(message).items():
             until.setdefault(repo, when)
-    if MAIN_REPO in repos and MAIN_REPO not in until:
-        raise SystemExit(
-            f'error: no "{COLLECT_PREFIX}" commit on {ref} has a '
-            f'"{MERGED_UNTIL} {MAIN_REPO}" trailer (squashed?); give the '
-            'starting point with --since')
     sha, date = commits[0][0], commits[0][1]
     for repo in repos:
         if repo not in until:

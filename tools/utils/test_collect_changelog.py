@@ -267,6 +267,17 @@ class EditorialContentTest(unittest.TestCase):
             '### Plugins', '', '- ReadFFmpeg: e (openfx-io#5).',
             '- WriteFFmpeg: c (openfx-io#3).', '']))
 
+    def test_subheading_right_after_an_item(self):
+        text = '\n'.join([
+            '## Version 3', '', '### Plugins', '',
+            '- WriteFFmpeg: a. (openfx-io#1)', '#### openfx-misc',
+            '- Shadertoy: b (openfx-misc#2).', '- ReadFFmpeg: c (openfx-io#3).',
+            '', '### Changes', '', '- Python: a. #1', '', '#### Sub', '',
+            '- Viewer: b. #2', ''])
+        new, _, kept = cc.insert_entries(text, [])
+        self.assertEqual(kept, ['Plugins', 'Changes'])
+        self.assertEqual(new, text)
+
 
 class LastCollectionTest(unittest.TestCase):
 
@@ -298,6 +309,21 @@ class LastCollectionTest(unittest.TestCase):
             'NatronGitHub/openfx-io': cc.to_utc('2026-11-25T08:00:00Z'),
             'NatronGitHub/openfx-gmic': cc.to_utc('2026-11-30T10:00:00Z'),
         })
+
+    def test_newest_commit_squashed_is_an_error(self):
+        saved = cc._run
+        cc._run = lambda args, **kwargs: (
+            '\x01bbb\x002026-11-30T10:00:00+00:00\x00CHANGELOG: collect '
+            '#3..#9 (#1900)\x00CHANGELOG: collect #3..#9 (#1900)\n'
+            '\x01aaa\x002026-11-25T10:00:00+00:00\x00CHANGELOG: collect '
+            '#1..#2\x00CHANGELOG: collect #1..#2\n\nMerged-until: '
+            'NatronGitHub/Natron 2026-11-25T10:00:00Z\n')
+        try:
+            with self.assertRaises(SystemExit):
+                cc.last_collection('origin/RB-2.6', 'CHANGELOG.md',
+                                   [cc.MAIN_REPO])
+        finally:
+            cc._run = saved
 
     def test_no_main_trailer_is_an_error(self):
         saved = cc._run
