@@ -48,6 +48,11 @@ patch.pre_args      -p1
 
 build.target-append doc
 
+# Never build SeExprEditor (it needs Qt4, from qt4-mac if installed): its
+# SeExprSpecParser.y is not patched for flex >= 2.7.8 (see
+# 0008-seexpr-2.11-flex-buffer-state.patch) and Natron does not use it.
+configure.args-append -DCMAKE_DISABLE_FIND_PACKAGE_Qt4=ON
+
 # SeExpr 2.11 gates the x86-only flag -msse4.1 behind USE_SSE41 (see
 # 0001-seexpr-2.11-fix-cxxflags.patch). Force it off on non-x86 archs so the
 # arm64 build does not receive -msse4.1 ("unsupported option" from clang).
