@@ -43,7 +43,9 @@
 //     and sets "preset" back to 0;
 //   - "uiOnly" has kOfxParamPropEvaluateOnChange=0, "noUndo" has kOfxParamPropCanUndo=0;
 //   - "double2DRanged" has a range (kOfxParamPropMin/Max 0 to 1) but no display range
-//     (Tests/OfxParamRange_Test.cpp).
+//     (Tests/OfxParamRange_Test.cpp);
+//   - "intRect_position"/"intRect_size" and "doubleRect_position"/"doubleRect_size" are Natron rectangles
+//     (kNatronOfxParamPropTypeRectangle): each pair is one 4-dimensional knob.
 // - net.natron.test.Generator: a generator that fills its output with 0.5, with the pixel aspect ratio of
 //   its "par" parameter (it supports multiple clip PARs, so that it may set its output PAR, and "par" is a
 //   clip preferences slave parameter). If its "fps" parameter (also a slave parameter) is positive, it sets
@@ -101,6 +103,7 @@
 #include <ofxGPURender.h>
 #include <ofxInteract.h>
 #include <ofxMessage.h>
+#include <ofxNatron.h> // kNatronOfxParamPropTypeRectangle
 #include <ofxParam.h>
 #include <ofxParametricParam.h>
 #include <ofxProperty.h>
@@ -679,6 +682,16 @@ paramsDescribeInContext(OfxImageEffectHandle effect)
     for (int i = 0; i < 2; ++i) {
         gPropSuite->propSetDouble(props, kOfxParamPropMin, i, 0.);
         gPropSuite->propSetDouble(props, kOfxParamPropMax, i, 1.);
+    }
+    const char* const rectTypes[][2] = { { kOfxParamTypeInteger2D, "intRect" }, { kOfxParamTypeDouble2D, "doubleRect" } };
+    for (const auto& rect : rectTypes) {
+        const char* const parts[] = { "_position", "_size" };
+        for (int i = 0; i < 2; ++i) {
+            if (paramsDefine(paramSet, rect[0], std::string(rect[1]) + parts[i], &props) != kOfxStatOK) {
+                return kOfxStatFailed;
+            }
+            gPropSuite->propSetInt(props, kNatronOfxParamPropTypeRectangle, 0, i + 1);
+        }
     }
 
     return kOfxStatOK;

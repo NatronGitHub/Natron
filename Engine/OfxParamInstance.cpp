@@ -3460,9 +3460,14 @@ OfxInteger2DInstance::copyFrom(const OFX::Host::Param::Instance &instance,
                                OfxTime offset,
                                const OfxRangeD* range)
 {
-    const OfxParamToKnob & other = dynamic_cast<const OfxParamToKnob &>(instance);
+    const OfxInteger2DInstance* other = dynamic_cast<const OfxInteger2DInstance*>(&instance);
 
-    return OfxKeyFrame::copyFrom(instance, *this, other.getKnob(), getKnob(), offset, range);
+    if (!other) {
+        return kOfxStatErrBadHandle;
+    }
+
+    // as OfxDouble2DInstance::copyFrom(): the knob of a rectangle holds its position and its size
+    return OfxKeyFrame::copyFrom(instance, *this, other->getKnob(), getKnob(), offset, range, other->_startIndex, _startIndex, 2);
 }
 
 ////////////////////////// OfxDouble3DInstance /////////////////////////////////////////////////

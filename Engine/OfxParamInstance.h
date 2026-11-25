@@ -747,6 +747,14 @@ public:
     virtual KnobIPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
+protected:
+
+    virtual void getKnobDimensions(int* first, int* count) const OVERRIDE FINAL
+    {
+        *first = _startIndex;
+        *count = 2;
+    }
+
 private:
 
     virtual bool hasDoubleMinMaxProps() const OVERRIDE FINAL { return false; }
