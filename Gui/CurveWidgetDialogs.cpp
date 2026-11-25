@@ -34,8 +34,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QCoreApplication>
 #include <QApplication>
-#include <QHBoxLayout> // in QtGui on Qt4, in QtWidgets on Qt5
-#include <QVBoxLayout> // in QtGui on Qt4, in QtWidgets on Qt5
+#include <QHBoxLayout> // QtWidgets
+#include <QVBoxLayout> // QtWidgets
 #include <QThread>
 #include <QSettings>
 #include <QDebug>
@@ -217,6 +217,9 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
 
 ImportExportCurveDialog::~ImportExportCurveDialog()
 {
+    if ( appPTR->isTestMode() ) {
+        return; // a test does not change the user's dialog state
+    }
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
     if (_isExportDialog) {

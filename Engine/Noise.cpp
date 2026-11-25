@@ -162,7 +162,9 @@ template <int d_in, int d_out, class T>
 void CellNoise(const T* in, T* out) {
     uint32_t index[d_in];
     int dim = 0;
-    for (int k = 0; k < d_in; k++) index[k] = uint32_t(floorSSE(in[k]));
+    // convert through int64_t: converting a negative double to uint32_t is undefined
+    // (x86_64 wraps it, arm64 clamps it to 0)
+    for (int k = 0; k < d_in; k++) index[k] = uint32_t(int64_t(floorSSE(in[k])));
     while (1) {
         out[dim] = hashReduce<d_in>(index) * (1.0 / 0xffffffffu);
         if (++dim >= d_out) break;

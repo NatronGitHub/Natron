@@ -935,17 +935,28 @@ public:
     void unlock(const ImagePtr& entry);
 
 
-    /**
-     * @brief DO NOT EVER USE THIS FUNCTION. This is provided for compatibility with plug-ins that
-     * do not respect the OpenFX specification.
-     **/
-    ImagePtr getImageBeingRendered(double time, unsigned int mipmapLevel, ViewIdx view);
-
     void beginInputEdition();
 
     void endInputEdition(bool triggerRender);
 
     void onInputChanged(int inputNb, bool isInputA = true);
+
+    /**
+     * @brief Called once on each node of a project that was just loaded, when all its nodes, links and input
+     * connections are restored and the clip preferences are computed, before the first render: calls
+     * EffectInstance::onInputsRestoredAfterProjectLoad() if EffectInstance::wantsInputsRestoredAfterProjectLoad(), with
+     * the render thread storage of the caller if it covers this node (see createRenderArgsForInstanceChanged()).
+     * The knob changed handlers aren't called while a project is loading: the caller records the holders whose knob
+     * values change meanwhile (the effect, and those that follow its knobs through links and expressions) with a
+     * KnobHolder::ValueChangesRecorder, and gives their nodes a new age and refreshes their input related data.
+     **/
+    void onInputsRestoredAfterProjectLoad();
+
+    /**
+     * @brief A render thread storage on the tree of this node, at the current frame, as for an instance changed action
+     * (see onInputChanged()): set while the returned object exists.
+     **/
+    ParallelRenderArgsSetterPtr createRenderArgsForInstanceChanged();
 
     bool onEffectKnobValueChanged(KnobI* what, ValueChangedReasonEnum reason);
 
@@ -1560,8 +1571,8 @@ private:
 
 
     /**
-     * @brief If the node is an input of this node, set ok to true, otherwise
-     * calls this function recursively on all inputs.
+     * @brief Set ok to true if input is upstream of this node: every upstream
+     * node is visited once.
      **/
     void isNodeUpstream(const Node* input, bool* ok) const;
 

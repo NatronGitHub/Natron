@@ -30,6 +30,7 @@
 #include <sstream> // stringstream
 
 #include "Engine/AppInstance.h"
+#include "Engine/GraphDepthGuard.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/ViewIdx.h"
@@ -142,6 +143,10 @@ ActionsCache::setIdentityResult(U64 hash,
                                 ViewIdx inputView,
                                 double identityTime)
 {
+    if ( GraphDepthGuard::hasFailed() ) {
+        // computed while the graph was too deep (#1440): it may be wrong, never cache it
+        return;
+    }
     QMutexLocker l(&_cacheMutex);
     ActionsCacheInstance & cache = getOrCreateActionCache(hash);
     ActionKey key;
@@ -194,6 +199,10 @@ ActionsCache::setComponentsNeededResults(U64 hash, double time, ViewIdx view, co
                                          bool processAll,
                                          const std::list<ImagePlaneDesc>& passThroughPlanes, int passThroughInputNb, ViewIdx passThroughView, double passThroughTime)
 {
+    if ( GraphDepthGuard::hasFailed() ) {
+        // computed while the graph was too deep (#1440): it may be wrong, never cache it
+        return;
+    }
     QMutexLocker l(&_cacheMutex);
     ActionsCacheInstance & cache = getOrCreateActionCache(hash);
     ActionKey key;
@@ -250,6 +259,10 @@ ActionsCache::setRoDResult(U64 hash,
                            unsigned int mipmapLevel,
                            const RectD & rod)
 {
+    if ( GraphDepthGuard::hasFailed() ) {
+        // computed while the graph was too deep (#1440): it may be wrong, never cache it
+        return;
+    }
     QMutexLocker l(&_cacheMutex);
     ActionsCacheInstance & cache = getOrCreateActionCache(hash);
     ActionKey key;
@@ -298,6 +311,10 @@ ActionsCache::setFramesNeededResult(U64 hash,
                                     unsigned int mipmapLevel,
                                     const FramesNeededMap & framesNeeded)
 {
+    if ( GraphDepthGuard::hasFailed() ) {
+        // computed while the graph was too deep (#1440): it may be wrong, never cache it
+        return;
+    }
     QMutexLocker l(&_cacheMutex);
     ActionsCacheInstance & cache = getOrCreateActionCache(hash);
     ActionKey key;
@@ -333,6 +350,10 @@ ActionsCache::setTimeDomainResult(U64 hash,
                                   double first,
                                   double last)
 {
+    if ( GraphDepthGuard::hasFailed() ) {
+        // computed while the graph was too deep (#1440): it may be wrong, never cache it
+        return;
+    }
     QMutexLocker l(&_cacheMutex);
     ActionsCacheInstance & cache = getOrCreateActionCache(hash);
 

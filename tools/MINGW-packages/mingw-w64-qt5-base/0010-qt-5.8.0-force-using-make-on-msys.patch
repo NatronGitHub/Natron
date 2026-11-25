@@ -1,0 +1,16 @@
+--- a/mkspecs/features/configure_base.prf	2019-06-12 23:59:14.000000000 +0300
++++ b/mkspecs/features/configure_base.prf	2019-06-15 15:19:20.285137900 +0300
+@@ -10,10 +10,10 @@
+ !isEmpty(QMAKE_MAKE) {
+     # We were called recursively. Use the same make.
+ } else: if(equals(MAKEFILE_GENERATOR, UNIX)|equals(MAKEFILE_GENERATOR, MINGW)) {
+-    !equals(QMAKE_HOST.os, Windows): \
+-        QMAKE_MAKE = make
+-    else: \
++    equals(QMAKE_HOST.os, Windows):isEmpty(QMAKE_SH): \
+         QMAKE_MAKE = mingw32-make
++    else: \
++        QMAKE_MAKE = make
+ } else: if(equals(MAKEFILE_GENERATOR, MSVC.NET)|equals(MAKEFILE_GENERATOR, MSBUILD)) {
+     QMAKE_MAKE = nmake
+ } else {

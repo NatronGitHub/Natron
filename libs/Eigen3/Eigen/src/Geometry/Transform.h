@@ -985,7 +985,10 @@ Transform<Scalar,Dim,Mode,Options>::preshear(const Scalar& sx, const Scalar& sy)
 {
   EIGEN_STATIC_ASSERT(int(Dim)==2, YOU_MADE_A_PROGRAMMING_MISTAKE)
   EIGEN_STATIC_ASSERT(Mode!=int(Isometry), THIS_METHOD_IS_ONLY_FOR_SPECIFIC_TRANSFORMATIONS)
-  m_matrix.template block<Dim,HDim>(0,0) = LinearMatrixType(1, sx, sy, 1) * m_matrix.template block<Dim,HDim>(0,0);
+  LinearMatrixType shear = LinearMatrixType::Identity(2, 2);
+  shear.coeffRef(0, 1) = sy;
+  shear.coeffRef(1, 0) = sx;
+  m_matrix.template block<Dim, HDim>(0, 0) = shear * m_matrix.template block<Dim, HDim>(0, 0);
   return *this;
 }
 

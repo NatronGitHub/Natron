@@ -17,7 +17,9 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-cmake_minimum_required(VERSION 3.16.7)
+# 3.21: libs/OpenFX (added below with add_subdirectory()) requires it (NatronGitHub/openfx#196). The
+# policies are those of CMake 3.31, as in libs/OpenFX.
+cmake_minimum_required(VERSION 3.21...3.31)
 
 # The version is the one of Global/Macros.h (NATRON_VERSION_MAJOR/MINOR/REVISION), so that the
 # macOS Info.plist (CFBundleShortVersionString, CFBundleVersion) can't disagree with the
@@ -181,8 +183,13 @@ set(NATRON_CUSTOM_BUILD_USER_NAME "${BUILD_USER_NAME}" CACHE STRING
     "for a CUSTOM build, the name shown instead of the version (\"Natron for <name>\")")
 
 # Build options (qmake: CONFIG+=openmp, noassertions, fast, addresssanitizer, threadsanitizer, coverage).
+# libs.pri enables OpenMP by default with the qmake specs that match *g++*, except on macOS: GCC
+# (linux-g++, win32-g++) and MSYS2's clang (win32-clang-g++), but not linux-clang or freebsd-clang.
 if(NOT APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    # libs.pri enables OpenMP by default only with GCC on systems other than macOS.
+    set(_natron_openmp_default ON)
+elseif(WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # win32-clang-g++: MSYS2's clang environments (CLANGARM64, #1494) have LLVM's libomp
+    # (llvm-openmp), as the GCC environments have libgomp.
     set(_natron_openmp_default ON)
 else()
     set(_natron_openmp_default OFF)
@@ -206,17 +213,19 @@ set(NATRON_SANITIZE "" CACHE STRING
     "sanitizers passed to -fsanitize=, comma-separated (e.g. address, thread, undefined, or address,undefined); use with a Debug or RelWithDebInfo build")
 option(NATRON_COVERAGE "instrument for code coverage with --coverage (GCC/Clang); use with a Debug build" OFF)
 
+# DEBUG in the Debug configuration, QT_NO_DEBUG_OUTPUT in the others. Generator expressions, so that
+# multi-configuration generators (Xcode, Ninja Multi-Config) follow the configuration being built,
+# which CMAKE_BUILD_TYPE doesn't give them (#1638).
+add_compile_definitions($<$<CONFIG:Debug>:DEBUG> $<$<NOT:$<CONFIG:Debug>>:QT_NO_DEBUG_OUTPUT>)
+if(WIN32)
+    # Debug builds need minimal optimizations to avoid excessive link times and link errors related to Eigen.
+    add_compile_options($<$<CONFIG:Debug>:-O>)
+endif()
+# Only for the Windows settings below, which need it at configure time: Natron is built on Windows
+# with MSYS2 (Makefiles or Ninja), single-configuration generators that set CMAKE_BUILD_TYPE.
 set(IS_DEBUG_BUILD OFF)
 if(CMAKE_BUILD_TYPE MATCHES "^(debug|Debug|DEBUG)$")
     set(IS_DEBUG_BUILD ON)
-    add_definitions(-DDEBUG)
-
-    if(WIN32)
-        # Debug builds need minimal optimizations to avoid excessive link times and link errors related to Eigen.
-        add_compile_options(-O)
-    endif()
-else()
-    add_definitions(-DQT_NO_DEBUG_OUTPUT)
 endif()
 
 if(NOT DEFINED CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
@@ -275,6 +284,13 @@ set(QT_COMPONENTS Core Gui Network Widgets Concurrent)
 if(NATRON_QT6)
     list(APPEND QT_COMPONENTS OpenGLWidgets)
     find_package(Qt6 6.3 CONFIG REQUIRED COMPONENTS ${QT_COMPONENTS})
+    # Shiboken6Config.cmake looks for Python with find_package(Python), not Python3, so it
+    # ignores Python3_EXECUTABLE and may pick another Python (on macOS, Xcode's Python 3.9,
+    # which shiboken6 rejects). Use the Python found above unless Python_EXECUTABLE is set.
+    if(NOT DEFINED Python_EXECUTABLE AND Python3_EXECUTABLE)
+        set(Python_EXECUTABLE "${Python3_EXECUTABLE}")
+    endif()
+    # No CMP0148 counterpart of the Qt5 block below: Shiboken6Config.cmake uses FindPython, not FindPythonInterp.
     find_package(Shiboken6 6.3 CONFIG REQUIRED COMPONENTS libshiboken6)
     find_package(Shiboken6Tools 6.3 CONFIG REQUIRED COMPONENTS shiboken6)
     find_package(PySide6 6.3 CONFIG REQUIRED COMPONENTS pyside6)
@@ -291,8 +307,16 @@ if(NATRON_QT6)
     set(PYSIDE_LIB PySide6::pyside6)
 else()
     find_package(Qt5 5.15 CONFIG REQUIRED COMPONENTS ${QT_COMPONENTS})
+    # Shiboken2 5.15's CMake config uses FindPythonInterp/FindPythonLibs (CMP0148). RB-2.6 only: remove in RB-2.7.
+    if(POLICY CMP0148)
+        cmake_policy(PUSH)
+        cmake_policy(SET CMP0148 OLD)
+    endif()
     find_package(Shiboken2 5.15 CONFIG QUIET COMPONENTS libshiboken2 shiboken2)
     find_package(PySide2 5.15 CONFIG QUIET COMPONENTS pyside2)
+    if(POLICY CMP0148)
+        cmake_policy(POP)
+    endif()
     if(NOT Shiboken2_FOUND AND NOT PySide2_FOUND)
         # No CMake config files (PySide2 built with setup.py, e.g. MacPorts' py*-pyside2,
         # or the download.qt.io wheels): locate them from the Python installation.
@@ -317,24 +341,22 @@ endif()
 
 # With Qt frameworks (macOS), the Qt include directories are <prefix>/lib/QtCore.framework[/Headers],
 # so the shiboken parser needs -F<prefix>/lib to resolve <QtCore/qnamespace.h> and the like.
-# Qt5 only for now: the Qt6 build is not tested with Qt frameworks.
+# Both Qt5 and Qt6 (e.g. MacPorts' qt5 and qt6 ports, the official macOS Qt builds) use frameworks.
 set(SHIBOKEN_QT_FRAMEWORK_ARGS)
-if(NOT NATRON_QT6)
-    foreach(dir IN LISTS QTCORE_INCLUDE_DIRS QTGUI_INCLUDE_DIRS QTWIDGETS_INCLUDE_DIRS)
-        if(dir MATCHES "^(.*)/[^/]+\\.framework(/Headers)?$")
-            list(APPEND SHIBOKEN_QT_FRAMEWORK_ARGS "-F${CMAKE_MATCH_1}")
-        endif()
-    endforeach()
-    if(SHIBOKEN_QT_FRAMEWORK_ARGS)
-        list(REMOVE_DUPLICATES SHIBOKEN_QT_FRAMEWORK_ARGS)
+foreach(dir IN LISTS QTCORE_INCLUDE_DIRS QTGUI_INCLUDE_DIRS QTWIDGETS_INCLUDE_DIRS)
+    if(dir MATCHES "^(.*)/[^/]+\\.framework(/Headers)?$")
+        list(APPEND SHIBOKEN_QT_FRAMEWORK_ARGS "-F${CMAKE_MATCH_1}")
     endif()
+endforeach()
+if(SHIBOKEN_QT_FRAMEWORK_ARGS)
+    list(REMOVE_DUPLICATES SHIBOKEN_QT_FRAMEWORK_ARGS)
 endif()
 
 if(IS_DEBUG_BUILD AND WIN32)
     # Remove NDEBUG from Shiboken INTERFACE_COMPILE_DEFINITIONS so it is not inherited in debug builds.
     get_property(SHIBOKEN_DEFS TARGET ${SHIBOKEN_LIB} PROPERTY INTERFACE_COMPILE_DEFINITIONS)
     list(REMOVE_ITEM SHIBOKEN_DEFS NDEBUG)
-    set_property(TARGET ${SHIBOKEN_LIB} PROPERTY INTERFACE_COMPILE_DEFINITIONS SHIBOKEN_DEFS)
+    set_property(TARGET ${SHIBOKEN_LIB} PROPERTY INTERFACE_COMPILE_DEFINITIONS ${SHIBOKEN_DEFS})
 endif()
 
 # shiboken6 is built with FORCE_LIMITED_API by default, and its imported
@@ -479,12 +501,14 @@ set(CMAKE_AUTORCC ON)
 # thread of Linux and macOS programs (8 MB). Renders can run on the main thread
 # (QFuture::waitForFinished() runs a queued QtConcurrent task on the waiting thread), as well as
 # GUI-thread recursions such as getRegionOfDefinition() from the viewer, so with a deep node graph the
-# main thread can overflow long before the render threads (NATRON_RENDER_THREAD_STACK_SIZE in
-# Engine/ThreadPool.h: 4 MB on Windows) (#1440).
+# main thread can overflow long before the render threads (#1440).
 # The reserve is only address space: the main thread commits its stack pages as it touches them (the
-# commit size of the header stays at its default, 4 KB), unlike threads created with a stack size, whose
-# stack is committed at creation. It is also the default reserve of the threads created without a stack
-# size, which commit their stack in the same way.
+# commit size of the header stays at its default, 4 KB). It is also the reserve of the other threads:
+# Qt passes the stack size of a thread (NATRON_RENDER_THREAD_STACK_SIZE in Engine/ThreadPool.h, 4 MB on
+# Windows, for the threads that render) to CreateThread() as the size committed at creation, and a
+# thread whose commit is smaller than the executable's reserve reserves that, so the threads that
+# render reserve 8 MB and commit 4 MB when they start. Tests gets it as a compile definition
+# (DeepGraphRender.StackBounds).
 set(NATRON_MAIN_THREAD_STACK_SIZE 8388608) # 8 MB
 function(natron_set_main_thread_stack_size target)
     if(WIN32)
@@ -514,6 +538,8 @@ set(OFX_SUPPORTS_OPENGLRENDER ON)
 set(OFX_SUPPORTS_MULTITHREAD ON)
 set(OFX_SUPPORTS_DIALOG ON)
 set(OFX_SUPPORTS_PARAMETRIC ON)
+# openfx's HostSupport Python bindings (HostSupport/python, which needs nanobind): not used by Natron
+set(OFX_PYTHON_BINDINGS OFF)
 add_subdirectory(libs/OpenFX EXCLUDE_FROM_ALL)
 target_sources(OfxHost PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/libs/OpenFX_extensions/ofxhParametricParam.cpp)
 target_include_directories(OfxHost PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libs/OpenFX_extensions>)

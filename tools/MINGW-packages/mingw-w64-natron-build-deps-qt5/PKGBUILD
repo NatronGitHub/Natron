@@ -6,7 +6,7 @@ pkgrel=1
 pkgdesc="Minimal package set for building Natron installer with QT5"
 url="https://natrongithub.github.io/"
 arch=("any")
-mingw_arch=('ucrt64')
+mingw_arch=('ucrt64' 'clangarm64')
 license=("GPL")
 depends=(
   "git"

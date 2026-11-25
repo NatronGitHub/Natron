@@ -441,8 +441,13 @@ PyPanel::PyPanel(const QString& scriptName,
 
 PyPanel::~PyPanel()
 {
-    getGui()->unregisterTab(this);
-    getGui()->unregisterPyPanel(this);
+    // null once the Gui is closing (PanelWidget::notifyGuiClosingPublic()), e.g. when the Gui
+    // deletes the panel (#1554)
+    Gui* gui = getGui();
+    if (gui) {
+        gui->unregisterTab(this);
+        gui->unregisterPyPanel(this);
+    }
 }
 
 QString

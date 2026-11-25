@@ -113,7 +113,7 @@ template<typename Derived> class SparseMatrixBase
                         Transpose<const Derived>
                      >::type AdjointReturnType;
     typedef Transpose<Derived> TransposeReturnType;
-    typedef typename internal::add_const<Transpose<const Derived> >::type ConstTransposeReturnType;
+    typedef Transpose<const Derived> ConstTransposeReturnType;
 
     // FIXME storage order do not match evaluator storage order
     typedef SparseMatrix<Scalar, Flags&RowMajorBit ? RowMajor : ColMajor, StorageIndex> PlainObject;
@@ -214,7 +214,7 @@ template<typename Derived> class SparseMatrixBase
     inline void assignGeneric(const OtherDerived& other);
 
   public:
-
+#ifndef EIGEN_NO_IO
     friend std::ostream & operator << (std::ostream & s, const SparseMatrixBase& m)
     {
       typedef typename Derived::Nested Nested;
@@ -263,6 +263,7 @@ template<typename Derived> class SparseMatrixBase
       }
       return s;
     }
+#endif
 
     template<typename OtherDerived>
     Derived& operator+=(const SparseMatrixBase<OtherDerived>& other);

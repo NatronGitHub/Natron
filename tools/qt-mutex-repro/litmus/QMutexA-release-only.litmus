@@ -1,0 +1,17 @@
+AArch64 QMutexA-release-only
+"Race A, (4) release only: (5) still relaxed"
+{
+x=1; y=0;
+0:X1=x; 0:X2=y;
+1:X1=x; 1:X2=y;
+}
+ P0                | P1 ;
+ MOV W5,#2         | LDAR W0,[X2] ;
+ LDADDL W5,W6,[X2] | MOV W10,W0 ;
+ MOV W7,#1         | ADD W11,W0,#1 ;
+ MOV W3,#0         | CAS W10,W11,[X2] ;
+ CASL W7,W3,[X1]   | LDAR W12,[X1] ;
+ MOV W8,#2         |  ;
+ MOV W9,#3         |  ;
+ CASL W8,W9,[X2]   |  ;
+exists (0:X6=0 /\ 1:X0=3 /\ 1:X10=3 /\ 1:X12=1)

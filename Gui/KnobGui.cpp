@@ -35,6 +35,7 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/ViewIdx.h"
 
+#include "Gui/GuiTest.h"
 #include "Gui/KnobGuiPrivate.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiApplicationManager.h"
@@ -229,6 +230,9 @@ KnobGui::createGUI(QWidget* fieldContainer,
         label->setToolTip( toolTip() );
     }
 
+    // the widgets of the param are the ones it adds to the layout (see nameParamWidgets())
+    const int firstLayoutItem = layout->count();
+
     // Parmetric knobs use the customInteract to actually draw something on top of the background
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>( knob.get() );
     OfxParamOverlayInteractPtr customInteract = knob->getCustomInteract();
@@ -243,6 +247,29 @@ KnobGui::createGUI(QWidget* fieldContainer,
 
 
     _imp->widgetCreated = true;
+
+    // Stable names, for PySide code, stylesheets, accessibility and the GUI tests, unique in the panel:
+    // the first widget of the param that has no name gets the param script name ("dim-0"... are used by the
+    // right-click menu), and all of them get the "paramName" property. A row is named "<param>Row", after
+    // its first param.
+    const QString paramName = QString::fromUtf8( knob->getName().c_str() );
+    if ( isOnNewLine && fieldContainer && fieldContainer->objectName().isEmpty() ) {
+        fieldContainer->setObjectName( paramName + QString::fromUtf8("Row") );
+    }
+    bool named = false;
+    for (int i = firstLayoutItem; i < layout->count(); ++i) {
+        QWidget* w = layout->itemAt(i) ? layout->itemAt(i)->widget() : 0;
+        if ( w && (w != label) && (w != _imp->warningIndicator) ) {
+            w->setProperty("paramName", paramName);
+            if ( !named && w->objectName().isEmpty() ) {
+                w->setObjectName(paramName);
+                named = true;
+            }
+        }
+    }
+    if (label) {
+        label->setProperty("paramName", paramName);
+    }
 
     for (int i = 0; i < knob->getDimension(); ++i) {
         onExprChanged(i);
@@ -326,7 +353,7 @@ KnobGui::showRightClickMenuForDimension(const QPoint &,
 
     createAnimationMenu(_imp->copyRightClickMenu, dimension);
     addRightClickMenuEntries(_imp->copyRightClickMenu);
-    _imp->copyRightClickMenu->exec( QCursor::pos() );
+    _imp->copyRightClickMenu->exec( GuiTest::cursorPos() );
 } // showRightClickMenuForDimension
 
 Menu*

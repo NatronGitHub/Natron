@@ -8,19 +8,22 @@ name: Tests
 #   (and by workflow_dispatch runs), so that pull requests restore the base
 #   branch's cache but never evict it with their own.
 # - Debug (-O0 -g; -O1 -g on Windows, see CMakeLists.txt) and Release
-#   (-O3 -DNDEBUG): nightly, on tags, and on workflow_dispatch unless
+#   (-O3 -DNDEBUG): weekly, on tags, and on workflow_dispatch unless
 #   "fast" is chosen. No compiler cache.
 on:
   workflow_dispatch:
     inputs:
       build:
-        description: 'full: Debug and Release builds (as nightly); fast: the pull-request build'
+        description: 'full: Debug and Release builds (as weekly); fast: the pull-request build'
         type: choice
         options: [full, fast]
         default: full
-  # nightly Debug and Release builds of the default branch, skipped if it didn't change in the last 25 hours
+  # weekly (Sunday 03:17 UTC, after the plug-in repos' Saturday runs) Debug and Release builds of the
+  # default branch. Never skipped, even if the branch didn't change: every job uses rolling toolchains
+  # (MSYS2 and pacman -Syu, apt on the ubuntu-24.04 image, the runner's Xcode, MacPorts upgrades on a
+  # cache miss) and downloads openfx-io's natron_testing bundles, none of them pinned.
   schedule:
-  - cron: '17 3 * * *'
+  - cron: '17 3 * * 0'
   # one run per change: push only on the main and release branches and on tags,
   # feature branches run through their pull request
   push:
@@ -51,11 +54,6 @@ jobs:
   # This is the RB-2.7 Qt6 build log to watch after each forward merge of RB-2.6 (#1469,
   # Documentation/source/maintainers/qt6-migration.rst); the fixes go to RB-2.6.
   unix_test:
-    needs: changes
-    if: >-
-      !cancelled() && (
-      (github.event_name == 'schedule' && needs.changes.outputs.changed == 'true') ||
-      (github.event_name != 'schedule' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)))
     timeout-minutes: 180
     name: Test ${{ matrix.os }} Qt6 Python ${{ matrix.python-version }} ${{ matrix.config }}
     runs-on: ${{ matrix.os }}
@@ -73,6 +71,10 @@ jobs:
       CCACHE_DIR: ${{ github.workspace }}/.ccache
       CCACHE_BASEDIR: ${{ github.workspace }}
       CCACHE_MAXSIZE: 1500M
+      # The GUI tests (Tests/gui, ctest label gui) run under Xvfb (in CI they are skipped unless
+      # NATRON_GUI_TESTS=1): the interactive ones too, as they cannot take a user's keyboard and mouse there.
+      NATRON_GUI_TESTS: '1'
+      NATRON_TEST_INTERACTIVE: '1'
 
     strategy:
       fail-fast: false
@@ -83,7 +85,7 @@ jobs:
         # Python; a CI-only exception, release builds use 3.13). Ubuntu 24.04 has no PySide6.
         os: [ubuntu-26.04]
         python-version: ['3.14']
-        # Fast on pull requests and branch pushes; Debug and Release nightly, on tags and by hand
+        # Fast on pull requests and branch pushes; Debug and Release weekly, on tags and by hand
         config: ${{ fromJSON((github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.build != 'fast')) && '["Debug","Release"]' || '["Fast"]') }}
         include:
         - os: ubuntu-26.04
@@ -111,7 +113,8 @@ jobs:
             python3-dev shiboken6 libshiboken6-dev libpyside6-dev \
             python3-pyside6.qtcore python3-pyside6.qtgui python3-pyside6.qtwidgets python3-qtpy \
             libwayland-dev libwayland-client0 libwayland-egl1 \
-            extra-cmake-modules clang llvm ccache xvfb wget unzip
+            extra-cmake-modules clang llvm ccache xvfb wget unzip \
+            libgl1-mesa-dri mesa-utils x11-utils
           # Fail here rather than in CMake if a package lacks what the Qt6 build needs.
           command -v shiboken6
           ls /usr/lib/x86_64-linux-gnu/cmake/Shiboken6/Shiboken6Config.cmake \
@@ -125,6 +128,13 @@ jobs:
           ls "$(llvm-config --libdir)"/clang/*/include/stddef.h
           ldd /usr/bin/shiboken6 | grep -i clang || true
           python3 -c 'import shiboken6, PySide6, PySide6.QtCore; print("PySide6", PySide6.__version__, "Qt", PySide6.QtCore.qVersion())'
+
+      # The GUI tests need an OpenGL context (Mesa llvmpipe under Xvfb, see #536); without one,
+      # they are skipped (exit status 77), not failed. This step only explains that in the log.
+      - name: Check GLX under Xvfb
+        run: |
+          xdpyinfo | grep -E "dimensions|depths" || true
+          glxinfo -B || echo "::warning::no GLX context under Xvfb: the GUI tests will be skipped"
 
       - name: Download OpenColorIO-Configs
         run: |
@@ -191,7 +201,9 @@ jobs:
         continue-on-error: true
         run: |
           cd build
-          OFX_PLUGIN_PATH=$PWD/../Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
+          # the GUI tests (label gui) run in the Fast and Release builds, not twice in the weekly Debug one
+          gui=(); [ "$CI_CONFIG" = Debug ] && gui=(-LE gui)
+          OFX_PLUGIN_PATH=$PWD/../Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V --no-tests=error "${gui[@]}"
 
       - name: Upload ${{ matrix.os }} ${{ matrix.config }} Test Log artifacts
         if: always()
@@ -205,13 +217,9 @@ jobs:
         run: exit 1
 
   win-test:
-    needs: changes
-    # Disabled on RB-2.7 until the Linux Qt6 build passes (maintainer, 2026-11-20); re-enable with Qt6
-    # by removing the leading "false &&".
-    if: >-
-      false && !cancelled() && (
-      (github.event_name == 'schedule' && needs.changes.outputs.changed == 'true') ||
-      (github.event_name != 'schedule' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)))
+    # Disabled on RB-2.7 until it builds with Qt6 (maintainer, 2026-11-20); re-enable it by removing
+    # the next line. (RB-2.6 runs this job always, drafts included.)
+    if: false
     timeout-minutes: 240
     name: Test ${{ matrix.os }} UCRT64 Python ${{ matrix.python-version }} ${{ matrix.config }}
     runs-on: ${{ matrix.os }}
@@ -235,7 +243,7 @@ jobs:
       matrix:
         os: [windows-latest]
         python-version: ['3.14']
-        # Fast on pull requests and branch pushes; Debug and Release nightly, on tags and by hand
+        # Fast on pull requests and branch pushes; Debug and Release weekly, on tags and by hand
         config: ${{ fromJSON((github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.build != 'fast')) && '["Debug","Release"]' || '["Fast"]') }}
     steps:
       - name: Checkout branch
@@ -336,9 +344,13 @@ jobs:
         run: |
           cd build
 
-          mkdir Plugins && cd Plugins
+          # build/Plugins is Natron's own (natron_convert_project.py, #1586): unpack the OFX
+          # plug-ins next to it, and fail if a step fails, so that ctest never runs from the
+          # wrong directory and finds no tests (it then exits 0).
+          set -e
+          mkdir -p ofx-plugins && cd ofx-plugins
           wget https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-windows_ucrt64-testing.zip
-          unzip openfx-io-build-windows_ucrt64-testing.zip
+          unzip -q openfx-io-build-windows_ucrt64-testing.zip
           cd ..
 
           # MSYS2's Python (>= 3.11) loads extension modules with
@@ -348,7 +360,7 @@ jobs:
           # so lib-dynload/binascii.pyd (needed by zipfile, imported by shiboken2)
           # cannot find zlib1.dll (#1147). PYTHONLEGACYWINDOWSDLLLOADING=1
           # (an MSYS2 Python extension) restores the PATH search.
-          PYTHONLEGACYWINDOWSDLLLOADING=1 PYTHONHOME=${MINGW_PREFIX} OFX_PLUGIN_PATH=$PWD/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
+          PYTHONLEGACYWINDOWSDLLLOADING=1 PYTHONHOME=${MINGW_PREFIX} OFX_PLUGIN_PATH=$PWD/ofx-plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V --no-tests=error
 
       - name: Upload ${{ matrix.os }} ${{ matrix.config }} Test Log artifacts
         if: always()
@@ -361,40 +373,20 @@ jobs:
         if: steps.run-windows-tests.outcome == 'failure'
         run: exit 1
 
-  changes:
-    # nightly runs only: did the default branch change in the last 25 hours?
-    # Disabled on RB-2.7 with the macOS job (maintainer, 2026-11-20); re-enable it by removing the leading "false &&".
-    if: false && github.event_name == 'schedule'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    outputs:
-      changed: ${{ steps.check.outputs.changed }}
-    steps:
-      - name: Check for recent commits
-        id: check
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          since=$(date -u -d '25 hours ago' +%Y-%m-%dT%H:%M:%SZ)
-          n=$(gh api "repos/${{ github.repository }}/commits?sha=${{ github.ref_name }}&since=$since&per_page=1" --jq length)
-          echo "changed=$([ "$n" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
-
   macos-test:
     # Built with MacPorts (as the official macOS binaries), never Homebrew.
     # The Natron-only dependencies come from MacPorts binary archives; the
     # resulting /opt/local is cached, keyed on the MacPorts version, the
     # overlay (tools/MacPorts) and MACPORTS_CACHE_VERSION (bump it when the
     # port list below changes).
-    # macOS arm64 runners are scarce: run only once Linux and Windows have passed. Merging only
-    # requires Linux and Windows; this job is informative. Nightly, it runs if the branch changed,
-    # whatever the Linux and Windows results.
-    needs: [changes, unix_test, win-test]
-    # Disabled on RB-2.7 until the Linux Qt6 build passes (maintainer, 2026-11-20); re-enable with Qt6
-    # by removing the leading "false &&". (Only that line changes, so that RB-2.6's edits of this
-    # job keep forward-merging without conflicts.)
+    # macOS arm64 runners are scarce: run only once Linux and Windows have passed, and not on draft
+    # pull requests (Linux and Windows do run on drafts; macOS runs when the PR is marked ready). Merging only
+    # requires Linux and Windows; this job is informative. Weekly, it always runs, whatever the
+    # Linux and Windows results.
+    needs: [unix_test, win-test]
     if: >-
       false && !cancelled() && (
-      (github.event_name == 'schedule' && needs.changes.outputs.changed == 'true') ||
+      github.event_name == 'schedule' ||
       (github.event_name != 'schedule' && needs.unix_test.result == 'success' && needs.win-test.result == 'success' &&
        (github.event_name != 'pull_request' || !github.event.pull_request.draft)))
     name: Test macos-15 arm64 MacPorts Python 3.11 ${{ matrix.config }}
@@ -402,7 +394,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Fast on pull requests and branch pushes; Debug and Release nightly, on tags and by hand
+        # Fast on pull requests and branch pushes; Debug and Release weekly, on tags and by hand
         config: ${{ fromJSON((github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.build != 'fast')) && '["Debug","Release"]' || '["Fast"]') }}
     timeout-minutes: 360
     defaults:
@@ -568,7 +560,7 @@ jobs:
           # jobs download one), so the tests that need the IO plug-ins
           # (BaseTest.*) are skipped.
           cd build
-          GTEST_FILTER='-BaseTest.*' OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
+          GTEST_FILTER='-BaseTest.*' OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V --no-tests=error
 
       - name: Upload macOS Test Log artifacts
         if: always()

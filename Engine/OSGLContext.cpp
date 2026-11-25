@@ -33,6 +33,8 @@
 #include <QMutex>
 #include <QWaitCondition>
 
+#include "Global/FloatingPointExceptions.h"
+
 #include "Engine/AppManager.h"
 
 #ifdef __NATRON_WIN32__
@@ -286,6 +288,11 @@ OSGLContext::OSGLContext(const FramebufferConfig& pixelFormatAttrs,
                          bool coreProfile)
     : _imp( new OSGLContextPrivate() )
 {
+#ifdef DEBUG
+    // no trapped floating point exception in the OpenGL driver (e.g. Mesa's llvmpipe), see
+    // AppManager::initializeOpenGLFunctionsOnce(): the render threads trap them in debug builds
+    boost_adaptbx::floating_point::no_exception_trapping noTrap;
+#endif
     if (coreProfile) {
         // Don't bother with core profile with OpenGL < 3
         if (major < 3) {
@@ -307,6 +314,11 @@ OSGLContext::OSGLContext(const FramebufferConfig& pixelFormatAttrs,
 
 OSGLContext::~OSGLContext()
 {
+#ifdef DEBUG
+    // no trapped floating point exception in the OpenGL driver, see the constructor: the contexts are also
+    // destroyed after the event loop, where main() traps them
+    boost_adaptbx::floating_point::no_exception_trapping noTrap;
+#endif
     setContextCurrentNoRender();
     if (_imp->pboID) {
         glDeleteBuffers(1, &_imp->pboID);
@@ -315,6 +327,9 @@ OSGLContext::~OSGLContext()
         glDeleteFramebuffers(1, &_imp->fboID);
     }
     unsetCurrentContextNoRender();
+    // the platform context (e.g. glXDestroyContext()) is destroyed here, while the guard above is in scope,
+    // not after the body with the other members
+    _imp->_platformContext.reset();
 }
 
 void
@@ -628,6 +643,11 @@ OSGLContext::getOrCreateCopyUnprocessedChannelsShader(bool doR,
 void
 OSGLContext::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
 {
+#ifdef DEBUG
+    // the platform contexts are created and destroyed here too: no trapped floating point exception
+    // in the OpenGL driver (see the OSGLContext constructor)
+    boost_adaptbx::floating_point::no_exception_trapping noTrap;
+#endif
 #ifdef __NATRON_WIN32__
     OSGLContext_win::getGPUInfos(renderers);
 #elif defined(__NATRON_OSX__)

@@ -34,6 +34,8 @@
 #include <QApplication>
 #include <QDebug>
 
+#include "Global/QtCompat.h" // Qt::CTRL | Qt::Key_X with Qt5
+
 #include "Engine/Bezier.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Settings.h"

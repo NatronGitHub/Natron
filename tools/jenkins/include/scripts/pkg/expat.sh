@@ -2,11 +2,12 @@
 
 # Install expat
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/expat.html
-EXPAT_VERSION=2.5.0
+EXPAT_VERSION=2.10.0
 EXPAT_TAR="expat-${EXPAT_VERSION}.tar.xz"
+EXPAT_SHA256=c624ba2998fc65df1163a49641ff3f9ab73138b11641d92c86bee0fb01b1bc7f
 EXPAT_SITE="https://sourceforge.net/projects/expat/files/expat/${EXPAT_VERSION}"
 if download_step; then
-    download "$EXPAT_SITE" "$EXPAT_TAR"
+    download "$EXPAT_SITE" "$EXPAT_TAR" "$EXPAT_SHA256"
 fi
 if build_step && { force_build || { [ "${REBUILD_EXPAT:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/include/expat*.h "$SDK_HOME"/lib/libexpat* "$SDK_HOME"/lib/pkgconfig/expat* || true

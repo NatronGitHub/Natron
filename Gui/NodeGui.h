@@ -479,6 +479,10 @@ public Q_SLOTS:
     /*Updates the preview image no matter what*/
     void forceComputePreview(double time);
 
+    /// the objectNames of the settings panel (and of a group's graph and its nodes' panels): the fully
+    /// qualified node name, after a rename of the node or of a parent group
+    void refreshObjectNames();
+
     void setName(const QString & _nameItem);
 
     void onInternalNameChanged(const QString &);

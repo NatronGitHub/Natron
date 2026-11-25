@@ -29,6 +29,8 @@
 #include <gtest/gtest.h>
 
 #include "Engine/Hash64.h"
+#include "Engine/ImagePlaneDesc.h"
+#include "Engine/PyNode.h" // ImageLayer
 
 NATRON_NAMESPACE_USING
 
@@ -91,3 +93,33 @@ TEST(Hash64,
     EXPECT_NE(hash1, hash2);
 } // TEST
 
+
+// toU64() puts the bytes of the value at the start of a zeroed U64 (#1613): these values, and so the
+// hashes and the disk cache keys, must not change. The expected values are those of a little-endian
+// machine, as every platform Natron supports.
+TEST(Hash64,
+     ToU64Bytes)
+{
+    EXPECT_EQ( U64(1), Hash64::toU64(true) );
+    EXPECT_EQ( U64(0), Hash64::toU64(false) );
+    EXPECT_EQ( U64(0x41), Hash64::toU64('A') );
+    EXPECT_EQ( U64(0xFFFFFFFFULL), Hash64::toU64(-1) ); // the 4 bytes of an int, not sign-extended
+    EXPECT_EQ( U64(0x3F800000ULL), Hash64::toU64(1.f) );
+    EXPECT_EQ( U64(0x3FF0000000000000ULL), Hash64::toU64(1.) );
+    EXPECT_EQ( U64(0x0123456789ABCDEFULL), Hash64::toU64( U64(0x0123456789ABCDEFULL) ) );
+}
+
+// Python ImageLayer.getHash() returned 0, because the hash was read before being computed (#1275).
+TEST(Hash64,
+     ImageLayerGetHash)
+{
+    typedef NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::ImageLayer ImageLayer;
+    ImageLayer rgba( ImagePlaneDesc::getRGBAComponents() );
+    ImageLayer rgbaCopy( ImagePlaneDesc::getRGBAComponents() );
+    ImageLayer rgb( ImagePlaneDesc::getRGBComponents() );
+
+    EXPECT_NE( 0, ImageLayer::getHash(rgba) );
+    EXPECT_NE( 0, ImageLayer::getHash(rgb) );
+    EXPECT_EQ( ImageLayer::getHash(rgba), ImageLayer::getHash(rgbaCopy) );
+    EXPECT_NE( ImageLayer::getHash(rgba), ImageLayer::getHash(rgb) );
+}

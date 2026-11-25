@@ -124,6 +124,7 @@ SOURCES += \
     GuiApplicationManager10.cpp \
     GuiApplicationManagerPrivate.cpp \
     GuiPrivate.cpp \
+    GuiTest.cpp \
     Histogram.cpp \
     HostOverlay.cpp \
     InfoViewerWidget.cpp \
@@ -272,6 +273,7 @@ HEADERS += \
     GuiFwd.h \
     GuiMacros.h \
     GuiPrivate.h \
+    GuiTest.h \
     Histogram.h \
     HostOverlay.h \
     InfoViewerWidget.h \

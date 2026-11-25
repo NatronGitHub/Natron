@@ -72,7 +72,10 @@ If "Use bundled plug-ins" is unchecked, Natron loads no bundled PyPlugs at all.
 
 Each of these directories is searched **recursively**: Natron also looks into all its sub-directories.
 Every directory and sub-directory is also added to the Python path (``sys.path``), so that your
-scripts can import the Python modules that are stored next to them.
+scripts can import the Python modules that are stored next to them. Because of this, a PyPlug is
+imported by its file name alone: two PyPlugs with the same file name, in different directories,
+can't both be loaded (see :ref:`pyplugWriting-pitfalls`, and :ref:`pyplugWriting-distribute` to
+install PyPlugs).
 
 A startup script can add a directory with
 :func:`natron.appendToNatronPath(path)<NatronEngine.PyCoreApplication.appendToNatronPath>`.

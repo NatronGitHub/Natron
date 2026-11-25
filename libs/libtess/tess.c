@@ -36,6 +36,8 @@
 #include <stddef.h>
 #include <assert.h>
 #include <setjmp.h>
+#include <stdint.h>
+#include <string.h>
 #include "memalloc.h"
 #include "tess.h"
 #include "mesh.h"
@@ -133,6 +135,14 @@ gluNewTess( void )
   tess->callCombineData= &__gl_noCombineData;
 
   tess->polygonData= NULL;
+
+  /* Natron: checked by MakeDormant() and __gl_sweepCleanup() after an
+   * out-of-memory error
+   */
+  tess->mesh = NULL;
+  tess->outOfMemory = FALSE;
+  tess->dict = NULL;
+  tess->pq = NULL;
 
   return tess;
 }
@@ -411,16 +421,32 @@ static int EmptyCache( GLUtesselator *tess )
 }
 
 
+/* Natron: true if x is a NaN. Tests the bits rather than calling isnan(),
+ * which -ffast-math (-ffinite-math-only) folds to false
+ * (see MathUtils::isNaN() in Global/MathUtils.h).
+ */
+static int IsNaN( GLdouble x )
+{
+  uint64_t bits;
+  memcpy( &bits, &x, sizeof(bits) );
+  return (bits & 0x7fffffffffffffffULL) > 0x7ff0000000000000ULL;
+}
+
 void GLAPIENTRY
-gluTessVertex( GLUtesselator *tess, GLdouble coords[3], void *data )
+gluTessVertex( GLUtesselator *tess, GLdouble *coords, void *data )
 {
   int i, tooLarge = FALSE;
   GLdouble x, clamped[3];
 
   RequireState( tess, T_IN_CONTOUR );
 
+  if( tess->outOfMemory ) {
+    /* Natron: the polygon is dropped, see gluTessEndPolygon() */
+    return;
+  }
   if( tess->emptyCache ) {
     if ( !EmptyCache( tess ) ) {
+       tess->outOfMemory = TRUE;
        CALL_ERROR_OR_ERROR_DATA( GLU_OUT_OF_MEMORY );
        return;
     }
@@ -428,6 +454,15 @@ gluTessVertex( GLUtesselator *tess, GLdouble coords[3], void *data )
   }
   for( i = 0; i < 3; ++i ) {
     x = coords[i];
+    if( IsNaN( x ) ) {
+      /* Natron: a NaN coordinate cannot be ordered (all comparisons are
+       * false), which breaks the invariants of the sweep, which then
+       * dereferences NULL pointers (crash in ConnectLeftVertex()).
+       * Report it like an out-of-range coordinate and skip the vertex.
+       */
+      CALL_ERROR_OR_ERROR_DATA( GLU_TESS_COORD_TOO_LARGE );
+      return;
+    }
     if( x < - GLU_TESS_MAX_COORD ) {
       x = - GLU_TESS_MAX_COORD;
       tooLarge = TRUE;
@@ -448,11 +483,13 @@ gluTessVertex( GLUtesselator *tess, GLdouble coords[3], void *data )
       return;
     }
     if ( !EmptyCache( tess ) ) {
+       tess->outOfMemory = TRUE;
        CALL_ERROR_OR_ERROR_DATA( GLU_OUT_OF_MEMORY );
        return;
     }
   }
   if ( !AddVertex( tess, clamped, data ) ) {
+       tess->outOfMemory = TRUE;
        CALL_ERROR_OR_ERROR_DATA( GLU_OUT_OF_MEMORY );
   }
 }
@@ -467,6 +504,7 @@ gluTessBeginPolygon( GLUtesselator *tess, void *data )
   tess->cacheCount = 0;
   tess->emptyCache = FALSE;
   tess->mesh = NULL;
+  tess->outOfMemory = FALSE;
 
   tess->polygonData= data;
 }
@@ -501,14 +539,42 @@ gluTessEndPolygon( GLUtesselator *tess )
 {
   GLUmesh *mesh;
 
-  if (setjmp(tess->env) != 0) { 
+  switch (setjmp(tess->env)) {
+  case 0:
+     break;
+  case TESS_JMP_DEGENERATE:
+     /* Natron: the sweep met a degeneracy it cannot handle (see
+      * WalkDirtyRegions()): drop the polygon */
+     CALL_ERROR_OR_ERROR_DATA( GLU_INVALID_OPERATION );
+     __gl_sweepCleanup( tess );
+     MakeDormant( tess );
+     tess->polygonData= NULL;
+     return;
+  default:
      /* come back here if out of memory */
      CALL_ERROR_OR_ERROR_DATA( GLU_OUT_OF_MEMORY );
+     /* Natron: free the sweep structures and the mesh, which leaked: the
+      * state is already T_DORMANT, so neither gluDeleteTess() nor the next
+      * gluTessBeginPolygon() freed them.
+      */
+     __gl_sweepCleanup( tess );
+     MakeDormant( tess );
+     tess->polygonData= NULL;
      return;
   }
 
   RequireState( tess, T_IN_POLYGON );
   tess->state = T_DORMANT;
+
+  if( tess->outOfMemory ) {
+    /* Natron: gluTessVertex() ran out of memory (and reported it): a mesh
+     * operation may have failed half-way, so the mesh must not be swept
+     * (that crashed in RemoveDegenerateEdges()). Just free it.
+     */
+    MakeDormant( tess );
+    tess->polygonData= NULL;
+    return;
+  }
 
   if( tess->mesh == NULL ) {
     if( ! tess->flagBoundary && tess->callMesh == &noMesh ) {

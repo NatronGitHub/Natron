@@ -225,8 +225,6 @@ class Matrix
       return Base::_set(other);
     }
 
-    /* Here, doxygen failed to copy the brief information when using \copydoc */
-
     /**
       * \brief Copies the generic expression \a other into *this.
       * \copydetails DenseBase::operator=(const EigenBase<OtherDerived> &other)
@@ -284,7 +282,15 @@ class Matrix
 #endif
 
 #if EIGEN_HAS_CXX11
-    /** \copydoc PlainObjectBase(const Scalar&, const Scalar&, const Scalar&,  const Scalar&, const ArgTypes&... args)
+    /** \brief Construct a row of column vector with fixed size from an arbitrary number of coefficients. \cpp11
+     *
+     * \only_for_vectors
+     *
+     * This constructor is for 1D array or vectors with more than 4 coefficients.
+     * There exists C++98 analogue constructors for fixed-size array/vector having 1, 2, 3, or 4 coefficients.
+     *
+     * \warning To construct a column (resp. row) vector of fixed length, the number of values passed to this
+     * constructor must match the the fixed number of rows (resp. columns) of \c *this.
      *
      * Example: \include Matrix_variadic_ctor_cxx11.cpp
      * Output: \verbinclude Matrix_variadic_ctor_cxx11.out
@@ -297,6 +303,8 @@ class Matrix
       : Base(a0, a1, a2, a3, args...) {}
 
     /** \brief Constructs a Matrix and initializes it from the coefficients given as initializer-lists grouped by row. \cpp11
+      *
+      * \anchor matrix_constructor_initializer_list
       *
       * In the general case, the constructor takes a list of rows, each row being represented as a list of coefficients:
       *
@@ -480,16 +488,21 @@ class Matrix
 
 #define EIGEN_MAKE_TYPEDEFS(Type, TypeSuffix, Size, SizeSuffix)   \
 /** \ingroup matrixtypedefs */                                    \
+/** \brief \noop            */                                    \
 typedef Matrix<Type, Size, Size> Matrix##SizeSuffix##TypeSuffix;  \
 /** \ingroup matrixtypedefs */                                    \
+/** \brief \noop            */                                    \
 typedef Matrix<Type, Size, 1>    Vector##SizeSuffix##TypeSuffix;  \
 /** \ingroup matrixtypedefs */                                    \
+/** \brief \noop            */                                    \
 typedef Matrix<Type, 1, Size>    RowVector##SizeSuffix##TypeSuffix;
 
 #define EIGEN_MAKE_FIXED_TYPEDEFS(Type, TypeSuffix, Size)         \
 /** \ingroup matrixtypedefs */                                    \
+/** \brief \noop            */                                    \
 typedef Matrix<Type, Size, Dynamic> Matrix##Size##X##TypeSuffix;  \
 /** \ingroup matrixtypedefs */                                    \
+/** \brief \noop            */                                    \
 typedef Matrix<Type, Dynamic, Size> Matrix##X##Size##TypeSuffix;
 
 #define EIGEN_MAKE_TYPEDEFS_ALL_SIZES(Type, TypeSuffix) \

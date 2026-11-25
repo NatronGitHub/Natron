@@ -1,13 +1,36 @@
-libtess was taken from https://cgit.freedesktop.org/mesa/glu/ at commit 0bf42e41c8b63fc2488dd8d41f696310b5a5a6a7
+libtess was taken from the GLU repository, https://gitlab.freedesktop.org/mesa/glu (formerly https://cgit.freedesktop.org/mesa/glu/), at commit 2318f592b712724a48dd8561b8e7397bb91d7eb7 (2026-07-25). Its src/libtess only differs from commit 0bf42e41c8b63fc2488dd8d41f696310b5a5a6a7, which Natron used before, by f53d1f4, which drops the array bound in the definition of gluTessVertex().
 
-To update:
+`libtess-natron.patch` is the full set of Natron changes to the upstream files (src/libtess/* and src/include/gluos.h). The other files (`libtess.h`, `libtess_internal.h`, `CMakeLists.txt`, `libtess.pro` and this file) are Natron's.
 
-Clone the repository...
+Use in Natron: libtess's only caller is `RotoContextPrivate::computeTriangles()` (Engine/RotoContext.cpp), which is only called when `ROTO_RENDER_TRIANGLES_ONLY` is defined. That define has been commented out since 6d3c91b5a (2016), and Roto shapes are filled with cairo. So in default builds libtess is only run by the unit tests (`Tests/LibTess_Test.cpp`), and the fixes below matter only for builds with `ROTO_RENDER_TRIANGLES_ONLY` and for the tests.
 
-    git clone git://anongit.freedesktop.org/mesa/glu
+Natron changes:
 
+- `mesh.h`, `tess.h`: include `libtess_internal.h` instead of `<GL/glu.h>`, so that the API is prefixed with `libtess_` (see `libtess.h`) and does not clash with a system GLU.
+- `priorityq-heap.c`: include `<limits.h>` (`LONG_MAX`).
+- `gluos.h`: don't redefine `WIN32_LEAN_AND_MEAN`, `NOGDI`, `NOIME` and `NOMINMAX`.
+- `tess.c`: a vertex with a NaN coordinate is skipped and reported as `GLU_TESS_COORD_TOO_LARGE` (the sweep used to crash on it).
+- `tess.c`, `tess.h`, `sweep.c`, `sweep.h`: after an out-of-memory error, free the mesh, the edge dictionary and its regions, and the priority queue (`__gl_sweepCleanup()`), which leaked; if the error happened while adding vertices, drop the polygon instead of sweeping a mesh that may be inconsistent (that crashed).
+- `render.c`: the single triangle fan fast path (`__gl_renderCache()`) is only used if the fan triangles don't overlap (`FanIsSimple()`): a contour winding more than once around its first vertex, or passing through it again, was filled where the odd winding rule makes a hole.
+- `geom.c`: the intersection of two nearly parallel edges is kept close to both edges (`RefineIntersection()`): it could be far from both, which distorted the polygon and filled wrong areas.
+- `sweep.c`, `tess.c`, `tess.h`: on degenerate contours (e.g. collinear points along a diagonal with rounding noise, or a self-loop edge made by merging the endpoints of a zero-length edge), the sweep deleted an edge whose other half was still the upper edge of an active region, and then used it (heap-use-after-free); or it marked inside a face which reaches the sentinel edges, whose vertices have NULL client data. The edges are now only deleted when no active region uses them: `DeleteRegionAndEdge()` checks all the active regions (it is only reached on degenerate input), and `FixUpperEdge()`, which runs on every polygon, checks the `activeRegion` back-pointer and the neighbouring regions, the inside faces are checked (`CheckInsideFaces()`), and otherwise the polygon is dropped and `GLU_INVALID_OPERATION` is reported (`TESS_JMP_DEGENERATE`).
+- `sweep.c`, `tess.h`: on some self-intersecting contours, `CheckForIntersect()` split two edges whose right endpoints are 1 ulp apart at an intersection 1 ulp to the left of both, and `WalkDirtyRegions()` found the same configuration again 1 ulp further left, for billions of splits, allocating memory very fast (#1580). The edge splits made by `CheckForIntersect()` where two edges cross (at a new intersection vertex, or at the sweep event when the intersection is rounded onto it) are now counted (`CountSplits()`; the splits at existing vertices in `CheckForRightSplice()`, `CheckForLeftSplice()` and `ConnectLeftDegenerate()` are not), and the polygon is dropped with `GLU_INVALID_OPERATION` (`TESS_JMP_DEGENERATE`) if there are more than 16*n+4096 splits at one sweep event, or 2*n*n+16*n+4096 in total (`InitSplitLimits()`). n is the number of vertices of the mesh when the sweep starts: the input vertices, after repeated consecutive ones are merged, plus the 4 sentinel vertices. Fuzzing never got more than 0.85*n splits at one event, or 0.98*n*n in total (star polygons).
+- `sweep.c`: the winding number and inside flag of a new active region are initialized (`AddRegionBelow()`): on degenerate input some regions kept uninitialized values.
+
+Build: `CMakeLists.txt` and `libtess.pro` compile libtess with `-fno-fast-math -ffp-contract=off` (not for MSVC, which Natron isn't built with). `-ffast-math` reassociates, which breaks `EdgeSign()` as well. With floating-point contraction (fused multiply-add, clang's default on arm64, and GCC's `-ffp-contract=fast` wherever FMA is available), `EdgeSign()` computes `a*b - b*a` for points exactly on a line such as x == y as the rounding error of `a*b` instead of 0, so collinear points were seen on random sides of each other: the same input was tessellated differently on macOS arm64 and on x86-64, and the degenerate cases above were much more frequent there.
+
+These bugs are also in Mesa's GLU. The `geom.c` intersection bug, the use-after-free on degenerate contours and the uninitialized winding numbers are also in libtess2 (https://github.com/memononen/libtess2), which has no fan fast path. `Tests/LibTess_Test.cpp` has their regression tests (except for the out-of-memory errors).
+
+To update, clone the repository, apply the Natron patch, and copy the files:
+
+    git clone https://gitlab.freedesktop.org/mesa/glu.git
     cd glu
+    patch -p1 < /path-to-natron/libs/libtess/libtess-natron.patch
+    cp src/libtess/*.[ch] src/include/gluos.h /path-to-natron/libs/libtess/
 
-    patch -p1 /path-to-natron/libs/libtess/libtess-natron.patch
+After changing the Natron copy, regenerate the patch in a clean checkout of the upstream commit:
 
-    cp glu/src/libtess/*  /path-to-natron/libs/libtess/
+    cp /path-to-natron/libs/libtess/gluos.h src/include/
+    for f in src/libtess/*.[ch]; do cp /path-to-natron/libs/libtess/$(basename $f) $f; done
+    git diff -- src/include src/libtess > /path-to-natron/libs/libtess/libtess-natron.patch
+    git checkout -- src

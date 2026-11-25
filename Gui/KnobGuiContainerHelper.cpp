@@ -1020,6 +1020,10 @@ KnobGuiContainerHelperPrivate::refreshPagesEnabledness()
 
     for (PagesMap::const_iterator it = pages.begin(); it != pages.end(); ++it) {
         KnobPagePtr page = it->second->pageKnob.lock();
+        if (!page) {
+            // pageKnob is a weak pointer: the page knob may be destroyed before its GUI
+            continue;
+        }
         if (it->second == curPage) {
             if ( !page->isEnabled(0) ) {
                 page->setEnabled(0, true);

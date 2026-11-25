@@ -35,7 +35,8 @@ Close Project
 Save Project
   Save the current project.
 Save Project As..
-  Save the current project under a new name.
+  Save the current project under a new name. The *File format* choice of the
+  dialog sets the format of the project file (see below).
 New Project Version
   Save the project under a new name with an incremented version number:
   ``shot.ntp`` is saved as ``shot_001.ntp``, ``shot_001.ntp`` as
@@ -56,6 +57,25 @@ Export Project As Group
   nodes, and one Output node, so that Natron knows how to connect the group.
 Quit
   Quit Natron (in the :menuselection:`Natron` menu on macOS).
+
+Project files are saved in one of two formats, both with the ``.ntp``
+extension:
+
+- *Binary* (the default for new projects): smaller, and faster to load and
+  save. Natron 2.5 and earlier cannot open it.
+- *Text (Natron 2.5 compatible)*: XML, which Natron 2.5 can open, and which you
+  can read or compare with a text tool.
+
+A project keeps its format when it is saved: choose another one with *Save
+Project As..*. The *Save projects as binary by default* preference (General
+tab) gives the format of new projects.
+
+To convert projects without opening them, for example many of them in a
+script, use the ``natron_convert_project`` Python module, which is installed
+with Natron, in NatronRenderer (see :ref:`natron-convert-project`). It does
+not keep the GUI data of a project (node positions, viewer settings, window
+layout), so it only converts projects saved by NatronRenderer or
+``Natron -b``; convert the others with *Save Project As..*.
 
 Edit menu
 ---------

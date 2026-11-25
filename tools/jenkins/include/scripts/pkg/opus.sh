@@ -2,11 +2,12 @@
 
 # Install opus
 # see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/opus.html
-OPUS_VERSION=1.3.1
+OPUS_VERSION=1.6.1
 OPUS_TAR="opus-${OPUS_VERSION}.tar.gz"
-OPUS_SITE="https://archive.mozilla.org/pub/opus"
+OPUS_SHA256=6ffcb593207be92584df15b32466ed64bbec99109f007c82205f0194572411a1
+OPUS_SITE="https://downloads.xiph.org/releases/opus"
 if download_step; then
-    download "$OPUS_SITE" "$OPUS_TAR"
+    download "$OPUS_SITE" "$OPUS_TAR" "$OPUS_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/opus.pc" ] || [ "$(pkg-config --modversion opus)" != "$OPUS_VERSION" ]; }; }; then
     start_build

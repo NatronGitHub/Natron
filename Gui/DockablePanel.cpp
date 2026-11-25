@@ -472,7 +472,13 @@ DockablePanel::DockablePanel(Gui* gui,
 
 DockablePanel::~DockablePanel()
 {
-    
+    // The tab widget is a child widget: QWidget::~QWidget() deletes it after this destructor and
+    // the KnobGuiContainerHelper one have run, and removing its pages emits currentChanged(), which
+    // would call onPageIndexChanged() on this partially destroyed panel, whose knobs may already be
+    // destroyed (#1554).
+    if (_imp->_tabWidget) {
+        QObject::disconnect(_imp->_tabWidget, 0, this, 0);
+    }
 }
 
 bool

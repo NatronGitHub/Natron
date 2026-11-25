@@ -38,6 +38,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/AppManager.h"
 #include "Engine/Lut.h"
 #include "Gui/Label.h"
 
@@ -938,6 +939,9 @@ ColorSelectorWidget::savePaletteButton(int id)
     if (_paletteButtons.size() < 1 || id >= _paletteButtons.size() || id < 0) {
         return;
     }
+    if ( appPTR->isTestMode() ) {
+        return; // a test does not change the user's palette
+    }
 
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME),
                         QString::fromUtf8(NATRON_APPLICATION_NAME) );
@@ -971,6 +975,9 @@ ColorSelectorWidget::savePaletteButton(QSettings& settings,
 void
 ColorSelectorWidget::savePaletteButtons()
 {
+    if ( appPTR->isTestMode() ) {
+        return; // a test does not change the user's palette
+    }
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME),
                         QString::fromUtf8(NATRON_APPLICATION_NAME) );
     settings.beginGroup( QString::fromUtf8(COLOR_SELECTOR_PALETTE_SETTINGS) );
@@ -997,12 +1004,25 @@ void
 ColorSelectorWidget::handleTriangleColorChanged(const QColor &color,
                                                 bool announce)
 {
-    setRedChannel( Color::from_func_srgb( color.redF() ) );
-    setGreenChannel( Color::from_func_srgb( color.greenF() ) );
-    setBlueChannel( Color::from_func_srgb( color.blueF() ) );
-    setHueChannel( color.toHsv().hueF() );
-    setSaturationChannel( color.toHsv().saturationF() );
-    setValueChannel( color.toHsv().valueF() );
+    const float r = Color::from_func_srgb( color.redF() );
+    const float g = Color::from_func_srgb( color.greenF() );
+    const float b = Color::from_func_srgb( color.blueF() );
+    // HSV of the linear RGB values, as in setColor() and manageColorRGBChanged() (not of the sRGB
+    // triangle color), so that a color shows the same HSV values however it was set (#1248)
+    float h, s, v;
+    Color::rgb_to_hsv(r, g, b, &h, &s, &v);
+    if (s == 0.f) {
+        // a grey has no hue: follow the hue ring (the triangle sends its hue with a grey), else keep the H shown
+        const qreal ringHue = color.hsvHueF();
+        h = (ringHue >= 0.) ? ringHue : _spinH->value();
+    }
+
+    setRedChannel(r);
+    setGreenChannel(g);
+    setBlueChannel(b);
+    setHueChannel(h);
+    setSaturationChannel(s);
+    setValueChannel(v);
     setHex(color);
 
     if (announce) {
@@ -1044,15 +1064,9 @@ ColorSelectorWidget::manageColorHSVChanged(bool announce)
     setGreenChannel(g);
     setBlueChannel(b);
 
-    QColor color = _triangle->color();
-    color.setHsvF(h, s, v);
-    color.setAlphaF(a);
-
-    _triangle->blockSignals(true);
-    _triangle->setColor(color);
-    _triangle->blockSignals(false);
-
-    setHex(color);
+    // h, s, v are of the linear RGB values: the triangle shows their sRGB color (#1248)
+    setTriangle(r, g, b, a);
+    setHex( _triangle->color() );
 
     setSliderHColor();
     setSliderSColor();

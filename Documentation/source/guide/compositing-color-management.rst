@@ -101,7 +101,8 @@ Open **Edit > Preferences** and go to the **Color Management** page:
     The ``config.ocio`` file to use when **Custom config** is selected.
 
 **Warn on OpenColorIO config change**
-    Show a reminder that Natron must be restarted after a change.
+    Show a reminder, when the preferences are saved, that Natron must be
+    restarted after a change.
 
 **Warn on startup if OpenColorIO config is not the default**
     At startup, offer to go back to the default *blender* configuration when
@@ -110,7 +111,9 @@ Open **Edit > Preferences** and go to the **Color Management** page:
 
 .. important::
 
-   **Restart Natron after changing the configuration.** The colorspace
+   **Click Save in the Preferences, then restart Natron after changing the
+   configuration.** Closing the Preferences without Save discards the
+   change. The colorspace
    menus of the Read, Write and OCIO nodes are built when Natron starts, and
    nodes that already exist keep the configuration they were created with.
 
@@ -330,9 +333,8 @@ ACES
     project), select it as a custom configuration or with the ``OCIO``
     variable, and restart Natron. Each ACES configuration needs a minimum
     OpenColorIO version, given in its file name (``..._ocio-v2.1.ocio``) and
-    in its release notes. Natron 2.6 uses OpenColorIO 2.6 on macOS and
-    Windows, and OpenColorIO 2.2 on Linux: on Linux, use a configuration made
-    for OCIO 2.2 or earlier, such as the ``ocio-v2.1`` ones of release 1.0.0.
+    in its release notes. Natron 2.6 uses OpenColorIO 2.6 on Linux, macOS
+    and Windows: use a configuration made for OCIO 2.6 or earlier.
     Read each input with its ACES input
     colorspace (the camera's log colorspace, or the sRGB texture colorspace for
     sRGB images), keep the working space (ACEScg), view through an OCIODisplay

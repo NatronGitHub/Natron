@@ -41,6 +41,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QSettings>
 #include <QFileInfo>
 #include <QApplication>
+#include <QDialog>
 #include <QGuiApplication>
 #include <QScreen>
 #include <QFileOpenEvent>
@@ -66,6 +67,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/CurveWidget.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
+#include "Gui/GuiTest.h"
 #include "Gui/KnobGuiFactory.h"
 #include "Gui/SplashScreen.h"
 
@@ -405,7 +407,10 @@ void
 GuiApplicationManager::onAllPluginsLoaded()
 {
     ///Restore user shortcuts only when all plug-ins are populated.
-    loadShortcuts();
+    ///A GUI test (--test) uses the default shortcuts, as the default settings (--no-settings).
+    if ( !isTestMode() ) {
+        loadShortcuts();
+    }
     AppManager::onAllPluginsLoaded();
 }
 
@@ -526,7 +531,9 @@ GuiApplicationManager::exitApp(bool warnUserForSave)
 
     for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         GuiAppInstancePtr app = std::dynamic_pointer_cast<GuiAppInstance>(*it);
-        if (app) {
+        // not the instances that already quit, or are quitting (e.g. after app.closeProject()): they are
+        // removed once their nodes stopped processing, and the application exits after the last one (#1567)
+        if ( app && !app->isQuitPending() && !app->isClosing() ) {
             guiApps.push_back(app);
         }
     }
@@ -547,7 +554,7 @@ GuiApplicationManager::exitApp(bool warnUserForSave)
         guiApps.clear();
         for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
             GuiAppInstancePtr ga = std::dynamic_pointer_cast<GuiAppInstance>(*it);
-            if ( ga && ( triedInstances.find(ga) == triedInstances.end() ) ) {
+            if ( ga && !ga->isQuitPending() && !ga->isClosing() && ( triedInstances.find(ga) == triedInstances.end() ) ) {
                 guiApps.push_back(ga);
             }
         }
@@ -574,26 +581,38 @@ GuiApplicationManager::requestQuit(int exitCode)
     }, Qt::QueuedConnection );
 }
 
+bool
+GuiApplicationManager::closeModalWindows()
+{
+    // a menu (QMenu::exec()) first: it may have been opened from a modal dialog
+    QWidget* popup = QApplication::activePopupWidget();
+    if (popup) {
+        popup->close();
+
+        return true;
+    }
+    QWidget* modal = QApplication::activeModalWidget();
+    if (!modal) {
+        return false;
+    }
+    QDialog* dialog = qobject_cast<QDialog*>(modal);
+    if (dialog) {
+        dialog->reject(); // ends its exec(), even for a QMessageBox without an Escape button: no button is clicked
+    } else {
+        modal->close();
+    }
+
+    return true;
+}
+
 void
 GuiApplicationManager::quitWhenIdle()
 {
     // Not while the application is loading (the script given on the command line runs during
     // GuiAppInstance::load()), nor from a nested event loop (QEventLoop in checkForNewVersion(),
-    // a modal dialog), nor while a project is being saved (Project::saveProject_imp() processes the
-    // events while it waits for the auto-save, #825, as Gui::closeEvent() checks): the code that runs
-    // it would use the deleted projects afterwards. Try again later.
-    bool saving = false;
-    {
-        const AppInstanceVec instances = getAppInstances();
-        for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-            ProjectPtr project = (*it)->getProject();
-            if ( project && project->isSaveInProgress() ) {
-                saving = true;
-                break;
-            }
-        }
-    }
-    if ( !isLoaded() || (getNestedEventLoopsCount() > 0) || QApplication::activeModalWidget() || saving ) {
+    // a modal dialog), nor while a project is being saved (as Gui::closeEvent() checks): the code
+    // that runs it would use the deleted projects afterwards. Try again later.
+    if ( mustDeferQuit() || QApplication::activeModalWidget() ) {
         QTimer::singleShot( 50, this, [this]() {
             quitWhenIdle();
         } );
@@ -1303,6 +1322,11 @@ GuiApplicationManager::initBuiltinPythonModules()
     int ret = PyImport_AppendInittab(NATRON_GUI_PYTHON_MODULE_NAME, &PyInit_NatronGui);
     if (ret == -1) {
         throw std::runtime_error("Failed to initialize built-in Python module.");
+    }
+
+    // the test-only module, not part of the Python API
+    if ( isTestMode() ) {
+        GuiTest::install();
     }
 }
 

@@ -26,6 +26,7 @@
 #include "AppManagerPrivate.h"
 
 #include <chrono>
+#include <mutex>
 
 #include <QDateTime>
 
@@ -67,6 +68,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Global/ProcInfo.h"
 #include "Global/StrUtils.h"
 #include "Global/FStreamsSupport.h"
+#include "Global/FloatingPointExceptions.h"
 
 #include "Engine/CacheSerialization.h"
 #include "Engine/CLArgs.h"
@@ -243,6 +245,7 @@ AppManagerPrivate::AppManagerPrivate()
     , dialogsDisabled(false)
     , quitRequested(false)
     , requestedExitCode(0)
+    , backgroundRenderFailed(false)
     , nestedEventLoops(0)
     , pythonInterpreterRunning(false)
     , _binaryPath()
@@ -259,6 +262,8 @@ AppManagerPrivate::AppManagerPrivate()
     , nThreadsMutex()
     , runningThreadsCount()
     , lastProjectLoadedCreatedDuringRC2Or3(false)
+    , destroying(false)
+    , testMode(false)
     , commandLineArgsWideOriginal()
     , commandLineArgsWide()
     , commandLineArgsUtf8Original()
@@ -532,6 +537,11 @@ saveCache(Cache<T>* cache)
 void
 AppManagerPrivate::saveCaches()
 {
+    // Every project save calls this, and two projects may be saved at the same time (#1590): they would write
+    // the same files. Two processes that share a cache directory still can.
+    static std::mutex saveCachesMutex;
+    std::lock_guard<std::mutex> lock(saveCachesMutex);
+
     if (!appPTR->isBackground()) {
         saveCache<FrameEntry>( _viewerCache.get() );
     }
@@ -1341,6 +1351,11 @@ AppManagerPrivate::initGl(bool checkRenderingReq)
 void
 AppManagerPrivate::tearDownGL()
 {
+#ifdef DEBUG
+    // no trapped floating point exception in the OpenGL driver (e.g. Mesa's llvmpipe): this runs after the
+    // event loop, where main() traps them in debug builds
+    boost_adaptbx::floating_point::no_exception_trapping noTrap;
+#endif
     // Kill all rendering context
     renderingContextPool.reset();
 

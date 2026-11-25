@@ -643,10 +643,12 @@ ResizeBackdropCommand::ResizeBackdropCommand(const NodeGuiPtr& bd,
     , _oldW(0)
     , _oldH(0)
 {
-    QRectF bbox = bd->boundingRect();
+    // The node rectangle, not boundingRect(), which includes the outline pen width: undo would
+    // restore a slightly larger backdrop (#1744, as #1071 for the nodes)
+    const QSize size = bd->getSize();
 
-    _oldW = bbox.width();
-    _oldH = bbox.height();
+    _oldW = size.width();
+    _oldH = size.height();
     setText( tr("Resize %1").arg( QString::fromUtf8( _bd->getNode()->getLabel().c_str() ) ) );
 }
 
@@ -1228,7 +1230,10 @@ LoadNodePresetsCommand::redo()
 
     std::map<std::string, std::string> oldNewScriptNames;
     internalNode->storeKnobsLinks(*_newSerializations.front(), oldNewScriptNames);
-    internalNode->restoreKnobsLinks(allNodes, oldNewScriptNames, true); // may not fail
+    // A preset is file data: a link that can't be restored (its master node isn't in the
+    // project, or a damaged dimension) is skipped, as for a paste, instead of throwing out
+    // of the undo stack (#1612).
+    internalNode->restoreKnobsLinks(allNodes, oldNewScriptNames, false);
     internalNode->getEffectInstance()->incrHashAndEvaluate(true, true);
     internalNode->getApp()->triggerAutoSave();
     _firstRedoCalled = true;
@@ -1548,20 +1553,32 @@ GroupFromSelectionCommand::undo()
     }
 
 
-    for (std::list<NodeGuiWPtr>::iterator it = _originalNodes.begin(); it != _originalNodes.end(); ++it) {
-        NodeGuiPtr node = it->lock();
-        if (node) {
-            node->getNode()->activate(NodesList(), true, false);
-            nodesToSelect.push_back(node);
-        }
-    }
-    _graph->setSelection(nodesToSelect);
+    // Deactivate the group (and the copies in it) before activating the originals: a single-instance
+    // OFX plug-in then never has two live instances (see OfxEffectInstance::suspendSingleInstance()),
+    // unless a copy is still rendering, whose instance lives until that render ends.
     _group.lock()->getNode()->deactivate(NodesList(),
                                          true,
                                          false,
                                          true,
                                          true,
                                          false);
+    std::set<ViewerInstance*> viewers;
+    for (std::list<NodeGuiWPtr>::iterator it = _originalNodes.begin(); it != _originalNodes.end(); ++it) {
+        NodeGuiPtr node = it->lock();
+        if (node) {
+            node->getNode()->activate(NodesList(), true, false);
+            nodesToSelect.push_back(node);
+            std::list<ViewerInstance*> connectedViewers;
+            node->getNode()->hasViewersConnected(&connectedViewers);
+            viewers.insert( connectedViewers.begin(), connectedViewers.end() );
+        }
+    }
+    _graph->setSelection(nodesToSelect);
+    // A render started when the outputs were reconnected above, while the originals were still
+    // deactivated (a single-instance OFX plug-in without its instance), failed: render them again.
+    for (std::set<ViewerInstance*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        (*it)->renderCurrentFrame(true);
+    }
 
     _isRedone = false;
 }
@@ -1633,6 +1650,11 @@ GroupFromSelectionCommand::redo()
             internalNewNodes.push_back( it->second->getNode() );
         }
 
+        const auto isOriginalNode = [&originalNodes](const NodePtr& node) {
+            return std::any_of( originalNodes.begin(), originalNodes.end(),
+                                [&node](const NodeGuiPtr& n) { return n->getNode() == node; } );
+        };
+
         // Extract all trees from these new nodes
         std::list<Project::NodesTree> trees;
         Project::extractTreesFromNodes(internalNewNodes, trees);
@@ -1693,7 +1715,17 @@ GroupFromSelectionCommand::redo()
                             // do not create an Input node for an invisible input (example: Shadertoy node, which hides its inputs)
                             continue;
                         }
-                        if ( originalNodeInputs[i].lock() || !originalEffect->isInputOptional(i) ) {
+                        NodePtr originalInput = originalNodeInputs[i].lock();
+                        if ( originalInput && isOriginalNode(originalInput) ) {
+                            // The copy of that input is in the group, and the copy of this node is already
+                            // connected to it: a node that feeds several selected nodes is in the tree of
+                            // only one of them (#1462). That connection also counts as an input for the
+                            // fallback below, which must not add an Input node to this node.
+                            assert( it2->node->getInput(i) );
+                            hasInput = true;
+                            continue;
+                        }
+                        if ( originalInput || !originalEffect->isInputOptional(i) ) {
                             mustCreateInput[i] = true;
                             hasInput = true;
                         } else if ( (firstNonMaskInput == -1) && !originalEffect->isInputMask(i) ) {
@@ -1901,7 +1933,12 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
             }
         }
         std::list<std::pair<std::string, NodeGuiPtr> > newNodes;
-        _graph->pasteCliboard(cb, &newNodes);
+        {
+            // The group is deactivated in redo(), right after its nodes are copied out of it: the
+            // copies of a single-instance OFX plug-in are not refused (as in GroupFromSelectionCommand).
+            OfxEffectInstance::AllowExtraSingleInstances allowMovingSingleInstances;
+            _graph->pasteCliboard(cb, &newNodes);
+        }
 
         NodeGuiIPtr groupGui_i = group->getNode()->getNodeGui();
         assert(groupGui_i);
@@ -2060,18 +2097,21 @@ InlineGroupCommand::undo()
     for (std::list<InlinedGroup>::iterator it = _groupNodes.begin(); it != _groupNodes.end(); ++it) {
         NodeGuiPtr groupNode = it->group.lock();
         if (groupNode) {
-            groupNode->getNode()->activate(NodesList(), true, false);
-            std::list<ViewerInstance*> connectedViewers;
-            groupNode->getNode()->hasViewersConnected(&connectedViewers);
-            for (std::list<ViewerInstance*>::iterator it2 = connectedViewers.begin(); it2 != connectedViewers.end(); ++it2) {
-                viewers.insert(*it2);
-            }
+            // Deactivate the inlined nodes before activating the group (and the nodes in it): a
+            // single-instance OFX plug-in then never has two live instances, unless an inlined node
+            // is still rendering, whose instance lives until that render ends.
             for (std::list<NodeGuiWPtr>::iterator it2 = it->inlinedNodes.begin();
                  it2 != it->inlinedNodes.end(); ++it2) {
                 NodeGuiPtr node = (*it2).lock();
                 if (node) {
                     node->getNode()->deactivate(NodesList(), false, false, true, false, false);
                 }
+            }
+            groupNode->getNode()->activate(NodesList(), true, false);
+            std::list<ViewerInstance*> connectedViewers;
+            groupNode->getNode()->hasViewersConnected(&connectedViewers);
+            for (std::list<ViewerInstance*>::iterator it2 = connectedViewers.begin(); it2 != connectedViewers.end(); ++it2) {
+                viewers.insert(*it2);
             }
         }
         nodesToSelect.push_back(groupNode);

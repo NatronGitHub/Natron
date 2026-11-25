@@ -147,8 +147,12 @@ Gui::openRecentFile()
             getApp()->getProject()->loadProject( path, f.fileName() );
         } else {
             CLArgs cl;
-            AppInstancePtr newApp = appPTR->newAppInstance(cl, false);
-            newApp->getProject()->loadProject( path, f.fileName() );
+            // An empty instance: onProjectCreated runs only if the load fails, see Gui::openProjectInternal() (#1463)
+            AppInstancePtr newApp = appPTR->newAppInstance(cl, true);
+            // newAppInstance() returns NULL, after showing an error dialog, if the new window could not be loaded
+            if ( newApp && !newApp->getProject()->loadProject( path, f.fileName() ) ) {
+                newApp->execOnProjectCreatedCallback();
+            }
         }
     }
 }

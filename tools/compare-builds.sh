@@ -62,7 +62,7 @@ B=$(cd "$2" && pwd -P)
 mkdir -p "$outdir"
 case "$(uname -s)" in
     Darwin) os=macos ;;
-    MINGW*|MSYS*|CYGWIN*) os=windows ;;
+    MINGW*|MSYS*|CYGWIN*|UCRT64*|CLANG*) os=windows ;;
     *) os=linux ;;
 esac
 differ=0   # the builds differ, or a tree has unresolved references

@@ -22,7 +22,9 @@
 // of the races:
 // - a thread told to quit took a frame and quit without rendering it: the render never finished;
 // - a thread finishing a frame during stopRender() started a new thread, which was never told to quit:
-//   stopRender() waited for it forever.
+//   stopRender() waited for it forever;
+// - the end of the render, or an abort, woke the scheduler thread before it waited: it waited forever
+//   (#1607; the scheduler waits until the render finishes or is aborted before it takes bufMutex).
 // The output is a DiskCache node, a built-in writer, after net.natron.test.Params (whose render does nothing).
 
 // ***** BEGIN PYTHON BLOCK *****

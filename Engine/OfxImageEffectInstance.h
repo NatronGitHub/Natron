@@ -28,6 +28,7 @@
 
 #include "Global/Macros.h"
 
+#include <atomic>
 #include <string>
 #include <cstdarg>
 #include <vector>
@@ -73,6 +74,35 @@ public:
     }
 
     /**
+     * @brief The suspension of the plug-in instance (see OfxEffectInstance::suspendSingleInstance()):
+     * while it is being suspended, mainEntry() sends nothing from the other threads, and once it is
+     * suspended (its plug-in instance destroyed), nothing at all: it returns kOfxStatFailed.
+     **/
+    enum SuspendStateEnum
+    {
+        eSuspendStateNone = 0,
+        eSuspendStateSuspending,
+        eSuspendStateSuspended
+    };
+
+    void setSuspendState(SuspendStateEnum state)
+    {
+        _suspendState = (int)state;
+    }
+
+    /// true while an action of another thread than the main thread is in the plug-in (see mainEntry())
+    bool hasActionsInFlightOnOtherThreads() const
+    {
+        return _actionsInFlightOnOtherThreads > 0;
+    }
+
+    /// true while an action of this instance or of one of its interacts runs on the main thread (main thread only)
+    bool isInMainThreadAction() const
+    {
+        return _mainThreadActionDepth > 0;
+    }
+
+    /**
      * @brief Brackets an action of the instance or of one of its interacts (overlay or parameter interact), which don't
      * go through mainEntry(). On the main thread, it counts the nesting depth of these actions, and when the outermost one
      * returns, it ends the edit blocks that the plug-in opened and left open (paramEditBegin() without paramEditEnd()).
@@ -84,6 +114,20 @@ public:
     public:
         explicit MainThreadAction_RAII(OfxImageEffectInstance* effect);
         ~MainThreadAction_RAII();
+    };
+
+    /**
+     * @brief Brackets an action of the instance or of one of its interacts on any thread: while it runs, the effect is
+     * the one whose action runs on the thread (OfxHost::OfxHostTLSData::effectCallingMainEntry(), used for the host
+     * name) and the thread is not a multithread suite thread (multiThreadIsSpawnedThread()). Nothing if effect is NULL.
+     **/
+    class ThreadIsActionCaller_RAII
+    {
+        OfxImageEffectInstance* _effect;
+
+    public:
+        explicit ThreadIsActionCaller_RAII(OfxImageEffectInstance* effect);
+        ~ThreadIsActionCaller_RAII();
     };
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -143,6 +187,12 @@ public:
     // returns the top right position, as the extent is always rooted at 0,0. For example a PAL SD
     // project would have an extent of 768, 576.
     virtual void getProjectExtent(double & xSize, double & ySize) const OVERRIDE FINAL;
+
+    // The default RoD, which HostSupport also computes before each RoD action, to initialize its result. An input
+    // whose RoD fails here does not make the RoD action fail (see OfxClipInstance::InputRoDFailureScope): the plug-in
+    // may not use that input at this time (e.g. FrameHold, TimeOffset). OfxEffectInstance::getRegionOfDefinition()
+    // checks the inputs again if the plug-in returns kOfxStatReplyDefault, i.e. uses the default RoD.
+    virtual OfxRectD calcDefaultRegionOfDefinition(OfxTime time, OfxPointD renderScale, int view) const OVERRIDE FINAL;
 
     // The pixel aspect ratio of the current project
     virtual double getProjectPixelAspectRatio() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -289,6 +339,11 @@ private:
     // kOfxActionInstanceChanged, may trigger another one (when a value it sets changes a parameter).
     // Only read and written on the main thread.
     int _mainThreadActionDepth;
+    // see setSuspendState(); written on the main thread
+    std::atomic<int> _suspendState;
+    // the actions of the other threads than the main thread in mainEntry(), counted before _suspendState
+    // is read (both sequentially consistent): see OfxEffectInstance::suspendSingleInstance()
+    std::atomic<int> _actionsInFlightOnOtherThreads;
     // The edit blocks that the plug-in opened (paramEditBegin()) and did not end yet (paramEditEnd()), innermost last:
     // true for a block opened on _pluginEditHolder, false for a block that was ignored (while a PyPlug is created), so
     // that each paramEditEnd() ends the block of its paramEditBegin(). When the outermost action returns, these blocks,
@@ -298,6 +353,9 @@ private:
     // The holder of the knobs (getParamsEditHolder()) on which these blocks are open, e.g. the Read/Write node of an
     // embedded reader/writer.
     EffectInstanceWPtr _pluginEditHolder;
+    // true between progressStart() and progressEnd(): progressUpdate() without a started progress task returns
+    // kOfxStatErrBadHandle ("the progress handle was invalid", ofxProgress.h). Any thread may call these.
+    std::atomic<bool> _progressStarted;
 
     // End the blocks of _pluginEditBlocks (main thread only).
     void endPluginEditBlocks();

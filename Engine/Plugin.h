@@ -177,7 +177,11 @@ class Plugin
     mutable bool _hasShortcutSet; //< to speed up the keypress event of Nodegraph, this is used to find out quickly whether it has a shortcut or not.
     bool _isReader, _isWriter;
 
-    //Deprecated are by default Disabled in the Preferences.
+    // Deprecated plug-ins (for OFX plug-ins: kOfxImageEffectPluginPropObsolete, see
+    // OfxHost::isPluginObsolete()) are disabled by default, so that they are not offered for new
+    // nodes (getIsUserCreatable()), but the user may enable them in the Preferences (#171). They
+    // still load in existing projects. Even enabled, they are never registered as readers or writers
+    // of file formats (OfxHost).
     bool _isDeprecated;
 
     //Is not visible by the user, just for internal use
@@ -264,7 +268,7 @@ public:
         , _isDeprecated(isDeprecated)
         , _isInternalOnly(false)
         , _toolSetScript(false)
-        , _activated(true)
+        , _activated(!isDeprecated)
         , _renderScaleEnabled(true)
         , _multiThreadingEnabled(true)
         , _openglActivated(true)

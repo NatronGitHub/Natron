@@ -2,12 +2,13 @@
 
 # Install libtasn1 (for gnutls)
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/libtasn1.html
-LIBTASN1_VERSION=4.19.0
+LIBTASN1_VERSION=4.21.0
 #LIBTASN1_VERSION_SHORT=${LIBTASN1_VERSION%.*}
 LIBTASN1_TAR="libtasn1-${LIBTASN1_VERSION}.tar.gz"
+LIBTASN1_SHA256=1d8a444a223cc5464240777346e125de51d8e6abf0b8bac742ac84609167dc87
 LIBTASN1_SITE="https://ftp.gnu.org/gnu/libtasn1"
 if download_step; then
-    download "$LIBTASN1_SITE" "$LIBTASN1_TAR"
+    download "$LIBTASN1_SITE" "$LIBTASN1_TAR" "$LIBTASN1_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libtasn1.pc" ] || [ "$(pkg-config --modversion libtasn1)" != "$LIBTASN1_VERSION" ]; }; }; then
     start_build

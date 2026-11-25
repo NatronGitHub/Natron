@@ -162,6 +162,10 @@ Loading the plug-ins happens once, at startup, in ``OfxHost::loadOFXPlugins``
    changed, is loaded and described (``kOfxActionLoad`` and
    ``kOfxActionDescribe``) during the scan; the others are not even loaded. If
    anything changed, the cache file is written again (``writeOFXCache``).
+   A cache file that ``readCache`` cannot read (an XML error, an unknown
+   element, a bad property index) throws: ``loadOFXPlugins`` logs the error,
+   nothing from that file is kept, and the scan loads and describes every
+   plug-in, then rewrites the cache.
 4. For each plug-in (``getPluginsByIDMajor``), it reads the label, grouping,
    icon, version and supported file formats, and registers it with
    ``AppManager::registerPlugin``. That is what makes it appear in the
@@ -240,14 +244,31 @@ Writes to read-only properties
     <name>`` on stderr. A plug-in that triggers this warning should be fixed.
 
 Cursors
-    Natron 2.6 no longer honours the Natron extension's secret
-    ``kNatronOfxParamCursorName`` string parameter, and no longer sets the
-    ``kNatronOfxImageEffectPropDefaultCursors`` host property (`#1108 <https://github.com/NatronGitHub/Natron/pull/1108>`_). Plug-ins
-    should use the interact cursors instead: check
+    Plug-ins set the overlay cursor with the interact cursors: check
     ``kOfxInteractHostPropSupportedCursors`` on the host and set
     ``kOfxInteractPropCursor`` on the overlay interact (see "Interact cursors
-    (proposed extension)" in ``ofxInteract.h``). None of the bundled plug-ins
-    used the old mechanism.
+    (proposed extension)" in ``ofxInteract.h``). Natron 2.6 removed its own,
+    Natron-specific cursor extension (`#1108 <https://github.com/NatronGitHub/Natron/pull/1108>`_);
+    none of the bundled plug-ins used it.
+
+Obsolete plug-ins
+    A plug-in that sets ``kOfxImageEffectPluginPropObsolete`` to 1 (OFX, after
+    1.5.1) on its descriptor is still loaded, so existing projects that use it
+    open, and it can be created by ID (from Python, ``app.createNode()``).
+    It is not offered for new nodes: it is hidden from the node menus, the
+    toolbars, the Tab node-creation dialog and the documentation, and it is
+    not registered as a reader or writer for its file extensions
+    (``OfxHost::isPluginObsolete``, ``Plugin::getIsUserCreatable``). The
+    spec uses the property for a plug-in "made obsolete by a different
+    version of the same plugin contained in the same bundle", and requires
+    at least one version that is not obsolete. Natron is more lenient: it
+    hides any plug-in that sets it, even when no version of it is left offered
+    (openfx-misc's JoinViews, OneView, Roto and TrackerPM, which are obsolete
+    only in Natron, where none of their versions is left offered). Natron
+    2.6 no longer reads the Natron extension
+    ``kNatronOfxImageEffectPropDeprecated``, which had the same meaning (`#1491 <https://github.com/NatronGitHub/Natron/issues/1491>`_):
+    plug-ins must set the standard property (``setIsObsolete(true)`` in the
+    Support library, instead of ``setIsDeprecated(true)``).
 
 Practical guidance
 ------------------

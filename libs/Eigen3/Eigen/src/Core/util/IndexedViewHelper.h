@@ -168,7 +168,7 @@ template<int Size> struct get_compile_time_incr<AllRange<Size> > {
   * \ingroup Core_Module
   * Can be used as a parameter to DenseBase::operator()(const RowIndices&, const ColIndices&) to index all rows or columns
   */
-static const Eigen::internal::all_t all; // PLEASE use Eigen::all instead of Eigen::placeholders::all
+static const Eigen::internal::all_t all;
 
 
 namespace placeholders {

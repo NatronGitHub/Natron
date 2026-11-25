@@ -2,11 +2,12 @@
 
 # Install pcre (required by glib)
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/pcre2.html
-PCRE2_VERSION=10.42
+PCRE2_VERSION=10.49
 PCRE2_TAR="pcre2-${PCRE2_VERSION}.tar.bz2"
+PCRE2_SHA256=53c156e1ba416a20da8e65395daa132da0d80e76910424caca3fcdae7831d384
 PCRE2_SITE="https://github.com/PhilipHazel/pcre2/releases/download/pcre2-${PCRE2_VERSION}"
 if download_step; then
-    download "$PCRE2_SITE" "$PCRE2_TAR"
+    download "$PCRE2_SITE" "$PCRE2_TAR" "$PCRE2_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libpcre2-8.pc" ] || [ "$(pkg-config --modversion libpcre2-8)" != "$PCRE2_VERSION" ]; }; }; then
     start_build

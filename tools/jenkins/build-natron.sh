@@ -158,7 +158,7 @@ if [ "$NATRON_BUILD_SYSTEM" = "qmake" ] && [ "$QT_VERSION_MAJOR" = 5 ]; then
     Linux)
 
         ;;
-    Msys|MINGW64_NT-*|MINGW32_NT-*)
+    Msys|MSYS_NT-*|MINGW64_NT-*|MINGW32_NT-*|UCRT64_NT-*|CLANG64_NT-*|CLANGARM64_NT-*)
         UNIX_PYTHON_HOME="$(cygpath -u "${PYTHON_HOME}")"
         UNIX_SDK_HOME="$(cygpath -u "${SDK_HOME}")"
         ;;
@@ -195,8 +195,8 @@ if [ "$NATRON_BUILD_SYSTEM" = "cmake" ]; then
     # CMake build: configure, build, "cmake --install" with the PORTABLE layout into a
     # staging directory, then copy the result to the flat layout that the installer scripts
     # read from $TMP_BINARIES_PATH: bin/ (with Info.plist and PkgInfo on macOS), Resources/,
-    # PyPlugs/, docs/natron/, and on macOS the DMG background. CMake generates the Python
-    # bindings during the build.
+    # PyPlugs/, natron_convert_project.py, docs/natron/, and on macOS the DMG background.
+    # CMake generates the Python bindings during the build.
     CMAKE_BUILD_DIR="$TMP_PATH/Natron-cmake-build"
     CMAKE_INSTALL_DIR="$TMP_PATH/Natron-cmake-install"
     # cmake is a native program on Windows: give it Windows paths
@@ -210,9 +210,12 @@ if [ "$NATRON_BUILD_SYSTEM" = "cmake" ]; then
         *) CMAKE_BUILD_TYPE=Release;;
     esac
 
-    # $CC, $CXX and $OBJECTIVE_CXX may carry flags (e.g. "clang++-mp-22 -stdlib=libc++ -std=c++20"):
+    # $CC, $CXX and $OBJECTIVE_CXX may carry flags (e.g. "clang++-mp-22 -stdlib=libc++ -std=c++17",
+    # -std=c++20 with Qt6; see compiler-common.sh):
     # CMake needs the compiler alone, and the flags in CMAKE_<LANG>_FLAGS. A -std=... flag is
-    # dropped: CMakeLists.txt sets the C++ standard. The compiler path must not contain spaces.
+    # dropped: CMakeLists.txt sets the C++ standard (C++17 with Qt5, C++20 with Qt6, from NATRON_QT6,
+    # with GNU extensions: -std=gnu++17/gnu++20).
+    # The compiler path must not contain spaces.
     split_compiler() { # split_compiler VAR "compiler flags...": sets VAR_EXE and VAR_FLAGS
         local words i w flags=""
         read -r -a words <<< "$2"
@@ -348,12 +351,14 @@ if [ "$NATRON_BUILD_SYSTEM" = "cmake" ]; then
         cp "$CMAKE_APP_CONTENTS/Info.plist" "$CMAKE_APP_CONTENTS/PkgInfo" "$TMP_BINARIES_PATH/bin/"
         cp -a "$CMAKE_APP_CONTENTS/Resources/." "$RES_DIR/"
         cp -a "$CMAKE_APP_CONTENTS/Plugins/PyPlugs" "$TMP_BINARIES_PATH/PyPlugs"
+        cp "$CMAKE_APP_CONTENTS/Plugins/natron_convert_project.py" "$TMP_BINARIES_PATH/"
         cp LICENSE.txt "$TMP_BINARIES_PATH/docs/natron/"
         cp Gui/Resources/Images/splashscreen.* "$TMP_BINARIES_PATH/"
     else
         cp -a "$CMAKE_INSTALL_DIR/bin/." "$TMP_BINARIES_PATH/bin/"
         cp -a "$CMAKE_INSTALL_DIR/Resources/." "$RES_DIR/"
         cp -a "$CMAKE_INSTALL_DIR/Plugins/PyPlugs" "$TMP_BINARIES_PATH/PyPlugs"
+        cp "$CMAKE_INSTALL_DIR/Plugins/natron_convert_project.py" "$TMP_BINARIES_PATH/"
         cp -a "$CMAKE_INSTALL_DIR/docs/natron/." "$TMP_BINARIES_PATH/docs/natron/"
     fi
     echo "*** $RES_DIR/OpenColorIO-Configs now contains:"
@@ -632,6 +637,7 @@ fi
 rm -rf "$TMP_BINARIES_PATH/PyPlugs" || true
 mkdir -p "$TMP_BINARIES_PATH/PyPlugs"
 cp "$srcdir"/Gui/Resources/PyPlugs/* "$TMP_BINARIES_PATH/PyPlugs/"
+cp "$srcdir"/tools/natron_convert_project.py "$TMP_BINARIES_PATH/"
 if [ "$PKGOS" = "Linux" ] || [ "$PKGOS" = "Windows" ]; then
     mkdir -p "$RES_DIR/etc/fonts/conf.d"
     cp "$srcdir"/Gui/Resources/etc/fonts/fonts.conf "$RES_DIR/etc/fonts/"
@@ -658,7 +664,15 @@ if [ "$PKGOS" = "Linux" ]; then
     # Note: Several suppression files can be passed to valgrind.
     # There is an automatic tool to generate libc/libstdc++/Qt
     # suppressions at https://github.com/AlekSi/valgrind-suppressions
-    env LD_LIBRARY_PATH="$SDK_HOME/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib:$QTDIR/lib" $TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/valgrind-python${PYV}.supp" ${TEST_BINARY_TO_RUN}
+    if [ "${ARCH:-$(uname -m)}" = aarch64 ]; then
+        # valgrind is about 10 times slower on aarch64 than on x86_64: the suite doesn't fit in
+        # the time limit (the x86_64 build runs it under valgrind)
+        env LD_LIBRARY_PATH="$SDK_HOME/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib:$QTDIR/lib" $TIMEOUT -s KILL 1800 ${TEST_BINARY_TO_RUN}
+    else
+        # DeepGraphRender.VeryDeepChain (a 5000-node graph) takes 7 minutes without valgrind and
+        # more than the whole 30-minute limit with it: it runs in CI (ci.yml), without valgrind
+        env GTEST_FILTER=-DeepGraphRender.VeryDeepChain LD_LIBRARY_PATH="$SDK_HOME/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib:$QTDIR/lib" $TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/valgrind-python${PYV}.supp" ${TEST_BINARY_TO_RUN}
+    fi
     rm -f lib || true
     # ITS NOT POSSIBLE TO RUN THE WIN TESTS HERE, DO IT IN THE INSTALLER SCRIPT
 elif [ "$PKGOS" = "Windows" ]; then
@@ -676,7 +690,10 @@ elif [ "$PKGOS" = "Windows" ]; then
     #rm -rf /c/Users/NatronWin/AppData/Local/INRIA/Natron &> /dev/null || true
     rm -rf "$LOCALAPPDATA\\INRIA\\Natron"* &> /dev/null || true
     testfail=0
-    env PYTHONHOME="$SDK_HOME" PATH="$FFMPEG_PATH/bin:$LIBRAW_PATH/bin:$QTDIR/bin:$SDK_HOME/osmesa/lib:$SDK_HOME/bin:${PATH:-}" $TIMEOUT -s KILL 1800 "${TEST_BINARY_TO_RUN}" || testfail=1
+    # MSYS2's Python loads extension modules with LOAD_LIBRARY_SEARCH_DEFAULT_DIRS, which ignores
+    # PATH, and Tests.exe is not next to the DLLs: PYTHONLEGACYWINDOWSDLLLOADING=1 (an MSYS2
+    # Python extension) restores the PATH search, as in ci.yml (#1147)
+    env PYTHONHOME="$SDK_HOME" PYTHONLEGACYWINDOWSDLLLOADING=1 PATH="$FFMPEG_PATH/bin:$LIBRAW_PATH/bin:$QTDIR/bin:$SDK_HOME/osmesa/lib:$SDK_HOME/bin:${PATH:-}" $TIMEOUT -s KILL 1800 "${TEST_BINARY_TO_RUN}" || testfail=1
     if [ $testfail != 0 ]; then
         echo "*** WARNING: Natron tests FAILED"
     fi

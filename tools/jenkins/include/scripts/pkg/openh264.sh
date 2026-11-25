@@ -2,11 +2,12 @@
 
 # Install openh264 (for ffmpeg)
 # see https://github.com/cisco/openh264/releases
-OPENH264_VERSION=2.3.1
+OPENH264_VERSION=2.7.0
 OPENH264_TAR="openh264-${OPENH264_VERSION}.tar.gz"
+OPENH264_SHA256=5178775c8b440073e70920e97d195efff721c0e56d0a78cc82c919e95d54924d
 #OPENH264_SITE="https://github.com/cisco/openh264/archive"
 if download_step; then
-    download_github cisco openh264 "${OPENH264_VERSION}" v "${OPENH264_TAR}"
+    download_github cisco openh264 "${OPENH264_VERSION}" v "${OPENH264_TAR}" "$OPENH264_SHA256"
     #download "$OPENH264_SITE" "$OPENH264_TAR"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/openh264.pc" ] || [ "$(pkg-config --modversion openh264)" != "$OPENH264_VERSION" ]; }; }; then

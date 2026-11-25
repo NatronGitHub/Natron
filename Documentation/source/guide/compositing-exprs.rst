@@ -174,12 +174,19 @@ These variables are defined in every expression:
 ``random(min, max, frame, seed)`` and ``randomInt(min, max, frame, seed)``
     A random number between ``min`` and ``max`` (``max`` excluded). The value
     only depends on ``frame``, on ``seed`` (an integer, 0 if omitted) and on
-    the state of the node: it is the same each time the frame is computed,
-    and changing a parameter of the node, or of a node upstream, gives new
-    random values. Use a different ``seed`` to get several independent random
-    values in one expression. Always pass ``frame``: ``random(min, max)``
-    without it is not tied to the frame, and its value depends on the values
-    computed before, so a render is not reproducible. ``randomInt`` rounds
+    the state of the node and its inputs: it is the same each time the frame
+    is computed, and changing a parameter of the node, or of a node upstream,
+    gives new random values (undo does not bring the old ones back; two
+    identical new nodes also differ). It does not depend on the parameter nor
+    on the dimension: use a different ``seed`` for each random value, each
+    parameter and each dimension, for example ``random(-2, 2, frame,
+    dimension)``, else the dimensions of a position get the same value and it
+    only moves along the diagonal. Always pass ``frame``: ``random(min, max)``
+    without it continues a sequence of the parameter. Natron starts that
+    sequence again from the frame when it computes the expression of the
+    parameter, but anywhere else (a script, or ``Node1.param.random()`` in
+    another expression) its value depends on the values computed before, so
+    it is not reproducible. ``randomInt`` rounds
     toward zero, so with a negative ``min`` the results are uneven:
     ``randomInt(-5, 5, frame)`` practically never returns -5, and returns 0
     twice as often as the other values.

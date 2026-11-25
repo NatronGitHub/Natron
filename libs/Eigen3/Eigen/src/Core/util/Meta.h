@@ -133,7 +133,10 @@ template<typename T> struct remove_all<T*>        { typedef typename remove_all<
 template<typename T> struct is_arithmetic      { enum { value = false }; };
 template<> struct is_arithmetic<float>         { enum { value = true }; };
 template<> struct is_arithmetic<double>        { enum { value = true }; };
+// GPU devices treat `long double` as `double`.
+#ifndef EIGEN_GPU_COMPILE_PHASE
 template<> struct is_arithmetic<long double>   { enum { value = true }; };
+#endif
 template<> struct is_arithmetic<bool>          { enum { value = true }; };
 template<> struct is_arithmetic<char>          { enum { value = true }; };
 template<> struct is_arithmetic<signed char>   { enum { value = true }; };
@@ -167,10 +170,8 @@ template<> struct is_integral<signed int>             { enum { value = true }; }
 template<> struct is_integral<unsigned int>           { enum { value = true }; };
 template<> struct is_integral<signed long>            { enum { value = true }; };
 template<> struct is_integral<unsigned long>          { enum { value = true }; };
-#if EIGEN_COMP_MSVC
-template<> struct is_integral<signed __int64>         { enum { value = true }; };
-template<> struct is_integral<unsigned __int64>       { enum { value = true }; };
-#endif
+template<> struct is_integral<signed long long>       { enum { value = true }; };
+template<> struct is_integral<unsigned long long>     { enum { value = true }; };
 #endif
 
 #if EIGEN_HAS_CXX11
@@ -189,20 +190,8 @@ template<> struct make_unsigned<signed int>       { typedef unsigned int type; }
 template<> struct make_unsigned<unsigned int>     { typedef unsigned int type; };
 template<> struct make_unsigned<signed long>      { typedef unsigned long type; };
 template<> struct make_unsigned<unsigned long>    { typedef unsigned long type; };
-#if EIGEN_COMP_MSVC
-template<> struct make_unsigned<signed __int64>   { typedef unsigned __int64 type; };
-template<> struct make_unsigned<unsigned __int64> { typedef unsigned __int64 type; };
-#endif
-
-// Some platforms define int64_t as `long long` even for C++03, where
-// `long long` is not guaranteed by the standard. In this case we are missing
-// the definition for make_unsigned. If we just define it, we run into issues
-// where `long long` doesn't exist in some compilers for C++03. We therefore add
-// the specialization for these platforms only.
-#if EIGEN_OS_MAC || EIGEN_COMP_MINGW
 template<> struct make_unsigned<unsigned long long> { typedef unsigned long long type; };
 template<> struct make_unsigned<long long>          { typedef unsigned long long type; };
-#endif
 #endif
 
 template <typename T> struct add_const { typedef const T type; };
@@ -466,20 +455,32 @@ template<typename T, std::size_t N> struct array_size<std::array<T,N> > {
 };
 #endif
 
+
 /** \internal
-  * Analogue of the std::size free function.
-  * It returns the size of the container or view \a x of type \c T
+  * Analogue of the std::ssize free function.
+  * It returns the signed size of the container or view \a x of type \c T
   *
   * It currently supports:
   *  - any types T defining a member T::size() const
   *  - plain C arrays as T[N]
   *
+  * For C++20, this function just forwards to `std::ssize`, or any ADL discoverable `ssize` function.
   */
-template<typename T>
-EIGEN_CONSTEXPR Index size(const T& x) { return x.size(); }
+#if EIGEN_COMP_CXXVER < 20
+template <typename T>
+EIGEN_CONSTEXPR std::ptrdiff_t index_list_size(const T& x) {
+  return static_cast<std::ptrdiff_t>(x.size());
+}
 
-template<typename T,std::size_t N>
-EIGEN_CONSTEXPR Index size(const T (&) [N]) { return N; }
+template<typename T, std::ptrdiff_t N>
+EIGEN_CONSTEXPR std::ptrdiff_t index_list_size(const T (&)[N]) { return N; }
+#else
+template <typename T>
+EIGEN_CONSTEXPR auto index_list_size(T&& x) {
+  using std::ssize;
+  return ssize(std::forward<T>(x));
+}
+#endif // EIGEN_COMP_CXXVER
 
 /** \internal
   * Convenient struct to get the result type of a nullary, unary, binary, or
@@ -696,8 +697,7 @@ struct has_binary_operator
 template<int Y,
          int InfX = 0,
          int SupX = ((Y==1) ? 1 : Y/2),
-         bool Done = ((SupX-InfX)<=1 ? true : ((SupX*SupX <= Y) && ((SupX+1)*(SupX+1) > Y))) >
-                                // use ?: instead of || just to shut up a stupid gcc 4.3 warning
+         bool Done = ((SupX - InfX) <= 1 || ((SupX * SupX <= Y) && ((SupX + 1) * (SupX + 1) > Y)))>
 class meta_sqrt
 {
     enum {

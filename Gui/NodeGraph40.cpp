@@ -61,6 +61,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiTest.h"
 #include "Gui/NodeClipBoard.h"
 #include "Gui/NodeGui.h"
 #include "Gui/NodeGuiSerialization.h"
@@ -166,7 +167,7 @@ void
 NodeGraph::pasteCliboard(const NodeClipBoard& clipboard,
                          std::list<std::pair<std::string, NodeGuiPtr> >* newNodes)
 {
-    QPointF position = _imp->_root->mapFromScene( mapToScene( mapFromGlobal( QCursor::pos() ) ) );
+    QPointF position = _imp->_root->mapFromScene( mapToScene( mapFromGlobal( GuiTest::cursorPos() ) ) );
 
     _imp->pasteNodesInternal(clipboard, position, false, newNodes);
 }
@@ -200,7 +201,7 @@ NodeGraph::pasteNodeClipBoards(const QPointF& pos)
 bool
 NodeGraph::pasteNodeClipBoards()
 {
-    QPointF position = mapToScene( mapFromGlobal( QCursor::pos() ) );
+    QPointF position = mapToScene( mapFromGlobal( GuiTest::cursorPos() ) );
 
     return pasteNodeClipBoards(position);
 }
@@ -224,7 +225,7 @@ NodeGraph::duplicateSelectedNodes(const QPointF& pos)
 void
 NodeGraph::duplicateSelectedNodes()
 {
-    QPointF scenePos = mapToScene( mapFromGlobal( QCursor::pos() ) );
+    QPointF scenePos = mapToScene( mapFromGlobal( GuiTest::cursorPos() ) );
 
     duplicateSelectedNodes(scenePos);
 }
@@ -336,7 +337,7 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
         std::list<NodeSerializationPtr>::iterator itS = serializations.begin();
         for (std::list<NodeGuiPtr> ::iterator it = newNodesList.begin(); it != newNodesList.end(); ++it, ++itS) {
             (*it)->getNode()->storeKnobsLinks(**itS, oldNewScriptNamesMapping);
-            (*it)->getNode()->restoreKnobsLinks(allNodes, oldNewScriptNamesMapping, true); // clone should never fail
+            (*it)->getNode()->restoreKnobsLinks(allNodes, oldNewScriptNamesMapping, false); // should never fail, but must not throw out of the undo stack (#1612)
         }
     } // CreatingNodeTreeFlag_RAII createNodeTree
 
@@ -349,7 +350,7 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
 void
 NodeGraph::cloneSelectedNodes()
 {
-    QPointF scenePos = mapToScene( mapFromGlobal( QCursor::pos() ) );
+    QPointF scenePos = mapToScene( mapFromGlobal( GuiTest::cursorPos() ) );
 
     cloneSelectedNodes(scenePos);
 } // cloneSelectedNodes

@@ -18,10 +18,10 @@ namespace internal {
 // struct gemm_pack_lhs_triangular
 // {
 //   Matrix<Scalar,mr,mr,
-//   void operator()(Scalar* blockA, const EIGEN_RESTRICT Scalar* _lhs, int lhsStride, int depth, int rows)
+//   void operator()(Scalar* blockA, const EIGEN_RESTRICT Scalar* lhs_, int lhsStride, int depth, int rows)
 //   {
 //     conj_if<NumTraits<Scalar>::IsComplex && Conjugate> cj;
-//     const_blas_data_mapper<Scalar, StorageOrder> lhs(_lhs,lhsStride);
+//     const_blas_data_mapper<Scalar, StorageOrder> lhs(lhs_,lhsStride);
 //     int count = 0;
 //     const int peeled_mc = (rows/mr)*mr;
 //     for(int i=0; i<peeled_mc; i+=mr)
@@ -96,8 +96,8 @@ struct product_triangular_matrix_matrix<Scalar,Index,Mode,true,
 
   static EIGEN_DONT_INLINE void run(
     Index _rows, Index _cols, Index _depth,
-    const Scalar* _lhs, Index lhsStride,
-    const Scalar* _rhs, Index rhsStride,
+    const Scalar* lhs_, Index lhsStride,
+    const Scalar* rhs_, Index rhsStride,
     Scalar* res,        Index resIncr, Index resStride,
     const Scalar& alpha, level3_blocking<Scalar,Scalar>& blocking);
 };
@@ -110,9 +110,9 @@ EIGEN_DONT_INLINE void product_triangular_matrix_matrix<Scalar,Index,Mode,true,
                                                         LhsStorageOrder,ConjugateLhs,
                                                         RhsStorageOrder,ConjugateRhs,ColMajor,ResInnerStride,Version>::run(
     Index _rows, Index _cols, Index _depth,
-    const Scalar* _lhs, Index lhsStride,
-    const Scalar* _rhs, Index rhsStride,
-    Scalar* _res,       Index resIncr, Index resStride,
+    const Scalar* lhs_, Index lhsStride,
+    const Scalar* rhs_, Index rhsStride,
+    Scalar* res_,       Index resIncr, Index resStride,
     const Scalar& alpha, level3_blocking<Scalar,Scalar>& blocking)
   {
     // strip zeros
@@ -124,9 +124,9 @@ EIGEN_DONT_INLINE void product_triangular_matrix_matrix<Scalar,Index,Mode,true,
     typedef const_blas_data_mapper<Scalar, Index, LhsStorageOrder> LhsMapper;
     typedef const_blas_data_mapper<Scalar, Index, RhsStorageOrder> RhsMapper;
     typedef blas_data_mapper<typename Traits::ResScalar, Index, ColMajor, Unaligned, ResInnerStride> ResMapper;
-    LhsMapper lhs(_lhs,lhsStride);
-    RhsMapper rhs(_rhs,rhsStride);
-    ResMapper res(_res, resStride, resIncr);
+    LhsMapper lhs(lhs_,lhsStride);
+    RhsMapper rhs(rhs_,rhsStride);
+    ResMapper res(res_, resStride, resIncr);
 
     Index kc = blocking.kc();                   // cache block size along the K direction
     Index mc = (std::min)(rows,blocking.mc());  // cache block size along the M direction
@@ -254,8 +254,8 @@ struct product_triangular_matrix_matrix<Scalar,Index,Mode,false,
 
   static EIGEN_DONT_INLINE void run(
     Index _rows, Index _cols, Index _depth,
-    const Scalar* _lhs, Index lhsStride,
-    const Scalar* _rhs, Index rhsStride,
+    const Scalar* lhs_, Index lhsStride,
+    const Scalar* rhs_, Index rhsStride,
     Scalar* res,        Index resIncr, Index resStride,
     const Scalar& alpha, level3_blocking<Scalar,Scalar>& blocking);
 };
@@ -268,9 +268,9 @@ EIGEN_DONT_INLINE void product_triangular_matrix_matrix<Scalar,Index,Mode,false,
                                                         LhsStorageOrder,ConjugateLhs,
                                                         RhsStorageOrder,ConjugateRhs,ColMajor,ResInnerStride,Version>::run(
     Index _rows, Index _cols, Index _depth,
-    const Scalar* _lhs, Index lhsStride,
-    const Scalar* _rhs, Index rhsStride,
-    Scalar* _res,       Index resIncr, Index resStride,
+    const Scalar* lhs_, Index lhsStride,
+    const Scalar* rhs_, Index rhsStride,
+    Scalar* res_,       Index resIncr, Index resStride,
     const Scalar& alpha, level3_blocking<Scalar,Scalar>& blocking)
   {
     const Index PacketBytes = packet_traits<Scalar>::size*sizeof(Scalar);
@@ -283,9 +283,9 @@ EIGEN_DONT_INLINE void product_triangular_matrix_matrix<Scalar,Index,Mode,false,
     typedef const_blas_data_mapper<Scalar, Index, LhsStorageOrder> LhsMapper;
     typedef const_blas_data_mapper<Scalar, Index, RhsStorageOrder> RhsMapper;
     typedef blas_data_mapper<typename Traits::ResScalar, Index, ColMajor, Unaligned, ResInnerStride> ResMapper;
-    LhsMapper lhs(_lhs,lhsStride);
-    RhsMapper rhs(_rhs,rhsStride);
-    ResMapper res(_res, resStride, resIncr);
+    LhsMapper lhs(lhs_,lhsStride);
+    RhsMapper rhs(rhs_,rhsStride);
+    ResMapper res(res_, resStride, resIncr);
 
     Index kc = blocking.kc();                   // cache block size along the K direction
     Index mc = (std::min)(rows,blocking.mc());  // cache block size along the M direction

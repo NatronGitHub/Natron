@@ -35,6 +35,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QMutex>
 #include <QFrame>
 #include <QTabWidget>
+#include <QPointer>
 #include <QDialog>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -71,7 +72,7 @@ struct DockablePanelPrivate
     /*Tab related*/
     QWidget* _rightContainer;
     QVBoxLayout* _rightContainerLayout;
-    QTabWidget* _tabWidget;
+    QPointer<QTabWidget> _tabWidget; // a child widget, deleted by Qt after the panel (#1554)
     Button* _centerNodeButton;
     Button* _enterInGroupButton;
     Button* _helpButton;

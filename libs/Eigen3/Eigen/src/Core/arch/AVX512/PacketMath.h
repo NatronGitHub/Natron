@@ -28,6 +28,13 @@ namespace internal {
 #endif
 #endif
 
+// Disable the code for older versions of gcc that don't support many of the required avx512 math instrinsics.
+#if EIGEN_GNUC_AT_LEAST(5, 3) || EIGEN_COMP_CLANG || EIGEN_COMP_MSVC >= 1923 || EIGEN_COMP_ICC >= 1900
+#define EIGEN_HAS_AVX512_MATH 1
+#else
+#define EIGEN_HAS_AVX512_MATH 0
+#endif
+
 typedef __m512 Packet16f;
 typedef __m512i Packet16i;
 typedef __m512d Packet8d;
@@ -72,12 +79,14 @@ struct packet_traits<half> : default_packet_traits {
     HasMax    = 1,
     HasConj   = 1,
     HasSetLinear = 0,
-    HasLog    = 1,
-    HasLog1p  = 1,
-    HasExpm1  = 1,
-    HasExp    = 1,
-    HasSqrt   = 1,
-    HasRsqrt  = 1,
+    HasLog    = EIGEN_HAS_AVX512_MATH,
+    HasLog1p  = EIGEN_HAS_AVX512_MATH,
+    HasExp    = EIGEN_HAS_AVX512_MATH,
+    HasExpm1  = EIGEN_HAS_AVX512_MATH,
+    HasSqrt   = EIGEN_HAS_AVX512_MATH,
+    HasRsqrt  = EIGEN_HAS_AVX512_MATH,
+    HasBessel = EIGEN_HAS_AVX512_MATH,
+    HasNdtri  = EIGEN_HAS_AVX512_MATH,
     HasSin    = EIGEN_FAST_MATH,
     HasCos    = EIGEN_FAST_MATH,
     HasTanh   = EIGEN_FAST_MATH,
@@ -86,9 +95,7 @@ struct packet_traits<half> : default_packet_traits {
     HasRound  = 1,
     HasFloor  = 1,
     HasCeil   = 1,
-    HasRint   = 1,
-    HasBessel = 1,
-    HasNdtri  = 1
+    HasRint   = 1
   };
 };
 
@@ -109,7 +116,7 @@ template<> struct packet_traits<float>  : default_packet_traits
     HasBlend = 0,
     HasSin = EIGEN_FAST_MATH,
     HasCos = EIGEN_FAST_MATH,
-#if EIGEN_GNUC_AT_LEAST(5, 3) || (!EIGEN_COMP_GNUC_STRICT)
+#if EIGEN_HAS_AVX512_MATH
     HasLog = 1,
     HasLog1p  = 1,
     HasExpm1  = 1,
@@ -138,7 +145,7 @@ template<> struct packet_traits<double> : default_packet_traits
     AlignedOnScalar = 1,
     size = 8,
     HasHalfPacket = 1,
-#if EIGEN_GNUC_AT_LEAST(5, 3) || (!EIGEN_COMP_GNUC_STRICT)
+#if EIGEN_HAS_AVX512_MATH
     HasLog  = 1,
     HasExp = 1,
     HasSqrt = EIGEN_FAST_MATH,
@@ -289,11 +296,20 @@ EIGEN_STRONG_INLINE Packet16i psub<Packet16i>(const Packet16i& a,
 
 template <>
 EIGEN_STRONG_INLINE Packet16f pnegate(const Packet16f& a) {
-  return _mm512_sub_ps(_mm512_set1_ps(0.0), a);
+  // NOTE: MSVC seems to struggle with _mm512_set1_epi32, leading to random results.
+  //       The intel docs give it a relatively high latency as well, so we're probably
+  //       better off with using _mm512_set_epi32 directly anyways.
+  const __m512i mask = _mm512_set_epi32(0x80000000,0x80000000,0x80000000,0x80000000,
+                                        0x80000000,0x80000000,0x80000000,0x80000000,
+                                        0x80000000,0x80000000,0x80000000,0x80000000,
+                                        0x80000000,0x80000000,0x80000000,0x80000000);
+  return _mm512_castsi512_ps(_mm512_xor_epi32(_mm512_castps_si512(a), mask));
 }
 template <>
 EIGEN_STRONG_INLINE Packet8d pnegate(const Packet8d& a) {
-  return _mm512_sub_pd(_mm512_set1_pd(0.0), a);
+  const __m512i mask = _mm512_set_epi64(0x8000000000000000ULL, 0x8000000000000000ULL, 0x8000000000000000ULL, 0x8000000000000000ULL,
+                                        0x8000000000000000ULL, 0x8000000000000000ULL, 0x8000000000000000ULL, 0x8000000000000000ULL);
+  return _mm512_castsi512_pd(_mm512_xor_epi64(_mm512_castpd_si512(a), mask));
 }
 
 template <>
@@ -686,7 +702,7 @@ EIGEN_STRONG_INLINE Packet8d pload<Packet8d>(const double* from) {
 template <>
 EIGEN_STRONG_INLINE Packet16i pload<Packet16i>(const int* from) {
   EIGEN_DEBUG_ALIGNED_LOAD return _mm512_load_si512(
-      reinterpret_cast<const __m512i*>(from));
+    reinterpret_cast<const __m512i*>(from));
 }
 
 template <>
@@ -1426,60 +1442,11 @@ ploadquad(const Eigen::half* from) {
 }
 
 EIGEN_STRONG_INLINE Packet16f half2float(const Packet16h& a) {
-#ifdef EIGEN_HAS_FP16_C
   return _mm512_cvtph_ps(a);
-#else
-  EIGEN_ALIGN64 half aux[16];
-  pstore(aux, a);
-  float f0(aux[0]);
-  float f1(aux[1]);
-  float f2(aux[2]);
-  float f3(aux[3]);
-  float f4(aux[4]);
-  float f5(aux[5]);
-  float f6(aux[6]);
-  float f7(aux[7]);
-  float f8(aux[8]);
-  float f9(aux[9]);
-  float fa(aux[10]);
-  float fb(aux[11]);
-  float fc(aux[12]);
-  float fd(aux[13]);
-  float fe(aux[14]);
-  float ff(aux[15]);
-
-  return _mm512_set_ps(
-      ff, fe, fd, fc, fb, fa, f9, f8, f7, f6, f5, f4, f3, f2, f1, f0);
-#endif
 }
 
 EIGEN_STRONG_INLINE Packet16h float2half(const Packet16f& a) {
-#ifdef EIGEN_HAS_FP16_C
   return _mm512_cvtps_ph(a, _MM_FROUND_TO_NEAREST_INT|_MM_FROUND_NO_EXC);
-#else
-  EIGEN_ALIGN64 float aux[16];
-  pstore(aux, a);
-  half h0(aux[0]);
-  half h1(aux[1]);
-  half h2(aux[2]);
-  half h3(aux[3]);
-  half h4(aux[4]);
-  half h5(aux[5]);
-  half h6(aux[6]);
-  half h7(aux[7]);
-  half h8(aux[8]);
-  half h9(aux[9]);
-  half ha(aux[10]);
-  half hb(aux[11]);
-  half hc(aux[12]);
-  half hd(aux[13]);
-  half he(aux[14]);
-  half hf(aux[15]);
-
-  return _mm256_set_epi16(
-      hf.x, he.x, hd.x, hc.x, hb.x, ha.x, h9.x, h8.x,
-      h7.x, h6.x, h5.x, h4.x, h3.x, h2.x, h1.x, h0.x);
-#endif
 }
 
 template<> EIGEN_STRONG_INLINE Packet16h ptrue(const Packet16h& a) {
@@ -1852,7 +1819,7 @@ struct packet_traits<bfloat16> : default_packet_traits {
     HasInsert = 1,
     HasSin = EIGEN_FAST_MATH,
     HasCos = EIGEN_FAST_MATH,
-#if EIGEN_GNUC_AT_LEAST(5, 3) || (!EIGEN_COMP_GNUC_STRICT)
+#if EIGEN_HAS_AVX512_MATH
 #ifdef EIGEN_VECTORIZE_AVX512DQ
     HasLog = 1,  // Currently fails test with bad accuracy.
     HasLog1p  = 1,

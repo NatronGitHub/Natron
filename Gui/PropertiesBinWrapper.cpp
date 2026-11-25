@@ -31,6 +31,7 @@
 
 #include "Gui/DockablePanel.h"
 #include "Gui/Gui.h"
+#include "Gui/GuiTest.h"
 #include "Gui/KnobWidgetDnD.h"
 #include "Gui/RightClickableWidget.h"
 
@@ -83,7 +84,7 @@ PropertiesBinWrapper::keyReleaseEvent(QKeyEvent* e)
 QUndoStack*
 PropertiesBinWrapper::getUndoStack() const
 {
-    QWidget* w = qApp->widgetAt( QCursor::pos() );
+    QWidget* w = qApp->widgetAt( GuiTest::cursorPos() );
     RightClickableWidget* panel = RightClickableWidget::isParentSettingsPanelRecursive(w);
 
     if (panel) {

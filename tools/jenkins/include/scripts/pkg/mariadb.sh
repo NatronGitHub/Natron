@@ -7,12 +7,13 @@ if $WITH_MARIADB; then
 #MARIADB_VERSION=10.2.24 # last known working version before 10.3 (see below)
 #MARIADB_VERSION=10.4.7 # fails with "plugin/handler_socket/libhsclient/hstcpcli.cpp:9:10: fatal error: my_global.h: No such file or directory"
 #MARIADB_VERSION=10.3.15 # fails with "plugin/handler_socket/libhsclient/hstcpcli.cpp:9:10: fatal error: my_global.h: No such file or directory"
-MARIADB_VERSION=10.6.12
+MARIADB_VERSION=10.6.28
 
 MARIADB_TAR="mariadb-${MARIADB_VERSION}.tar.gz"
-MARIADB_SITE="http://archive.mariadb.org/mariadb-${MARIADB_VERSION}/source"
+MARIADB_SHA256=13d9330f3120c739757b215a3220a9c9e2ddf3c3c1b8beff5cd43942868f3d72
+MARIADB_SITE="https://archive.mariadb.org/mariadb-${MARIADB_VERSION}/source"
 if download_step; then
-    download "$MARIADB_SITE" "$MARIADB_TAR"
+    download "$MARIADB_SITE" "$MARIADB_TAR" "$MARIADB_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/mariadb_config" ] || [ "$("${SDK_HOME}/bin/mariadb_config" --version)" != "$MARIADB_VERSION" ] ; }; }; then
     start_build

@@ -292,20 +292,59 @@ template<typename T> EIGEN_DEVICE_FUNC inline void destruct_elements_of_array(T 
 /** \internal Constructs the elements of an array.
   * The \a size parameter tells on how many objects to call the constructor of T.
   */
-template<typename T> EIGEN_DEVICE_FUNC inline T* construct_elements_of_array(T *ptr, std::size_t size)
+template<typename T> EIGEN_DEVICE_FUNC inline T* default_construct_elements_of_array(T *ptr, std::size_t size)
 {
-  std::size_t i;
+  std::size_t i=0;
   EIGEN_TRY
   {
-      for (i = 0; i < size; ++i) ::new (ptr + i) T;
-      return ptr;
+    for (i = 0; i < size; ++i) ::new (ptr + i) T;
   }
   EIGEN_CATCH(...)
   {
     destruct_elements_of_array(ptr, i);
     EIGEN_THROW;
   }
-  return NULL;
+  return ptr;
+}
+
+/** \internal Copy-constructs the elements of an array.
+  * The \a size parameter tells on how many objects to copy.
+  */
+template<typename T> EIGEN_DEVICE_FUNC inline T* copy_construct_elements_of_array(T *ptr, const T* src, std::size_t size)
+{
+  std::size_t i=0;
+  EIGEN_TRY
+  {
+      for (i = 0; i < size; ++i) ::new (ptr + i) T(*(src + i));
+  }
+  EIGEN_CATCH(...)
+  {
+    destruct_elements_of_array(ptr, i);
+    EIGEN_THROW;
+  }
+  return ptr;
+}
+
+/** \internal Move-constructs the elements of an array.
+  * The \a size parameter tells on how many objects to move.
+  */
+template<typename T> EIGEN_DEVICE_FUNC inline T* move_construct_elements_of_array(T *ptr, T* src, std::size_t size)
+{
+  std::size_t i=0;
+  EIGEN_TRY
+  {
+#if EIGEN_HAS_RVALUE_REFERENCES
+    for (i = 0; i < size; ++i) ::new (ptr + i) T(std::move(*(src + i)));
+#else
+    for (i = 0; i < size; ++i) ::new (ptr + i) T(*(src + i));
+#endif
+  }
+  EIGEN_CATCH(...)
+  {
+    destruct_elements_of_array(ptr, i);
+    EIGEN_THROW;
+  }
+  return ptr;
 }
 
 /*****************************************************************************
@@ -326,10 +365,10 @@ EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void check_size_for_overflow(std::size_t s
 template<typename T> EIGEN_DEVICE_FUNC inline T* aligned_new(std::size_t size)
 {
   check_size_for_overflow<T>(size);
-  T *result = reinterpret_cast<T*>(aligned_malloc(sizeof(T)*size));
+  T *result = static_cast<T*>(aligned_malloc(sizeof(T)*size));
   EIGEN_TRY
   {
-    return construct_elements_of_array(result, size);
+    return default_construct_elements_of_array(result, size);
   }
   EIGEN_CATCH(...)
   {
@@ -342,10 +381,10 @@ template<typename T> EIGEN_DEVICE_FUNC inline T* aligned_new(std::size_t size)
 template<typename T, bool Align> EIGEN_DEVICE_FUNC inline T* conditional_aligned_new(std::size_t size)
 {
   check_size_for_overflow<T>(size);
-  T *result = reinterpret_cast<T*>(conditional_aligned_malloc<Align>(sizeof(T)*size));
+  T *result = static_cast<T*>(conditional_aligned_malloc<Align>(sizeof(T)*size));
   EIGEN_TRY
   {
-    return construct_elements_of_array(result, size);
+    return default_construct_elements_of_array(result, size);
   }
   EIGEN_CATCH(...)
   {
@@ -377,21 +416,32 @@ template<typename T, bool Align> EIGEN_DEVICE_FUNC inline T* conditional_aligned
 {
   check_size_for_overflow<T>(new_size);
   check_size_for_overflow<T>(old_size);
-  if(new_size < old_size)
-    destruct_elements_of_array(pts+new_size, old_size-new_size);
-  T *result = reinterpret_cast<T*>(conditional_aligned_realloc<Align>(reinterpret_cast<void*>(pts), sizeof(T)*new_size, sizeof(T)*old_size));
-  if(new_size > old_size)
+  
+  // If elements need to be explicitly initialized, we cannot simply realloc
+  // (or memcpy) the memory block - each element needs to be reconstructed.
+  // Otherwise, objects that contain internal pointers like mpfr or
+  // AnnoyingScalar can be pointing to the wrong thing.
+  T* result = static_cast<T*>(conditional_aligned_malloc<Align>(sizeof(T)*new_size));
+  EIGEN_TRY
   {
-    EIGEN_TRY
-    {
-      construct_elements_of_array(result+old_size, new_size-old_size);
+    // Move-construct initial elements.
+    std::size_t copy_size = (std::min)(old_size, new_size);
+    move_construct_elements_of_array(result, pts, copy_size);
+    
+    // Default-construct remaining elements.
+    if (new_size > old_size) {
+      default_construct_elements_of_array(result + copy_size, new_size - old_size);
     }
-    EIGEN_CATCH(...)
-    {
-      conditional_aligned_free<Align>(result);
-      EIGEN_THROW;
-    }
+    
+    // Delete old elements.
+    conditional_aligned_delete<T, Align>(pts, old_size);      
   }
+  EIGEN_CATCH(...)
+  {
+    conditional_aligned_free<Align>(result);
+    EIGEN_THROW;
+  }
+
   return result;
 }
 
@@ -401,12 +451,12 @@ template<typename T, bool Align> EIGEN_DEVICE_FUNC inline T* conditional_aligned
   if(size==0)
     return 0; // short-cut. Also fixes Bug 884
   check_size_for_overflow<T>(size);
-  T *result = reinterpret_cast<T*>(conditional_aligned_malloc<Align>(sizeof(T)*size));
+  T *result = static_cast<T*>(conditional_aligned_malloc<Align>(sizeof(T)*size));
   if(NumTraits<T>::RequireInitialization)
   {
     EIGEN_TRY
     {
-      construct_elements_of_array(result, size);
+      default_construct_elements_of_array(result, size);
     }
     EIGEN_CATCH(...)
     {
@@ -419,24 +469,13 @@ template<typename T, bool Align> EIGEN_DEVICE_FUNC inline T* conditional_aligned
 
 template<typename T, bool Align> inline T* conditional_aligned_realloc_new_auto(T* pts, std::size_t new_size, std::size_t old_size)
 {
+  if (NumTraits<T>::RequireInitialization) {
+    return conditional_aligned_realloc_new<T, Align>(pts, new_size, old_size);
+  }
+  
   check_size_for_overflow<T>(new_size);
   check_size_for_overflow<T>(old_size);
-  if(NumTraits<T>::RequireInitialization && (new_size < old_size))
-    destruct_elements_of_array(pts+new_size, old_size-new_size);
-  T *result = reinterpret_cast<T*>(conditional_aligned_realloc<Align>(reinterpret_cast<void*>(pts), sizeof(T)*new_size, sizeof(T)*old_size));
-  if(NumTraits<T>::RequireInitialization && (new_size > old_size))
-  {
-    EIGEN_TRY
-    {
-      construct_elements_of_array(result+old_size, new_size-old_size);
-    }
-    EIGEN_CATCH(...)
-    {
-      conditional_aligned_free<Align>(result);
-      EIGEN_THROW;
-    }
-  }
-  return result;
+  return static_cast<T*>(conditional_aligned_realloc<Align>(static_cast<void*>(pts), sizeof(T)*new_size, sizeof(T)*old_size));
 }
 
 template<typename T, bool Align> EIGEN_DEVICE_FUNC inline void conditional_aligned_delete_auto(T *ptr, std::size_t size)
@@ -617,7 +656,7 @@ template<typename T> class aligned_stack_memory_handler : noncopyable
       : m_ptr(ptr), m_size(size), m_deallocate(dealloc)
     {
       if(NumTraits<T>::RequireInitialization && m_ptr)
-        Eigen::internal::construct_elements_of_array(m_ptr, size);
+        Eigen::internal::default_construct_elements_of_array(m_ptr, size);
     }
     EIGEN_DEVICE_FUNC
     ~aligned_stack_memory_handler()
@@ -668,7 +707,7 @@ struct local_nested_eval_wrapper<Xpr,NbEvaluations,true>
       m_deallocate(ptr==0)
   {
     if(NumTraits<Scalar>::RequireInitialization && object.data())
-      Eigen::internal::construct_elements_of_array(object.data(), object.size());
+      Eigen::internal::default_construct_elements_of_array(object.data(), object.size());
     object = xpr;
   }
 

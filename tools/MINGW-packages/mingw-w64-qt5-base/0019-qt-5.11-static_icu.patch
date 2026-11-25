@@ -1,0 +1,13 @@
+--- a/src/corelib/configure.json	2019-06-12 23:59:14.000000000 +0300
++++ b/src/corelib/configure.json	2019-06-15 16:11:20.481818500 +0300
+@@ -108,8 +108,8 @@
+             "sources": [
+                 {
+                     "builds": {
+-                        "debug": "-lsicuind -lsicuucd -lsicudtd",
+-                        "release": "-lsicuin -lsicuuc -lsicudt"
++                        "debug": "-licuin -licuuc -licudt",
++                        "release": "-licuin -licuuc -licudt"
+                     },
+                     "condition": "config.win32 && !features.shared"
+                 },

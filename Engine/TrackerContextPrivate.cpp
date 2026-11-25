@@ -131,12 +131,14 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
             args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
 
             output = node->getApp()->createNode(args);
+            if (!output) {
+                // createNode() already reported why.
+                throw std::runtime_error( tr("Cannot create the internal Output node of the Tracker node").toStdString() );
+            }
             try {
                 output->setScriptName("Output");
             } catch (...) {
             }
-
-            assert(output);
         }
         {
             CreateNodeArgs args(PLUGINID_NATRON_INPUT, isTrackerNode);
@@ -144,7 +146,9 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
             args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
             args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "Source");
             input = node->getApp()->createNode(args);
-            assert(input);
+            if (!input) {
+                throw std::runtime_error( tr("Cannot create the internal Source node of the Tracker node").toStdString() );
+            }
         }
 
 
@@ -169,6 +173,9 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
             args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
             args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, transformName.toStdString());
             NodePtr tNode = node->getApp()->createNode(args);
+            if (!tNode) {
+                throw std::runtime_error( tr("The Tracker node requires the Misc.ofx.bundle plug-in to be installed").toStdString() );
+            }
             tNode->setNodeDisabled(true);
             transformNode = tNode;
 
@@ -2390,7 +2397,7 @@ TrackerContextPrivate::computeCornerParamsFromTracks()
     lastSolveRequest.cpWatcher.reset( new QFutureWatcher<CornerPinData>() );
     QObject::connect( lastSolveRequest.cpWatcher.get(), SIGNAL(finished()), this, SLOT(onCornerPinSolverWatcherFinished()) );
     QObject::connect( lastSolveRequest.cpWatcher.get(), SIGNAL(progressValueChanged(int)), this, SLOT(onCornerPinSolverWatcherProgress(int)) );
-    std::function<CornerPinData (const double&)> compute = [=](const double &keyframe) {
+    std::function<CornerPinData (const double&)> compute = [this](const double &keyframe) {
         return computeCornerPinParamsFromTracksAtTime(lastSolveRequest.refTime,
                                                       keyframe,
                                                       lastSolveRequest.jitterPeriod,
@@ -2600,7 +2607,7 @@ TrackerContextPrivate::computeTransformParamsFromTracks()
     lastSolveRequest.tWatcher.reset( new QFutureWatcher<TransformData>() );
     QObject::connect( lastSolveRequest.tWatcher.get(), SIGNAL(finished()), this, SLOT(onTransformSolverWatcherFinished()) );
     QObject::connect( lastSolveRequest.tWatcher.get(), SIGNAL(progressValueChanged(int)), this, SLOT(onTransformSolverWatcherProgress(int)) );
-    std::function<TransformData (const double&)> compute = [=](const double &keyframe) {
+    std::function<TransformData (const double&)> compute = [this](const double &keyframe) {
         return computeTransformParamsFromTracksAtTime(lastSolveRequest.refTime,
                                                       keyframe,
                                                       lastSolveRequest.jitterPeriod,

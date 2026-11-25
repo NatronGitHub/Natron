@@ -1,0 +1,53 @@
+--- a/src/widgets/dialogs/qmessagebox.cpp	2019-06-12 23:59:14.000000000 +0300
++++ b/src/widgets/dialogs/qmessagebox.cpp	2019-06-15 15:58:57.794713900 +0300
+@@ -77,9 +77,11 @@
+ #if defined(Q_OS_WIN) && !defined(Q_OS_WINRT)
+ HMENU qt_getWindowsSystemMenu(const QWidget *w)
+ {
+-    if (QWindow *window = QApplicationPrivate::windowForWidget(w))
+-        if (void *handle = QGuiApplication::platformNativeInterface()->nativeResourceForWindow("handle", window))
+-            return GetSystemMenu(reinterpret_cast<HWND>(handle), false);
++    if (QGuiApplication::platformNativeInterface()) {
++        if (QWindow *window = QApplicationPrivate::windowForWidget(w))
++            if (void *handle = QGuiApplication::platformNativeInterface()->nativeResourceForWindow("handle", window))
++                return GetSystemMenu(reinterpret_cast<HWND>(handle), false);
++    }
+     return 0;
+ }
+ #endif
+--- a/src/widgets/dialogs/qwizard_win.cpp	2019-06-12 23:59:14.000000000 +0300
++++ b/src/widgets/dialogs/qwizard_win.cpp	2019-06-15 15:58:57.810314000 +0300
+@@ -176,10 +176,11 @@
+         // The dynamic property takes effect when creating the platform window.
+         window->setProperty("_q_windowsCustomMargins", customMarginsV);
+         // If a platform window exists, change via native interface.
+-        if (QPlatformWindow *platformWindow = window->handle()) {
+-            QGuiApplication::platformNativeInterface()->
+-                setWindowProperty(platformWindow, QStringLiteral("WindowsCustomMargins"),
+-                                  customMarginsV);
++        if (QGuiApplication::platformNativeInterface()) {
++            if (QPlatformWindow *platformWindow = window->handle())
++                QGuiApplication::platformNativeInterface()->
++                    setWindowProperty(platformWindow, QStringLiteral("WindowsCustomMargins"),
++                                      customMarginsV);
+         }
+     }
+ }
+@@ -578,6 +579,8 @@
+ // wizard is a child window.
+ HDC QVistaHelper::backingStoreDC(const QWidget *wizard, QPoint *offset)
+ {
++    if (!QGuiApplication::platformNativeInterface())
++        return static_cast<HDC>(0);
+     HDC hdc = static_cast<HDC>(QGuiApplication::platformNativeInterface()->nativeResourceForBackingStore(QByteArrayLiteral("getDC"), wizard->backingStore()));
+     *offset = QPoint(0, 0);
+     if (!wizard->windowHandle())
+@@ -592,7 +595,7 @@
+     // Do not use winId() as this enforces native children of the parent
+     // widget when called before show() as happens when calling setWizardStyle().
+     if (QWindow *window = wizard->windowHandle())
+-        if (window->handle())
++        if (window->handle() && QGuiApplication::platformNativeInterface())
+             if (void *vHwnd = QGuiApplication::platformNativeInterface()->nativeResourceForWindow(QByteArrayLiteral("handle"), window))
+                 return static_cast<HWND>(vHwnd);
+     qWarning().nospace() << "Failed to obtain HWND for wizard.";

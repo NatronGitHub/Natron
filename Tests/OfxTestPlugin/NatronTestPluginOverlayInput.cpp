@@ -21,7 +21,10 @@
 // - <action>.count, <action>.viewportX, <action>.viewportY, <action>.pressure1000 for the pen actions
 //   (penDown, penMotion, penUp): the number of actions, and the sums of kOfxInteractPropPenViewportPosition
 //   and of 1000 * kOfxInteractPropPenPressure;
-// - <action>.string.<kOfxPropKeyString> for the key actions (keyDown, keyUp, keyRepeat).
+// - <action>.string.<kOfxPropKeyString> for the key actions (keyDown, keyUp, keyRepeat);
+// - <action>.sym.<kOfxPropKeySym>.modifiers.<kNatronOfxInteractPropKeyModifiers> for the key actions,
+//   and <action>.modifiers.<kNatronOfxInteractPropKeyModifiers> for the pen actions (-1 if the host
+//   doesn't set the property).
 
 #include <cstring>
 #include <string>
@@ -30,6 +33,7 @@
 #include <ofxImageEffect.h>
 #include <ofxInteract.h>
 #include <ofxKeySyms.h>
+#include <ofxNatron.h>
 #include <ofxProperty.h>
 
 #include "NatronTestPluginRegistry.h"
@@ -40,6 +44,18 @@ const OfxPropertySuiteV1* gPropSuite = 0;
 const OfxImageEffectSuiteV1* gEffectSuite = 0;
 
 const std::string kPrefix("OverlayInput.");
+
+int
+keyModifiers(OfxPropertySetHandle inArgs)
+{
+    int modifiers = -1;
+
+    if (gPropSuite->propGetInt(inArgs, kNatronOfxInteractPropKeyModifiers, 0, &modifiers) != kOfxStatOK) {
+        return -1;
+    }
+
+    return modifiers;
+}
 
 void
 recordPen(const char* name,
@@ -54,6 +70,7 @@ recordPen(const char* name,
     natronTestIncrementCounter(kPrefix + name + ".viewportX", viewportPos[0]);
     natronTestIncrementCounter(kPrefix + name + ".viewportY", viewportPos[1]);
     natronTestIncrementCounter( kPrefix + name + ".pressure1000", (int)(pressure * 1000. + 0.5) );
+    natronTestIncrementCounter( kPrefix + name + ".modifiers." + std::to_string( keyModifiers(inArgs) ) );
 }
 
 void
@@ -61,7 +78,10 @@ recordKey(const char* name,
           OfxPropertySetHandle inArgs)
 {
     const char* keyString = 0;
+    int keySym = kOfxKey_Unknown;
 
+    gPropSuite->propGetInt(inArgs, kOfxPropKeySym, 0, &keySym);
+    natronTestIncrementCounter( kPrefix + name + ".sym." + std::to_string(keySym) + ".modifiers." + std::to_string( keyModifiers(inArgs) ) );
     if ( (gPropSuite->propGetString(inArgs, kOfxPropKeyString, 0, &keyString) != kOfxStatOK) || !keyString ) {
         natronTestIncrementCounter(kPrefix + name + ".noString");
 

@@ -160,7 +160,7 @@ struct eigen_packet_wrapper
 {
   EIGEN_ALWAYS_INLINE operator T&() { return m_val; }
   EIGEN_ALWAYS_INLINE operator const T&() const { return m_val; }
-  EIGEN_ALWAYS_INLINE eigen_packet_wrapper() {}
+  EIGEN_ALWAYS_INLINE eigen_packet_wrapper() {};
   EIGEN_ALWAYS_INLINE eigen_packet_wrapper(const T &v) : m_val(v) {}
   EIGEN_ALWAYS_INLINE eigen_packet_wrapper& operator=(const T &v) {
     m_val = v;
@@ -258,7 +258,7 @@ struct ptrue_impl {
 // uses a comparison to zero, so this should still work in most cases. We don't
 // have another option, since the scalar type requires initialization.
 template<typename T>
-struct ptrue_impl<T, 
+struct ptrue_impl<T,
     typename internal::enable_if<is_scalar<T>::value && NumTraits<T>::RequireInitialization>::type > {
   static EIGEN_DEVICE_FUNC inline T run(const T& /*a*/){
     return T(1);
@@ -356,16 +356,16 @@ struct bytewise_bitwise_helper {
   EIGEN_DEVICE_FUNC static inline T bitwise_and(const T& a, const T& b) {
     return binary(a, b, bit_and<unsigned char>());
   }
-  EIGEN_DEVICE_FUNC static inline T bitwise_or(const T& a, const T& b) { 
+  EIGEN_DEVICE_FUNC static inline T bitwise_or(const T& a, const T& b) {
     return binary(a, b, bit_or<unsigned char>());
    }
   EIGEN_DEVICE_FUNC static inline T bitwise_xor(const T& a, const T& b) {
     return binary(a, b, bit_xor<unsigned char>());
   }
-  EIGEN_DEVICE_FUNC static inline T bitwise_not(const T& a) { 
+  EIGEN_DEVICE_FUNC static inline T bitwise_not(const T& a) {
     return unary(a,bit_not<unsigned char>());
    }
-  
+
  private:
   template<typename Op>
   EIGEN_DEVICE_FUNC static inline T unary(const T& a, Op op) {
@@ -440,7 +440,7 @@ struct pselect_impl {
 
 // For scalars, use ternary select.
 template<typename Packet>
-struct pselect_impl<Packet, 
+struct pselect_impl<Packet,
     typename internal::enable_if<is_scalar<Packet>::value>::type > {
   static EIGEN_DEVICE_FUNC inline Packet run(const Packet& mask, const Packet& a, const Packet& b) {
     return numext::equal_strict(mask, Packet(0)) ? b : a;
@@ -807,7 +807,7 @@ Packet plog10(const Packet& a) { EIGEN_USING_STD(log10); return log10(a); }
 template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
 Packet plog2(const Packet& a) {
   typedef typename internal::unpacket_traits<Packet>::type Scalar;
-  return pmul(pset1<Packet>(Scalar(EIGEN_LOG2E)), plog(a)); 
+  return pmul(pset1<Packet>(Scalar(EIGEN_LOG2E)), plog(a));
 }
 
 /** \internal \returns the square-root of \a a (coeff-wise) */
@@ -881,7 +881,7 @@ predux(const Packet& a)
 template <typename Packet>
 EIGEN_DEVICE_FUNC inline typename unpacket_traits<Packet>::type predux_mul(
     const Packet& a) {
-  typedef typename unpacket_traits<Packet>::type Scalar; 
+  typedef typename unpacket_traits<Packet>::type Scalar;
   return predux_helper(a, EIGEN_BINARY_OP_NAN_PROPAGATION(Scalar, (pmul<Scalar>)));
 }
 
@@ -889,14 +889,14 @@ EIGEN_DEVICE_FUNC inline typename unpacket_traits<Packet>::type predux_mul(
 template <typename Packet>
 EIGEN_DEVICE_FUNC inline typename unpacket_traits<Packet>::type predux_min(
     const Packet &a) {
-  typedef typename unpacket_traits<Packet>::type Scalar; 
+  typedef typename unpacket_traits<Packet>::type Scalar;
   return predux_helper(a, EIGEN_BINARY_OP_NAN_PROPAGATION(Scalar, (pmin<PropagateFast, Scalar>)));
 }
 
 template <int NaNPropagation, typename Packet>
 EIGEN_DEVICE_FUNC inline typename unpacket_traits<Packet>::type predux_min(
     const Packet& a) {
-  typedef typename unpacket_traits<Packet>::type Scalar; 
+  typedef typename unpacket_traits<Packet>::type Scalar;
   return predux_helper(a, EIGEN_BINARY_OP_NAN_PROPAGATION(Scalar, (pmin<NaNPropagation, Scalar>)));
 }
 
@@ -904,14 +904,14 @@ EIGEN_DEVICE_FUNC inline typename unpacket_traits<Packet>::type predux_min(
 template <typename Packet>
 EIGEN_DEVICE_FUNC inline typename unpacket_traits<Packet>::type predux_max(
     const Packet &a) {
-  typedef typename unpacket_traits<Packet>::type Scalar; 
+  typedef typename unpacket_traits<Packet>::type Scalar;
   return predux_helper(a, EIGEN_BINARY_OP_NAN_PROPAGATION(Scalar, (pmax<PropagateFast, Scalar>)));
 }
 
 template <int NaNPropagation, typename Packet>
 EIGEN_DEVICE_FUNC inline typename unpacket_traits<Packet>::type predux_max(
     const Packet& a) {
-  typedef typename unpacket_traits<Packet>::type Scalar; 
+  typedef typename unpacket_traits<Packet>::type Scalar;
   return predux_helper(a, EIGEN_BINARY_OP_NAN_PROPAGATION(Scalar, (pmax<NaNPropagation, Scalar>)));
 }
 

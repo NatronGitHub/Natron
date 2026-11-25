@@ -178,13 +178,14 @@ instanceChanged(OfxImageEffectHandle effect,
 
         return kOfxStatOK;
     } else if (mode == 5) {
-        // a default too large for the host (which must not read the data)
+        // an invalid default: no data, but a length. HostSupport copies a default when it is set
+        // (NatronGitHub/openfx#191), so a length larger than the plug-in's buffer can't be tested: it
+        // is the plug-in's undefined behaviour. HostSupport rejects this one without reading it.
         OfxPropertySetHandle props;
         if (gParamSuite->paramGetPropertySet(bytes, &props) != kOfxStatOK) {
             return kOfxStatFailed;
         }
-        unsigned char buffer[3] = { 'b', 'i', 'g' };
-        OfxBytes def = { buffer, (size_t)0x80000000u };
+        OfxBytes def = { NULL, (size_t)0x80000000u };
         gPropSuite->propSetPointer(props, kOfxParamPropDefault, 0, (void*)&def);
 
         return kOfxStatOK;

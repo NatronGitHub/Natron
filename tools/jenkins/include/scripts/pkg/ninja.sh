@@ -3,11 +3,12 @@
 # Install ninja
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/ninja.html
 
-NINJA_VERSION=1.11.1
+NINJA_VERSION=1.13.2
 NINJA_TAR="ninja-${NINJA_VERSION}.tar.gz"
+NINJA_SHA256=974d6b2f4eeefa25625d34da3cb36bdcebe7fbce40f4c16ac0835fd1c0cbae17
 NINJA_SITE="https://github.com/ninja-build/ninja/archive/v${NINJA_VERSION}"
 if download_step; then
-    download "$NINJA_SITE" "$NINJA_TAR"
+    download "$NINJA_SITE" "$NINJA_TAR" "$NINJA_SHA256"
 fi
 if build_step && { force_build || { [ ! -x "$SDK_HOME/bin/ninja" ]; }; }; then
     start_build

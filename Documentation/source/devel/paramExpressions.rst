@@ -162,12 +162,15 @@ For convenience the following variables have been declared to Python when execut
     * **dimension**: The dimension (0-based index) of the parameter on which the expression has effect.
       It is defined in all expressions, and it is 0 for 1-dimensional parameters.
 
-    * **frame**: It references the current time on the timeline
+    * **frame**: It references the frame at which the parameter is evaluated: during a render, the frame being
+      rendered (which differs from the frame of the render when time is remapped upstream, e.g. by a TimeOffset,
+      a FrameHold, a Retime or motion blur), otherwise the current frame of the timeline
 
     * The **app** variable will be set so it points to the correct :ref:`application instance<App>`.
 
 To reference the value of another parameter use the :func:`get()<>` function which retrieves the value
-of the parameter at the current timeline's time. If the parameter is multi-dimensional, you need to use
+of the parameter at the frame of the render during a render, and at the current frame of the timeline
+otherwise. If the parameter is multi-dimensional, you need to use
 the subscript operator to retrieve the value of a particular dimension.
 
 The :func:`getValue(dimension)<>` does the same thing but takes a *dimension* parameter to retrieve
@@ -193,8 +196,10 @@ the 2 lines above::
     ColorCorrect1.MasterSaturation.getValueAtTime(frame,dimension)
 
 We ask for the value of the *MasterSaturation* parameter of the *ColorCorrect1* node its value
-at the current *frame* and at the current *dimension*, which is the same as calling the :func:`get()<>` function
-without a *frame* in parameter.
+at the current *frame* and at the current *dimension*. This is usually the same as calling the :func:`get()<>`
+function without a *frame* in parameter, but not when time is remapped (by a TimeOffset, a FrameHold, a Retime or
+motion blur): then *frame* is the frame at which this parameter is evaluated, while :func:`get()<>` reads the other
+parameter at the frame of the render. Use :func:`get(frame)<>` when the exact frame matters.
 
 Copying another parameter through expressions:
 ----------------------------------------------
@@ -233,8 +238,8 @@ Sometimes it might be useful to add a random generator to produce noise on a val
 However the noise produced must be reproducible such that when rendering multiple times the same
 frame or when loading the project again it would use the same value.
 
-We had to add a specific random function in Natron that takes into account the state of a
-parameter and the current time on the timeline as a seed function to random.
+We had to add a specific random function in Natron that takes into account the state of the
+node and its inputs and the frame as a seed function to random.
 
 .. warning::
 
@@ -258,6 +263,30 @@ the range into which the return value should fall in. The range is defined by \[
 
     #Returns a random floating point value in the range [1., 10.[
     random(1.,10.)
+
+Without a frame, ``random()`` returns the next value of a sequence that belongs to the parameter.
+Each evaluation of the expression of the parameter starts that sequence again from the frame, the
+dimension and the state of the node and its inputs, so in the expression of the parameter itself,
+the values are the same each time a frame is computed. Elsewhere, e.g. ``Blur1.size.random()`` called from the
+expression of another parameter or from a script, the value depends on the calls made before, and
+is not reproducible.
+
+The functions that take a frame and a seed only depend on them and on the state of the node and
+its inputs: they return the same value anywhere, and each seed gives an independent value. They
+do not depend on the parameter nor on the dimension, so give each parameter and each dimension
+its own seed, else they all get the same value (e.g. a position that only moves along the
+diagonal)::
+
+    #Returns a random floating point value in the range [1., 10.[, the same for a given frame,
+    #and different for each dimension of the parameter
+    random(1.,10.,frame,dimension)
+
+    #On another parameter of the same node, use other seeds
+    random(1.,10.,frame,10 + dimension)
+
+With both forms, the values change after any edit of a parameter of the node or of a node
+upstream (an undo does not bring the previous values back), and two identical new nodes give
+different values. They only stay the same for a saved project that is not modified.
 
 For integers, use the :func:`randomInt(min,max)<>` function instead::
 

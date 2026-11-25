@@ -36,8 +36,8 @@
 #include <QCoreApplication>
 #include <QThread>
 #include <QRegularExpression>
-#include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
-#include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
+#include <QtConcurrentMap> // QtConcurrent
+#include <QtConcurrentRun> // QtConcurrent
 
 
 #include <SequenceParsing.h> // for removePath
@@ -406,7 +406,7 @@ OutputEffectInstance::reportStats(int time,
     if (fileKnob) {
         KnobOutputFile* strKnob = dynamic_cast<KnobOutputFile*>( fileKnob.get() );
         if  (strKnob) {
-            QString qfileName = QString::fromUtf8( SequenceParsing::generateFileNameFromPattern(strKnob->getValue( 0, ViewIdx(view) ), getApp()->getProject()->getProjectViewNames(), time, view).c_str() );
+            QString qfileName = strKnob->generateFileNameAtTime(time, view);
             QtCompat::removeFileExtension(qfileName);
             qfileName.append( QString::fromUtf8("-stats.txt") );
             filename = qfileName.toStdString();

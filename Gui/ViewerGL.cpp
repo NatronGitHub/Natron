@@ -74,6 +74,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiApplicationManager.h" // isMouseShortcut
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiMacros.h" // buttonDownIsLeft...
+#include "Gui/GuiTest.h"
 #include "Gui/Histogram.h"
 #include "Gui/InfoViewerWidget.h"
 #include "Gui/Menu.h"
@@ -506,15 +507,24 @@ ViewerGL::paintGL()
                 RectI texRect(r.x1, r.y1, r.x2, r.y2);
                 const double par = r.par;
                 const RectD canonicalTexRect = texRect.toCanonical_noClipping(_imp->partialUpdateTextures[i].mipmapLevel, par);
+                // as in drawRenderingVAO(): a float texture is linear, and the shader applies the viewer's
+                // gain, gamma and display LUT; a byte texture was converted by the CPU (#1452)
+                const bool useShader = _imp->partialUpdateTextures[i].texture->type() != Texture::eDataTypeByte;
 
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture( GL_TEXTURE_2D, _imp->partialUpdateTextures[i].texture->getTexID() );
+                if (useShader) {
+                    _imp->activateShaderRGB(_imp->partialUpdateTextures[i]);
+                }
                 glBegin(GL_POLYGON);
                 glTexCoord2d(0, 0); glVertex2d(canonicalTexRect.x1, canonicalTexRect.y1);
                 glTexCoord2d(0, 1); glVertex2d(canonicalTexRect.x1, canonicalTexRect.y2);
                 glTexCoord2d(1, 1); glVertex2d(canonicalTexRect.x2, canonicalTexRect.y2);
                 glTexCoord2d(1, 0); glVertex2d(canonicalTexRect.x2, canonicalTexRect.y1);
                 glEnd();
+                if (useShader) {
+                    _imp->shaderRGB->release();
+                }
                 glBindTexture(GL_TEXTURE_2D, 0);
 
                 glCheckError();
@@ -597,7 +607,7 @@ ViewerGL::toggleWipe()
 void
 ViewerGL::centerWipe()
 {
-    QPoint pos = mapFromGlobal( QCursor::pos() );
+    QPoint pos = mapFromGlobal( GuiTest::cursorPos() );
     int x = pos.x();
     int y = pos.y();
 
@@ -1823,6 +1833,9 @@ ViewerGL::setGain(double d)
     assert( qApp && qApp->thread() == QThread::currentThread() );
     _imp->displayTextures[0].gain = d;
     _imp->displayTextures[1].gain = d;
+    for (std::size_t i = 0; i < _imp->partialUpdateTextures.size(); ++i) {
+        _imp->partialUpdateTextures[i].gain = d;
+    }
 }
 
 void
@@ -1832,6 +1845,9 @@ ViewerGL::setGamma(double g)
     assert( qApp && qApp->thread() == QThread::currentThread() );
     _imp->displayTextures[0].gamma = g;
     _imp->displayTextures[1].gamma = g;
+    for (std::size_t i = 0; i < _imp->partialUpdateTextures.size(); ++i) {
+        _imp->partialUpdateTextures[i].gamma = g;
+    }
 }
 
 void
@@ -2726,16 +2742,16 @@ ViewerGL::updateColorPicker(int textureIndex,
     QPointF imgPosCanonical;
     if (!xInitialized || !yInitialized) {
         if ( !_imp->viewerTab->isViewersSynchroEnabled() ) {
-            pos = mapFromGlobal( QCursor::pos() );
+            pos = mapFromGlobal( GuiTest::cursorPos() );
             QMutexLocker l(&_imp->zoomCtxMutex);
             imgPosCanonical = _imp->zoomCtx.toZoomCoordinates( pos.x(), pos.y() );
         } else {
             ViewerTab* masterViewer = getViewerTab()->getGui()->getMasterSyncViewer();
             if (masterViewer) {
-                pos = masterViewer->getViewer()->mapFromGlobal( QCursor::pos() );
+                pos = masterViewer->getViewer()->mapFromGlobal( GuiTest::cursorPos() );
                 imgPosCanonical = masterViewer->getViewer()->toZoomCoordinates(pos);
             } else {
-                pos = mapFromGlobal( QCursor::pos() );
+                pos = mapFromGlobal( GuiTest::cursorPos() );
                 QMutexLocker l(&_imp->zoomCtxMutex);
                 imgPosCanonical = _imp->zoomCtx.toZoomCoordinates( pos.x(), pos.y() );
             }
@@ -2961,11 +2977,17 @@ ViewerGL::zoomSlot(double v)
 void
 ViewerGL::zoomSlot(int v)
 {
+    assert(v > 0);
+    setZoomFactorAroundCenter(v / 100.);
+}
+
+void
+ViewerGL::setZoomFactorAroundCenter(double newZoomFactor)
+{
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    assert(v > 0);
-    double newZoomFactor = v / 100.;
+    assert(newZoomFactor > 0.);
     unsigned int oldMipmapLevel, newMipmapLevel;
     //newMipmapLevel = std::log( newZoomFactor >= 1 ? 1 :
     //                           std::pow( 2, -std::ceil(std::log(newZoomFactor) / M_LN2) ) ) / M_LN2;
@@ -2988,6 +3010,26 @@ ViewerGL::zoomSlot(int v)
     }
 
     checkIfViewPortRoIValidOrRender();
+}
+
+void
+ViewerGL::setCenter(double x,
+                    double y)
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    {
+        QMutexLocker l(&_imp->zoomCtxMutex);
+        double centerX = ( _imp->zoomCtx.left() + _imp->zoomCtx.right() ) / 2.;
+        double centerY = ( _imp->zoomCtx.top() + _imp->zoomCtx.bottom() ) / 2.;
+        _imp->zoomCtx.translate(x - centerX, y - centerY);
+        _imp->zoomOrPannedSinceLastFit = true;
+    }
+    if ( _imp->viewerTab->isViewersSynchroEnabled() ) {
+        _imp->viewerTab->synchronizeOtherViewersProjection();
+    }
+    checkIfViewPortRoIValidOrRender();
+    update();
 }
 
 void
@@ -3289,6 +3331,26 @@ ImageBitDepthEnum
 ViewerGL::getBitDepth() const
 {
     return appPTR->getCurrentSettings()->getViewersBitDepth();
+}
+
+bool
+ViewerGL::isDisplayingByteTexture() const
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    for (int i = 0; i < 2; ++i) {
+        const TextureInfo& info = _imp->displayTextures[i];
+        if ( info.isVisible && info.texture && (info.texture->type() == Texture::eDataTypeByte) ) {
+            return true;
+        }
+    }
+    for (std::size_t i = 0; i < _imp->partialUpdateTextures.size(); ++i) {
+        if (_imp->partialUpdateTextures[i].texture->type() == Texture::eDataTypeByte) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void
@@ -3595,7 +3657,7 @@ void
 ViewerGL::getCursorPosition(double &x,
                             double &y) const
 {
-    QPoint p = QCursor::pos();
+    QPoint p = GuiTest::cursorPos();
 
     p = mapFromGlobal(p);
     QPointF mappedPos = toZoomCoordinates(p);
@@ -4500,6 +4562,96 @@ getColorAtInternal(const ImagePtr& image,
 
     return false;
 } // getColorAtInternal
+
+// The pixels of image within roi (in pixel coordinates), as linear RGBA floats (see getColorAtInternal()).
+template <typename PIX, int maxValue>
+static void
+getLinearPixels(const ImagePtr& image,
+                const RectI& roi,
+                const Color::Lut* srcColorSpace,
+                std::vector<float>* rgba)
+{
+    Image::ReadAccess racc( image.get() );
+    const int nComps = image->getComponents().getNumComponents();
+    const float scale = 1.f / maxValue;
+
+    rgba->reserve( rgba->size() + (std::size_t)roi.width() * roi.height() * 4 );
+    for (int y = roi.y1; y < roi.y2; ++y) {
+        const PIX* pix = (const PIX*)racc.pixelAt(roi.x1, y);
+        for (int x = roi.x1; x < roi.x2; ++x) {
+            float c[4] = {0.f, 0.f, 0.f, 0.f};
+            if (pix) {
+                if (nComps >= 4) {
+                    c[0] = pix[0] * scale; c[1] = pix[1] * scale; c[2] = pix[2] * scale; c[3] = pix[3] * scale;
+                } else if (nComps == 3) {
+                    c[0] = pix[0] * scale; c[1] = pix[1] * scale; c[2] = pix[2] * scale; c[3] = 1.f;
+                } else if (nComps == 2) {
+                    c[0] = pix[0] * scale; c[1] = pix[1] * scale; c[2] = 1.f; c[3] = 1.f;
+                } else {
+                    c[0] = c[1] = c[2] = c[3] = pix[0] * scale;
+                }
+                if (srcColorSpace) {
+                    for (int i = 0; i < 3; ++i) {
+                        c[i] = srcColorSpace->fromColorSpaceFloatToLinearFloat(c[i]);
+                    }
+                }
+                pix += nComps;
+            }
+            rgba->insert( rgba->end(), c, c + 4 );
+        }
+    }
+}
+
+bool
+ViewerGL::getLinearImage(int textureIndex,
+                         const RectD& region,
+                         RectD* bounds,
+                         std::vector<float>* rgba)
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    assert(textureIndex == 0 || textureIndex == 1);
+    rgba->clear();
+    ImagePtr image = getLastRenderedImageByMipmapLevel( textureIndex, getMipmapLevelCombinedToZoomFactor() );
+    if (!image) {
+        return false;
+    }
+    const ImageBitDepthEnum depth = image->getBitDepth();
+    const ViewerColorSpaceEnum srcCS = _imp->viewerTab->getGui()->getApp()->getDefaultColorSpaceForBitDepth(depth);
+    const Color::Lut* srcColorSpace = ( image->getComponents().isColorPlane() && (srcCS != eViewerColorSpaceLinear) ) ?
+                                      ViewerInstance::lutFromColorspace(srcCS) : 0;
+    const double par = image->getPixelAspectRatio();
+    const double scale = (double)( 1u << image->getMipmapLevel() ); // pixel to canonical
+    RectI roi = image->getBounds();
+    if ( !region.isNull() ) {
+        RectI r;
+        r.x1 = (int)std::floor(region.x1 / scale / par);
+        r.y1 = (int)std::floor(region.y1 / scale);
+        r.x2 = (int)std::ceil(region.x2 / scale / par);
+        r.y2 = (int)std::ceil(region.y2 / scale);
+        roi = roi.intersect(r);
+    }
+    if ( roi.isNull() ) {
+        return false;
+    }
+    bounds->set(roi.x1 * scale * par, roi.y1 * scale, roi.x2 * scale * par, roi.y2 * scale);
+    switch (depth) {
+    case eImageBitDepthByte:
+        getLinearPixels<unsigned char, 255>(image, roi, srcColorSpace, rgba);
+        break;
+    case eImageBitDepthShort:
+        getLinearPixels<unsigned short, 65535>(image, roi, srcColorSpace, rgba);
+        break;
+    case eImageBitDepthFloat:
+        getLinearPixels<float, 1>(image, roi, srcColorSpace, rgba);
+        break;
+    default:
+
+        return false;
+    }
+
+    return true;
+}
 
 bool
 ViewerGL::getColorAt(double x,
