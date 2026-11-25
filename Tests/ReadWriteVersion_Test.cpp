@@ -303,6 +303,9 @@ TEST(ReadWriteVersion, MissingPluginKeepsVersion)
     // the IDs as they appear in the XML text of the project, and IDs of plug-ins that are not installed
     const QByteArray readID(PLUGINID_OFX_READCDR), writeID(PLUGINID_OFX_WRITEPFM);
     const QByteArray missingReadID = readID + "Missing", missingWriteID = writeID + "Missing";
+    // the file name too: the test decoder and encoder read and write "natrontestversion" files, so with
+    // only the IDs renamed the Read and Write nodes would create them again, from the file extension
+    const QByteArray extension(".natrontestversion"), missingExtension(".natrontestmissing");
 
     NodePtr read = createIONode(PLUGINID_OFX_READCDR, -1, filename);
     NodePtr write = createIONode(PLUGINID_OFX_WRITEPFM, -1, filename);
@@ -319,12 +322,14 @@ TEST(ReadWriteVersion, MissingPluginKeepsVersion)
     // where the decoder and encoder are not installed: load and save
     ASSERT_TRUE( replaceInFile(projectPath, readID, missingReadID) );
     ASSERT_TRUE( replaceInFile(projectPath, writeID, missingWriteID) );
+    ASSERT_TRUE( replaceInFile(projectPath, extension, missingExtension) );
     ASSERT_TRUE( project->loadProject(dir, projectName) );
     ASSERT_TRUE( project->saveProject( dir, projectName, &savedPath, eProjectFileFormatText ) );
 
-    // where they are installed again
-    ASSERT_TRUE( replaceInFile(projectPath, missingReadID, readID) );
-    ASSERT_TRUE( replaceInFile(projectPath, missingWriteID, writeID) );
+    // where they are installed again: the versions were saved, but not the IDs of the missing decoder and
+    // encoder (a Read or Write node doesn't keep them, also before #1681), so the Read and Write nodes create
+    // the decoder and encoder of the file extension, in the saved version: the newest, not the lowest
+    ASSERT_TRUE( replaceInFile(projectPath, missingExtension, extension) );
     ASSERT_TRUE( project->loadProject(dir, projectName) );
     EXPECT_EQ( kNewestMajor, embeddedMajor( project->getNodeByName(readName) ) );
     EXPECT_EQ( kNewestMajor, embeddedMajor( project->getNodeByName(writeName) ) );
