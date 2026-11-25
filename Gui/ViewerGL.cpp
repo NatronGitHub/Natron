@@ -1982,10 +1982,11 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     // A color picker armed in a settings panel gets the picking clicks, and the left click that turns it
     // off after a pick, before the overlays: an overlay that uses the same clicks (the RotoPaint paint
     // tools paint on any click) would prevent picking (#206).
+    const bool pickColorClick = isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, modifiers, button);
+    const bool pickInputColorClick = isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickInputColor, modifiers, button);
+    const bool rectanglePickClick = isMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, modifiers, button);
     const bool pickerTakesClick = hasPickers && displayingImage() &&
-                                  ( isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, modifiers, button) ||
-                                    isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickInputColor, modifiers, button) ||
-                                    isMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, modifiers, button) ||
+                                  ( pickColorClick || pickInputColorClick || rectanglePickClick ||
                                     ( (_imp->pickerState != ePickerStateInactive) && buttonDownIsLeft(e) ) );
 
     // process plugin overlays
@@ -2000,9 +2001,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         updateOverlayCursor();
     }
 
-    if ( !overlaysCaught &&
-        isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, modifiers, button) &&
-        displayingImage() ) {
+    if ( !overlaysCaught && pickColorClick && displayingImage() ) {
         // picker with single-point selection
         _imp->pickerState = ePickerStatePoint;
         if ( pickColor( e->x(), e->y(), false ) ) {
@@ -2012,9 +2011,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         }
     }
 
-    if ( !overlaysCaught &&
-        isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickInputColor, modifiers, button) &&
-        displayingImage() ) {
+    if ( !overlaysCaught && pickInputColorClick && displayingImage() ) {
         // picker with single-point selection
         _imp->pickerState = ePickerStatePoint;
         if ( pickColor( e->x(), e->y(), true ) ) {
@@ -2024,9 +2021,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         }
     }
 
-    if ( !overlaysCaught &&
-         isMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, modifiers, button) &&
-         displayingImage() ) {
+    if ( !overlaysCaught && rectanglePickClick && displayingImage() ) {
         // start picker with rectangle selection (picked color is the average over the rectangle)
         _imp->pickerState = ePickerStateRectangle;
         _imp->pickerRect.setTopLeft(zoomPos);
