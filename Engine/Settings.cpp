@@ -2942,10 +2942,10 @@ Settings::getUseStdOFXPluginsLocation() const
 }
 
 void
-Settings::restoreDefault()
+Settings::removeSettingsFile()
 {
     // When saving is off (--no-settings, --test which implies it, or --setting), the settings file
-    // is not the session's: leave it alone and reset the settings in memory only (#1728).
+    // is not the session's: leave it alone (#1728).
     if ( _saveSettings->getValue() ) {
         QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
@@ -2953,7 +2953,11 @@ Settings::restoreDefault()
             qDebug() << "Failed to remove settings ( " << settings.fileName() << " ).";
         }
     }
+}
 
+void
+Settings::restoreDefault()
+{
     beginChanges();
     const KnobsVec & knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {

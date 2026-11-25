@@ -314,6 +314,7 @@ public:
     Button* okB;
     std::vector<KnobI*> changedKnobs;
     bool pluginSettingsChanged;
+    bool defaultsRestored; // Restore defaults was clicked: Save removes the settings file first (#1808)
     bool closeIsOK;
     Label* pluginFilterLabel;
     LineEdit* pluginFilterEdit;
@@ -355,6 +356,7 @@ public:
         , okB(0)
         , changedKnobs(0)
         , pluginSettingsChanged(false)
+        , defaultsRestored(false)
         , closeIsOK(false)
         , pluginFilterLabel(0)
         , pluginFilterEdit(0)
@@ -1177,7 +1179,9 @@ PreferencesPanel::restoreDefaults()
                                                         tr("Restoring the settings will delete any custom configuration, are you sure you want to do this?").toStdString(), false );
 
     if (reply == eStandardButtonYes) {
+        // in memory only: Discard can still restore the saved settings (#1808)
         appPTR->getCurrentSettings()->restoreDefault();
+        _imp->defaultsRestored = true;
 
         // The plug-in settings are not knobs: reset the plug-ins themselves, as clicking each checkbox
         // would (setChecked() doesn't emit clicked()), and show their new state (#1744)
@@ -1224,6 +1228,9 @@ PreferencesPanel::saveChangesAndClose()
     _imp->okB->setFocus();
     SettingsPtr settings = appPTR->getCurrentSettings();
     if (settings) {
+        if (_imp->defaultsRestored) {
+            settings->removeSettingsFile(); // what Restore defaults did before #1808
+        }
         settings->saveSettings(_imp->changedKnobs, true, _imp->pluginSettingsChanged);
     }
     appPTR->saveShortcuts();
@@ -1253,6 +1260,7 @@ PreferencesPanel::showEvent(QShowEvent* e)
 
     _imp->changedKnobs.clear();
     _imp->pluginSettingsChanged = false;
+    _imp->defaultsRestored = false;
     // set again by Save: closing the window otherwise discards the changes, also after an earlier Save (#841)
     _imp->closeIsOK = false;
 }
