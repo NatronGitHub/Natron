@@ -2401,9 +2401,7 @@ Knob<T>::getDerivativeAtTime(double time,
                              ViewSpec view,
                              int dimension)
 {
-    if ( ( dimension >= getDimension() ) || (dimension < 0) ) {
-        throw std::invalid_argument("Knob::getDerivativeAtTime(): Dimension out of range");
-    }
+    checkDimension(dimension, "Knob::getDerivativeAtTime");
     {
         std::string expr = getExpression(dimension);
         if ( !expr.empty() ) {
@@ -2459,9 +2457,7 @@ Knob<T>::getIntegrateFromTimeToTime(double time1,
                                     ViewSpec view,
                                     int dimension)
 {
-    if ( ( dimension >= getDimension() ) || (dimension < 0) ) {
-        throw std::invalid_argument("Knob::getIntegrateFromTimeToTime(): Dimension out of range");
-    }
+    checkDimension(dimension, "Knob::getIntegrateFromTimeToTime");
     {
         std::string expr = getExpression(dimension);
         if ( !expr.empty() ) {

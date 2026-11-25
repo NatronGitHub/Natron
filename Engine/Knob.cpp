@@ -942,9 +942,7 @@ KnobHelper::deleteValuesAtTime(CurveChangeReason curveChangeReason,
                                ViewSpec view,
                                int dimension, bool copyCurveValueAtTimeToInternalValue)
 {
-    if ( ( dimension >= (int)_imp->curves.size() ) || (dimension < 0) ) {
-        throw std::invalid_argument("KnobHelper::deleteValueAtTime(): Dimension out of range");
-    }
+    checkDimension(dimension, "KnobHelper::deleteValuesAtTime");
 
     if ( times.empty() ) {
         return;
@@ -1021,9 +1019,7 @@ KnobHelper::deleteValueAtTime(CurveChangeReason curveChangeReason,
                               ViewSpec view,
                               int dimension, bool copyCurveValueAtTimeToInternalValue)
 {
-    if ( ( dimension >= (int)_imp->curves.size() ) || (dimension < 0) ) {
-        throw std::invalid_argument("KnobHelper::deleteValueAtTime(): Dimension out of range");
-    }
+    checkDimension(dimension, "KnobHelper::deleteValueAtTime");
 
     if ( !canAnimate() || !isAnimated(dimension, view) ) {
         return;
@@ -1461,9 +1457,7 @@ KnobHelper::moveDerivativesAtTime(CurveChangeReason reason,
                                   double right)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if ( ( dimension >= (int)_imp->curves.size() ) || (dimension < 0) ) {
-        throw std::invalid_argument("KnobHelper::moveDerivativesAtTime(): Dimension out of range");
-    }
+    checkDimension(dimension, "KnobHelper::moveDerivativesAtTime");
 
     if ( !canAnimate() || !isAnimated(dimension, view) ) {
         return false;
@@ -1521,9 +1515,7 @@ KnobHelper::moveDerivativeAtTime(CurveChangeReason reason,
                                  bool isLeft)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if ( ( dimension >= (int)_imp->curves.size() ) || (dimension < 0) ) {
-        throw std::invalid_argument("KnobHelper::setInterpolationAtTime(): Dimension out of range");
-    }
+    checkDimension(dimension, "KnobHelper::moveDerivativeAtTime");
 
     if ( !canAnimate() || !isAnimated(dimension, view) ) {
         return false;
@@ -1584,11 +1576,7 @@ KnobHelper::removeAnimationWithReason(ViewSpec view,
                                       int dimension,
                                       ValueChangedReasonEnum reason)
 {
-    assert(0 <= dimension);
-    if ( (dimension < 0) || ( (int)_imp->curves.size() <= dimension ) ) {
-        throw std::invalid_argument("KnobHelper::removeAnimationWithReason(): Dimension out of range");
-    }
-
+    checkDimension(dimension, "KnobHelper::removeAnimationWithReason");
 
     if ( !canAnimate() || !isAnimated(dimension, view) ) {
         return;
@@ -1810,6 +1798,15 @@ int
 KnobHelper::getDimension() const
 {
     return _imp->dimension;
+}
+
+void
+KnobHelper::checkDimension(int dimension,
+                           const char* function) const
+{
+    if ( (dimension < 0) || (dimension >= _imp->dimension) ) {
+        throw std::invalid_argument( std::string(function) + "(): Dimension out of range" );
+    }
 }
 
 void
@@ -3895,6 +3892,8 @@ KnobHelper::checkAnimationLevel(ViewSpec view,
 AnimationLevelEnum
 KnobHelper::getAnimationLevel(int dimension) const
 {
+    checkDimension(dimension, "KnobHelper::getAnimationLevel");
+
     ///if the knob is slaved to another knob, returns the other knob value
     std::pair<int, KnobIPtr> master = getMaster(dimension);
 
@@ -3906,9 +3905,6 @@ KnobHelper::getAnimationLevel(int dimension) const
     }
 
     QMutexLocker l(&_imp->animationLevelMutex);
-    if ( dimension >= (int)_imp->animationLevel.size() ) {
-        throw std::invalid_argument("Knob::getAnimationLevel(): Dimension out of range");
-    }
 
     return _imp->animationLevel[dimension];
 }
@@ -4583,9 +4579,7 @@ KnobHelper::hasModificationsForSerialization() const
 bool
 KnobHelper::hasModifications(int dimension) const
 {
-    if ( (dimension < 0) || (dimension >= _imp->dimension) ) {
-        throw std::invalid_argument("KnobHelper::hasModifications: Dimension out of range");
-    }
+    checkDimension(dimension, "KnobHelper::hasModifications");
     QMutexLocker k(&_imp->hasModificationsMutex);
 
     return _imp->hasModifications[dimension];
