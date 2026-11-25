@@ -319,11 +319,6 @@ public:
      **/
     void quitNow(const AppInstancePtr& instance);
 
-    /*
-       @brief Calls quit() on all AppInstance's
-     */
-    void quitApplication();
-
     /**
      * @brief Starts the event loop and doesn't return until
      * quit() is called on all AppInstance's
@@ -352,6 +347,15 @@ public:
 
     /// The exit code given to requestQuit(), or 0
     int getRequestedExitCode() const;
+
+    /// Records that the render of a writer failed in background mode: see exitStatus().
+    /// The record is kept until the process exits. May be called from any thread.
+    void setBackgroundRenderFailed();
+
+    /// The exit status of a background process whose load() succeeded: getRequestedExitCode() if
+    /// requestQuit() was called or if it is not 0, else 1 if setBackgroundRenderFailed() was called,
+    /// else 0.
+    int exitStatus() const;
 
     /// True while the interactive Python interpreter of the -t option is running
     bool isPythonInterpreterRunning() const;
@@ -611,7 +615,9 @@ public:
     void setOnProjectLoadedCallback(const std::string& pythonFunc);
     void setOnProjectCreatedCallback(const std::string& pythonFunc);
 
-    void requestOFXDIalogOnMainThread(OfxImageEffectInstance* instance, void* instanceData);
+    /// Calls the effect's kOfxActionDialog on the main thread: at once on the main thread, else queued.
+    /// The queued call holds only a weak reference: it does nothing if the effect was destroyed meanwhile.
+    void requestOFXDIalogOnMainThread(const OfxEffectInstancePtr& effect, void* instanceData);
 
 
     ///Closes the application not saving any projects.
@@ -729,8 +735,6 @@ public Q_SLOTS:
 
     void onCrashReporterNoLongerResponding();
 
-    void onOFXDialogOnMainThreadReceived(OfxImageEffectInstance* instance, void* instanceData);
-
     void onShutDownSignalReceived();
 
 Q_SIGNALS:
@@ -738,9 +742,14 @@ Q_SIGNALS:
 
     void checkerboardSettingsChanged();
 
-    void s_requestOFXDialogOnMainThread(OfxImageEffectInstance* instance, void* instanceData);
-
 protected:
+
+    /// GUI: closes the active popup (menu) or modal dialog, one per call, as Cancel does; returns false if there is none
+    virtual bool closeModalWindows() { return false; }
+
+    /// Whether quitting now would delete the projects under code that uses them: Natron is loading, a nested event
+    /// loop runs (a modal dialog, a menu, a GUI test's waitIdle()), or a project is being saved
+    bool mustDeferQuit() const;
 
     virtual bool initGui(const CLArgs& cl);
     virtual void loadBuiltinNodePlugins(IOPluginsMap* readersMap,
@@ -790,6 +799,9 @@ private:
 
     /// GUI mode: calls quitInstanceNow() from the event loop, not from a nested one
     void queueAfterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args);
+
+    /// Termination signal: quits the application from the main event loop, once the modal windows are closed
+    void quitOnShutDownSignal();
 
     bool loadInternal(const CLArgs& cl);
 
@@ -897,6 +909,14 @@ PyObject* getMainModule();
  **/
 bool interpretPythonScript(const std::string& script, std::string* error, std::string* output,
                            PyObject* globals = NULL, PyObject* locals = NULL);
+
+/**
+ * @brief Runs the content of a Python script file (e.g. init.py, or a script given on the command line) in the
+ * __main__ module, as interpretPythonScript() does: the success depends on the result of the script, not on what
+ * it or other code wrote to sys.stderr. Unlike interpretPythonScript(), sys.exit() in the script exits the
+ * process with its status (as PyRun_SimpleString() does), and error does not contain the script.
+ **/
+bool runPythonScriptFile(const std::string& script, std::string* error, std::string* output);
 
 
 //void compilePyScript(const std::string& script,PyObject** code);

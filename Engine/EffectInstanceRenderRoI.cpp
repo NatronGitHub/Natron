@@ -444,14 +444,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 assert(isSupportedRenderScale(supportsRS, renderMappedScale));
                 StatusEnum stat = getRegionOfDefinition_public(nodeHash, args.time, renderMappedScale, args.view, &rodNc, &isProjectFormat);
 
-                ///The rod might be NULL for a roto that has no beziers and no input
                 if (stat == eStatusFailed) {
-                    if ( GraphDepthGuard::hasFailed() ) {
-                        // the graph upstream is too deep: this is an error, not an empty RoD (#1440)
-                        return eRenderRoIRetCodeFailed;
-                    }
-                    ///if getRoD fails, this might be because the RoD is null after all (e.g: an empty Roto node), we don't want the render to fail
-                    return eRenderRoIRetCodeOk;
+                    // an error (e.g. a Read node whose file is missing, #1602, or a graph too deep, #1440), not an
+                    // empty RoD: getRegionOfDefinition_public() returns an empty RoD with eStatusOK
+                    return eRenderRoIRetCodeFailed;
                 } else if ( rodNc.isNull() ) {
                     //Nothing to render
                     return eRenderRoIRetCodeOk;

@@ -853,41 +853,21 @@ AppInstance::loadPythonScript(const QFileInfo& file)
             getProject()->forceComputeInputDependentDataOnAllTrees();
         } // CreatingNodeTreeFlag_RAII createNodeTree, RefreshPreviewsOfCreatedNodes_RAII refreshPreviews
     } else {
-        PythonGILLocker pgl;
-
-        // -1 if the script raised an exception (Python printed it)
-        const bool scriptFailed = PyRun_SimpleString( content.toStdString().c_str() ) != 0;
-
-        PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
+        // Its failure is given by its result, not by what it or other code wrote to sys.stderr; its output
+        // goes to the Script Editor (#1489)
         std::string error;
-        ///Gui session, do stdout, stderr redirection
-        PyObject *errCatcher = 0;
-
-        if ( PyObject_HasAttrString(mainModule, "catchErr") ) {
-            errCatcher = PyObject_GetAttrString(mainModule, "catchErr"); //get our catchOutErr created above, new ref
-        }
-
-        PyErr_Print(); //make python print any errors
-
-        PyObject *errorObj = 0;
-        if (errCatcher) {
-            errorObj = PyObject_GetAttrString(errCatcher, "value"); //get the  stderr from our catchErr object, new ref
-            assert(errorObj);
-            error = NATRON_PYTHON_NAMESPACE::PyStringToStdString(errorObj);
-            PyObject* unicode = PyUnicode_FromString("");
-            PyObject_SetAttrString(errCatcher, "value", unicode);
-            Py_DECREF(errorObj);
-            Py_DECREF(errCatcher);
-        }
-
-        if ( !error.empty() ) {
+        if ( !NATRON_PYTHON_NAMESPACE::runPythonScriptFile(content.toStdString(), &error, 0) ) {
             QString message( QString::fromUtf8("Failed to load ") );
             message.append( file.absoluteFilePath() );
             message.append( QString::fromUtf8(": ") );
             message.append( QString::fromUtf8( error.c_str() ) );
-            appendToScriptEditor( message.toStdString() );
-        }
-        if (scriptFailed) {
+            if ( appPTR->isBackground() ) {
+                // sys.stderr is not captured: on stderr, where PyErr_Print() printed the traceback before #1489
+                std::cerr << message.toStdString() << std::endl;
+            } else {
+                appendToScriptEditor( message.toStdString() );
+            }
+
             return false;
         }
     }
@@ -982,14 +962,16 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
             setGroupLabelIDAndVersion(containerNode, modulePath, moduleName);
         }
 
-        int appID = getAppID() + 1;
+        // The variable on which the container node was declared: "app" in background mode, which a script
+        // may have rebound to another App object than app1 (#1525).
+        const std::string appID = getAppIDString();
         std::stringstream ss;
         ss << moduleName.toStdString();
-        ss << ".createInstance(app" << appID;
+        ss << ".createInstance(" << appID;
         if (istoolsetScript) {
             ss << ",\"\"";
         } else {
-            ss << ", app" << appID << "." << containerFullySpecifiedName;
+            ss << ", " << appID << "." << containerFullySpecifiedName;
         }
         ss << ")\n";
         std::string err;
@@ -1226,9 +1208,19 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     if (!argsIOContainer) {
         if ( ReadNode::isBundledReader( argsPluginID.toStdString(), wasProjectCreatedWithLowerCaseIDs() ) ) {
             args.addParamDefaultValue(kNatronReadNodeParamDecodingPluginID, argsPluginID.toStdString());
+            if (versionMajor != -1) {
+                // the version is that of the decoder, not of the Read node (#1681)
+                args.addParamDefaultValueN<int>( kNatronReadNodeParamDecodingPluginVersion, std::vector<int>{versionMajor, versionMinor} );
+                versionMajor = versionMinor = -1;
+            }
             findId = QString::fromUtf8(PLUGINID_NATRON_READ);
         } else if ( WriteNode::isBundledWriter( argsPluginID.toStdString(), wasProjectCreatedWithLowerCaseIDs() ) ) {
             args.addParamDefaultValue(kNatronWriteNodeParamEncodingPluginID, argsPluginID.toStdString());
+            if (versionMajor != -1) {
+                // the version is that of the encoder, not of the Write node (#1681)
+                args.addParamDefaultValueN<int>( kNatronWriteNodeParamEncodingPluginVersion, std::vector<int>{versionMajor, versionMinor} );
+                versionMajor = versionMinor = -1;
+            }
             findId = QString::fromUtf8(PLUGINID_NATRON_WRITE);
         }
     }
@@ -2703,16 +2695,25 @@ AppInstance::recheckInvalidExpressions()
             }
         }
     }
-    std::list<KnobIWPtr> newInvalidKnobs;
+    std::set<KnobIPtr> validKnobs;
 
     for (std::list<KnobIPtr>::iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        if ( !(*it)->checkInvalidExpressions() ) {
-            newInvalidKnobs.push_back(*it);
+        if ( (*it)->checkInvalidExpressions() ) {
+            validKnobs.insert(*it);
         }
     }
     {
+        // Remove only the knobs that became valid (and the deleted ones): a knob may have been added
+        // while the expressions were re-checked, e.g. by an expression that failed meanwhile (#1542)
         QMutexLocker k(&_imp->invalidExprKnobsMutex);
-        _imp->invalidExprKnobs = newInvalidKnobs;
+        for (std::list<KnobIWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it != _imp->invalidExprKnobs.end();) {
+            KnobIPtr knob = it->lock();
+            if ( !knob || validKnobs.count(knob) ) {
+                it = _imp->invalidExprKnobs.erase(it);
+            } else {
+                ++it;
+            }
+        }
     }
 }
 

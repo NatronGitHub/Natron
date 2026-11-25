@@ -31,6 +31,7 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 #include <cctype> // isspace
+#include <cstring> // memcpy
 
 #include <QDataStream>
 #include <QDateTime>
@@ -38,6 +39,7 @@
 #include <QCoreApplication>
 #include <QThread>
 #include <QDebug>
+#include <QPointer>
 
 #include "Global/GlobalDefines.h"
 
@@ -698,7 +700,8 @@ KnobHelper::getExpressionRecursionLevel() const
 void
 KnobHelper::deleteKnob()
 {
-    KnobI::ListenerDimsMap listenersCpy = _imp->listeners;
+    KnobI::ListenerDimsMap listenersCpy;
+    getListeners(listenersCpy); // under mastersMutex, which guards the listeners
 
     for (ListenerDimsMap::iterator it = listenersCpy.begin(); it != listenersCpy.end(); ++it) {
         KnobIPtr knob = it->first.lock();
@@ -938,7 +941,7 @@ KnobHelper::deleteValuesAtTime(CurveChangeReason curveChangeReason,
                                ViewSpec view,
                                int dimension, bool copyCurveValueAtTimeToInternalValue)
 {
-    if ( ( dimension > (int)_imp->curves.size() ) || (dimension < 0) ) {
+    if ( ( dimension >= (int)_imp->curves.size() ) || (dimension < 0) ) {
         throw std::invalid_argument("KnobHelper::deleteValueAtTime(): Dimension out of range");
     }
 
@@ -1017,7 +1020,7 @@ KnobHelper::deleteValueAtTime(CurveChangeReason curveChangeReason,
                               ViewSpec view,
                               int dimension, bool copyCurveValueAtTimeToInternalValue)
 {
-    if ( ( dimension > (int)_imp->curves.size() ) || (dimension < 0) ) {
+    if ( ( dimension >= (int)_imp->curves.size() ) || (dimension < 0) ) {
         throw std::invalid_argument("KnobHelper::deleteValueAtTime(): Dimension out of range");
     }
 
@@ -1457,8 +1460,8 @@ KnobHelper::moveDerivativesAtTime(CurveChangeReason reason,
                                   double right)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if ( ( dimension > (int)_imp->curves.size() ) || (dimension < 0) ) {
-        throw std::invalid_argument("KnobHelper::setInterpolationAtTime(): Dimension out of range");
+    if ( ( dimension >= (int)_imp->curves.size() ) || (dimension < 0) ) {
+        throw std::invalid_argument("KnobHelper::moveDerivativesAtTime(): Dimension out of range");
     }
 
     if ( !canAnimate() || !isAnimated(dimension, view) ) {
@@ -1517,7 +1520,7 @@ KnobHelper::moveDerivativeAtTime(CurveChangeReason reason,
                                  bool isLeft)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if ( ( dimension > (int)_imp->curves.size() ) || (dimension < 0) ) {
+    if ( ( dimension >= (int)_imp->curves.size() ) || (dimension < 0) ) {
         throw std::invalid_argument("KnobHelper::setInterpolationAtTime(): Dimension out of range");
     }
 
@@ -3053,43 +3056,11 @@ KnobHelper::clearExpression(int dimension,
             if (!other) {
                 continue;
             }
-            ListenerDimsMap otherListeners;
-            {
-                QReadLocker otherMastersLocker(&other->_imp->mastersMutex);
-                otherListeners = other->_imp->listeners;
-            }
-
-            for (ListenerDimsMap::iterator it = otherListeners.begin(); it != otherListeners.end(); ++it) {
-                KnobIPtr knob = it->first.lock();
-                if (knob.get() == this) {
-                    //erase from the dimensions vector
-                    assert( dimension < (int)it->second.size() );
-                    it->second[dimension].isListening = false;
-
-                    //if it has no longer has a reference to this knob, erase it
-                    bool hasReference = false;
-                    for (std::size_t d = 0; d < it->second.size(); ++d) {
-                        if (it->second[d].isListening) {
-                            hasReference = true;
-                            break;
-                        }
-                    }
-                    if (!hasReference) {
-                        otherListeners.erase(it);
-                    }
-
-                    break;
-                }
-            }
+            // in place, under the other knob's mastersMutex (#1572)
+            other->removeListener(this, dimension);
 
             if ( getHolder() ) {
                 getHolder()->onKnobSlaved(thisShared, otherKnob, dimension, false );
-            }
-
-
-            {
-                QWriteLocker otherMastersLocker(&other->_imp->mastersMutex);
-                other->_imp->listeners = otherListeners;
             }
         }
     }
@@ -3934,7 +3905,7 @@ KnobHelper::getAnimationLevel(int dimension) const
     }
 
     QMutexLocker l(&_imp->animationLevelMutex);
-    if ( dimension > (int)_imp->animationLevel.size() ) {
+    if ( dimension >= (int)_imp->animationLevel.size() ) {
         throw std::invalid_argument("Knob::getAnimationLevel(): Dimension out of range");
     }
 
@@ -4433,6 +4404,7 @@ KnobHelper::removeListener(KnobI* listener,
     QWriteLocker l(&_imp->mastersMutex);
     for (ListenerDimsMap::iterator it = _imp->listeners.begin(); it != _imp->listeners.end(); ++it) {
         if (it->first.lock().get() == listener) {
+            assert( listenerDimension >= 0 && listenerDimension < (int)it->second.size() );
             it->second[listenerDimension].isListening = false;
 
             bool hasDimensionListening = false;
@@ -4514,20 +4486,6 @@ KnobHelper::randomInt(int min,
     return (int)random( (double)min, (double)max );
 }
 
-struct alias_cast_float
-{
-    alias_cast_float()
-        : raw(0)
-    {
-    };                          // initialize to 0 in case sizeof(T) < 8
-
-    union
-    {
-        U32 raw;
-        float data;
-    };
-};
-
 void
 KnobHelper::randomSeed(double time,
                        unsigned int seed) const
@@ -4544,9 +4502,12 @@ KnobHelper::randomSeed(double time,
     U32 hash32 = (U32)hash;
     hash32 += seed;
 
-    alias_cast_float ac;
-    ac.data = (float)time;
-    hash32 += ac.raw;
+    // the bits of the time as a float: with memcpy, not a union, which would be undefined behaviour in C++ (#1721)
+    const float timeF = (float)time;
+    U32 timeBits;
+    static_assert(sizeof(timeBits) == sizeof(timeF), "float is not 32 bits");
+    std::memcpy( &timeBits, &timeF, sizeof(timeBits) );
+    hash32 += timeBits;
 
     QMutexLocker k(&_imp->lastRandomHashMutex);
     _imp->lastRandomHash = hash32;
@@ -5020,7 +4981,9 @@ struct KnobHolder::KnobHolderPrivate
     bool knobsFrozen;
     mutable QMutex hasAnimationMutex;
     bool hasAnimation;
-    DockablePanelI* settingsPanel;
+    // The DockablePanel (a QObject in Gui) of this holder: a QPointer, because the Gui may delete
+    // the panel while this holder lives, e.g. NodeGui::destroyGui(), and does not tell it (#1618).
+    QPointer<QObject> settingsPanel;
 
     KnobHolderPrivate(const AppInstancePtr& appInstance_)
         : app(appInstance_)
@@ -5046,7 +5009,7 @@ struct KnobHolder::KnobHolderPrivate
         , knobsFrozen(false)
         , hasAnimationMutex()
         , hasAnimation(false)
-        , settingsPanel(0)
+        , settingsPanel()
 
     {
     }
@@ -5075,9 +5038,15 @@ struct KnobHolder::KnobHolderPrivate
     , knobsFrozen(false)
     , hasAnimationMutex()
     , hasAnimation(other.hasAnimation)
-    , settingsPanel(other.settingsPanel)
+    , settingsPanel() // a render clone, maybe created in a render thread, has no panel
     {
 
+    }
+
+    // null once the panel is being deleted (from its QWidget destructor on)
+    DockablePanelI* getPanel() const
+    {
+        return dynamic_cast<DockablePanelI*>( settingsPanel.data() );
     }
 };
 
@@ -5217,22 +5186,24 @@ void
 KnobHolder::setPanelPointer(DockablePanelI* gui)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    _imp->settingsPanel = gui;
+    _imp->settingsPanel = dynamic_cast<QObject*>(gui);
+    assert(!gui || _imp->settingsPanel);
 }
 
 void
 KnobHolder::discardPanelPointer()
 {
     assert( QThread::currentThread() == qApp->thread() );
-    _imp->settingsPanel = 0;
+    _imp->settingsPanel.clear();
 }
 
 void
 KnobHolder::recreateUserKnobs(bool keepCurPageIndex)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if (_imp->settingsPanel) {
-        _imp->settingsPanel->recreateUserKnobs(keepCurPageIndex);
+    DockablePanelI* panel = _imp->getPanel();
+    if (panel) {
+        panel->recreateUserKnobs(keepCurPageIndex);
         EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
         if (isEffect) {
             isEffect->getNode()->declarePythonFields();
@@ -5244,8 +5215,9 @@ void
 KnobHolder::recreateKnobs(bool keepCurPageIndex)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if (_imp->settingsPanel) {
-        _imp->settingsPanel->refreshGuiForKnobsChanges(keepCurPageIndex);
+    DockablePanelI* panel = _imp->getPanel();
+    if (panel) {
+        panel->refreshGuiForKnobsChanges(keepCurPageIndex);
         EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
         if (isEffect) {
             isEffect->getNode()->declarePythonFields();
@@ -5283,8 +5255,9 @@ KnobHolder::deleteKnob(KnobI* knob,
         }
     }
 
-    if (alsoDeleteGui && _imp->settingsPanel) {
-        _imp->settingsPanel->deleteKnobGui(sharedKnob);
+    DockablePanelI* panel = alsoDeleteGui ? _imp->getPanel() : 0;
+    if (panel) {
+        panel->deleteKnobGui(sharedKnob);
     }
 }
 
@@ -5472,28 +5445,64 @@ KnobHolder::getOrCreateUserPageKnob()
     return ret;
 }
 
+namespace {
+// The create*Knob() functions below: the knob of the holder with that name if there is one, else a new knob.
+// A knob with that name but of another type, or with fewer dimensions (e.g. a script calls createIntParam() with
+// the name of a DoubleParam, or createInt2DParam() with the name of an IntParam), is not returned: NULL is
+// returned, and the reason goes to the Script Editor (or the standard output) and to the error log (#1621).
+template <class K>
+std::shared_ptr<K>
+createUserKnob(KnobHolder* holder,
+               const std::string& name,
+               const std::string& label,
+               int dimension,
+               bool userKnob)
+{
+    KnobIPtr existingKnob = holder->getKnobByName(name);
+
+    if (existingKnob) {
+        std::shared_ptr<K> ret = std::dynamic_pointer_cast<K>(existingKnob);
+        // more dimensions is harmless: the extra ones keep their values (e.g. the alpha of an RGBA color)
+        if ( !ret || (ret->getDimension() < dimension) ) {
+            const NamedKnobHolder* named = dynamic_cast<const NamedKnobHolder*>(holder);
+            const QString holderName = QString::fromUtf8( ( named ? named->getFullyQualifiedName() : name ).c_str() );
+            const QString message = KnobHolder::tr("Cannot create the %1 parameter \"%2\" with %3 dimension(s): "
+                                                   "a %4 parameter with %5 dimension(s) already has that name.")
+                                    .arg( QString::fromUtf8( K::typeNameStatic().c_str() ),
+                                          QString::fromUtf8( name.c_str() ) )
+                                    .arg(dimension)
+                                    .arg( QString::fromUtf8( existingKnob->typeName().c_str() ) )
+                                    .arg( existingKnob->getDimension() );
+            appPTR->writeToErrorLog_mt_safe( holderName, QDateTime::currentDateTime(), message );
+            AppInstancePtr app = holder->getApp();
+            if (app) {
+                app->appendPlainTextToScriptEditor( ( holderName + QString::fromUtf8(": ") + message ).toStdString() );
+            }
+
+            return std::shared_ptr<K>();
+        }
+
+        return ret;
+    }
+    std::shared_ptr<K> ret = AppManager::createKnob<K>(holder, label, dimension, false);
+    ret->setName(name);
+    ret->setAsUserKnob(userKnob);
+    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
+    if (isEffect && userKnob) {
+        isEffect->getNode()->declarePythonFields();
+    }
+
+    return ret;
+}
+} // anonymous namespace
+
 KnobIntPtr
 KnobHolder::createIntKnob(const std::string& name,
                           const std::string& label,
                           int dimension,
                           bool userKnob)
 {
-    KnobIPtr existingKnob = getKnobByName(name);
-
-    if (existingKnob) {
-        return std::dynamic_pointer_cast<KnobInt>(existingKnob);
-    }
-    KnobIntPtr ret = AppManager::createKnob<KnobInt>(this, label, dimension, false);
-    ret->setName(name);
-    ret->setAsUserKnob(userKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-       Q_UNUSED(pageknob);*/
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && userKnob) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
-    return ret;
+    return createUserKnob<KnobInt>(this, name, label, dimension, userKnob);
 }
 
 KnobDoublePtr
@@ -5502,22 +5511,7 @@ KnobHolder::createDoubleKnob(const std::string& name,
                              int dimension,
                              bool userKnob)
 {
-    KnobIPtr existingKnob = getKnobByName(name);
-
-    if (existingKnob) {
-        return std::dynamic_pointer_cast<KnobDouble>(existingKnob);
-    }
-    KnobDoublePtr ret = AppManager::createKnob<KnobDouble>(this, label, dimension, false);
-    ret->setName(name);
-    ret->setAsUserKnob(userKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-       Q_UNUSED(pageknob);*/
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && userKnob) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
-    return ret;
+    return createUserKnob<KnobDouble>(this, name, label, dimension, userKnob);
 }
 
 KnobColorPtr
@@ -5526,22 +5520,7 @@ KnobHolder::createColorKnob(const std::string& name,
                             int dimension,
                             bool userKnob)
 {
-    KnobIPtr existingKnob = getKnobByName(name);
-
-    if (existingKnob) {
-        return std::dynamic_pointer_cast<KnobColor>(existingKnob);
-    }
-    KnobColorPtr ret = AppManager::createKnob<KnobColor>(this, label, dimension, false);
-    ret->setName(name);
-    ret->setAsUserKnob(userKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-       Q_UNUSED(pageknob);*/
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && userKnob) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
-    return ret;
+    return createUserKnob<KnobColor>(this, name, label, dimension, userKnob);
 }
 
 KnobBoolPtr
@@ -5549,22 +5528,7 @@ KnobHolder::createBoolKnob(const std::string& name,
                            const std::string& label,
                            bool userKnob)
 {
-    KnobIPtr existingKnob = getKnobByName(name);
-
-    if (existingKnob) {
-        return std::dynamic_pointer_cast<KnobBool>(existingKnob);
-    }
-    KnobBoolPtr ret = AppManager::createKnob<KnobBool>(this, label, 1, false);
-    ret->setName(name);
-    ret->setAsUserKnob(userKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-       Q_UNUSED(pageknob);*/
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && userKnob) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
-    return ret;
+    return createUserKnob<KnobBool>(this, name, label, 1, userKnob);
 }
 
 KnobChoicePtr
@@ -5572,22 +5536,7 @@ KnobHolder::createChoiceKnob(const std::string& name,
                              const std::string& label,
                              bool userKnob)
 {
-    KnobIPtr existingKnob = getKnobByName(name);
-
-    if (existingKnob) {
-        return std::dynamic_pointer_cast<KnobChoice>(existingKnob);
-    }
-    KnobChoicePtr ret = AppManager::createKnob<KnobChoice>(this, label, 1, false);
-    ret->setName(name);
-    ret->setAsUserKnob(userKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-       Q_UNUSED(pageknob);*/
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && userKnob) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
-    return ret;
+    return createUserKnob<KnobChoice>(this, name, label, 1, userKnob);
 }
 
 KnobButtonPtr
@@ -5595,22 +5544,7 @@ KnobHolder::createButtonKnob(const std::string& name,
                              const std::string& label,
                              bool userKnob)
 {
-    KnobIPtr existingKnob = getKnobByName(name);
-
-    if (existingKnob) {
-        return std::dynamic_pointer_cast<KnobButton>(existingKnob);
-    }
-    KnobButtonPtr ret = AppManager::createKnob<KnobButton>(this, label, 1, false);
-    ret->setName(name);
-    ret->setAsUserKnob(userKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-       Q_UNUSED(pageknob);*/
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && userKnob) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
-    return ret;
+    return createUserKnob<KnobButton>(this, name, label, 1, userKnob);
 }
 
 KnobSeparatorPtr
@@ -5618,46 +5552,15 @@ KnobHolder::createSeparatorKnob(const std::string& name,
                                 const std::string& label,
                                 bool userKnob)
 {
-    KnobIPtr existingKnob = getKnobByName(name);
-
-    if (existingKnob) {
-        return std::dynamic_pointer_cast<KnobSeparator>(existingKnob);
-    }
-    KnobSeparatorPtr ret = AppManager::createKnob<KnobSeparator>(this, label, 1, false);
-    ret->setName(name);
-    ret->setAsUserKnob(userKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-       Q_UNUSED(pageknob);*/
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && userKnob) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
-    return ret;
+    return createUserKnob<KnobSeparator>(this, name, label, 1, userKnob);
 }
 
-//Type corresponds to the Type enum defined in StringParamBase in Parameter.h
 KnobStringPtr
 KnobHolder::createStringKnob(const std::string& name,
                              const std::string& label,
                              bool userKnob)
 {
-    KnobIPtr existingKnob = getKnobByName(name);
-
-    if (existingKnob) {
-        return std::dynamic_pointer_cast<KnobString>(existingKnob);
-    }
-    KnobStringPtr ret = AppManager::createKnob<KnobString>(this, label, 1, false);
-    ret->setName(name);
-    ret->setAsUserKnob(userKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-       Q_UNUSED(pageknob);*/
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && userKnob) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
-    return ret;
+    return createUserKnob<KnobString>(this, name, label, 1, userKnob);
 }
 
 KnobFilePtr
@@ -5665,22 +5568,7 @@ KnobHolder::createFileKnob(const std::string& name,
                            const std::string& label,
                            bool userKnob)
 {
-    KnobIPtr existingKnob = getKnobByName(name);
-
-    if (existingKnob) {
-        return std::dynamic_pointer_cast<KnobFile>(existingKnob);
-    }
-    KnobFilePtr ret = AppManager::createKnob<KnobFile>(this, label, 1, false);
-    ret->setName(name);
-    ret->setAsUserKnob(userKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-       Q_UNUSED(pageknob);*/
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && userKnob) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
-    return ret;
+    return createUserKnob<KnobFile>(this, name, label, 1, userKnob);
 }
 
 KnobOutputFilePtr
@@ -5688,22 +5576,7 @@ KnobHolder::createOuptutFileKnob(const std::string& name,
                                  const std::string& label,
                                  bool userKnob)
 {
-    KnobIPtr existingKnob = getKnobByName(name);
-
-    if (existingKnob) {
-        return std::dynamic_pointer_cast<KnobOutputFile>(existingKnob);
-    }
-    KnobOutputFilePtr ret = AppManager::createKnob<KnobOutputFile>(this, label, 1, false);
-    ret->setName(name);
-    ret->setAsUserKnob(userKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-       Q_UNUSED(pageknob);*/
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && userKnob) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
-    return ret;
+    return createUserKnob<KnobOutputFile>(this, name, label, 1, userKnob);
 }
 
 KnobPathPtr
@@ -5711,22 +5584,7 @@ KnobHolder::createPathKnob(const std::string& name,
                            const std::string& label,
                            bool userKnob)
 {
-    KnobIPtr existingKnob = getKnobByName(name);
-
-    if (existingKnob) {
-        return std::dynamic_pointer_cast<KnobPath>(existingKnob);
-    }
-    KnobPathPtr ret = AppManager::createKnob<KnobPath>(this, label, 1, false);
-    ret->setName(name);
-    ret->setAsUserKnob(userKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-       Q_UNUSED(pageknob);*/
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && userKnob) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
-    return ret;
+    return createUserKnob<KnobPath>(this, name, label, 1, userKnob);
 }
 
 KnobGroupPtr
@@ -5734,22 +5592,7 @@ KnobHolder::createGroupKnob(const std::string& name,
                             const std::string& label,
                             bool userKnob)
 {
-    KnobIPtr existingKnob = getKnobByName(name);
-
-    if (existingKnob) {
-        return std::dynamic_pointer_cast<KnobGroup>(existingKnob);
-    }
-    KnobGroupPtr ret = AppManager::createKnob<KnobGroup>(this, label, 1, false);
-    ret->setName(name);
-    ret->setAsUserKnob(userKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-       Q_UNUSED(pageknob);*/
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && userKnob) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
-    return ret;
+    return createUserKnob<KnobGroup>(this, name, label, 1, userKnob);
 }
 
 KnobPagePtr
@@ -5757,22 +5600,7 @@ KnobHolder::createPageKnob(const std::string& name,
                            const std::string& label,
                            bool userKnob)
 {
-    KnobIPtr existingKnob = getKnobByName(name);
-
-    if (existingKnob) {
-        return std::dynamic_pointer_cast<KnobPage>(existingKnob);
-    }
-    KnobPagePtr ret = AppManager::createKnob<KnobPage>(this, label, 1, false);
-    ret->setName(name);
-    ret->setAsUserKnob(userKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-       Q_UNUSED(pageknob);*/
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && userKnob) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
-    return ret;
+    return createUserKnob<KnobPage>(this, name, label, 1, userKnob);
 }
 
 KnobParametricPtr
@@ -5781,22 +5609,7 @@ KnobHolder::createParametricKnob(const std::string& name,
                                  int nbCurves,
                                  bool userKnob)
 {
-    KnobIPtr existingKnob = getKnobByName(name);
-
-    if (existingKnob) {
-        return std::dynamic_pointer_cast<KnobParametric>(existingKnob);
-    }
-    KnobParametricPtr ret = AppManager::createKnob<KnobParametric>(this, label, nbCurves, false);
-    ret->setName(name);
-    ret->setAsUserKnob(userKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-       Q_UNUSED(pageknob);*/
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && userKnob) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
-    return ret;
+    return createUserKnob<KnobParametric>(this, name, label, nbCurves, userKnob);
 }
 
 void

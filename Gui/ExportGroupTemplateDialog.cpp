@@ -208,6 +208,8 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,
 
     _imp->versionSpinbox = new SpinBox(this, SpinBox::eSpinBoxTypeInt);
     _imp->versionSpinbox->setMinimum(1);
+    // setMinimum() doesn't clamp the value (0), which "Export project as group" would write
+    _imp->versionSpinbox->setValue(1);
     _imp->versionSpinbox->setToolTip(versionTt);
 
     _imp->iconPathLabel = new Label(tr("Icon relative path"), this);
@@ -288,7 +290,10 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,
                 }
             }
         }
-        int version = pyPlug->getMajorVersion();
+        // Not getMajorVersion(), which is the version of the Group plug-in (1) once the PyPlug was converted to a
+        // Group (as it must be to be exported): re-exporting an installed v2 PyPlug would then write it as v1 (#1527).
+        // A Group that was never a PyPlug has no PyPlug version (0).
+        const int version = std::max( 1, pyPlug->getPyPlugMajorVersion() );
         std::string pluginPath = pyPlug->getPluginPythonModule();
         {
             std::size_t foundLastSlash = pluginPath.find_last_of("/");
@@ -387,7 +392,7 @@ ExportGroupTemplateDialog::onOkClicked()
                                                          tr("A group plug-in with the name \"%1\" already exists "
                                                             "would you like to "
                                                             "overwrite it?").arg(pluginLabel).toStdString(), false);
-        if  (rep == eStandardButtonNo) {
+        if (rep != eStandardButtonYes) { // also when closed without an answer (#1730)
             return;
         }
     }

@@ -424,10 +424,17 @@ App::addFormat(const QString& formatSpec)
 }
 
 bool
-App::saveTempProject(const QString& filename,
+App::saveProjectCopy(const QString& filename,
                      ProjectFileFormatEnum format)
 {
     return getInternalApp()->saveTemp(filename.toStdString(), format);
+}
+
+bool
+App::saveTempProject(const QString& filename,
+                     ProjectFileFormatEnum format)
+{
+    return saveProjectCopy(filename, format);
 }
 
 bool

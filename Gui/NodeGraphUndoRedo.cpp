@@ -643,10 +643,12 @@ ResizeBackdropCommand::ResizeBackdropCommand(const NodeGuiPtr& bd,
     , _oldW(0)
     , _oldH(0)
 {
-    QRectF bbox = bd->boundingRect();
+    // The node rectangle, not boundingRect(), which includes the outline pen width: undo would
+    // restore a slightly larger backdrop (#1744, as #1071 for the nodes)
+    const QSize size = bd->getSize();
 
-    _oldW = bbox.width();
-    _oldH = bbox.height();
+    _oldW = size.width();
+    _oldH = size.height();
     setText( tr("Resize %1").arg( QString::fromUtf8( _bd->getNode()->getLabel().c_str() ) ) );
 }
 
@@ -1648,6 +1650,11 @@ GroupFromSelectionCommand::redo()
             internalNewNodes.push_back( it->second->getNode() );
         }
 
+        const auto isOriginalNode = [&originalNodes](const NodePtr& node) {
+            return std::any_of( originalNodes.begin(), originalNodes.end(),
+                                [&node](const NodeGuiPtr& n) { return n->getNode() == node; } );
+        };
+
         // Extract all trees from these new nodes
         std::list<Project::NodesTree> trees;
         Project::extractTreesFromNodes(internalNewNodes, trees);
@@ -1708,7 +1715,17 @@ GroupFromSelectionCommand::redo()
                             // do not create an Input node for an invisible input (example: Shadertoy node, which hides its inputs)
                             continue;
                         }
-                        if ( originalNodeInputs[i].lock() || !originalEffect->isInputOptional(i) ) {
+                        NodePtr originalInput = originalNodeInputs[i].lock();
+                        if ( originalInput && isOriginalNode(originalInput) ) {
+                            // The copy of that input is in the group, and the copy of this node is already
+                            // connected to it: a node that feeds several selected nodes is in the tree of
+                            // only one of them (#1462). That connection also counts as an input for the
+                            // fallback below, which must not add an Input node to this node.
+                            assert( it2->node->getInput(i) );
+                            hasInput = true;
+                            continue;
+                        }
+                        if ( originalInput || !originalEffect->isInputOptional(i) ) {
                             mustCreateInput[i] = true;
                             hasInput = true;
                         } else if ( (firstNonMaskInput == -1) && !originalEffect->isInputMask(i) ) {

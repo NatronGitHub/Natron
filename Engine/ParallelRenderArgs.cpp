@@ -408,8 +408,9 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
 
         ///Get the RoD
         StatusEnum stat = effect->getRegionOfDefinition_public(nodeRequest->nodeHash, rodTime, nodeRequest->mappedScale, rodView, &fvRequest->globalData.rod, &fvRequest->globalData.isProjectFormat);
-        //If failed it should have failed earlier
-        if ( (stat == eStatusFailed) && !fvRequest->globalData.rod.isNull() ) {
+        // An error (e.g. a Read node whose file is missing): the render fails, instead of rendering the nodes
+        // downstream with a black input (#1602). An empty RoD is not a failure.
+        if (stat == eStatusFailed) {
             return stat;
         }
 

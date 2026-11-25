@@ -3320,6 +3320,31 @@ EffectInstance::setDoingInteractAction(bool doing)
     _imp->setDuringInteractAction(doing);
 }
 
+namespace {
+// Sets the "during interact action" flag of an effect while one of its overlay actions runs, and clears it when the
+// action ends, also if it throws (#1621)
+class DuringInteractActionSetter
+{
+public:
+    explicit DuringInteractActionSetter(EffectInstance* effect)
+        : _effect(effect)
+    {
+        _effect->setDoingInteractAction(true);
+    }
+
+    ~DuringInteractActionSetter()
+    {
+        _effect->setDoingInteractAction(false);
+    }
+
+    DuringInteractActionSetter(const DuringInteractActionSetter&) = delete;
+    DuringInteractActionSetter& operator=(const DuringInteractActionSetter&) = delete;
+
+private:
+    EffectInstance* const _effect;
+};
+} // anonymous namespace
+
 void
 EffectInstance::drawOverlay_public(double time,
                                    const RenderScale & renderScale,
@@ -3340,13 +3365,12 @@ EffectInstance::drawOverlay_public(double time,
         actualScale = renderScale;
     }
 
-    _imp->setDuringInteractAction(true);
+    DuringInteractActionSetter duringInteractAction(this);
     bool drawHostOverlay = shouldDrawHostOverlay();
     drawOverlay(time, actualScale, view);
     if (drawHostOverlay) {
         getNode()->drawHostOverlay(time, actualScale, view);
     }
-    _imp->setDuringInteractAction(false);
 }
 
 bool
@@ -3376,7 +3400,7 @@ EffectInstance::onOverlayPenDown_public(double time,
     bool ret;
     {
         NON_RECURSIVE_ACTION();
-        _imp->setDuringInteractAction(true);
+        DuringInteractActionSetter duringInteractAction(this);
         bool drawHostOverlay = shouldDrawHostOverlay();
         if (!shouldPreferPluginOverlayOverHostOverlay()) {
             ret = drawHostOverlay ? getNode()->onOverlayPenDownDefault(time, actualScale, view, viewportPos, pos, pressure) : false;
@@ -3389,8 +3413,6 @@ EffectInstance::onOverlayPenDown_public(double time,
                 ret |= getNode()->onOverlayPenDownDefault(time, actualScale, view, viewportPos, pos, pressure);
             }
         }
-
-        _imp->setDuringInteractAction(false);
     }
     checkIfRenderNeeded();
 
@@ -3420,7 +3442,7 @@ EffectInstance::onOverlayPenDoubleClicked_public(double time,
     bool ret;
     {
         NON_RECURSIVE_ACTION();
-        _imp->setDuringInteractAction(true);
+        DuringInteractActionSetter duringInteractAction(this);
         bool drawHostOverlay = shouldDrawHostOverlay();
         if (!shouldPreferPluginOverlayOverHostOverlay()) {
             ret = drawHostOverlay ? getNode()->onOverlayPenDoubleClickedDefault(time, actualScale, view, viewportPos, pos) : false;
@@ -3433,8 +3455,6 @@ EffectInstance::onOverlayPenDoubleClicked_public(double time,
                 ret |= getNode()->onOverlayPenDoubleClickedDefault(time, actualScale, view, viewportPos, pos);
             }
         }
-
-        _imp->setDuringInteractAction(false);
     }
     checkIfRenderNeeded();
 
@@ -3466,7 +3486,7 @@ EffectInstance::onOverlayPenMotion_public(double time,
 
 
     NON_RECURSIVE_ACTION();
-    _imp->setDuringInteractAction(true);
+    DuringInteractActionSetter duringInteractAction(this);
     bool ret;
     bool drawHostOverlay = shouldDrawHostOverlay();
     if (!shouldPreferPluginOverlayOverHostOverlay()) {
@@ -3481,7 +3501,6 @@ EffectInstance::onOverlayPenMotion_public(double time,
         }
     }
 
-    _imp->setDuringInteractAction(false);
     //Don't check if render is needed on pen motion, wait for the pen up
 
     //checkIfRenderNeeded();
@@ -3514,7 +3533,7 @@ EffectInstance::onOverlayPenUp_public(double time,
     bool ret;
     {
         NON_RECURSIVE_ACTION();
-        _imp->setDuringInteractAction(true);
+        DuringInteractActionSetter duringInteractAction(this);
         bool drawHostOverlay = shouldDrawHostOverlay();
         if (!shouldPreferPluginOverlayOverHostOverlay()) {
             ret = drawHostOverlay ? getNode()->onOverlayPenUpDefault(time, actualScale, view, viewportPos, pos, pressure) : false;
@@ -3527,8 +3546,6 @@ EffectInstance::onOverlayPenUp_public(double time,
                 ret |= getNode()->onOverlayPenUpDefault(time, actualScale, view, viewportPos, pos, pressure);
             }
         }
-
-        _imp->setDuringInteractAction(false);
     }
     checkIfRenderNeeded();
 
@@ -3560,12 +3577,11 @@ EffectInstance::onOverlayKeyDown_public(double time,
     bool ret;
     {
         NON_RECURSIVE_ACTION();
-        _imp->setDuringInteractAction(true);
+        DuringInteractActionSetter duringInteractAction(this);
         ret = onOverlayKeyDown(time, actualScale, view, key, modifiers, keyText);
         if (!ret && shouldDrawHostOverlay()) {
             ret |= getNode()->onOverlayKeyDownDefault(time, actualScale, view, key, modifiers);
         }
-        _imp->setDuringInteractAction(false);
     }
     checkIfRenderNeeded();
 
@@ -3597,12 +3613,11 @@ EffectInstance::onOverlayKeyUp_public(double time,
     {
         NON_RECURSIVE_ACTION();
 
-        _imp->setDuringInteractAction(true);
+        DuringInteractActionSetter duringInteractAction(this);
         ret = onOverlayKeyUp(time, actualScale, view, key, modifiers, keyText);
         if (!ret && shouldDrawHostOverlay()) {
             ret |= getNode()->onOverlayKeyUpDefault(time, actualScale, view, key, modifiers);
         }
-        _imp->setDuringInteractAction(false);
     }
     checkIfRenderNeeded();
 
@@ -3633,12 +3648,11 @@ EffectInstance::onOverlayKeyRepeat_public(double time,
     bool ret;
     {
         NON_RECURSIVE_ACTION();
-        _imp->setDuringInteractAction(true);
+        DuringInteractActionSetter duringInteractAction(this);
         ret = onOverlayKeyRepeat(time, actualScale, view, key, modifiers, keyText);
         if (!ret && shouldDrawHostOverlay()) {
             ret |= getNode()->onOverlayKeyRepeatDefault(time, actualScale, view, key, modifiers);
         }
-        _imp->setDuringInteractAction(false);
     }
     checkIfRenderNeeded();
 
@@ -3666,13 +3680,11 @@ EffectInstance::onOverlayFocusGained_public(double time,
     bool ret;
     {
         NON_RECURSIVE_ACTION();
-        _imp->setDuringInteractAction(true);
+        DuringInteractActionSetter duringInteractAction(this);
         ret = onOverlayFocusGained(time, actualScale, view);
         if (shouldDrawHostOverlay()) {
             ret |= getNode()->onOverlayFocusGainedDefault(time, actualScale, view);
         }
-
-        _imp->setDuringInteractAction(false);
     }
     checkIfRenderNeeded();
 
@@ -3701,13 +3713,11 @@ EffectInstance::onOverlayFocusLost_public(double time,
     bool ret;
     {
         NON_RECURSIVE_ACTION();
-        _imp->setDuringInteractAction(true);
+        DuringInteractActionSetter duringInteractAction(this);
         ret = onOverlayFocusLost(time, actualScale, view);
         if (shouldDrawHostOverlay()) {
             ret |= getNode()->onOverlayFocusLostDefault(time, actualScale, view);
         }
-
-        _imp->setDuringInteractAction(false);
     }
     checkIfRenderNeeded();
 
@@ -3895,11 +3905,8 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
         if (isProjectFormat) {
             *isProjectFormat = false;
         }
-//#pragma message WARN("[FD] why is an empty RoD a failure case? this is ignored in renderRoI, search for 'if getRoD fails, this might be because the RoD is null after all (e.g: an empty Roto node), we don't want the render to fail'")
-        if ( rod->isNull() ) {
-            return eStatusFailed;
-        }
 
+        // only successes are cached: an empty RoD is a valid RoD (the output is black), not a failure (#1602)
         return eStatusOK;
     } else {
         ///If this is running on a render thread, attempt to find the RoD in the thread-local storage.
@@ -3919,7 +3926,13 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
         if ( getNode()->isNodeDisabled() ) {
             NodePtr preferredInput = getNode()->getPreferredInputNode();
             if (!preferredInput) {
-                return eStatusFailed;
+                // the output is black (see isIdentity_public()): an empty RoD, not a failure (#1602)
+                rod->clear();
+                if (isProjectFormat) {
+                    *isProjectFormat = false;
+                }
+
+                return eStatusOK;
             }
 
             return preferredInput->getEffectInstance()->getRegionOfDefinition_public(preferredInput->getEffectInstance()->getRenderHash(), time, scale, view, rod, isProjectFormat);
@@ -3938,12 +3951,7 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
                 return eStatusFailed;
             }
             if ( (ret != eStatusOK) && (ret != eStatusReplyDefault) ) {
-                // rod is not valid
-                //if (!isDuringStrokeCreation) {
-                _imp->actionsCache->invalidateAll(hash);
-                _imp->actionsCache->setRoDResult( hash, time, view, mipmapLevel, RectD() );
-
-                // }
+                // rod is not valid. Don't cache the failure: it would be taken for an empty RoD (#1602)
                 return ret;
             }
 
@@ -4483,8 +4491,19 @@ EffectInstance::getComponentsNeededAndProduced_public(U64 hash,
     // Remove from this list all layers produced from this node to get the pass-through planes list
     std::list<ImagePlaneDesc>& outputLayers = (*comps)[-1];
 
-    // Ensure the plug-in made the metadata plane available.
-    {
+    // Ensure the plug-in made the metadata plane (the color plane) available, except when it declared its
+    // output planes and passes the planes that it does not render through from an input. Such a plug-in (a
+    // Shuffle that writes to another layer than the color plane) does not render the color plane: adding it
+    // here removed it from the pass-through planes below, the plug-in was asked to render it, did not, and
+    // the color came out black after the node.
+    // A writer keeps the metadata plane: the writers of openfx-io (GenericWriter) switch to their single-plane
+    // path when they are given one plane, and then write a layer as R, G, B, A. Asked for one layer that is
+    // not the color plane, a writer must get that layer and the color plane to write the layer under its own
+    // channel names.
+    const PassThroughEnum passThrough = isPassThroughForNonRenderedPlanes();
+    const bool colorFromPassThroughInput = !outputLayers.empty() && (*passThroughInputNb != -1) && !isWriter() &&
+                                           (passThrough == ePassThroughPassThroughNonRenderedPlanes);
+    if (!colorFromPassThroughInput) {
         std::list<ImagePlaneDesc> metadataPlanes;
         ImagePlaneDesc metadataPlane, metadataPairedPlane;
         getMetadataComponents(-1, &metadataPlane, &metadataPairedPlane);
@@ -4499,7 +4518,6 @@ EffectInstance::getComponentsNeededAndProduced_public(U64 hash,
 
 
     // If the plug-in does not block upstream planes, recurse up-stream on the pass-through input to get available components.
-    PassThroughEnum passThrough = isPassThroughForNonRenderedPlanes();
     if (*passThroughInputNb != -1 && ( (passThrough == ePassThroughPassThroughNonRenderedPlanes) ||
         ( passThrough == ePassThroughRenderAllRequestedPlanes)) ) {
 

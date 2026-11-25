@@ -87,6 +87,8 @@ Settings::Settings()
 {
 }
 
+// The folders where the OpenColorIO configs are searched, in order of preference: the bundled
+// ones (next to the binary) come first, so that a system-wide folder doesn't override them.
 static QStringList
 getDefaultOcioConfigPaths()
 {
@@ -95,9 +97,9 @@ getDefaultOcioConfigPaths()
 
 #ifdef __NATRON_LINUX__
     QStringList ret;
-    ret.push_back( QString::fromUtf8("/usr/share/OpenColorIO-Configs") );
-    ret.push_back( QString( binaryPath + QString::fromUtf8("../share/OpenColorIO-Configs") ) );
     ret.push_back( QString( binaryPath + QString::fromUtf8("../Resources/OpenColorIO-Configs") ) );
+    ret.push_back( QString( binaryPath + QString::fromUtf8("../share/OpenColorIO-Configs") ) );
+    ret.push_back( QString::fromUtf8("/usr/share/OpenColorIO-Configs") );
 
     return ret;
 #elif defined(__NATRON_WIN32__)
@@ -107,6 +109,21 @@ getDefaultOcioConfigPaths()
 
     return QStringList( QString( binaryPath + QString::fromUtf8("../Resources/OpenColorIO-Configs") ) );
 #endif
+}
+
+// The OpenColorIO configs folder: the first existing one of getDefaultOcioConfigPaths(), or an
+// empty string if there is none. The preference menu lists its configs, and the selected one is
+// loaded from it (#1266).
+static QString
+getDefaultOcioConfigsDir()
+{
+    Q_FOREACH(const QString &dir, getDefaultOcioConfigPaths()) {
+        if ( QDir(dir).exists() ) {
+            return dir;
+        }
+    }
+
+    return QString();
 }
 
 void
@@ -659,20 +676,14 @@ Settings::initializeKnobsColorManagement()
 
     std::vector<ChoiceOption> configs;
     int defaultIndex = 0;
-    QStringList defaultOcioConfigsPaths = getDefaultOcioConfigPaths();
-    Q_FOREACH(const QString &defaultOcioConfigsDir, defaultOcioConfigsPaths) {
-        QDir ocioConfigsDir(defaultOcioConfigsDir);
-
-        if ( ocioConfigsDir.exists() ) {
-            QStringList entries = ocioConfigsDir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
-            for (int j = 0; j < entries.size(); ++j) {
-                if ( entries[j] == QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ) {
-                    defaultIndex = j;
-                }
-                configs.push_back(ChoiceOption( entries[j].toStdString() ));
+    const QString defaultOcioConfigsDir = getDefaultOcioConfigsDir();
+    if ( !defaultOcioConfigsDir.isEmpty() ) {
+        QStringList entries = QDir(defaultOcioConfigsDir).entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
+        for (int j = 0; j < entries.size(); ++j) {
+            if ( entries[j] == QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ) {
+                defaultIndex = j;
             }
-
-            break; //if we found 1 OpenColorIO-Configs directory, skip the next
+            configs.push_back(ChoiceOption( entries[j].toStdString() ));
         }
     }
     configs.push_back(ChoiceOption(NATRON_CUSTOM_OCIO_CONFIG_NAME));
@@ -1858,6 +1869,15 @@ Settings::saveAllSettings()
     saveSettings(k, false, true);
 }
 
+// The Enabled flag of a deprecated plug-in has its own key: a plug-in that becomes deprecated is disabled
+// by default (Plugin::isActivated()), even if it was saved as enabled before, and the user may enable it (#171)
+static QString
+pluginEnabledKey(const Plugin* plugin,
+                 const QString& pluginIDKey)
+{
+    return pluginIDKey + QString::fromUtf8( plugin->getIsDeprecated() ? "_deprecated_enabled" : "_enabled" );
+}
+
 void
 Settings::restorePluginSettings()
 {
@@ -1886,7 +1906,7 @@ Settings::restorePluginSettings()
 
             {
                 QString pluginIDKey = plugin->getPluginID() + QString::fromUtf8("_") + QString::number( plugin->getMajorVersion() ) + QString::fromUtf8("_") + QString::number( plugin->getMinorVersion() );
-                QString enabledKey = pluginIDKey + QString::fromUtf8("_enabled");
+                QString enabledKey = pluginEnabledKey(plugin, pluginIDKey);
                 if ( settings.contains(enabledKey) ) {
                     bool enabled = settings.value(enabledKey).toBool();
                     plugin->setActivated(enabled);
@@ -1937,7 +1957,7 @@ Settings::savePluginsSettings()
             assert(plugin);
 
             QString pluginID = plugin->getPluginID() + QString::fromUtf8("_") + QString::number( plugin->getMajorVersion() ) + QString::fromUtf8("_") + QString::number( plugin->getMinorVersion() );
-            QString enabledKey = pluginID + QString::fromUtf8("_enabled");
+            QString enabledKey = pluginEnabledKey(plugin, pluginID);
             settings.setValue( enabledKey, plugin->isActivated() );
 
             QString rsKey = pluginID + QString::fromUtf8("_rs");
@@ -2250,15 +2270,13 @@ Settings::tryLoadOpenColorIOConfig()
             ///try to load from the combobox
             QString activeEntryText  = QString::fromUtf8( _ocioConfigKnob->getActiveEntry().id.c_str() );
             QString configFileName = QString( activeEntryText + QString::fromUtf8(".ocio") );
-            QStringList defaultConfigsPaths = getDefaultOcioConfigPaths();
-            Q_FOREACH(const QString &defaultConfigsDirStr, defaultConfigsPaths) {
+            // the folder whose configs the menu lists
+            const QString defaultConfigsDirStr = getDefaultOcioConfigsDir();
+            if ( defaultConfigsDirStr.isEmpty() ) {
+                qDebug() << "Attempt to read an OpenColorIO configuration but none of the configuration directories"
+                         << getDefaultOcioConfigPaths() << "exists.";
+            } else {
                 QDir defaultConfigsDir(defaultConfigsDirStr);
-
-                if ( !defaultConfigsDir.exists() ) {
-                    qDebug() << "Attempt to read an OpenColorIO configuration but the configuration directory"
-                             << defaultConfigsDirStr << "does not exist.";
-                    continue;
-                }
                 ///try to open the .ocio config file first in the defaultConfigsDir
                 ///if we can't find it, try to look in a subdirectory with the name of the config for the file config.ocio
                 if ( !defaultConfigsDir.exists(configFileName) ) {
@@ -2387,15 +2405,8 @@ Settings::onKnobValueChanged(KnobI* k,
     } else if ( k == _customOcioConfigFile.get() ) {
         if ( _customOcioConfigFile->isEnabled(0) ) {
             tryLoadOpenColorIOConfig();
-            bool warnOcioChanged = _warnOcioConfigKnobChanged->getValue();
-            if ( warnOcioChanged && appPTR->getTopLevelInstance() ) {
-                bool stopAsking = false;
-                Dialogs::warningDialog(tr("OCIO config changed").toStdString(),
-                                       tr("The OpenColorIO config change requires a restart of %1 to be effective.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), &stopAsking);
-                if (stopAsking) {
-                    _warnOcioConfigKnobChanged->setValue(false);
-                }
-            }
+            // No "requires a restart" warning here: the file is not saved yet, and restarting now
+            // would lose it (#841). warnChangedKnobs() gives it when the preferences are saved.
         }
     } else if ( k == _maxUndoRedoNodeGraph.get() ) {
         appPTR->setUndoRedoStackLimit( _maxUndoRedoNodeGraph->getValue() );
@@ -2933,15 +2944,22 @@ Settings::getUseStdOFXPluginsLocation() const
 void
 Settings::restoreDefault()
 {
-    QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
+    // When saving is off (--no-settings, --test which implies it, or --setting), the settings file
+    // is not the session's: leave it alone and reset the settings in memory only (#1728).
+    if ( _saveSettings->getValue() ) {
+        QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
-    if ( !QFile::remove( settings.fileName() ) ) {
-        qDebug() << "Failed to remove settings ( " << settings.fileName() << " ).";
+        if ( !QFile::remove( settings.fileName() ) ) {
+            qDebug() << "Failed to remove settings ( " << settings.fileName() << " ).";
+        }
     }
 
     beginChanges();
     const KnobsVec & knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
+        if (knobs[i] == _saveSettings) {
+            continue; // not a preference: resetting it would turn saving back on
+        }
         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
             knobs[i]->resetToDefaultValue(j);
         }

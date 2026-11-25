@@ -436,7 +436,8 @@ bool
 OfxHost::isPluginObsolete(const OFX::Host::Property::Set& descriptorProps)
 {
     // kOfxImageEffectPluginPropObsolete: "available for use in old projects but not offered to users for
-    // new use", which is what Natron does with these plug-ins (see Plugin::getIsUserCreatable()).
+    // new use", which is what Natron does with these plug-ins: they are disabled by default
+    // (Plugin::isActivated(), see Plugin::getIsUserCreatable()), and the user may enable them (#171).
     // HostSupport declares it, with a default of 0, on every image effect descriptor, including the
     // ones loaded from the plug-in cache.
     return descriptorProps.getIntProperty(kOfxImageEffectPluginPropObsolete) != 0;
@@ -764,7 +765,12 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
     }
 
     if (!pluginHandle) {
-        throw std::runtime_error( tr("Error: Description (kOfxActionLoad and kOfxActionDescribe) failed while loading %1.")
+        // NULL also if the binary can't be loaded, refuses this host (OfxSetHost), or no longer has this
+        // plug-in: a stale plug-in cache (the binary's plug-ins changed, but not its mtime and size)
+        throw std::runtime_error( tr("Error: %1 could not be loaded. Its binary could not be loaded, refused this host, "
+                                     "or no longer has this plug-in (then the OpenFX plug-in cache is stale: use "
+                                     "Cache > Clear Plug-ins Load Cache and restart, or launch with --clear-openfx-cache), "
+                                     "or its description (kOfxActionLoad and kOfxActionDescribe) failed.")
                                   .arg( QString::fromUtf8( plugin->getIdentifier().c_str() ) ).toStdString() );
     }
     assert(pluginHandle->getOfxPlugin() && pluginHandle->getOfxPlugin()->mainEntry);
@@ -2023,24 +2029,38 @@ OfxHost::requestDialog(OfxImageEffectHandle instance,
                        void* instanceData)
 {
     Q_UNUSED(inArgs);
-    OfxImageEffectInstance *effectInstance = NULL;
-    if (instance) {
-        OFX::Host::ImageEffect::Base *effectBase = reinterpret_cast<OFX::Host::ImageEffect::Base*>(instance);
-        effectInstance = dynamic_cast<OfxImageEffectInstance*>(effectBase);
-    } else {
-        // A NULL instance handle (OfxDialogSuiteV2 with a NULL handle; HostSupport also passes NULL for
-        // OfxDialogSuiteV1, which is not compiled in: OFX_SUPPORTS_DIALOG_V1 is not defined): the effect is the
-        // one whose action runs on the requesting thread. It must be found here, on that thread: the request is
-        // queued to the main thread, where another effect's action, or none, may be running (#1497).
-        effectInstance = _imp->tlsData->getOrCreateTLSData()->effectCallingMainEntry();
-    }
-    if (!effectInstance) {
-        // ofxDialog.h: "kOfxStatFailed - The host has no provision for this or can not deal with it currently."
+    // suite functions should not throw
+    try {
+        OfxImageEffectInstance *effectInstance = NULL;
+        if (instance) {
+            // the same check as HostSupport's effectHandleToInstance(): ImageEffect::Base has no magic number
+            OFX::Host::ImageEffect::Base *effectBase = reinterpret_cast<OFX::Host::ImageEffect::Base*>(instance);
+            effectInstance = dynamic_cast<OfxImageEffectInstance*>(effectBase);
+        } else {
+            // A NULL instance handle (OfxDialogSuiteV2 with a NULL handle; HostSupport also passes NULL for
+            // OfxDialogSuiteV1, which is not compiled in: OFX_SUPPORTS_DIALOG_V1 is not defined): the effect is the
+            // one whose action runs on the requesting thread. It must be found here, on that thread: the request is
+            // queued to the main thread, where another effect's action, or none, may be running (#1497).
+            effectInstance = _imp->tlsData->getOrCreateTLSData()->effectCallingMainEntry();
+        }
+        const OfxEffectInstancePtr effect = effectInstance ? effectInstance->getOfxEffectInstance() : OfxEffectInstancePtr();
+        if (!effect) {
+            // ofxDialog.h: "kOfxStatFailed - The host has no provision for this or can not deal with it currently."
+            return kOfxStatFailed;
+        }
+        appPTR->requestOFXDIalogOnMainThread(effect, instanceData);
+
+        return kOfxStatOK;
+    } catch (const std::exception & e) {
+        // ofxDialog.h lists only kOfxStatOK and kOfxStatFailed, also for std::bad_alloc
+        qDebug() << "requestDialog(): " << e.what();
+
+        return kOfxStatFailed;
+    } catch (...) {
+        qDebug() << "requestDialog(): unknown error.";
+
         return kOfxStatFailed;
     }
-    appPTR->requestOFXDIalogOnMainThread(effectInstance, instanceData);
-
-    return kOfxStatOK;
 }
 
 /// @see OfxDialogSuiteV1.NotifyRedrawPending()

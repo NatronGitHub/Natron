@@ -163,8 +163,8 @@ int main(int argc, char *argv[])
 #endif
             return 1;
         } else {
-            // natron.quit(exitCode)
-            return manager.getRequestedExitCode();
+            // natron.quit(exitCode), or 1 if a render failed
+            return manager.exitStatus();
         }
     } else {
         GuiApplicationManager manager;

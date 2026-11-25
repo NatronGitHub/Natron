@@ -338,13 +338,12 @@ don't run.
 
 .. note::
 
-    In Natron 2.6, the *Load PyPlugs in projects from .py if possible* preference (*Python* tab)
-    has the opposite effect of its name (`#1524
-    <https://github.com/NatronGitHub/Natron/issues/1524>`_). When it is checked (the default),
-    Natron loads each PyPlug node from the content saved in the project, even if a newer version
-    of the PyPlug is installed. When it is unchecked, Natron runs the installed PyPlug file
-    again, and asks whether to use it when its version differs from the one saved in the
-    project.
+    With the *Load PyPlugs in projects from .py if possible* preference (*Python* tab) checked
+    (the default), Natron runs the installed PyPlug file again for each PyPlug node of a project,
+    and asks whether to use it when its version differs from the one saved in the project. When it
+    is unchecked, or when the PyPlug file isn't found, Natron loads each PyPlug node from the
+    content saved in the project. From Natron 2.2.3 to the 2.6 betas, the preference had the opposite
+    effect (`#1646 <https://github.com/NatronGitHub/Natron/issues/1646>`_).
 
 .. _pyplugWriting-menus:
 
@@ -561,10 +560,8 @@ These mistakes are the most frequent ones, and most of them fail without any mes
 **Use the app that Natron gives you.**
     In a PyPlug or a callback, use the ``app`` argument: ``app1`` is only the first project, and
     the user may have opened several. In a script run by Natron or NatronRenderer, never assign to
-    the global variables ``app`` or ``app1``, e.g. ``app = natron.getInstance(0)``: Natron uses them
-    to find the nodes that a script creates, and in NatronRenderer the PyPlug nodes can then no
-    longer be created (`#1525 <https://github.com/NatronGitHub/Natron/issues/1525>`_). Use another
-    name.
+    the global variables ``app`` or ``app1``, e.g. ``app = natron.getInstance(0)``: Natron declares
+    the nodes that a script creates on them. Use another name.
 
 **Expressions inside a PyPlug start with thisGroup.**
     See the note in :ref:`pyplugWriting-createInstance`.
@@ -575,11 +572,6 @@ These mistakes are the most frequent ones, and most of them fail without any mes
     connected: the value can't be set, and the menu goes back to its default. Make such a menu an
     alias on the group (*Pick*, see :ref:`pyplugWriting-params`), so that the user chooses the
     layer once the input is connected.
-
-**Some settings are not exported.**
-    The *Use Point Interact* option of a 2D parameter is not written to the exported file
-    (`#1526 <https://github.com/NatronGitHub/Natron/issues/1526>`_), so the exported PyPlug has no
-    point to drag in the viewer for that parameter.
 
 **A Group needs an Output node to be exported.**
     *Export as PyPlug* refuses a Group without an Output node, even if its last node is a Write

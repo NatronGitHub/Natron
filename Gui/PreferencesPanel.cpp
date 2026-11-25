@@ -99,6 +99,10 @@ struct PluginTreeNode
         , mtCheckbox(NULL)
         , glCheckbox(NULL)
         , plugin(NULL)
+        , shownActivated(false)
+        , shownRenderScaleEnabled(false)
+        , shownMultiThreadingEnabled(false)
+        , shownOpenGLEnabled(false)
     {
     }
 
@@ -108,6 +112,11 @@ struct PluginTreeNode
     AnimatedCheckBox* mtCheckbox;
     AnimatedCheckBox* glCheckbox;
     Plugin* plugin;
+    // The plug-in's flags when the panel was shown, restored by Cancel (#1538)
+    bool shownActivated;
+    bool shownRenderScaleEnabled;
+    bool shownMultiThreadingEnabled;
+    bool shownOpenGLEnabled;
 };
 
 typedef std::list<PluginTreeNode> PluginTreeNodeList;
@@ -1170,17 +1179,33 @@ PreferencesPanel::restoreDefaults()
     if (reply == eStandardButtonYes) {
         appPTR->getCurrentSettings()->restoreDefault();
 
+        // The plug-in settings are not knobs: reset the plug-ins themselves, as clicking each checkbox
+        // would (setChecked() doesn't emit clicked()), and show their new state (#1744)
         for (PluginTreeNodeList::const_iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
+            Plugin* plugin = it->plugin;
+            if (!plugin) {
+                continue; // a group row (see buildPluginGroupHierarchy())
+            }
+            plugin->setActivated( !plugin->getIsDeprecated() ); // the default (#171)
+            plugin->setRenderScaleEnabled(true);
+            plugin->setMultiThreadingEnabled(true);
+            plugin->setOpenGLEnabled(true);
             if (it->enabledCheckbox) {
-                it->enabledCheckbox->setChecked(true);
+                it->enabledCheckbox->setChecked( plugin->isActivated() );
             }
             if (it->rsCheckbox) {
-                it->rsCheckbox->setChecked(true);
+                it->rsCheckbox->setChecked( plugin->isRenderScaleEnabled() );
             }
             if (it->mtCheckbox) {
-                it->mtCheckbox->setChecked(true);
+                it->mtCheckbox->setChecked( plugin->isMultiThreadingEnabled() );
+            }
+            if (it->glCheckbox) {
+                // as in createPluginsView(): unchecked if the plug-in can't render with OpenGL
+                it->glCheckbox->setChecked( plugin->isOpenGLEnabled() &&
+                                            plugin->getPluginOpenGLRenderSupport() != ePluginOpenGLRenderSupportNone );
             }
         }
+        _imp->pluginSettingsChanged = true;
     }
 }
 
@@ -1207,15 +1232,29 @@ PreferencesPanel::saveChangesAndClose()
 }
 
 void
-PreferencesPanel::showEvent(QShowEvent* /*e*/)
+PreferencesPanel::showEvent(QShowEvent* e)
 {
     QScreen* desktop = QGuiApplication::primaryScreen();
     const QRect rect = desktop->availableGeometry();
 
     move( QPoint(rect.width() / 2 - width() / 2, rect.height() / 2 - height() / 2) );
 
+    if ( e->spontaneous() ) {
+        return; // e.g. restored after being minimized: the changes made so far can still be cancelled
+    }
+    for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
+        if (it->plugin) {
+            it->shownActivated = it->plugin->isActivated();
+            it->shownRenderScaleEnabled = it->plugin->isRenderScaleEnabled();
+            it->shownMultiThreadingEnabled = it->plugin->isMultiThreadingEnabled();
+            it->shownOpenGLEnabled = it->plugin->isOpenGLEnabled();
+        }
+    }
+
     _imp->changedKnobs.clear();
     _imp->pluginSettingsChanged = false;
+    // set again by Save: closing the window otherwise discards the changes, also after an earlier Save (#841)
+    _imp->closeIsOK = false;
 }
 
 void
@@ -1229,7 +1268,30 @@ PreferencesPanel::closeEvent(QCloseEvent*)
             settings->endChanges();
         }
         if (_imp->pluginSettingsChanged) {
-            settings->restorePluginSettings();
+            // Restore the flags the plug-ins had when the panel was shown, and their checkboxes. Not
+            // Settings::restorePluginSettings(): with --no-settings it reads nothing (#1538), and the
+            // saved settings may differ from the session's state (e.g. "Save settings" unchecked)
+            for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
+                if (!it->plugin) {
+                    continue;
+                }
+                it->plugin->setActivated(it->shownActivated);
+                it->plugin->setRenderScaleEnabled(it->shownRenderScaleEnabled);
+                it->plugin->setMultiThreadingEnabled(it->shownMultiThreadingEnabled);
+                it->plugin->setOpenGLEnabled(it->shownOpenGLEnabled);
+                if (it->enabledCheckbox) {
+                    it->enabledCheckbox->setChecked(it->shownActivated);
+                }
+                if (it->rsCheckbox) {
+                    it->rsCheckbox->setChecked(it->shownRenderScaleEnabled);
+                }
+                if (it->mtCheckbox) {
+                    it->mtCheckbox->setChecked(it->shownMultiThreadingEnabled);
+                }
+                if ( it->glCheckbox && (it->plugin->getPluginOpenGLRenderSupport() != ePluginOpenGLRenderSupportNone) ) {
+                    it->glCheckbox->setChecked(it->shownOpenGLEnabled);
+                }
+            }
         }
     }
 }

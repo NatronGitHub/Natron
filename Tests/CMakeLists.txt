@@ -28,21 +28,28 @@ set(Tests_SOURCES
     DiskCache_Test.cpp
     ExpressionDepsRenderArgs_Test.cpp
     ExpressionSetError_Test.cpp
+    ExprUtils_Test.cpp
+    FailedRoDRender_Test.cpp
     FileSystemModel_Test.cpp
+    GenericSchedulerThread_Test.cpp
     Hash64_Test.cpp
     ImageCache_Test.cpp
     Image_Test.cpp
+    KnobDimensionRange_Test.cpp
     KnobDuplicate_Test.cpp
     KnobExpressionCache_Test.cpp
     KnobInvalidExpression_Test.cpp
     KnobLockOrder_Test.cpp
     KnobFile_Test.cpp
+    KnobHolderCreateKnob_Test.cpp
+    KnobHolderPanel_Test.cpp
     KnobSlave_Test.cpp
     KnobStringAnimation_Test.cpp
     LibTess_Test.cpp
     LoadPythonScript_Test.cpp
     Lut_Test.cpp
     Markdown_Test.cpp
+    MaskChannel_Test.cpp
     MultiInputLinks_Test.cpp
     NaNGuards_FastMath.cpp
     NaNGuards_Test.cpp
@@ -53,6 +60,7 @@ set(Tests_SOURCES
     OfxBytesParam_Test.cpp
     OfxContexts_Test.cpp
     OfxCPURenderSupport_Test.cpp
+    OfxClipComponentsView_Test.cpp
     OfxClipGetImage_Test.cpp
     OfxCustomParamInterp_Test.cpp
     OfxDrawSuite_Test.cpp
@@ -84,17 +92,23 @@ set(Tests_SOURCES
     ParamRandom_Test.cpp
     PluginGrouping_Test.cpp
     PrecompLoad_Test.cpp
+    ProcessHandler_Test.cpp
     ProjectAutoSave_Test.cpp
     PyEffectEquality_Test.cpp
+    PyPlugToolset_Test.cpp
+    PyExprUtilsNoise_Test.cpp
+    PyParamDefault_Test.cpp
     PythonGILUnlocker_Test.cpp
     PythonScript_Test.cpp
     ProjectFileFormat_Test.cpp
     PythonExpressionScope_Test.cpp
     ReadNodeOverlay_Test.cpp
+    ReadWriteVersion_Test.cpp
     RenderThreadSafety_Test.cpp
     RenderThreads_Test.cpp
     RotoPaint_Test.cpp
     SequentialRender_Test.cpp
+    Settings_Test.cpp
     ShuffleAutoConnect_Test.cpp
     StrUtilsFormat_Test.cpp
     Tracker_Test.cpp
@@ -204,7 +218,10 @@ endif()
 # every source file of OfxTestPlugin/ is part of the bundle (see OfxTestPlugin/NatronTestPluginRegistry.h)
 file(GLOB NatronTestPlugin_SOURCES CONFIGURE_DEPENDS OfxTestPlugin/*.cpp OfxTestPlugin/*.h)
 add_library(NatronTestPlugin MODULE ${NatronTestPlugin_SOURCES})
-target_include_directories(NatronTestPlugin SYSTEM PRIVATE ../libs/OpenFX/include)
+# openfx::Api: the OpenFX headers and the OFX_EXTENSIONS_*/OFX_SUPPORTS_* definitions that Natron is
+# built with (e.g. the reader and writer contexts of OfxTestPlugin/NatronTestPluginVersions.cpp, only
+# defined with OFX_EXTENSIONS_TUTTLE), as global.pri gives them to OfxTestPlugin/OfxTestPlugin.pro
+target_link_libraries(NatronTestPlugin PRIVATE openfx::Api)
 set_target_properties(NatronTestPlugin PROPERTIES
     PREFIX ""
     SUFFIX ".ofx"
@@ -241,6 +258,10 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME GuiSmokeTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_gui_smoke_test.py $<TARGET_FILE:Natron>)
     set_tests_properties(GuiSmokeTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 960 LABELS gui)
+    # NatronRenderer exits with status 1 when the render of a Write node failed
+    add_test(NAME RenderFailureStatusTest
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_render_failure_status_test.py $<TARGET_FILE:NatronRenderer>)
+    set_tests_properties(RenderFailureStatusTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 660)
     # natron.quit() from a render callback stops a NatronRenderer render (headless)
     add_test(NAME RendererQuitTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_quit_test.py $<TARGET_FILE:NatronRenderer>)
@@ -254,6 +275,14 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME RendererCallbacksTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_callbacks_test.py $<TARGET_FILE:NatronRenderer>)
     set_tests_properties(RendererCallbacksTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 660)
+    # a Read whose file is missing ("On missing frame: Error") or whose filename is empty fails the render (exit status 1), instead of writing black (#1602, #1131)
+    add_test(NAME RendererMissingReadTest
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_missing_read_test.py $<TARGET_FILE:NatronRenderer>)
+    set_tests_properties(RendererMissingReadTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 660)
+    # NatronRenderer project.ntp -i Read <sequence> -w Write <file> <range>, on a project whose Read and Write have no file, renders the right frames (#864)
+    add_test(NAME RendererCLReadWriteTest
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_cl_read_write_test.py $<TARGET_FILE:NatronRenderer>)
+    set_tests_properties(RendererCLReadWriteTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 660)
     # --setting options for the caches and threads, which run before the caches exist (#1571)
     add_test(NAME RendererSettingsTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_settings_test.py $<TARGET_FILE:NatronRenderer>)
@@ -262,6 +291,10 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME ProjectLoadInfoTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_project_load_info_test.py $<TARGET_FILE:NatronRenderer>)
     set_tests_properties(ProjectLoadInfoTest PROPERTIES TIMEOUT 360)
+    # the natron_convert_project module (tools/): text -> binary -> text with NatronRenderer -c, same nodes and values
+    add_test(NAME ConvertProjectTest
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_convert_project_test.py $<TARGET_FILE:NatronRenderer>)
+    set_tests_properties(ConvertProjectTest PROPERTIES TIMEOUT 300)
 endif()
 if(Python3_Interpreter_FOUND)
     # NatronRenderer -t exits at the end of a stdin that is not a console (the null device, a pipe)
@@ -325,6 +358,32 @@ foreach(_natron_gui_test ${NatronGuiTests_SCRIPTS})
             "OFX_PLUGIN_PATH=${_natron_gui_test_ofx_path}")
     endif()
 endforeach()
+# the PyPlug that test_pyplug_export_version.py exports (#1527)
+if(TEST gui.pyplug_export_version)
+    set_property(TEST gui.pyplug_export_version APPEND PROPERTY ENVIRONMENT
+        "NATRON_PLUGIN_PATH=${CMAKE_CURRENT_SOURCE_DIR}/data/pyplugs;PYTHONDONTWRITEBYTECODE=1")
+endif()
+
+# Connecting an input is fast when many paths lead to the same node (the cycle check visited a node
+# once per path): NatronRenderer runs the script, which exits with natron.quit(status).
+add_test(NAME ConnectLadderHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_connect_ladder.py")
+set_tests_properties(ConnectLadderHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/connect-ladder-headless-cache")
+
+# Default node names are the smallest free number, and naming thousands of nodes is fast (#1565):
+# NatronRenderer runs the script, which exits with natron.quit(status).
+add_test(NAME NodeNamingHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_node_naming.py")
+set_tests_properties(NodeNamingHeadless PROPERTIES TIMEOUT 300
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/node-naming-headless-cache")
+
+# ColorParam.get(frame) returns the alpha of an RGBA color, not its blue (#1712): NatronRenderer runs the
+# script, which exits with natron.quit(status).
+add_test(NAME ColorGetFrameHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_color_get_frame.py")
+set_tests_properties(ColorGetFrameHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/color-get-frame-headless-cache")
 
 # Undo groups do nothing in background mode (App.undoGroup(), #1455): NatronRenderer runs the script,
 # which exits with natron.quit(status).
@@ -333,3 +392,28 @@ add_test(NAME UndoGroupHeadless
 # the caches (OFX plug-ins) in the build tree, not in the user's cache directory (#1569)
 set_tests_properties(UndoGroupHeadless PROPERTIES TIMEOUT 120
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/undo-group-headless-cache")
+# AnimatedParam.setDerivativesAtTime() (#1745), headless
+add_test(NAME KeyframeDerivativesHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_keyframe_derivatives.py")
+set_tests_properties(KeyframeDerivativesHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/keyframe-derivatives-headless-cache")
+
+# A PyPlug is created after the script rebinds the global "app" (#1525)
+add_test(NAME PyPlugReboundAppHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_pyplug_rebound_app.py")
+set_tests_properties(PyPlugReboundAppHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_PLUGIN_PATH=${CMAKE_CURRENT_SOURCE_DIR}/data/pyplugs;PYTHONDONTWRITEBYTECODE=1;NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/pyplug-rebound-app-cache")
+
+# Renaming a group recompiles the expressions of its knobs and of the nodes inside it (#1686): NatronRenderer
+# runs the script, which exits with natron.quit(status).
+add_test(NAME RenameGroupExpressionsHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_rename_group_expressions.py")
+set_tests_properties(RenameGroupExpressionsHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/rename-group-expressions-headless-cache")
+
+# The color plane goes through a Shuffle that writes to another layer (it was black): NatronRenderer runs the
+# script, which exits with natron.quit(status), 77 when openfx-misc or openfx-io are not in OFX_PLUGIN_PATH.
+add_test(NAME LayerPassThroughHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_layer_passthrough.py")
+set_tests_properties(LayerPassThroughHeadless PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 300
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/layer-passthrough-headless-cache")

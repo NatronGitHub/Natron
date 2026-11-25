@@ -47,7 +47,9 @@
 // - net.natron.test.Generator: a generator that fills its output with 0.5, with the pixel aspect ratio of
 //   its "par" parameter (it supports multiple clip PARs, so that it may set its output PAR, and "par" is a
 //   clip preferences slave parameter). If its "fps" parameter (also a slave parameter) is positive, it sets
-//   the output frame rate to it in getClipPreferences (kOfxImageEffectPropSetableFrameRate).
+//   the output frame rate to it in getClipPreferences (kOfxImageEffectPropSetableFrameRate). If its "fail"
+//   parameter is true, kOfxImageEffectActionGetRegionOfDefinition and kOfxImageEffectActionRender return
+//   kOfxStatFailed, as a Read node whose file is missing does with "On missing frame: Error" (#1602).
 // - net.natron.test.MultiPAR: two inputs, Source and B, and kOfxImageEffectPropSupportsMultipleClipPARs.
 //   It records the pixel aspect ratio of each input clip and image, times 1000, in render.
 // - net.natron.test.ClipGetImage: asks for a small region of Source in getRegionsOfInterest; in render,
@@ -66,11 +68,15 @@
 // - net.natron.test.Question: the "ask" and "askFromThread" push buttons post a kOfxMessageQuestion from
 //   kOfxActionInstanceChanged, on the calling thread or on a thread of the plug-in, and count the replies.
 //
-// The binary exports OfxSetHost (OFX 1.5), and counts its calls ("Binary.setHost"), whether it came
+// The binary counts the calls of OfxGetNumberOfPlugins and OfxGetPlugin ("Binary.getNumberOfPlugins",
+// "Binary.getPlugin"). It exports OfxSetHost (OFX 1.5), and counts its calls ("Binary.setHost"), whether it came
 // before OfxGetNumberOfPlugins ("Binary.setHostBeforeGetNumberOfPlugins") and the kOfxPropAPIVersion
 // of the host it gets ("Binary.setHostAPIVersion0", "Binary.setHostAPIVersion1"). ParamInteract
 // calls clipGetHandle() in kOfxImageEffectActionDescribeInContext, where it is not valid, and records
 // the status and whether the clip was set to NULL ("ParamInteract.describeClipGetHandle*").
+//
+// The plug-ins above count kOfxActionDialog ("<id>.dialog"), and those sent to a destroyed instance
+// ("<id>.dialogDead").
 //
 // The plug-ins above count kOfxActionLoad and kOfxActionUnload ("<id>.load", "<id>.unload"). If the
 // environment variable NATRON_TEST_PLUGIN_ACTION_LOG is set, they also append the lines "load <id>" and
@@ -91,6 +97,7 @@
 
 #include <ofxCore.h>
 #include <ofxImageEffect.h>
+#include <ofxDialog.h> // after ofxImageEffect.h, which declares OfxImageEffectHandle
 #include <ofxGPURender.h>
 #include <ofxInteract.h>
 #include <ofxMessage.h>
@@ -292,6 +299,15 @@ commonAction(const char* action,
     if (std::strcmp(action, kOfxImageEffectActionRender) == 0) {
         // the tests don't look at the images
         incrementCounter(id + ".render");
+
+        return kOfxStatOK;
+    }
+    if (std::strcmp(action, kOfxActionDialog) == 0) {
+        std::lock_guard<std::mutex> l(gMutex);
+        ++gCounters[id + ".dialog"];
+        if ( !gLiveEffects.count(effect) ) {
+            ++gCounters[id + ".dialogDead"];
+        }
 
         return kOfxStatOK;
     }
@@ -980,8 +996,22 @@ generatorPluginMain(const char* action,
             return kOfxStatFailed;
         }
         gPropSuite->propSetDouble(props, kOfxParamPropDefault, 0, 0.);
+        if (gParamSuite->paramDefine(paramSet, kOfxParamTypeBoolean, "fail", &props) != kOfxStatOK) {
+            return kOfxStatFailed;
+        }
 
         return kOfxStatOK;
+    }
+    if ( (std::strcmp(action, kOfxImageEffectActionGetRegionOfDefinition) == 0) ||
+         (std::strcmp(action, kOfxImageEffectActionRender) == 0) ) {
+        int fail = 0;
+        OfxParamHandle param = getParam(effect, "fail");
+        if (param) {
+            gParamSuite->paramGetValue(param, &fail);
+        }
+        if (fail) {
+            return kOfxStatFailed;
+        }
     }
     if (std::strcmp(action, kOfxImageEffectActionGetClipPreferences) == 0) {
         double par = 1.;
@@ -1585,6 +1615,8 @@ OfxGetNumberOfPlugins(void)
 OfxExport OfxPlugin*
 OfxGetPlugin(int nth)
 {
+    incrementCounter("Binary.getPlugin");
+
     const int nOwn = (int)( sizeof(gPlugins) / sizeof(gPlugins[0]) );
 
     // (not OfxGetNumberOfPlugins(), which counts its calls)

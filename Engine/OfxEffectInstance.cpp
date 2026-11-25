@@ -1903,6 +1903,8 @@ OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
     OfxStatus stat;
 
     {
+        // an input whose RoD failed makes this RoD fail (#1602)
+        OfxClipInstance::InputRoDFailureScope inputRoDFailure;
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             view,
                                             mipmapLevel);
@@ -1979,7 +1981,15 @@ OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
                 }
             }
         }
-        if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
+        if (stat == kOfxStatReplyDefault) {
+            // the RoD is the default RoD: its inputs count (see OfxImageEffectInstance::calcDefaultRegionOfDefinition())
+            try {
+                ignore_result( _imp->effect->OFX::Host::ImageEffect::Instance::calcDefaultRegionOfDefinition( time, scale.toOfxPointD(), view ) );
+            } catch (const OFX::Host::Property::Exception&) {
+                return eStatusFailed;
+            }
+        }
+        if ( ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) || inputRoDFailure.failed() ) {
             return eStatusFailed;
         }
 
@@ -2091,12 +2101,15 @@ OfxEffectInstance::getRegionsOfInterest(double time,
     assert(isSupportedRenderScale(supportsRenderScaleMaybe(), scale));
 
     OfxStatus stat;
+    bool inputRoDFailed = false;
 
     ///before calling getRoIaction set the relevant info on the clips
     unsigned int mipmapLevel = scale.toMipmapLevel();
     {
         SET_CAN_SET_VALUE(false);
 
+        // an input whose RoD failed is visited by the request pass (#1656), see below
+        OfxClipInstance::InputRoDFailureScope inputRoDFailure;
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             view,
                                             mipmapLevel);
@@ -2108,6 +2121,7 @@ OfxEffectInstance::getRegionsOfInterest(double time,
         assert(_imp->effect);
         stat = _imp->effect->getRegionOfInterestAction( (OfxTime)time, scale.toOfxPointD(), view,
                                                         roi, inputRois );
+        inputRoDFailed = inputRoDFailure.failed();
     }
 
 
@@ -2129,7 +2143,14 @@ OfxEffectInstance::getRegionsOfInterest(double time,
             inputRoi.y2 = it->second.y2;
 
             if ( inputRoi.isNull() ) {
-                continue;
+                if ( !inputRoDFailed || !inputNode ) {
+                    continue;
+                }
+                // The plug-in, or the default RoI of a clip without tiles support, got an empty RoD for an input
+                // whose RoD failed, and may have asked for nothing from it because of it: ask for the render
+                // window, so that the request pass visits the failing input and the render fails (#1602), instead
+                // of rendering with a black input (#1656)
+                inputRoi = renderWindow;
             }
 
             ///The RoI might be infinite if the getRoI action of the plug-in doesn't do anything and the input effect has an
@@ -2326,11 +2347,13 @@ OfxEffectInstance::isIdentity(double time,
 
     unsigned int mipmapLevel = scale.toMipmapLevel();
     OfxStatus stat;
+    bool inputRoDFailed = false;
 
     {
         SET_CAN_SET_VALUE(false);
 
-
+        // an input whose RoD failed makes this effect not an identity (#1656)
+        OfxClipInstance::InputRoDFailureScope inputRoDFailure;
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             view,
                                             mipmapLevel);
@@ -2356,9 +2379,18 @@ OfxEffectInstance::isIdentity(double time,
             // Natron 2 cannot handle isIdentity across planes
             stat = kOfxStatOK;
         }
+        inputRoDFailed = inputRoDFailure.failed();
     }
 
     assert(_imp->effect);
+    if ( (stat == kOfxStatOK) && inputRoDFailed ) {
+        // The plug-in got an empty RoD for an input whose RoD failed (e.g. a Read node whose file is missing, on the mask
+        // of a Merge), and may be the identity of another input because of it. Not being an identity makes the request
+        // pass visit the inputs in their regions of interest (see getRegionsOfInterest()), where the failing input fails
+        // the render (#1602) instead of being taken as black. Not an exception: the callers of isIdentity_public() in the
+        // GUI don't expect one.
+        return false;
+    }
     if (stat == kOfxStatOK) {
         OFX::Host::ImageEffect::ClipInstance* clip = _imp->effect->getClip(inputclip);
         if (!clip) {

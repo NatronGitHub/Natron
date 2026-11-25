@@ -9,6 +9,9 @@
 # DOCKER can be set to another docker-compatible command, e.g. DOCKER=podman.
 # Extra "docker build" arguments can be given in DOCKER_BUILD_ARGS, e.g.
 # DOCKER_BUILD_ARGS=--no-cache.
+# PREPARE_ONLY=1 only prepares the build context (the scripts and the Dockerfile, in this
+# directory), without building: .github/workflows/linux_packages.yml builds it in stages
+# (see split-stages.sh).
 # Nothing is pushed: the commands to publish the image are printed at the end.
 set -e
 cd "$(dirname "$0")"
@@ -38,6 +41,10 @@ LABEL="natrongithub/natron-sdk-rockylinux${ROCKY}"
 # The Dockerfile is the same for all architectures: the base image is multi-arch,
 # and the build scripts take the architecture from uname -m.
 env GEN_DOCKERFILE=1 ../../jenkins/include/scripts/build-Linux-sdk.sh > Dockerfile
+if [ "${PREPARE_ONLY:-}" = 1 ]; then
+    echo "Build context and Dockerfile ready in $(pwd)"
+    exit 0
+fi
 # shellcheck disable=SC2086
 $DOCKER build --platform "linux/${PLATFORM_ARCH}" ${DOCKER_BUILD_ARGS:-} -t "${LABEL}:latest-${PLATFORM_ARCH}" .
 DATE="$(date -u +%Y%m%d)"

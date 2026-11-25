@@ -178,8 +178,10 @@ class Plugin
     bool _isReader, _isWriter;
 
     // Deprecated plug-ins (for OFX plug-ins: kOfxImageEffectPluginPropObsolete, see
-    // OfxHost::isPluginObsolete()) are not offered for new nodes (getIsUserCreatable()), but they
-    // still load in existing projects.
+    // OfxHost::isPluginObsolete()) are disabled by default, so that they are not offered for new
+    // nodes (getIsUserCreatable()), but the user may enable them in the Preferences (#171). They
+    // still load in existing projects. Even enabled, they are never registered as readers or writers
+    // of file formats (OfxHost).
     bool _isDeprecated;
 
     //Is not visible by the user, just for internal use
@@ -266,7 +268,7 @@ public:
         , _isDeprecated(isDeprecated)
         , _isInternalOnly(false)
         , _toolSetScript(false)
-        , _activated(true)
+        , _activated(!isDeprecated)
         , _renderScaleEnabled(true)
         , _multiThreadingEnabled(true)
         , _openglActivated(true)

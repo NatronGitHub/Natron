@@ -259,6 +259,7 @@ insertDependenciesRecursive(Node* node,
                 for (std::size_t j = 0; j < found->second.size(); ++j) {
                     if (it->second[j].isExpr) {
                         found->second[j].isListening |= it->second[j].isListening;
+                        found->second[j].isExpr = true;
                     }
                 }
             } else {
@@ -272,6 +273,43 @@ insertDependenciesRecursive(Node* node,
         NodesList nodes = isGroup->getNodes();
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             insertDependenciesRecursive(it->get(), dependencies);
+        }
+    }
+}
+
+// Recompiles the expressions of the knobs of node and of the nodes inside it, except those of
+// the listeners that the caller recompiled.
+static void
+recompileExpressionsRecursive(Node* node,
+                              const KnobI::ListenerDimsMap& recompiled)
+{
+    // a copy: the expressions run Python, which may add parameters
+    const KnobsVec knobs = node->getKnobs();
+
+    for (std::size_t i = 0; i < knobs.size(); ++i) {
+        KnobI::ListenerDimsMap::const_iterator found = recompiled.find(knobs[i]);
+        for (int d = 0; d < knobs[i]->getDimension(); ++d) {
+            if ( ( found != recompiled.end() ) && ( d < static_cast<int>( found->second.size() ) ) &&
+                 found->second[d].isListening && found->second[d].isExpr ) {
+                continue;
+            }
+            std::string expr = knobs[i]->getExpression(d);
+            if ( expr.empty() ) {
+                continue;
+            }
+            try {
+                knobs[i]->setExpression(d, expr, knobs[i]->isExpressionUsingRetVariable(d), false);
+            } catch (const std::exception& e) {
+                qDebug() << e.what();
+            }
+        }
+    }
+
+    NodeGroup* isGroup = node->isEffectGroup();
+    if (isGroup) {
+        NodesList nodes = isGroup->getNodes();
+        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            recompileExpressionsRecursive(it->get(), recompiled);
         }
     }
 }
@@ -404,6 +442,12 @@ Node::setNameInternal(const std::string& name,
             ///For all knobs that have listeners, change in the expressions of listeners this knob script-name
             KnobI::ListenerDimsMap dependencies;
             insertDependenciesRecursive(this, &dependencies);
+            // The expressions of this node and of the nodes inside it are compiled with their
+            // fully-qualified names (thisNode, thisGroup): recompile those that are not listeners
+            // (recompiled below), which read no parameter of these nodes, e.g.
+            // "thisGroup.getInput(1) is None" (#1686). First, so that the listeners that read
+            // them get their new values.
+            recompileExpressionsRecursive(this, dependencies);
             for (KnobI::ListenerDimsMap::iterator it = dependencies.begin(); it != dependencies.end(); ++it) {
                 KnobIPtr listener = it->first.lock();
                 if (!listener) {
