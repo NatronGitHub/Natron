@@ -76,14 +76,18 @@ versionPluginMain(bool isReader,
     }
     if (std::strcmp(action, kOfxImageEffectActionDescribeInContext) == 0) {
         OfxPropertySetHandle props;
-        if (!isReader) {
-            OfxStatus stat = gEffectSuite->clipDefine(effect, kOfxImageEffectSimpleSourceClipName, &props);
-            if (stat != kOfxStatOK) {
-                return stat;
-            }
-            gPropSuite->propSetString(props, kOfxImageEffectPropSupportedComponents, 0, kOfxImageComponentRGBA);
+        // A Source clip in both, as the bundled readers and writers (openfx-io's GenericReader and
+        // GenericWriter) define it: the Read node's only input ("Sync") is the Source clip of its decoder
+        // (ReadNode::addAcceptedComponents() asks the decoder for input 0), optional for a reader.
+        OfxStatus stat = gEffectSuite->clipDefine(effect, kOfxImageEffectSimpleSourceClipName, &props);
+        if (stat != kOfxStatOK) {
+            return stat;
         }
-        OfxStatus stat = gEffectSuite->clipDefine(effect, kOfxImageEffectOutputClipName, &props);
+        gPropSuite->propSetString(props, kOfxImageEffectPropSupportedComponents, 0, kOfxImageComponentRGBA);
+        if (isReader) {
+            gPropSuite->propSetInt(props, kOfxImageClipPropOptional, 0, 1);
+        }
+        stat = gEffectSuite->clipDefine(effect, kOfxImageEffectOutputClipName, &props);
         if (stat != kOfxStatOK) {
             return stat;
         }
