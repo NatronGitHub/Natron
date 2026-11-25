@@ -827,7 +827,10 @@ CLArgsPrivate::parse()
 
             QString msg = tr("%1 version %2 at commit %3 on branch %4").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_VERSION_STRING) ).arg( QString::fromUtf8(GIT_COMMIT) ).arg( QString::fromUtf8(GIT_BRANCH) );
 #         if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+            // The build date is wanted in snapshot and debug builds (-Wdate-time guards the others).
+            GCC_DIAG_OFF(date-time)
             msg += tr(" built on %1").arg( QString::fromUtf8(__DATE__) );
+            GCC_DIAG_ON(date-time)
 #         endif
             std::cout << msg.toStdString() << std::endl;
             error = 0;
