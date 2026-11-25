@@ -22,17 +22,21 @@ Functions
 - def :meth:`connectInput<NatronEngine.Effect.connectInput>` (inputNumber, input)
 - def :meth:`destroy<NatronEngine.Effect.destroy>` ([autoReconnect=true])
 - def :meth:`disconnectInput<NatronEngine.Effect.disconnectInput>` (inputNumber)
-- def :meth:`getAvailableLayers<NatronEngine.Effect.getAvailableLayers>` ()
+- def :meth:`getAvailableLayers<NatronEngine.Effect.getAvailableLayers>` (inputNb)
+- def :meth:`getAvailableLayers<NatronEngine.Effect.getAvailableLayers>` (inputNb, time[, view=0])
 - def :meth:`getBitDepth<NatronEngine.Effect.getBitDepth>` ()
 - def :meth:`getColor<NatronEngine.Effect.getColor>` ()
+- def :meth:`getContainerGroup<NatronEngine.Effect.getContainerGroup>` ()
 - def :meth:`getCurrentTime<NatronEngine.Effect.getCurrentTime>` ()
 - def :meth:`getOutputFormat<NatronEngine.Effect.getOutputFormat>` ()
+- def :meth:`getFrameRange<NatronEngine.Effect.getFrameRange>` ()
 - def :meth:`getFrameRate<NatronEngine.Effect.getFrameRate>` ()
 - def :meth:`getInput<NatronEngine.Effect.getInput>` (inputNumber)
 - def :meth:`getInput<NatronEngine.Effect.getInput>` (inputName)
 - def :meth:`getLabel<NatronEngine.Effect.getLabel>` ()
 - def :meth:`getInputLabel<NatronEngine.Effect.getInputLabel>` (inputNumber)
 - def :meth:`getMaxInputCount<NatronEngine.Effect.getMaxInputCount>` ()
+- def :meth:`getOutputs<NatronEngine.Effect.getOutputs>` ()
 - def :meth:`getParam<NatronEngine.Effect.getParam>` (name)
 - def :meth:`getParams<NatronEngine.Effect.getParams>` ()
 - def :meth:`getPluginID<NatronEngine.Effect.getPluginID>` ()
@@ -78,7 +82,8 @@ To get a specific :doc:`Param` by script-name, call the
 
 Input effects are mapped against a zero-based index. To retrieve an input Effect
 given an index, you can use the :func:`getInput(inputNumber) <NatronEngine.Effect.getInput>`
-function.
+function. The nodes connected to the outputs of an Effect are given by
+:func:`getOutputs() <NatronEngine.Effect.getOutputs>`.
 
 To manage inputs, you can connect them and disconnect them with respect to their input
 index with the :func:`connectInput(inputNumber,input)<NatronEngine.Effect.connectInput>` and
@@ -227,18 +232,32 @@ their input to the input of this node instead.
 Removes any input Effect connected to the given *inputNumber* of this node.
 
 
-.. method:: Effect.getAvailableLayers()
+.. method:: Effect.getAvailableLayers(inputNb)
 
-    :rtype: :class:`dict`
+    :param inputNb: :class:`int`
+    :rtype: :class:`list` of :class:`ImageLayer<NatronEngine.ImageLayer>`
 
-    Returns the layer available on this node. This is a dict with a :class:`ImageLayer<NatronEngine.ImageLayer>`
-    as key and :class:`Effect<NatronEngine.Effect>` as value. The Effect is the closest node in
-    the upstream tree (including this node) that produced that layer.
+    Returns the layers available in the input *inputNb* of this node, or in its output if *inputNb*
+    is -1, at the current frame of the timeline and in the first view. The color layer, if
+    available, is first. The list also contains the layers created on this node with
+    :func:`addUserPlane()<NatronEngine.Effect.addUserPlane>` and, in output, the layers that this
+    node passes through from its inputs and the default layers of the project.
 
     For example, in a simple graph Read --> Blur, if the Read node has a layer available
-    named "RenderLayer.combined" but Blur is set to process only the color layer (RGBA), then
-    calling this function on the Blur will return a dict containing for key "RenderLayer.combined"
-    the Read node, whereas the dict will have for the key "RGBA" the Blur node.
+    named "RenderLayer.combined" and Blur processes only the color layer (RGBA), then
+    the list returned by ``Blur.getAvailableLayers(-1)`` contains both the color layer and
+    "RenderLayer.combined".
+
+.. method:: Effect.getAvailableLayers(inputNb, time[, view=0])
+    :noindex:
+
+    :param inputNb: :class:`int`
+    :param time: :class:`float`
+    :param view: :class:`int`
+    :rtype: :class:`list` of :class:`ImageLayer<NatronEngine.ImageLayer>`
+
+    Same as :func:`getAvailableLayers(inputNb)<NatronEngine.Effect.getAvailableLayers>`, at the given
+    *time* and *view*. A negative *view* gives an empty list.
 
 .. method:: Effect.getBitDepth()
 
@@ -273,11 +292,30 @@ thread.
     Returns the output format of this node in pixel units.
 
 
+.. method:: Effect.getFrameRange()
+
+    :rtype: :class:`tuple` of two :class:`float`
+
+    Returns the frame range *(first, last)* of the sequence in output of this node, e.g. the
+    frames of the sequence read by a Read node. A node that has no frame range of its own has the
+    frame range of its inputs, and an infinite range (the minimum and maximum 32-bit integers)
+    if it has no input. The frame range of this node is computed at each call.
+
 .. method:: Effect.getFrameRate()
 
     :rtype: :class:`float`
 
     Returns the frame-rate of the sequence in output of this node.
+
+.. method:: Effect.getContainerGroup()
+
+    :rtype: :class:`Group<NatronEngine.Group>`
+
+    Returns the group that contains this node: the group node (an :class:`Effect<NatronEngine.Effect>`)
+    for a node inside a group or a PyPlug, or the :class:`App<NatronEngine.App>` for a node at the top level
+    of the project. It can be passed as the *group* of :func:`App.createNode()<NatronEngine.App.createNode>`
+    to create a node next to this one. In the GUI, the App is an :class:`App<NatronEngine.App>`, not a
+    :class:`GuiApp<NatronGui.GuiApp>`: use ``natron.getGuiInstance()`` for the GUI functions.
 
 .. method:: Effect.getInput(inputNumber)
 
@@ -359,6 +397,15 @@ Returns all the :class:`Param<NatronEngine.Param>` of this Effect as a sequence.
 Returns the ID of the plug-in that this node instantiate.
 
 
+
+.. method:: Effect.getOutputs()
+
+    :rtype: :class:`list` of :class:`Effect<NatronEngine.Effect>`
+
+    Returns the nodes connected to the output of this node, each one once (in the order of the
+    connections), even if it is connected through several of its inputs. Use
+    :func:`getInput(inputNumber)<NatronEngine.Effect.getInput>` on each of them to know through which
+    inputs it is connected.
 
 .. method:: Effect.getPosition()
 

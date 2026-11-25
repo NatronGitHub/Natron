@@ -974,6 +974,7 @@ ParallelRenderArgs::ParallelRenderArgs()
     , doNansHandling(true)
     , draftMode(false)
     , tilesSupported(false)
+    , frameVaryingOrAnimatedRecursive(-1)
 {
 }
 

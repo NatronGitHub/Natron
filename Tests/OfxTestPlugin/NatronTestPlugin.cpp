@@ -302,6 +302,12 @@ commonAction(const char* action,
 
         return kOfxStatOK;
     }
+    if (std::strcmp(action, kOfxImageEffectActionGetTimeDomain) == 0) {
+        // the default time domain: counted, to check that the host caches it
+        incrementCounter(id + ".getTimeDomain");
+
+        return kOfxStatReplyDefault;
+    }
     if (std::strcmp(action, kOfxActionDialog) == 0) {
         std::lock_guard<std::mutex> l(gMutex);
         ++gCounters[id + ".dialog"];
@@ -1576,6 +1582,15 @@ natronTestIncrementCounter(const std::string& name,
     incrementCounter(name, delta);
 }
 
+int
+natronTestGetCounter(const std::string& name)
+{
+    std::lock_guard<std::mutex> l(gMutex);
+    std::map<std::string, int>::const_iterator found = gCounters.find(name);
+
+    return found == gCounters.end() ? 0 : found->second;
+}
+
 extern "C" {
 // For the tests (Tests/OfxTestPlugin.h): the value of a counter, 0 if it was never set.
 OfxExport int NatronTestPluginGetCounter(const char* name);
@@ -1630,10 +1645,7 @@ OfxGetPlugin(int nth)
 OfxExport int
 NatronTestPluginGetCounter(const char* name)
 {
-    std::lock_guard<std::mutex> l(gMutex);
-    std::map<std::string, int>::const_iterator found = gCounters.find(name);
-
-    return found == gCounters.end() ? 0 : found->second;
+    return natronTestGetCounter(name);
 }
 // For the tests (Tests/OfxTestPlugin.h): set a counter, e.g. to reset a maximum.
 OfxExport void NatronTestPluginSetCounter(const char* name, int value);

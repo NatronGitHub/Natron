@@ -44,4 +44,7 @@ struct NatronTestPluginRegistrar
 // add delta to the named counter of the bundle (thread-safe)
 void natronTestIncrementCounter(const std::string& name, int delta = 1);
 
+// the value of the named counter of the bundle, 0 if it was never set (thread-safe)
+int natronTestGetCounter(const std::string& name);
+
 #endif // NATRON_TESTS_OFXTESTPLUGIN_NATRONTESTPLUGINREGISTRY_H

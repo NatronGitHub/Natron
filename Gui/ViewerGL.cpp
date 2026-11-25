@@ -1979,8 +1979,18 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         mustRedraw = true;
     }
 
+    // A color picker armed in a settings panel gets the picking clicks, and the left click that turns it
+    // off after a pick, before the overlays: an overlay that uses the same clicks (the RotoPaint paint
+    // tools paint on any click) would prevent picking (#206).
+    const bool pickerTakesClick = hasPickers && displayingImage() &&
+                                  ( isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, modifiers, button) ||
+                                    isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickInputColor, modifiers, button) ||
+                                    isMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, modifiers, button) ||
+                                    ( (_imp->pickerState != ePickerStateInactive) && buttonDownIsLeft(e) ) );
+
     // process plugin overlays
     if (!overlaysCaught &&
+        !pickerTakesClick &&
         (_imp->ms == eMouseStateUndefined) &&
         _imp->overlay) {
         overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(RenderScale::fromMipmapLevel(getCurrentMipmapLevel()), _imp->pointerTypeOnPress, QMouseEventLocalPos(e), zoomPos, _imp->pressureOnPress, currentTimeForEvent(e), QtEnumConvert::fromQtModifiers( e->modifiers() ));

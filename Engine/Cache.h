@@ -73,6 +73,15 @@ GCC_DIAG_ON(deprecated)
 
 NATRON_NAMESPACE_ENTER
 
+// What Cache::readRestoreFile() found
+enum RestoreFileStatusEnum
+{
+    eRestoreFileStatusRead, // the table of contents was read
+    eRestoreFileStatusNotOpened, // the file could not be opened
+    eRestoreFileStatusOtherVersion, // the file is that of another cache version
+    eRestoreFileStatusUnreadable, // the file is truncated or corrupt
+};
+
 /**
  * @brief The point of this thread is to delete the content of the list in a separate thread so the thread calling
  * get() doesn't wait for all the entries to be deleted (which can be expensive for large images)
@@ -211,8 +220,8 @@ class CacheCleanerThread
     struct CleanRequest
     {
         std::string holderID;
-        U64 nodeHash;
-        bool removeAll;
+        U64 nodeHash = 0;
+        bool removeAll = false; // quitThread() queues a default-initialized request
     };
 
     std::list<CleanRequest> _requestsQueues;
@@ -1731,6 +1740,16 @@ public:
      */
     void save(CacheTOC* tableOfContents);
 
+    /* Writes the table of contents to getRestoreFilePath(), atomically (#1594, see CacheSerialization.h).
+       Returns false, leaving the previous file untouched, if it could not be written. It may be called concurrently
+       (Cache::_lock guards the entries read by save(), each call writes its own temporary file): the last
+       complete write wins. */
+    bool writeRestoreFile();
+
+    /* Reads the table of contents that writeRestoreFile() wrote (#1815). tableOfContents is filled only if
+       eRestoreFileStatusRead is returned. */
+    RestoreFileStatusEnum readRestoreFile(CacheTOC* tableOfContents) const;
+
 
     /*Restores the cache from disk. Must not be called if another process uses the cache
        (see AppManager::isDiskCacheUsedByAnotherProcess()): the files that are not in the table of contents are deleted.*/
@@ -2047,7 +2066,7 @@ private:
             entriesToBeDeleted.push_back(evicted.second);
         } else {
 
-            assert( evicted.second.unique() );
+            assert(evicted.second.use_count() == 1);
 
             ///This is EXPENSIVE! it calls msync
             evicted.second->deallocate();

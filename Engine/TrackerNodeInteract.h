@@ -28,6 +28,8 @@
 
 #include "Global/Macros.h"
 
+#include <utility>
+
 #include <QFutureWatcher>
 #include <QtConcurrentRun>
 #include <QPointF>
@@ -385,6 +387,21 @@ public:
     ~TrackerNodeInteract();
 
     TrackerContextPtr getContext() const;
+
+    /**
+     * @brief The viewer showing the Tracker's overlay, or NULL if there is none (NatronRenderer, Python scripts)
+     **/
+    ViewerInstance* getViewer() const;
+
+    /**
+     * @brief The first and last frames of the viewer's frame range, or of the project's without a viewer
+     **/
+    std::pair<int, int> getFrameRange() const;
+
+    /**
+     * @brief The current frame of the viewer's timeline, or of the project's without a viewer
+     **/
+    int getCurrentFrame() const;
 
     void onAddTrackClicked(bool clicked);
 

@@ -63,6 +63,9 @@
 
 #include <SequenceParsing.h> // for removePath
 
+#include <ofxImageEffect.h> // ofxSonyVegas.h builds on it
+#include <ofxSonyVegas.h> // kOfxVegasProHostName, kOfxSonyVegasHostName
+
 #ifdef WINDOWS
 #include <ofxhPluginCache.h>
 #endif
@@ -253,7 +256,7 @@ Settings::initializeKnobsGeneral()
     assert(visibleHostEntries.size() == (int)eKnownHostNameCatalyst);
     visibleHostEntries.push_back(ChoiceOption("com.sony.Catalyst.Edit", "Sony Catalyst Edit", ""));
     assert(visibleHostEntries.size() == (int)eKnownHostNameVegas);
-    visibleHostEntries.push_back(ChoiceOption("com.sonycreativesoftware.vegas", "Sony Vegas", ""));
+    visibleHostEntries.push_back(ChoiceOption(kOfxVegasProHostName, "VEGAS Pro", ""));
     assert(visibleHostEntries.size() == (int)eKnownHostNameToxik);
     visibleHostEntries.push_back(ChoiceOption("Autodesk Toxik", "Toxik", ""));
     assert(visibleHostEntries.size() == (int)eKnownHostNameScratch);
@@ -2100,6 +2103,10 @@ Settings::restoreKnobsFromSettings(const std::vector<KnobI*>& knobs)
                     if (isChoice) {
                         ///For choices,serialize the choice name instead
                         std::string value = settings.value(qDimName).toString().toStdString();
+                        // Settings saved before 2.6 name the VEGAS host entry by its old Sony ID.
+                        if ( (value == kOfxSonyVegasHostName) && (isChoice == _hostName.get()) ) {
+                            value = kOfxVegasProHostName;
+                        }
                         const std::vector<ChoiceOption> entries = isChoice->getEntries_mt_safe();
                         int found = -1;
 
@@ -2938,10 +2945,10 @@ Settings::getUseStdOFXPluginsLocation() const
 }
 
 void
-Settings::restoreDefault()
+Settings::removeSettingsFile()
 {
     // When saving is off (--no-settings, --test which implies it, or --setting), the settings file
-    // is not the session's: leave it alone and reset the settings in memory only (#1728).
+    // is not the session's: leave it alone (#1728).
     if ( _saveSettings->getValue() ) {
         QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
@@ -2949,7 +2956,11 @@ Settings::restoreDefault()
             qDebug() << "Failed to remove settings ( " << settings.fileName() << " ).";
         }
     }
+}
 
+void
+Settings::restoreDefault()
+{
     beginChanges();
     const KnobsVec & knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {

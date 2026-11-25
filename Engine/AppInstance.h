@@ -416,6 +416,13 @@ public:
     virtual ViewerInstance* getLastViewerUsingTimeline() const { return 0; }
 
     bool loadPythonScript(const QFileInfo& file);
+
+    /**
+     * @brief Runs a project saved in eProjectFileFormatPython (see Project::exportToPython()), with "app" set to this app. Its nodes are
+     * created as a PyPlug's (no file dialogs, no node created callback flagged as user-created).
+     * @returns false, with the Python error in error, if the script raised an exception.
+     **/
+    bool runPythonProjectScript(const QString& filePath, std::string* error);
     virtual void queueRedrawForAllViewers() {}
 
     virtual void renderAllViewers(bool /* canAbort*/) {}

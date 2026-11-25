@@ -841,6 +841,11 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 
 OfxEffectInstance::~OfxEffectInstance()
 {
+    // The render clones (createRenderClone()) share the parameter and clip instances of this instance,
+    // which _imp->effect owns: destroy them first. Otherwise ~EffectInstance() destroys them, after
+    // this object and its parameters are gone, and their destroyInteracts() reads freed parameters (#1801).
+    clearRenderInstances();
+
     // "kOfxActionEndInstanceEdit ... \post no user interface is open on the instance": the last editor
     // is closed before the instance is destroyed (e.g. when the project is closed with the panel open).
     // Normally the node was deactivated before (Node::deactivate() sends End), so this is a safety net.
@@ -1571,7 +1576,10 @@ OfxClipInstance*
 OfxEffectInstance::getClipCorrespondingToInput(int inputNo) const
 {
     assert(_imp->context != eContextNone);
-    assert( inputNo < (int)_imp->clipsInfos.size() );
+    // e.g. the input of a Read node, which it hands to its decoder, and a reader has no Source clip (#1826)
+    if ( (inputNo < 0) || ( inputNo >= (int)_imp->clipsInfos.size() ) ) {
+        return NULL;
+    }
 
     return _imp->clipsInfos[inputNo].clip;
 }
@@ -1630,7 +1638,9 @@ OfxEffectInstance::onInputChanged(int inputNo)
 {
     assert(_imp->context != eContextNone);
     OfxClipInstance* clip = getClipCorrespondingToInput(inputNo);
-    assert(clip);
+    if (!clip) {
+        return; // no such input clip (#1826)
+    }
     double time = getApp()->getTimeLine()->currentFrame();
     const OfxPointD scale = {1., 1.};
 
@@ -3487,7 +3497,9 @@ OfxEffectInstance::addAcceptedComponents(int inputNb,
 {
     if (inputNb >= 0) {
         OfxClipInstance* clip = getClipCorrespondingToInput(inputNb);
-        assert(clip);
+        if (!clip) {
+            return; // no such input clip (#1826)
+        }
         const std::vector<std::string> & supportedComps = clip->getSupportedComponents();
         for (U32 i = 0; i < supportedComps.size(); ++i) {
             try {

@@ -26,6 +26,7 @@
 #include "PyNode.h"
 
 #include <cassert>
+#include <set>
 #include <stdexcept>
 
 #include "Engine/Node.h"
@@ -34,6 +35,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/PyAppInstance.h"
 #include "Engine/PyRoto.h"
 #include "Engine/PyTracker.h"
 #include "Engine/TimeLine.h"
@@ -293,6 +295,10 @@ void
 Effect::destroy(bool autoReconnect)
 {
     NodePtr node = getInternalNode();
+    // The node may already be destroyed (a second destroy())
+    if (!node) {
+        return;
+    }
     AppInstancePtr app = node->getApp();
 
     // in an undo group (App.beginUndoGroup()), the node is only deactivated, so that undo can restore it
@@ -388,6 +394,50 @@ Effect::getInput(const QString& inputLabel) const
         }
     }
     return 0;
+}
+
+std::list<Effect*>
+Effect::getOutputs() const
+{
+    std::list<Effect*> ret;
+    NodePtr node = getInternalNode();
+
+    if (!node) {
+        return ret;
+    }
+    NodesWList outputs;
+    node->getOutputs_mt_safe(outputs);
+    // an output node appears once per link to this node: list it once
+    std::set<NodePtr> listed;
+    for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        NodePtr output = it->lock();
+        if ( output && listed.insert(output).second ) {
+            ret.push_back( new Effect(output) );
+        }
+    }
+
+    return ret;
+}
+
+Group*
+Effect::getContainerGroup() const
+{
+    NodePtr node = getInternalNode();
+
+    if (!node) {
+        return NULL;
+    }
+    NodeCollectionPtr collection = node->getGroup();
+    NodeGroupPtr isGroup = std::dynamic_pointer_cast<NodeGroup>(collection);
+    if (isGroup) {
+        return new Effect( isGroup->getNode() );
+    }
+    if (collection) {
+        // the project
+        return new App( node->getApp() );
+    }
+
+    return NULL;
 }
 
 QString
@@ -1071,21 +1121,47 @@ Effect::addUserPlane(const QString& planeName,
 std::list<ImageLayer>
 Effect::getAvailableLayers(int inputNb) const
 {
+    if ( !getInternalNode() ) {
+        return std::list<ImageLayer>();
+    }
+
+    return getAvailableLayers( inputNb, getInternalNode()->getApp()->getTimeLine()->currentFrame(), 0 );
+}
+
+std::list<ImageLayer>
+Effect::getAvailableLayers(int inputNb,
+                           double time,
+                           int view) const
+{
     std::list<ImageLayer> ret;
 
-    if ( !getInternalNode() ) {
+    if ( !getInternalNode() || (view < 0) ) {
         return ret;
     }
-    double time(getInternalNode()->getApp()->getTimeLine()->currentFrame());
 
     std::list<ImagePlaneDesc> availComps;
-    getInternalNode()->getEffectInstance()->getAvailableLayers(time, ViewIdx(0), inputNb, &availComps);
+    getInternalNode()->getEffectInstance()->getAvailableLayers(time, ViewIdx(view), inputNb, &availComps);
     for (std::list<ImagePlaneDesc>::iterator it = availComps.begin(); it != availComps.end(); ++it) {
         ret.push_back(ImageLayer(*it));
     }
 
 
     return ret;
+}
+
+std::pair<double, double>
+Effect::getFrameRange() const
+{
+    NodePtr node = getInternalNode();
+
+    if ( !node || !node->getEffectInstance() ) {
+        return std::make_pair(0., 0.);
+    }
+    double first = 0., last = 0.;
+    // bypass the cache: it is keyed by the node hash, which does not change with the project frame range
+    node->getEffectInstance()->getFrameRange_public(node->getHashValue(), &first, &last, true);
+
+    return std::make_pair(first, last);
 }
 
 RectI

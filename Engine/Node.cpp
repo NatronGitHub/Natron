@@ -225,6 +225,23 @@ Node::createRotoContextConditionnally()
         _imp->effect->endChanges(true);
         _imp->rotoContext->createBaseLayer();
     }
+    if ( isRotoPaintingNode() ) {
+        // The shapes of the Roto and RotoPaint nodes are rendered by internal nodes of openfx-misc (see
+        // RotoDrawableItem::createNodes()): without them, no shape can be created. Fail here, as the Tracker
+        // node does without its internal nodes, so that createNode() returns null (#1828). After the context
+        // is created: the destruction of a Roto or RotoPaint node needs it.
+        const char* const requiredIDs[] = { PLUGINID_OFX_ROTO, PLUGINID_OFX_MERGE };
+        for (const char* id : requiredIDs) {
+            try {
+                Plugin* plugin = appPTR->getPluginBinary(QString::fromUtf8(id), -1, -1, false);
+                Q_UNUSED(plugin);
+            } catch (const std::invalid_argument&) { // not found
+                throw std::runtime_error( tr("The %1 node requires the %2 plug-in of openfx-misc (Misc.ofx.bundle) to be installed")
+                                          .arg( _imp->plugin->getPluginLabel() )
+                                          .arg( QString::fromUtf8(id) ).toStdString() );
+            }
+        }
+    }
 }
 
 void
@@ -1025,20 +1042,22 @@ Node::removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey)
     }
 }
 
-void
+bool
 Node::removeAllImagesFromCache(bool blocking)
 {
     AppInstancePtr app = getApp();
 
     if (!app) {
-        return;
+        return false;
     }
     ProjectPtr proj = app->getProject();
 
     if ( proj->isProjectClosing() || proj->isLoadingProject() ) {
-        return;
+        return false;
     }
     appPTR->removeAllCacheEntriesForHolder(this, blocking);
+
+    return true;
 }
 
 void
@@ -1396,62 +1415,54 @@ Node::isRenderingPreview() const
 
 
 void
-Node::Implementation::abortPreview_non_blocking()
-{
-    bool computing;
-    {
-        QMutexLocker locker(&computingPreviewMutex);
-        computing = computingPreview;
-    }
-
-    if (computing) {
-        QMutexLocker l(&mustQuitPreviewMutex);
-        ++mustQuitPreview;
-    }
-}
-
-void
 Node::Implementation::abortPreview_blocking(bool allowPreviewRenders)
 {
-    bool computing;
-    {
-        QMutexLocker locker(&computingPreviewMutex);
-        computing = computingPreview;
-        previewThreadQuit = !allowPreviewRenders;
-    }
+    QMutexLocker l(&computingPreviewMutex);
 
-    if (computing) {
-        QMutexLocker l(&mustQuitPreviewMutex);
-        assert(!mustQuitPreview);
-        ++mustQuitPreview;
-        while (mustQuitPreview) {
-            mustQuitPreviewCond.wait(l.mutex());
-        }
+    // No preview starts while this waits
+    previewThreadQuit = true;
+    while (computingPreview) {
+        computingPreviewCond.wait( l.mutex() );
     }
+    // destroyNode() forbids the previews for good (it doesn't hold isBeingDestroyedMutex while it locks
+    // computingPreviewMutex, so this lock order is safe)
+    bool beingDestroyed;
+    {
+        QMutexLocker k(&isBeingDestroyedMutex);
+        beingDestroyed = isBeingDestroyed;
+    }
+    previewThreadQuit = !allowPreviewRenders || beingDestroyed;
 }
 
 bool
-Node::Implementation::checkForExitPreview()
+Node::Implementation::tryBeginPreview()
 {
-    {
-        QMutexLocker locker(&mustQuitPreviewMutex);
-        if (mustQuitPreview || previewThreadQuit) {
-            mustQuitPreview = 0;
-            mustQuitPreviewCond.wakeOne();
+    QMutexLocker l(&computingPreviewMutex);
 
-            return true;
-        }
-
+    if (previewThreadQuit) {
         return false;
     }
+    computingPreview = true;
+
+    return true;
+}
+
+void
+Node::Implementation::endPreview()
+{
+    QMutexLocker l(&computingPreviewMutex);
+
+    computingPreview = false;
+    computingPreviewCond.wakeAll();
 }
 
 bool
 Node::areAllProcessingThreadsQuit() const
 {
     {
-        QMutexLocker locker(&_imp->mustQuitPreviewMutex);
-        if (!_imp->previewThreadQuit) {
+        QMutexLocker locker(&_imp->computingPreviewMutex);
+        // A preview could start after this returns if previews were not forbidden
+        if (!_imp->previewThreadQuit || _imp->computingPreview) {
             return false;
         }
     }
@@ -1484,9 +1495,6 @@ Node::quitAnyProcessing_non_blocking()
     if (isOutput) {
         isOutput->getRenderEngine()->quitEngine(true);
     }
-
-    //Returns when the preview is done computign
-    _imp->abortPreview_non_blocking();
 
     TrackerContextPtr trackerContext = getTrackerContext();
     if (trackerContext) {
@@ -1556,8 +1564,6 @@ Node::abortAnyProcessing_non_blocking()
     if (trackerContext) {
         trackerContext->abortTracking();
     }
-
-    _imp->abortPreview_non_blocking();
 }
 
 void
@@ -2895,7 +2901,6 @@ Node::deactivate(const std::list<NodePtr> & outputsToDisconnect,
     //quitAnyProcessing();
     if (!beingDestroyed) {
         _imp->effect->abortAnyEvaluation(false /*keepOldestRender*/);
-        _imp->abortPreview_non_blocking();
     }
 
     NodeCollectionPtr parentCol = getGroup();
@@ -3376,20 +3381,28 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 class ComputingPreviewSetter_RAII
 {
     Node::Implementation* _imp;
+    const bool _started;
 
 public:
-    ComputingPreviewSetter_RAII(Node::Implementation* imp)
+    explicit ComputingPreviewSetter_RAII(Node::Implementation* imp)
         : _imp(imp)
+        , _started( imp->tryBeginPreview() )
     {
-        _imp->setComputingPreview(true);
     }
+
+    ComputingPreviewSetter_RAII(const ComputingPreviewSetter_RAII&) = delete;
+    ComputingPreviewSetter_RAII& operator=(const ComputingPreviewSetter_RAII&) = delete;
 
     ~ComputingPreviewSetter_RAII()
     {
-        _imp->setComputingPreview(false);
+        if (_started) {
+            _imp->endPreview();
+        }
+    }
 
-        bool mustQuitPreview = _imp->checkForExitPreview();
-        Q_UNUSED(mustQuitPreview);
+    bool started() const
+    {
+        return _started;
     }
 };
 
@@ -3409,12 +3422,11 @@ Node::makePreviewImage(SequenceTime time,
         }
     }
 
-    if ( _imp->checkForExitPreview() ) {
+    ComputingPreviewSetter_RAII computingPreviewRAII( _imp.get() );
+    if ( !computingPreviewRAII.started() ) {
         return false;
     }
 
-    /// prevent 2 previews to occur at the same time since there's only 1 preview instance
-    ComputingPreviewSetter_RAII computingPreviewRAII( _imp.get() );
     RectD rod;
     bool isProjectFormat;
     if (!_imp->effect) {
@@ -6950,6 +6962,7 @@ Node::Implementation::runOnNodeCreatedCBInternal(const std::string& cb,
     ss << ")\n";
     std::string output;
     std::string script = ss.str();
+    PythonCallbackScope callbackScope;
     if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, &output) ) {
         _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeCreated callback: " + error);
     } else if ( !output.empty() ) {
@@ -6999,6 +7012,7 @@ Node::Implementation::runOnNodeDeleteCBInternal(const std::string& cb)
 
     std::string err;
     std::string output;
+    PythonCallbackScope callbackScope;
     if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &err, &output) ) {
         _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeDeletion callback: " + err);
     } else if ( !output.empty() ) {
@@ -7022,15 +7036,18 @@ Node::Implementation::runOnNodeCreatedCB(bool userEdited)
         runOnNodeCreatedCBInternal(cb, userEdited);
     }
 
+    // Then the Group's own callback: that of the Group containing this node, or that of this node if it is a Group.
+    // A node at the top level of the project has none: the project's callback must not run again (#488).
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>( group.get() );
     KnobStringPtr nodeCreatedCbKnob = nodeCreatedCallback.lock();
+    std::string groupCb;
     if (!nodeCreatedCbKnob && isGroup) {
-        cb = isGroup->getNode()->getAfterNodeCreatedCallback();
+        groupCb = isGroup->getNode()->getAfterNodeCreatedCallback();
     } else if (nodeCreatedCbKnob) {
-        cb = nodeCreatedCbKnob->getValue();
+        groupCb = nodeCreatedCbKnob->getValue();
     }
-    if ( !cb.empty() ) {
-        runOnNodeCreatedCBInternal(cb, userEdited);
+    if ( !groupCb.empty() ) {
+        runOnNodeCreatedCBInternal(groupCb, userEdited);
     }
 }
 
@@ -7055,18 +7072,20 @@ Node::Implementation::runOnNodeDeleteCB()
     }
 
 
+    // Then the Group's own callback, as in runOnNodeCreatedCB(): never the project's callback again (#488).
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>( group.get() );
     KnobStringPtr nodeDeletedKnob = nodeRemovalCallback.lock();
+    std::string groupCb;
     if (!nodeDeletedKnob && isGroup) {
         NodePtr grpNode = isGroup->getNode();
         if (grpNode) {
-            cb = grpNode->getBeforeNodeRemovalCallback();
+            groupCb = grpNode->getBeforeNodeRemovalCallback();
         }
     } else if (nodeDeletedKnob) {
-        cb = nodeDeletedKnob->getValue();
+        groupCb = nodeDeletedKnob->getValue();
     }
-    if ( !cb.empty() ) {
-        runOnNodeDeleteCBInternal(cb);
+    if ( !groupCb.empty() ) {
+        runOnNodeDeleteCBInternal(groupCb);
     }
 }
 
@@ -7187,6 +7206,7 @@ Node::Implementation::runInputChangedCallback(int index,
 
     std::string script = ss.str();
     std::string output;
+    PythonCallbackScope callbackScope;
     if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, &output) ) {
         _publicInterface->getApp()->appendToScriptEditor( tr("Failed to execute callback: %1").arg( QString::fromUtf8( error.c_str() ) ).toStdString() );
     } else {

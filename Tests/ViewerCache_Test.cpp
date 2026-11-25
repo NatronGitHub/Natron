@@ -69,6 +69,8 @@ createDot()
 // (AppManager::clearPlaybackCache()) must remove them, not only clear the (always empty) memory portion.
 TEST(ViewerCache, ClearPlaybackCacheRemovesTextures)
 {
+    // The previous tests may destroy nodes, whose textures the cleaner thread of the cache removes later (#1848)
+    appPTR->waitForCacheThreads();
     NodePtr holder = createDot();
     ASSERT_TRUE( bool(holder) );
 
@@ -101,6 +103,8 @@ TEST(ViewerCache, ClearPlaybackCacheRemovesTextures)
 // fills the texture cache, so they would come back at the next pan or zoom), and keeps those of the other frames.
 TEST(ViewerCache, RemoveTexturesOfOneFrame)
 {
+    // The previous test destroys its node, whose textures the cleaner thread of the cache removes later (#1848)
+    appPTR->waitForCacheThreads();
     NodePtr holder = createDot();
     ASSERT_TRUE( bool(holder) );
 

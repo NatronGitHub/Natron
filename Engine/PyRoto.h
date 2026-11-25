@@ -131,6 +131,11 @@ public:
 
     void getKeyframes(std::list<double>* keys) const;
 
+    // The interpolation of the shape's keyframe at time, for all its control and feather points: false (and
+    // eKeyframeTypeNone for the getter) if there is no keyframe at time.
+    bool setKeyframeInterpolation(double time, Natron::KeyframeTypeEnum interpolation);
+    Natron::KeyframeTypeEnum getKeyframeInterpolation(double time) const;
+
     void getControlPointPosition(int index, double time, double* x, double *y, double *lx, double *ly, double *rx, double *ry) const;
 
     void getFeatherPointPosition(int index, double time, double* x, double *y, double *lx, double *ly, double *rx, double *ry) const;

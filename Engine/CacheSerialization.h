@@ -28,13 +28,19 @@
 
 #include "Global/Macros.h"
 
+#include <iostream>
 #include <list>
 #include <set>
+#include <sstream>
 #include <cstddef>
 #include <stdexcept>
+#include <string>
 
 #include <QDir>
 #include <QFileInfo>
+#include <QSaveFile>
+
+#include "Global/FStreamsSupport.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
@@ -108,6 +114,77 @@ Cache<EntryType>::save(CacheTOC* tableOfContents)
             }
         }
     }
+}
+
+/* The restore file is written to a temporary file that replaces it only once it is complete (QSaveFile), so a crash,
+   a full disk or another Natron process that writes or reads the same file at the same time (a NatronRenderer next to
+   the GUI, see AppManager::isDiskCacheUsedByAnotherProcess()) never sees a truncated or interleaved file. Two
+   processes that share the cache still each write their own entries: the last one wins. */
+template<typename EntryType>
+bool
+Cache<EntryType>::writeRestoreFile()
+{
+    CacheTOC tableOfContents;
+    save(&tableOfContents);
+
+    std::ostringstream data;
+    try {
+        boost::archive::binary_oarchive oArchive(data);
+        const unsigned int version = cacheVersion();
+        oArchive << version;
+        oArchive << tableOfContents;
+    } catch (const std::exception & e) {
+        std::cerr << "Failed to serialize the table of contents of the cache " << cacheName() << ": " << e.what() << std::endl;
+
+        return false;
+    }
+    const std::string bytes = data.str();
+
+    const std::string path = getRestoreFilePath();
+    QSaveFile file( QString::fromUtf8( path.c_str() ) );
+    if ( !file.open(QIODevice::WriteOnly) ||
+         ( file.write( bytes.data(), static_cast<qint64>( bytes.size() ) ) != static_cast<qint64>( bytes.size() ) ) ||
+         !file.commit() ) {
+        std::cerr << "Failed to write " << path << ": " << file.errorString().toStdString() << std::endl;
+
+        return false;
+    }
+
+    return true;
+}
+
+template<typename EntryType>
+RestoreFileStatusEnum
+Cache<EntryType>::readRestoreFile(CacheTOC* tableOfContents) const
+{
+    const std::string path = getRestoreFilePath();
+    FStreamsSupport::ifstream ifile;
+    // Binary: on Windows, a text-mode read would turn CR-LF into LF and stop at the first 0x1A (#1594)
+    FStreamsSupport::open(&ifile, path, std::ios_base::in | std::ios_base::binary);
+    if (!ifile) {
+        std::cerr << "Failure to open cache restore file at: " << path << std::endl;
+
+        return eRestoreFileStatusNotOpened;
+    }
+    CacheTOC read;
+    try {
+        boost::archive::binary_iarchive iArchive(ifile);
+        unsigned int version = 0x1; //< default to 1 before NATRON_CACHE_VERSION was introduced
+        if (cacheVersion() >= NATRON_CACHE_VERSION) {
+            iArchive >> version;
+        }
+        if ( version != cacheVersion() ) {
+            return eRestoreFileStatusOtherVersion;
+        }
+        iArchive >> read;
+    } catch (const std::exception & e) {
+        std::cerr << "Exception when reading the table of contents of the cache " << cacheName() << ": " << e.what() << std::endl;
+
+        return eRestoreFileStatusUnreadable;
+    }
+    tableOfContents->swap(read);
+
+    return eRestoreFileStatusRead;
 }
 
 /*Restores the cache from disk.*/

@@ -16,6 +16,7 @@ make its edits one undo step: see :ref:`pyplugWriting-renderReadBack`.
 
 Start with :ref:`the steps of Writing a PyPlug<pyplugWriting-path>`, which go from a first PyPlug
 to its distribution, and end with :ref:`the most frequent mistakes<pyplugWriting-pitfalls>`.
+A whole project can also be saved as a Python script, which is not a PyPlug: see :ref:`pythonProjects`.
 The other pages about PyPlugs are:
 
 - :ref:`callbacks`: the functions that Natron calls when a parameter, an input or the project

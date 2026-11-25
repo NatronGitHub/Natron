@@ -173,11 +173,9 @@ public:
         , computingPreview(false)
         , previewThreadQuit(false)
         , computingPreviewMutex()
+        , computingPreviewCond()
         , pluginInstanceMemoryUsed(0)
         , memoryUsedMutex()
-        , mustQuitPreview(0)
-        , mustQuitPreviewMutex()
-        , mustQuitPreviewCond()
         , renderInstancesSharedMutex()
         , knobsAge(0)
         , knobsAgeIsUniqueToSession(false)
@@ -266,17 +264,21 @@ public:
         gettimeofday(&lastInputNRenderStartedSlotCallTime, 0);
     }
 
-    void abortPreview_non_blocking();
-
+    // Waits for the preview being computed to end (previews are not interrupted), then allows or
+    // forbids the next ones.
     void abortPreview_blocking(bool allowPreviewRenders);
 
-    bool checkForExitPreview();
+    // makePreviewImage() calls these around the computation of a preview; tryBeginPreview() returns
+    // false (and the preview must not be computed) if previews are forbidden.
+    bool tryBeginPreview();
+    void endPreview();
 
-    void setComputingPreview(bool v)
+    // No preview starts after this (destroyNode())
+    void forbidPreviews()
     {
         QMutexLocker l(&computingPreviewMutex);
 
-        computingPreview = v;
+        previewThreadQuit = true;
     }
 
     void restoreUserKnobsRecursive(const std::list<KnobSerializationBasePtr>& knobs,
@@ -349,7 +351,8 @@ public:
     ///The cacheID is the first script name that was given to a node
     ///it is then used in the cache to identify images that belong to this node
     ///In order for the cache to be persistent, the cacheID is serialized with the node
-    ///and 2 nodes cannot have the same cacheID.
+    ///and 2 nodes of a group cannot have the same cacheID. A node is never assigned the cacheID of a node
+    ///destroyed by this process either (see AppManager::retireCacheID()).
     std::string cacheID;
     DeactivatedState deactivatedState;
     // For a group: the nodes in it that were active when deactivate() deactivated them with the
@@ -360,14 +363,15 @@ public:
     Plugin* plugin; //< the plugin which stores the function to instantiate the effect
     mutable QMutex pyPluginInfoMutex;
     PyPlugInfo pyPlugInfo;
+    // The preview state, guarded by computingPreviewMutex: computingPreview is true while
+    // makePreviewImage() computes a preview, previewThreadQuit is true while no preview may start;
+    // computingPreviewCond is signalled when computingPreview becomes false.
     bool computingPreview;
     bool previewThreadQuit;
     mutable QMutex computingPreviewMutex;
+    QWaitCondition computingPreviewCond;
     size_t pluginInstanceMemoryUsed; //< global count on all EffectInstance's of the memory they use.
     QMutex memoryUsedMutex; //< protects _pluginInstanceMemoryUsed
-    int mustQuitPreview;
-    QMutex mustQuitPreviewMutex;
-    QWaitCondition mustQuitPreviewCond;
     QMutex renderInstancesSharedMutex; //< see eRenderSafetyInstanceSafe in EffectInstance::renderRoI
     //only 1 clone can render at any time
     U64 knobsAge; //< the age of the knobs in this effect. It gets incremented every times the effect has its evaluate() function called.

@@ -65,6 +65,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/FileDownloader.h"
 #include "Engine/GroupOutput.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/DiskCacheNode.h"
 #include "Engine/DocumentationGroups.h"
 #include "Engine/ProjectSerialization.h"
@@ -658,8 +659,8 @@ AppInstance::loadInternal(const CLArgs& cl,
         std::list<AppInstance::RenderWork> writersWork;
 
 
-        if ( info.suffix() == QString::fromUtf8(NATRON_PROJECT_FILE_EXT) ) {
-            ///Load the project
+        if ( ( info.suffix() == QString::fromUtf8(NATRON_PROJECT_FILE_EXT) ) || Project::isPythonProjectFile( info.absoluteFilePath() ) ) {
+            ///Load the project (a .ntp file, or a project saved as a Python script)
             if ( !_imp->_currentProject->loadProject( info.path(), info.fileName() ) ) {
                 throw std::invalid_argument( tr("Project file loading failed.").toStdString() );
             }
@@ -732,9 +733,9 @@ AppInstance::loadInternal(const CLArgs& cl,
         appPTR->registerCloseProjectsAtPythonExit();
         QFileInfo info( cl.getScriptFilename() );
         if ( info.exists() ) {
-            if ( info.suffix() == QString::fromUtf8("py") ) {
+            if ( ( info.suffix() == QString::fromUtf8("py") ) && !Project::isPythonProjectFile( info.absoluteFilePath() ) ) {
                 loadPythonScript(info);
-            } else if ( info.suffix() == QString::fromUtf8(NATRON_PROJECT_FILE_EXT) ) {
+            } else if ( ( info.suffix() == QString::fromUtf8(NATRON_PROJECT_FILE_EXT) ) || ( info.suffix() == QString::fromUtf8("py") ) ) {
                 if ( !_imp->_currentProject->loadProject( info.path(), info.fileName() ) ) {
                     throw std::invalid_argument( tr("Project file loading failed.").toStdString() );
                 }
@@ -874,6 +875,97 @@ AppInstance::loadPythonScript(const QFileInfo& file)
 
     return true;
 } // AppInstance::loadPythonScript
+
+bool
+AppInstance::runPythonProjectScript(const QString& filePath,
+                                    std::string* error)
+{
+    QFile file(filePath);
+
+    if ( !file.open(QIODevice::ReadOnly) ) {
+        *error = tr("Cannot open %1: %2").arg( filePath, file.errorString() ).toStdString();
+
+        return false;
+    }
+    const std::string script = file.readAll().toStdString();
+
+    // The script calls createProject(app) (see Project::exportToPython()): "app" is this app while it runs, then
+    // what it was (e.g. app1 in NatronRenderer, when a Precomp loads its project in another app). One variable
+    // per app, for a project loaded while another one is (a Precomp).
+    const std::string savedApp = "_natronAppBeforeProject_" + getAppIDString();
+    if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(savedApp + " = globals().get(\"app\")\napp = " + getAppIDString() + "\n", error, 0) ) {
+        return false;
+    }
+
+    std::string output;
+    bool ok;
+    {
+        // As for a PyPlug in loadPythonScript().
+        // Declared before createNodeTree, so that the previews are refreshed once the tree is created.
+        RefreshPreviewsOfCreatedNodes_RAII refreshPreviews( shared_from_this(), getProject() );
+        FlagIncrementer flag(&_imp->_creatingGroup, &_imp->creatingGroupMutex);
+        CreatingNodeTreeFlag_RAII createNodeTree( shared_from_this() );
+        ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, error, &output);
+    }
+    std::string restoreError;
+    NATRON_PYTHON_NAMESPACE::interpretPythonScript("app = " + savedApp + "\ndel " + savedApp + "\n", &restoreError, 0);
+    if (ok) {
+        // While the script ran, the plug-ins handled no parameter change, as for a PyPlug (see
+        // EffectInstance::onKnobValueChanged()): the decoder of a Read didn't read its file (its layers...),
+        // which it does when it is created from an .ntp file. Let it read it, as a change made by the plug-in
+        // (kOfxChangePluginEdited, as after loading an .ntp file, see OfxEffectInstance.cpp): not a user edit,
+        // after which the plug-in would set the parameters (colorspace...) from the file. Reading it extends the project frame range
+        // (Node::onFileNameParameterChanged()), which the .ntp loader doesn't: keep the one the script set.
+        const KnobIntPtr projectRange = std::dynamic_pointer_cast<KnobInt>( getProject()->getKnobByName("frameRange") );
+        const int savedFirst = projectRange ? projectRange->getValue(0) : 0;
+        const int savedLast = projectRange ? projectRange->getValue(1) : 0;
+        NodesList nodes;
+        getProject()->getNodes_recursive(nodes, true);
+        for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            ReadNode* isRead = dynamic_cast<ReadNode*>( (*it)->getEffectInstance().get() );
+            NodePtr decoder = isRead ? isRead->getEmbeddedReader() : NodePtr();
+            KnobIPtr fileKnob = decoder ? decoder->getKnobByName(kOfxImageEffectFileParamName) : KnobIPtr();
+            if (fileKnob) {
+                fileKnob->evaluateValueChange(0, getTimeLine()->currentFrame(), ViewSpec::all(), eValueChangedReasonPluginEdited);
+            }
+        }
+        // The OCIO plug-ins (openfx-io) show their colorspace parameters, strings, as menus that are not saved, which
+        // they set from the strings when they are created (from an .ntp file: with the saved strings) or when a
+        // string changes: let them set the menus from the strings that the script set (not as a user edit, after
+        // which a Read would no longer take its colorspace from its file name, see ocioInputSpaceSet).
+        for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            const EffectInstancePtr effect = (*it)->getEffectInstance();
+            ReadNode* isRead = dynamic_cast<ReadNode*>( effect.get() );
+            WriteNode* isWrite = dynamic_cast<WriteNode*>( effect.get() );
+            const NodePtr ocioNode = isRead ? isRead->getEmbeddedReader() : ( isWrite ? isWrite->getEmbeddedWriter() : *it );
+            if (!ocioNode) {
+                continue;
+            }
+            for (const char* name : { "ocioInputSpace", "ocioOutputSpace" }) {
+                const KnobIPtr colorspace = ocioNode->getKnobByName(name);
+                if ( colorspace && colorspace->getIsPersistent() ) {
+                    colorspace->evaluateValueChange(0, getTimeLine()->currentFrame(), ViewSpec::all(), eValueChangedReasonPluginEdited);
+                }
+            }
+        }
+        if (projectRange) {
+            getProject()->beginChanges();
+            projectRange->setValue(savedFirst, ViewSpec::all(), 0);
+            projectRange->setValue(savedLast, ViewSpec::all(), 1);
+            getProject()->endChanges();
+        }
+        getProject()->forceComputeInputDependentDataOnAllTrees();
+    }
+    if ( !output.empty() ) {
+        if ( appPTR->isBackground() ) {
+            std::cout << output << std::endl;
+        } else {
+            appendToScriptEditor(output);
+        }
+    }
+
+    return ok;
+} // AppInstance::runPythonProjectScript
 
 class AddCreateNode_RAII
 {

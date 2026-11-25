@@ -38,6 +38,7 @@ Functions
 - def :meth:`saveTempProject<NatronEngine.App.saveTempProject>` (filename[, format=NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatNone])
 - def :meth:`saveProject<NatronEngine.App.saveProject>` (filename[, format=NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatNone])
 - def :meth:`saveProjectAs<NatronEngine.App.saveProjectAs>` (filename[, format=NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatNone])
+- def :meth:`saveProjectAsPython<NatronEngine.App.saveProjectAsPython>` (filename)
 - def :meth:`getProjectFormat<NatronEngine.App.getProjectFormat>` ()
 - def :meth:`setProjectFormat<NatronEngine.App.setProjectFormat>` (format)
 - def :meth:`projectFileHasGuiData<NatronEngine.App.projectFileHasGuiData>` ()
@@ -49,6 +50,7 @@ Functions
 - def :meth:`timelineGetLeftBound<NatronEngine.App.timelineGetLeftBound>` ()
 - def :meth:`timelineGetRightBound<NatronEngine.App.timelineGetRightBound>` ()
 - def :meth:`timelineGetTime<NatronEngine.App.timelineGetTime>` ()
+- def :meth:`timelineSetTime<NatronEngine.App.timelineSetTime>` (frame)
 - def :meth:`undo<NatronEngine.App.undo>` ()
 - def :meth:`undoGroup<NatronEngine.App.undoGroup>` (text)
 - def :meth:`waitForRenders<NatronEngine.App.waitForRenders>` ([timeout=-1.0])
@@ -347,6 +349,17 @@ Here is an example on how to pass properties to the createNode function::
 
   *Description*:  When set to True, Natron will not show any information, error, warning, question or file dialog when creating the node.
 
+- *Name*: **CreateNodeArgsPropMultiInstanceParentName**
+
+  *Dimension*: 1
+
+  *Type*: string
+
+  *Default*: ""
+
+  *Description*:  The script-name of a multi-instance node (the Tracker of Natron 2.0 and earlier), in the same group: the
+  new node is one of its instances (a track). Python project files use it (see :meth:`saveProjectAsPython<NatronEngine.App.saveProjectAsPython>`).
+
 
 
 .. method:: App.createReader(filename[, group=None] [, properties=None])
@@ -447,11 +460,14 @@ This function should only be used to render with a Write node or DiskCache node.
     :noindex:
 
 
-    :param tasks: :class:`sequence`
+    :param tasks: :class:`list`
 
-This function takes a sequence of tuples of the form *(effect,firstFrame,lastFrame[,frameStep])*
+This function takes a list of tuples (or of other sequences, such as lists) of the form
+*(effect,firstFrame,lastFrame[,frameStep])*.
 The *frameStep* is optional in the tuple and if not set will default to the value of the
 **Frame Increment** parameter in the Write node.
+A task whose first item is not an :class:`Effect<NatronEngine.Effect>`, or whose frames are not numbers,
+raises :class:`TypeError`.
 
 This is an overloaded function. Same as :func:`render(effect,firstFrame,lastFrame,frameStep)<NatronEngine.App.render>`
 but all *tasks* will be rendered concurrently.
@@ -468,7 +484,8 @@ This is a blocking call only in background mode.
 
     :rtype: :class:`int`
 
-Returns the *left bound* of the timeline, that is, the first member of the project's frame-range parameter
+Returns the *left bound* of the timeline, that is, the first member of the project's frame-range parameter.
+To change it, set the project's frame-range parameter: ``app.getProjectParam("frameRange").set(first, last)``.
 
 
 
@@ -479,7 +496,8 @@ Returns the *left bound* of the timeline, that is, the first member of the proje
     :rtype: :class:`int`
 
 
-Returns the *right bound* of the timeline, that is, the second member of the project's frame-range parameter
+Returns the *right bound* of the timeline, that is, the second member of the project's frame-range parameter.
+To change it, set the project's frame-range parameter: ``app.getProjectParam("frameRange").set(first, last)``.
 
 
 
@@ -491,6 +509,25 @@ Returns the *right bound* of the timeline, that is, the second member of the pro
 Get the timeline's current time.
 In Natron there's only a single internal timeline and all Viewers are synchronised on that
 timeline. If the user seeks a specific frames, then all Viewers will render that frame.
+
+
+.. method:: App.timelineSetTime(frame)
+
+    :param frame: :class:`int`
+
+Moves the current time of the timeline to *frame*, as a seek in the timeline does: in the GUI,
+the Viewers render that frame. This also works in background mode, e.g. before reading
+parameter values or evaluating expressions at the current time.
+The frame may be outside the timeline bounds (see :meth:`timelineGetLeftBound<NatronEngine.App.timelineGetLeftBound>`).
+
+Example::
+
+    app.timelineSetTime(10)
+    print(app.timelineGetTime())  # 10
+    print(app.Blur1.size.get())   # the value at frame 10
+
+    .. versionadded:: 2.6
+
 
 
 .. method:: App.writeToScriptEditor(message)
@@ -513,9 +550,12 @@ inform the user of various information, warnings or errors.
     mode.
 
     *format* is the format of the file, see :meth:`getProjectFormat<NatronEngine.App.getProjectFormat>`. With
-    *eProjectFileFormatNone* (the default), the project is saved in its format, or, if it was never saved,
-    in the format of the "Save projects as binary by default" preference (binary by default, also in
-    NatronRenderer and natron-python). Any other format becomes the format of the project.
+    *eProjectFileFormatNone* (the default), the file name gives it: a *.py* file is saved as a Python
+    project (see :ref:`pythonProjects`); a *.ntp* file in the format of the project if it is text or
+    binary, else in the format of the "Save projects as binary by default" preference (binary by
+    default, also in NatronRenderer and natron-python); another name in the format of the project, or
+    the preference for a project that was never saved. Any other *format* is used as it is (the
+    extension is not changed). The format of the file becomes the format of the project.
     In GUI mode, when *filename* is empty and the project was never saved, the save dialog is shown:
     *format* is the default of its "File format" choice, and the user's choice is used.
 
@@ -533,8 +573,10 @@ inform the user of various information, warnings or errors.
     Save the project under the given *filename*.
     In GUI mode, if *filename* is empty, it prompts the user where to save the project.
 
-    *format* is the format of the file, as in :meth:`saveProject<NatronEngine.App.saveProject>`: it becomes
-    the format of the project, unless it is *eProjectFileFormatNone*.
+    *format* is the format of the file, as in :meth:`saveProject<NatronEngine.App.saveProject>` (with
+    *eProjectFileFormatNone*, the file name gives it: ``app.saveProjectAs("comp.py")`` saves a Python
+    project): it becomes the format of the project. In GUI mode, a name that doesn't end in *.ntp* gets
+    that extension, unless the file is saved as a Python project.
     To write a file that Natron 2.5 and earlier can read, use
     *NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatText*.
 
@@ -543,6 +585,21 @@ inform the user of various information, warnings or errors.
     .. versionchanged:: 2.6
        The *format* parameter. Projects are saved in the binary format by default.
 
+
+.. method:: App.saveProjectAsPython(filename)
+
+    :param filename: :class:`str`
+    :rtype: :class:`bool`
+
+    Saves a copy of the project to *filename* as a Python script: it doesn't change the project (its
+    name, format and modified state), as :meth:`saveProjectCopy<NatronEngine.App.saveProjectCopy>`.
+    Project variables in *filename*, such as ``[Project]``, are expanded, as in
+    :meth:`saveProject<NatronEngine.App.saveProject>`.
+    It returns *True* if it saved successfully, *False* otherwise.
+
+    The format, how to open such a file, and what it doesn't save are described in :ref:`pythonProjects`.
+
+    .. versionadded:: 2.6
 
 .. method:: App.saveTempProject(filename[, format=NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatNone])
 
@@ -563,8 +620,8 @@ inform the user of various information, warnings or errors.
 
     Saves a copy of the project to the given *filename* without updating project properties
     such as the project path, last save time etc...
-    *format* is the format of the copy (*eProjectFileFormatNone*: the format of the project, or the
-    preference for a project that was never saved); it doesn't change the format of the project.
+    *format* is the format of the copy: with *eProjectFileFormatNone*, the file name gives it, as in
+    :meth:`saveProject<NatronEngine.App.saveProject>`. It doesn't change the format of the project.
     This function returns *True* if it saved successfully, *False* otherwise.
 
     .. versionadded:: 2.6
@@ -578,12 +635,14 @@ inform the user of various information, warnings or errors.
     A project restored from an auto-save (auto-saves are always binary) has the format of the
     project that was auto-saved.
 
-    Project files have the *.ntp* extension in both formats, and the format is detected when a
-    project is loaded:
+    Text and binary project files have the *.ntp* extension, Python ones *.py*; the format is
+    detected when a project is loaded:
 
     - *eProjectFileFormatText*: XML text, readable and diffable, which Natron 2.5 and earlier can read.
     - *eProjectFileFormatBinary*: a portable binary format (the same file loads on every operating
       system and processor), faster to load and save, and smaller. Needs Natron 2.6 or later.
+    - *eProjectFileFormatPython*: a *.py* script that rebuilds the project, see
+      :meth:`saveProjectAsPython<NatronEngine.App.saveProjectAsPython>`. Needs Natron 2.6 or later.
 
     .. versionadded:: 2.6
 
@@ -635,7 +694,8 @@ inform the user of various information, warnings or errors.
     :param filename: :class:`str`
     :rtype: :class:`App<NatronEngine.App>`
 
-    Loads the project indicated by *filename*.
+    Loads the project indicated by *filename*: a *.ntp* file, or a project saved as a Python script
+    (see :ref:`pythonProjects`).
     In GUI mode, this will open a new window only if the current window has modifications.
     In background mode this will close the current project of this :class:`App<NatronEngine.App>`
     and open the project indicated by *filename* in it.

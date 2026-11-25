@@ -212,6 +212,99 @@ the consolidated list (several are referenced from the P0 leads in
   the "random crash" tail; see the crash-reporting notes in
   :ref:`maint-subsystems`.
 
+.. _maint-changelog:
+
+CHANGELOG
+---------
+
+Pull requests don't edit ``CHANGELOG.md``: when several pull requests added
+their lines to it, every one of them conflicted with the others. Instead, the
+description of each pull request ends with a ``### CHANGELOG`` section that
+holds its lines, each under the heading of ``CHANGELOG.md`` it belongs to
+(for 2.6.0: ``New features``, ``Known issues``, ``Changes``, ``Plugins``),
+written either as ``Changes:`` or as ``#### Changes``. A pull request that
+users won't notice (refactoring, tests, CI, documentation only) says
+``none``::
+
+    ### CHANGELOG
+
+    Changes:
+    - Viewer: autocontrast works in the Matte display mode. #1735
+
+Start each line with the component it is about (``Python:``, ``Viewer:``,
+``Node graph:``, ``Roto/RotoPaint:``, ``Tracker:``, ``OpenFX:``,
+``Read/Write:``, ``Preferences:``, ``Build/packaging:``; a plug-in name under
+``Plugins``), and write it for users: what they see, not how the code changed.
+A line without a ``#NNN`` reference gets the number of its pull request. The
+plug-in repositories (openfx-io, openfx-misc, openfx-arena, openfx-gmic) have
+no ``CHANGELOG.md``: their pull requests carry the same section, with
+``Plugins:`` lines such as ``- ReadFFmpeg: ... (openfx-io#NNN)``. In them, a
+bare ``#NNN`` is an issue of that repository and becomes ``openfx-io#NNN``:
+write a Natron reference as ``Natron#NNN``. Pull requests opened against
+RB-2.7 only (Qt 6 work) are not collected: the script reads RB-2.6.
+
+``tools/utils/collect-changelog.py`` collects the lines of the pull requests
+merged since the last collection into ``CHANGELOG.md``, in one commit, every
+week and always before a pre-release tag. The recurring task is the open
+issue labelled ``changelog`` (`#1835
+<https://github.com/NatronGitHub/Natron/issues/1835>`_). Before you start:
+
+- The previous collection pull request must be merged: otherwise the new run
+  collects the same pull requests again, and the two pull requests conflict.
+- After a release, add the section of the next version (``## Version x.y.z``
+  with its ``###`` headings) at the top first: the script always writes to,
+  and regroups, the topmost version.
+
+The procedure, from an up-to-date RB-2.6 checkout with ``gh`` authenticated:
+
+1. ``git fetch origin && git switch -c changelog-collect-$(date +%F)
+   origin/RB-2.6``.
+2. Run the script without ``--write`` or ``--commit`` (a dry run, which prints
+   the diff)::
+
+       tools/utils/collect-changelog.py --extra-repo NatronGitHub/openfx-io \
+           --extra-repo NatronGitHub/openfx-misc \
+           --extra-repo NatronGitHub/openfx-arena \
+           --extra-repo NatronGitHub/openfx-gmic
+
+   The first run needs ``--since <the merge commit of #1836>``, the pull
+   request that started this process; the later runs start where the last
+   collection ended. The script reports, on the standard error, the pull
+   requests without a ``### CHANGELOG`` section, the lines under a heading
+   that the topmost version of ``CHANGELOG.md`` doesn't have, and the lines it
+   can't parse. Fix those pull request descriptions (``gh pr edit N
+   --body-file ...``) and run it again.
+3. Run the same command with ``--write``. The script adds the new lines to the
+   topmost version, merges the lines that differ only by their references, and
+   groups the entries of each section by component (in the order above, then
+   the other components alphabetically, then the lines without one), and in
+   ``Plugins`` by bundle and plug-in. A section that has ``####`` sub-headings
+   or paragraphs is not regrouped; the new lines go at its end. The script
+   drops the lines of pull requests that say ``none`` or have an internal
+   label (``commercial``, ``dependencies``; see ``--internal-label`` and
+   ``--include-internal``), and reports them. It refuses to run when
+   ``CHANGELOG.md`` has uncommitted changes (``--force`` overrides), since a
+   second ``--write`` would add the lines again.
+4. **Editorial pass**, which can't be automated: a person, or an agent whose
+   result a person reviews, rewrites the topmost version for users. One entry
+   per user-visible change; related fixes merged into one line; internal items
+   removed (refactors, test-only, CI and documentation-only changes, follow-ups
+   of features that no release has shipped yet); every pull request and issue
+   reference kept.
+5. Run the same command with ``--commit``. It commits ``CHANGELOG.md`` as it
+   is, with the message saved by ``--write`` (``CHANGELOG: collect #a..#b``,
+   and one ``Merged-until:`` trailer per repository); it fetches and pushes
+   nothing.
+6. Push the branch and open a pull request whose ``### CHANGELOG`` section
+   says ``none``. Merge it with *Rebase and merge* (or a merge commit), not
+   *Squash and merge*, so that the commit keeps its message: the next run
+   starts after the merge times in its ``Merged-until:`` trailers, and stops
+   with an error if it finds none for Natron (``--since`` overrides them).
+
+The script's unit tests (``tools/utils/test_collect_changelog.py``, with
+fixtures in ``tools/utils/testdata/collect_changelog``) run in the Linux CI
+job: ``python3 -m unittest discover -s tools/utils -p 'test_*.py'``.
+
 .. _maint-ci:
 
 Continuous integration
@@ -226,7 +319,8 @@ openfx-misc, openfx-io, openfx-arena, openfx-gmic, …) follows the same rules.
 ``Tests`` suite:
 
 - **Linux**: Ubuntu 24.04 with its Qt 5, PySide2 and Python 3.12. It also
-  checks that qmake and CMake build the same sources.
+  checks that qmake and CMake build the same sources, and runs the unit tests
+  of the Python tools in ``tools/utils``.
 - **Windows**: MSYS2 UCRT64, with the stock MSYS2 packages (Qt 5, PySide2
   and MSYS2's Python).
 - **macOS**: macOS 15 arm64, the system (Xcode) clang and MacPorts libraries
@@ -268,15 +362,22 @@ run is never skipped: every job uses rolling toolchains. Any branch can also be 
 standards such as C++23, other compilers or OS versions) are meant to run
 weekly or by hand, never per pull request; none is set up yet.
 
-**Installers and packages are release artifacts.** They are built only by hand
-or for pre-release tags, never for pull requests: ``build_installer.yml``
-builds the Windows installer and ``build_pacman_repo.yml`` the Windows package
-repository, both uploaded as workflow artifacts. The macOS and Linux installers
-are built outside GitHub Actions: the macOS release builds with ``tools/tart``
-(in a macOS VM on a maintainer's Apple Silicon Mac), the Linux installers with
-the ``tools/jenkins`` scripts in the Rocky Linux 9 SDK Docker image (being
-adapted from ``tools/docker/natron-sdk-rockylinux8``, see `#1343
-<https://github.com/NatronGitHub/Natron/pull/1343>`_).
+**Installers and packages are built weekly, on demand and for tags (the
+Windows package repository only on demand and for tags), never for pull
+requests.** Before a pre-release tag, collect the CHANGELOG (see
+:ref:`maint-changelog`). ``build_installer.yml`` builds the Windows installer
+(the portable tree, with Setup.exe in it) every Sunday (06:17 UTC), by hand and for
+``v*`` tags, with the package repository pinned by
+``tools/MINGW-packages/windows_pacman_repo_version.txt``; the weekly run is never
+skipped (MSYS2 is a rolling toolchain) and fails if that repository's zip isn't
+published. Its artifacts are kept 14 days for the weekly runs, 90 days
+otherwise. ``build_pacman_repo.yml`` builds the Windows package repository, by
+hand or for ``v*`` tags (see ``tools/MINGW-packages/README.md``).
+``linux_packages.yml`` builds the Linux portable archives weekly, by hand and
+for pre-release tags, in the Rocky Linux 9 SDK Docker image, and
+``macos_x86_64.yml`` the macOS x86_64 DMG on the same schedule. The macOS arm64
+release builds are made outside GitHub Actions, with ``tools/tart`` (in a macOS
+VM on a maintainer's Apple Silicon Mac).
 
 Where to start
 --------------

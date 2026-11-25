@@ -229,7 +229,8 @@ public:
     void getWriters(std::list<OutputEffectInstance*>* writers) const;
 
     /**
-     * @brief Checks if a node in the project already has this cacheID
+     * @brief Checks if a node in the project already has this cacheID, or if a destroyed node had it
+     * (see AppManager::retireCacheID())
      **/
     bool isCacheIDAlreadyTaken(const std::string& name) const;
 
@@ -240,10 +241,6 @@ public:
      * @brief Computes the union of the frame range of all readers in the group and subgroups.
      **/
     void recomputeFrameRangeForAllReaders(int* firstFrame, int* lastFrame);
-
-
-    void getParallelRenderArgs(std::map<NodePtr, ParallelRenderArgsPtr>& argsMap) const;
-
 
     void forceComputeInputDependentDataOnAllTrees();
 

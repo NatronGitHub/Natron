@@ -262,7 +262,7 @@ OfxHost::setProperties()
     /* Known OpenFX host names:
        uk.co.thefoundry.nuke
        com.eyeonline.Fusion
-       com.sonycreativesoftware.vegas
+       com.vegascreativesoftware.vegas (VEGAS Pro 19 and later; com.sonycreativesoftware.vegas before)
        Autodesk Toxik
        Assimilator
        Dustbuster
@@ -1670,6 +1670,10 @@ OfxHost::multiThread(OfxThreadFunctionV1 func,
 
         return kOfxStatOK;
     }
+
+    // The thread functions may need the GIL (e.g. to evaluate a Python expression of a parameter): don't hold it
+    // while waiting for them, e.g. in kOfxActionInstanceChanged triggered by a Python script (#1653).
+    PythonGILUnlocker gilUnlocker;
 
     QThread* spawnerThread = QThread::currentThread();
     // the effect whose action called multiThread(), for the thread functions (see SpawnedThreadEffect_RAII)

@@ -175,7 +175,12 @@ public:
 
     void setRenderQueuingEnabled(bool enabled);
 
+    // Resets the settings to their default value, in memory only: the settings file keeps the saved values
+    // until removeSettingsFile() or a save (#1808)
     void restoreDefault();
+
+    // Removes the settings file, unless saving the settings is off (#1728)
+    void removeSettingsFile();
 
     int getMaximumUndoRedoNodeGraph() const;
 

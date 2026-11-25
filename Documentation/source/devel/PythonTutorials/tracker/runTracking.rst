@@ -58,6 +58,10 @@ at the frame where it failed. The tracking stops when all the tracks have failed
 
         autoKey.set(autoKeyWasOn)
 
+        # let Natron process its events: with a Motion Type, it solves the
+        # transform after the tracking
+        app.waitForRenders()
+
         # return the tracks that were tracked up to the last frame
         return [t for t in tracks
                 if t.getParam("centerPoint").getKeyIndex(last, 0) >= 0
@@ -94,6 +98,13 @@ Notes:
 - Keyframes that are already set on ``centerPoint`` before the start frame are used
   to predict the motion of the track.
 - :func:`stopTracking()<NatronEngine.Tracker.stopTracking>` stops the tracking.
+- When the Tracker node's *Motion Type* is not *None*, the transform (or CornerPin)
+  parameters are solved after the tracking, on the main thread, when Natron
+  processes its events. A script that waits with ``time.sleep()`` does not let it
+  run: once the tracking is finished, call ``app.waitForRenders()``, which processes
+  the events, before reading these parameters, or solve them with
+  ``trackerNode.getParam("computeTransform").trigger()`` (the *Compute* button), which
+  sets them before it returns in ``NatronRenderer``.
 - While the script waits, the Natron interface does not respond. When the
   tracking is run from the Script Editor, another option is to call
   ``startTracking`` alone, and to read the result in a second script once the

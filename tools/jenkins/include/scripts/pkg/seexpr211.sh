@@ -18,6 +18,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libSeExpr.so" ]; }; };
     patch -Np1 -i "$INC_PATH/patches/SeExpr/0005-seexpr-2.11-noeditordemos.patch"
     patch -Np1 -i "$INC_PATH/patches/SeExpr/0006-seexpr-2.11-cstylecast.patch"
     patch -Np1 -i "$INC_PATH/patches/SeExpr/0007-seexpr-2.11-float-to-unsigned-cast.patch"
+    patch -Np1 -i "$INC_PATH/patches/SeExpr/0008-seexpr-2.11-flex-buffer-state.patch"
     #patch -p0 -i "$INC_PATH/patches/SeExpr/seexpr2-cmake.diff"
     mkdir build
     pushd build

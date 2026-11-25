@@ -26,8 +26,11 @@
 #include "PyRoto.h"
 
 #include <cassert>
+#include <iterator> // advance
 #include <stdexcept>
+#include <string>
 
+#include "Engine/AppInstance.h"
 #include "Engine/Bezier.h"
 #include "Engine/BezierCP.h"
 #include "Engine/EffectInstance.h"
@@ -346,6 +349,54 @@ BezierCurve::getKeyframes(std::list<double>* keys) const
     }
 }
 
+bool
+BezierCurve::setKeyframeInterpolation(double time,
+                                      KeyframeTypeEnum interpolation)
+{
+    // as the Curve Editor (Bezier::setKeyFrameInterpolation(), which takes an index and only sets the internal
+    // curves), also on the GUI curves, which the Curve Editor and getKeyframes() read
+    const std::list<BezierCPPtr> cps = _bezier->getControlPoints_mt_safe();
+    const std::list<BezierCPPtr> fps = _bezier->getFeatherPoints_mt_safe();
+
+    if ( cps.empty() || (cps.front()->getKeyFrameIndex(false, time) < 0) ) {
+        return false;
+    }
+    for (const std::list<BezierCPPtr>* points : { &cps, &fps }) {
+        for (std::list<BezierCPPtr>::const_iterator it = points->begin(); it != points->end(); ++it) {
+            for (bool useGuiCurves : { false, true }) {
+                const int index = (*it)->getKeyFrameIndex(useGuiCurves, time);
+                if (index >= 0) {
+                    (*it)->setKeyFrameInterpolation(useGuiCurves, interpolation, index);
+                }
+            }
+        }
+    }
+    _bezier->incrementNodesAge();
+
+    return true;
+}
+
+KeyframeTypeEnum
+BezierCurve::getKeyframeInterpolation(double time) const
+{
+    const std::list<BezierCPPtr> cps = _bezier->getControlPoints_mt_safe();
+
+    if ( cps.empty() ) {
+        return eKeyframeTypeNone;
+    }
+    // the keyframe that setKeyframeInterpolation() finds
+    const int index = cps.front()->getKeyFrameIndex(false, time);
+    if (index < 0) {
+        return eKeyframeTypeNone;
+    }
+    std::list<std::pair<double, KeyframeTypeEnum> > keys;
+    cps.front()->getKeyFrames(false, &keys);
+    std::list<std::pair<double, KeyframeTypeEnum> >::const_iterator it = keys.begin();
+    std::advance(it, index);
+
+    return ( it != keys.end() ) ? it->second : eKeyframeTypeNone;
+}
+
 void
 BezierCurve::getControlPointPosition(int index,
                                      double time,
@@ -648,18 +699,55 @@ Roto::createLayer()
     return 0;
 }
 
+// A new shape is selected, and the parameters of a selected shape follow the ones of the Roto node
+// (RotoContext::select()): setting its own parameters has no effect. While a PyPlug or a Python project
+// file creates its nodes (see Project::exportToPython()), which then sets them, it is deselected.
+static BezierCurve*
+newShape(const RotoContextPtr& ctx,
+         const BezierPtr& shape)
+{
+    if (!shape) {
+        return 0;
+    }
+    NodePtr node = ctx->getNode();
+    if ( node && node->getApp() && node->getApp()->isCreatingPythonGroup() ) {
+        ctx->deselect(shape, RotoItem::eSelectionReasonOther);
+    }
+
+    return new BezierCurve(shape);
+}
+
+// A shape needs internal nodes (RotoDrawableItem::createNodes()), whose creation throws if it fails: a C++
+// exception must not go through the Python interpreter, which it leaves broken ("SystemError: unknown opcode",
+// then a hang or a crash, #1828). Print the error and return null (None), as App.createNode() does (a Python
+// exception set with PyErr_SetString() doesn't reach the script: the binding of these functions returns None).
+template <typename MakeShape>
+static BezierPtr
+makeShape(const RotoContextPtr& context,
+          MakeShape make)
+{
+    std::string error;
+    try {
+        return make();
+    } catch (const std::exception& e) {
+        error = e.what();
+    } catch (...) {
+        error = "Unknown error while creating the shape";
+    }
+    NodePtr node = context->getNode();
+    if (node) {
+        node->getApp()->appendPlainTextToScriptEditor(error);
+    }
+
+    return BezierPtr();
+}
+
 BezierCurve*
 Roto::createBezier(double x,
                    double y,
                    double time)
 {
-    BezierPtr  ret = _ctx->makeBezier(x, y, kRotoBezierBaseName, time, false);
-
-    if (ret) {
-        return new BezierCurve(ret);
-    }
-
-    return 0;
+    return newShape( _ctx, makeShape(_ctx, [&] { return _ctx->makeBezier(x, y, kRotoBezierBaseName, time, false); }) );
 }
 
 BezierCurve*
@@ -669,13 +757,7 @@ Roto::createEllipse(double x,
                     bool fromCenter,
                     double time)
 {
-    BezierPtr  ret = _ctx->makeEllipse(x, y, diameter, fromCenter, time);
-
-    if (ret) {
-        return new BezierCurve(ret);
-    }
-
-    return 0;
+    return newShape( _ctx, makeShape(_ctx, [&] { return _ctx->makeEllipse(x, y, diameter, fromCenter, time); }) );
 }
 
 BezierCurve*
@@ -684,13 +766,7 @@ Roto::createRectangle(double x,
                       double size,
                       double time)
 {
-    BezierPtr  ret = _ctx->makeSquare(x, y, size, time);
-
-    if (ret) {
-        return new BezierCurve(ret);
-    }
-
-    return 0;
+    return newShape( _ctx, makeShape(_ctx, [&] { return _ctx->makeSquare(x, y, size, time); }) );
 }
 
 NATRON_PYTHON_NAMESPACE_EXIT

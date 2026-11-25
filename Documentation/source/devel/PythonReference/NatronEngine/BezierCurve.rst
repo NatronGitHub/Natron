@@ -29,6 +29,7 @@ Functions
 - def :meth:`getFeatherFallOffParam<NatronEngine.BezierCurve.getFeatherFallOffParam>` ()
 - def :meth:`getFeatherPointPosition<NatronEngine.BezierCurve.getControlPointPosition>` (index,time)
 - def :meth:`getIsActivated<NatronEngine.BezierCurve.getIsActivated>` (time)
+- def :meth:`getKeyframeInterpolation<NatronEngine.BezierCurve.getKeyframeInterpolation>` (time)
 - def :meth:`getKeyframes<NatronEngine.BezierCurve.getKeyframes>` ()
 - def :meth:`getNumControlPoints<NatronEngine.BezierCurve.getNumControlPoints>` ()
 - def :meth:`getOpacity<NatronEngine.BezierCurve.getOpacity>` (time)
@@ -47,6 +48,7 @@ Functions
 - def :meth:`setFeatherDistance<NatronEngine.BezierCurve.setFeatherDistance>` (dist, time)
 - def :meth:`setFeatherFallOff<NatronEngine.BezierCurve.setFeatherFallOff>` (falloff, time)
 - def :meth:`setFeatherPointAtIndex<NatronEngine.BezierCurve.setFeatherPointAtIndex>` (index, time, x, y, lx, ly, rx, ry)
+- def :meth:`setKeyframeInterpolation<NatronEngine.BezierCurve.setKeyframeInterpolation>` (time, interpolation)
 - def :meth:`setOpacity<NatronEngine.BezierCurve.setOpacity>` (opacity, time)
 - def :meth:`setOverlayColor<NatronEngine.BezierCurve.setOverlayColor>` (r, g, b)
 - def :meth:`setPointAtIndex<NatronEngine.BezierCurve.setPointAtIndex>` (index, time, x, y, lx, ly, rx, ry)
@@ -101,13 +103,6 @@ All parameters can be retrieved with their *script-name* with the function :func
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-
-
-.. attribute:: BezierCurve.CairoOperatorEnum
-
-    This enumeration represents the different blending modes of a shape. See the user interface
-    for the different modes, or type help(NatronEngine.BezierCurve.CairoOperatorEnum) to see
-    the different values.
 
 
 .. method:: BezierCurve.addControlPoint(x, y)
@@ -174,11 +169,11 @@ Returns the :doc:`Param` controlling the color of the Bezier.
 .. method:: BezierCurve.getCompositingOperator()
 
 
-    :rtype: :attr:`NatronEngine.BezierCurve.CairoOperatorEnum`
+    :rtype: :attr:`MergingFunctionEnum<NatronEngine.Natron.MergingFunctionEnum>`
 
 
-Returns the blending mode for this shape. Type help(NatronEngine.BezierCurve.CairoOperatorEnum)
-to see the different values possible.
+Returns the blending mode for this shape. See :attr:`Natron.MergingFunctionEnum<NatronEngine.Natron.MergingFunctionEnum>`
+for the possible values.
 
 
 
@@ -297,6 +292,31 @@ not activated the curve will not be rendered at all in the image.
 
 
 Returns a list of all keyframes set on the Bezier animation.
+
+
+.. method:: BezierCurve.getKeyframeInterpolation(time)
+
+    :param time: :class:`float`
+    :rtype: :class:`KeyframeTypeEnum<NatronEngine.Natron.KeyframeTypeEnum>`
+
+Returns the interpolation of the shape's keyframe at *time*: how its control points move
+between this keyframe and the next one. It returns *eKeyframeTypeNone* if there is no keyframe
+at *time*. The keyframes of a new shape are smooth (*eKeyframeTypeSmooth*); Natron 2.3.15 and
+earlier made them linear.
+
+.. versionadded:: 2.6
+
+
+.. method:: BezierCurve.setKeyframeInterpolation(time, interpolation)
+
+    :param time: :class:`float`
+    :param interpolation: :class:`KeyframeTypeEnum<NatronEngine.Natron.KeyframeTypeEnum>`
+    :rtype: :class:`bool`
+
+Sets the interpolation of the shape's keyframe at *time*, for all its control and feather points,
+as the Curve Editor does. It returns *False* if there is no keyframe at *time*.
+
+.. versionadded:: 2.6
 
 
 .. method:: BezierCurve.getNumControlPoints()
@@ -442,7 +462,7 @@ Set a new keyframe for the *color* parameter at the given *time*
 .. method:: BezierCurve.setCompositingOperator(op)
 
 
-    :param op: :attr:`NatronEngine.BezierCurve.CairoOperatorEnum`
+    :param op: :attr:`MergingFunctionEnum<NatronEngine.Natron.MergingFunctionEnum>`
 
 
 Set the compositing operator for this shape.
