@@ -233,8 +233,9 @@ Node::createRotoContextConditionnally()
         const char* const requiredIDs[] = { PLUGINID_OFX_ROTO, PLUGINID_OFX_MERGE };
         for (const char* id : requiredIDs) {
             try {
-                appPTR->getPluginBinary(QString::fromUtf8(id), -1, -1, false);
-            } catch (const std::exception&) {
+                Plugin* plugin = appPTR->getPluginBinary(QString::fromUtf8(id), -1, -1, false);
+                Q_UNUSED(plugin);
+            } catch (const std::invalid_argument&) { // not found
                 throw std::runtime_error( tr("The %1 node requires the %2 plug-in of openfx-misc (Misc.ofx.bundle) to be installed")
                                           .arg( _imp->plugin->getPluginLabel() )
                                           .arg( QString::fromUtf8(id) ).toStdString() );

@@ -1,8 +1,14 @@
-# Without the Roto and Merge plug-ins of openfx-misc, which render the shapes of the Roto and RotoPaint
-# nodes, app.createNode() of these nodes returns None (#1828). The Roto node was created, and its first
-# shape (Roto.createBezier()) threw a C++ exception through Python: "SystemError: unknown opcode", then
-# NatronRenderer hung or crashed. Run by NatronRenderer -t (see Tests/CMakeLists.txt); exits with 77
-# (skipped) when openfx-misc is installed.
+"""A Roto or RotoPaint node needs openfx-misc's Roto and Merge plug-ins (#1828).
+
+They render the shapes of the node. Without them, app.createNode() of these nodes returns None. Before, the
+Roto node was created, and its first shape (Roto.createBezier()) threw a C++ exception through Python:
+"SystemError: unknown opcode", then NatronRenderer hung or crashed.
+
+Run by NatronRenderer -t (see Tests/CMakeLists.txt). Exits with 0 on success, 1 on failure, 77 (skipped)
+when openfx-misc is installed.
+"""
+import traceback
+
 from NatronEngine import natron
 
 SKIP = 77
@@ -17,11 +23,10 @@ try:
         app = natron.getInstance(0)
         for pluginID in ("fr.inria.built-in.Roto", "fr.inria.built-in.RotoPaint"):
             node = app.createNode(pluginID)
-            assert node is None, "createNode(%s) returned %r" % (pluginID, node)
+            assert node is None, f"createNode({pluginID}) returned {node!r}"
         # the app still works
         assert app.createNode("fr.inria.built-in.Dot") is not None, "createNode(Dot) failed"
         status = 0
-except BaseException:
-    import traceback
+except Exception:  # pylint: disable=broad-except
     traceback.print_exc()
 natron.quit(status)
