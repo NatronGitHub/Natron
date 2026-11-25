@@ -73,11 +73,9 @@ restore)
     # it first (the version of provision.sh), then the saved /opt/local replaces its files (tar
     # restores the owners by name)
     if ! id macports > /dev/null 2>&1; then
-        ver=$(sed -n 's/^MACPORTS_VERSION=//p' "$(dirname "$0")/../../tools/tart/provision.sh")
-        curl -fsSL --retry 5 -o "$RUNNER_TEMP/MacPorts.pkg" \
-            "https://github.com/macports/macports-base/releases/download/v$ver/MacPorts-$ver-15-Sequoia.pkg"
-        sudo installer -pkg "$RUNNER_TEMP/MacPorts.pkg" -target / > /dev/null
-        rm -f "$RUNNER_TEMP/MacPorts.pkg"
+        # provision.sh's step, with its checksum and signature checks (its log and marker are
+        # replaced by the saved ones below)
+        "$(cd "$(dirname "$0")/../.." && pwd)/tools/tart/provision.sh" macports
         id macports
     fi
     sudo rm -rf /opt/local /opt/osmesa /opt/llvm /opt/MacPorts-Natron "$HOME/provision-logs"

@@ -323,7 +323,8 @@ sudo port -v -N install seexpr211
 
 # openfx-arena (pango without X11, like cairo: its default +x11 can't be rebuilt from source
 # against cairo -x11, and would bundle libX11, libXft... in the DMG)
-sudo port -v -N install pango -x11
+sudo port -v -N install pango -x11   # or, if pango +x11 is installed already:
+# sudo port -v -N -n upgrade --enforce-variants pango -x11
 sudo port -v -N install librsvg -quartz
 sudo port -v -N install poppler librevenge libcdr-0.1 sox libzip
 sudo sed -i '' -e 's/Zstd::Zstd/zstd/' /opt/local/lib/pkgconfig/libzip.pc

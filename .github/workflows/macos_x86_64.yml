@@ -9,10 +9,10 @@ name: macOS x86_64 DMG
 #    MacPorts binary archives are built for macOS 15, so provision.sh runs with BUNDLE_ONLY_REBUILD=1:
 #    the archives are used for the build tools, and the ports whose files go into the DMG are rebuilt
 #    from source, as are the overlay ports (which have no archives). From scratch this takes about
-#    a day; the result is kept as an artifact (90 days) keyed by a hash of what defines the SDK
+#    8.5 hours of runner time in 2 stages; the result is kept as an artifact (90 days) keyed by a hash of what defines the SDK
 #    (tools/MacPorts, provision.sh, ...). A run reuses the SDK of the same key if it is less than 30
-#    days old, else it updates the newest one (port sync, upgrade outdated, rebuild, a few hours at
-#    most), and only builds from scratch if there is none ("sdk" input of workflow_dispatch).
+#    days old, else it updates the newest one (port sync, upgrade outdated, rebuild: 50 minutes
+#    with a few upgrades), and only builds from scratch if there is none ("sdk" input of workflow_dispatch).
 # 2. dmg: Natron and the plug-ins built from source with tools/jenkins/launchBuildMain.sh (CMake,
 #    the compiler of compiler-common.sh), the DMG, and its minos check (tools/tart/check-minos.sh).
 #    Never skipped: MacPorts and the runner image are rolling.
@@ -24,7 +24,7 @@ on:
   workflow_dispatch:
     inputs:
       sdk:
-        description: 'SDK: reuse (same definition, < 30 days old; else update the newest), update (the newest), or scratch (rebuild it, about a day)'
+        description: 'SDK: reuse (same definition, < 30 days old; else update the newest), update (the newest), or scratch (rebuild it, about 8.5 hours)'
         type: choice
         options: [reuse, update, scratch]
         default: reuse
@@ -38,6 +38,9 @@ on:
     - 'v*-beta*'
     - 'v*-rc*'
     - 'v*-RC*'
+    # TEMPORARY, for one test run at the head of the PR: remove before marking it ready
+    branches:
+    - ci-macos-x86_64
 
 permissions:
   contents: read

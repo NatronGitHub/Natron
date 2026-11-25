@@ -695,9 +695,20 @@ deps_order() {
 # again when its version changes; the minos check of the DMG (check-minos.sh, natron-build.sh)
 # tells whether that matters. Never marked done: run after every update.
 step_rebuild_target() {
-    local skip=$LOGDIR/rebuild_target.skip p v bdeps variants todo=() failed=() n=0
+    local skip=$LOGDIR/rebuild_target.skip p v bdeps variants vfile todo=() failed=() n=0
     touch "$skip"
     pango_no_x11   # SDKs made before step_libs had it
+    # a rebuild below interrupted between the uninstall and the install: install the port again
+    for vfile in "$LOGDIR"/rebuild-*.variants; do
+        [ -f "$vfile" ] || continue
+        p=$(basename "$vfile" .variants); p=${p#rebuild-}
+        if ! port -q installed "$p" 2> /dev/null | grep -q '(active)'; then
+            echo "===== $p: not installed (interrupted rebuild), installing it with$(cat "$vfile")"
+            # shellcheck disable=SC2046
+            $PORT install "$p" $(cat "$vfile")
+        fi
+        rm -f "$vfile"
+    done
     local newer
     newer=$(ports_newer_than_target)   # not in the for: a failure must stop the step
     for p in $newer; do
@@ -727,15 +738,18 @@ step_rebuild_target() {
             v=$(port -q installed "$p" | awk '/\(active\)/ {print $2}')
             variants=$(echo "$v" | sed -e 's/^@[^+]*//' -e 's/+/ +/g')
             echo "===== rebuilding $p $v again, uninstalled first"
+            echo "$variants" > "$LOGDIR/rebuild-$p.variants"
             # shellcheck disable=SC2086
             if ! { $SUDO port -v -N -f uninstall "$p" "$v" && $PORT -n -s install "$p" $variants; }; then
                 # shellcheck disable=SC2086
                 port -q installed "$p" 2> /dev/null | grep -q '(active)' || $PORT install "$p" $variants || true
                 # go on with the other ports, fail at the end
+                rm -f "$LOGDIR/rebuild-$p.variants"
                 echo "ERROR: could not rebuild $p"
                 failed+=("$p")
                 continue
             fi
+            rm -f "$LOGDIR/rebuild-$p.variants"
         fi
         if port -q contents "$p" | "$CHECK_MINOS" -N -t "$macos_target" -l; then :; else
             v=$(port -q installed "$p" | awk '/\(active\)/ {print $2}')
