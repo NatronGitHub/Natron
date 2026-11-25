@@ -133,10 +133,8 @@ QtMac::setupGuiTestNoFocus()
             });
         }];
     }
-    // After a crash, AppKit asks whether to reopen the windows with an alert, which would open
-    // behind the other applications and block the run. Set ApplePersistenceIgnoreState in the
-    // registration domain: it is not saved, and a value set by the user takes precedence.
-    [[NSUserDefaults standardUserDefaults] registerDefaults:@{ @"ApplePersistenceIgnoreState": @YES }];
+    // no "reopen the windows?" alert after a crash, which would open behind the other applications
+    ignorePersistentUIState();
     // A background application whose windows are hidden by other windows gets App Nap: its timers
     // and its rendering are throttled. Keep it running at full speed (the activity is never ended:
     // it lasts as long as the process).
