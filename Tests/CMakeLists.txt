@@ -443,6 +443,13 @@ add_test(NAME RenameGroupExpressionsHeadless
 set_tests_properties(RenameGroupExpressionsHeadless PROPERTIES TIMEOUT 120
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/rename-group-expressions-headless-cache")
 
+# AnimatedParam.getInterpolationAtTime() reads the interpolation of a keyframe (#1798): NatronRenderer runs the
+# script, which exits with natron.quit(status).
+add_test(NAME GetInterpolationHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_get_interpolation.py")
+set_tests_properties(GetInterpolationHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/get-interpolation-headless-cache")
+
 # The color plane goes through a Shuffle that writes to another layer (it was black): NatronRenderer runs the
 # script, which exits with natron.quit(status), 77 when openfx-misc or openfx-io are not in OFX_PLUGIN_PATH.
 add_test(NAME LayerPassThroughHeadless

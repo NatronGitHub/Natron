@@ -607,6 +607,25 @@ AnimatedParam::setInterpolationAtTime(double time,
     return knob->setInterpolationAtTime(eCurveChangeReasonInternal, ViewSpec::current(), dimension, time, interpolation, &newKey);
 }
 
+KeyframeTypeEnum
+AnimatedParam::getInterpolationAtTime(double time,
+                                      int dimension) const
+{
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return eKeyframeTypeNone;
+    }
+    // NULL if the dimension does not exist
+    CurvePtr curve = knob->getCurve(ViewSpec::current(), dimension);
+    KeyFrame key;
+    if ( !curve || !curve->getKeyFrameWithTime(time, &key) ) {
+        return eKeyframeTypeNone;
+    }
+
+    return key.getInterpolation();
+}
+
 bool
 AnimatedParam::setDerivativesAtTime(double time,
                                     double left,
