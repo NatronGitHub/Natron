@@ -456,3 +456,10 @@ add_test(NAME LayerPassThroughHeadless
     COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_layer_passthrough.py")
 set_tests_properties(LayerPassThroughHeadless PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 300
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/layer-passthrough-headless-cache")
+
+# Effect.getFrameRange() and Effect.getAvailableLayers(inputNb, time, view) (#1799): NatronRenderer runs the
+# script, which exits with natron.quit(status).
+add_test(NAME FrameRangeHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_frame_range.py")
+set_tests_properties(FrameRangeHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/frame-range-headless-cache")

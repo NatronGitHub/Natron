@@ -1071,21 +1071,47 @@ Effect::addUserPlane(const QString& planeName,
 std::list<ImageLayer>
 Effect::getAvailableLayers(int inputNb) const
 {
+    if ( !getInternalNode() ) {
+        return std::list<ImageLayer>();
+    }
+
+    return getAvailableLayers( inputNb, getInternalNode()->getApp()->getTimeLine()->currentFrame(), 0 );
+}
+
+std::list<ImageLayer>
+Effect::getAvailableLayers(int inputNb,
+                           double time,
+                           int view) const
+{
     std::list<ImageLayer> ret;
 
-    if ( !getInternalNode() ) {
+    if ( !getInternalNode() || (view < 0) ) {
         return ret;
     }
-    double time(getInternalNode()->getApp()->getTimeLine()->currentFrame());
 
     std::list<ImagePlaneDesc> availComps;
-    getInternalNode()->getEffectInstance()->getAvailableLayers(time, ViewIdx(0), inputNb, &availComps);
+    getInternalNode()->getEffectInstance()->getAvailableLayers(time, ViewIdx(view), inputNb, &availComps);
     for (std::list<ImagePlaneDesc>::iterator it = availComps.begin(); it != availComps.end(); ++it) {
         ret.push_back(ImageLayer(*it));
     }
 
 
     return ret;
+}
+
+std::pair<double, double>
+Effect::getFrameRange() const
+{
+    NodePtr node = getInternalNode();
+
+    if ( !node || !node->getEffectInstance() ) {
+        return std::make_pair(0., 0.);
+    }
+    double first = 0., last = 0.;
+    // bypass the cache: it is keyed by the node hash, which does not change with the project frame range
+    node->getEffectInstance()->getFrameRange_public(node->getHashValue(), &first, &last, true);
+
+    return std::make_pair(first, last);
 }
 
 RectI
