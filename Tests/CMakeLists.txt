@@ -69,6 +69,7 @@ set(Tests_SOURCES
     OfxHostProperties_Test.cpp
     OfxImageMemory_Test.cpp
     OfxInstanceChanged_Test.cpp
+    OfxInstanceChangedGIL_Test.cpp
     OfxInstanceEdit_Test.cpp
     OfxMultiThreadSuite_Test.cpp
     OfxMultiplePAR_Test.cpp
@@ -162,9 +163,11 @@ add_test(NAME TestsOfxCache COMMAND Tests "--gtest_filter=OfxHostProperties.*:Of
 # The caches of both (the same OFX plug-in cache) in the build tree, not in the user's cache directory, which
 # every build of this version shares (#1569). NATRON_DISK_CACHE_PATH, if set, takes precedence (see wmain.cpp).
 set(NATRON_TESTS_CACHE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests-cache")
-set_tests_properties(Tests PROPERTIES FIXTURES_SETUP OfxPluginCache
+# A hung test fails after 30 minutes (the whole binary takes 1 to 10 minutes on CI), with ctest's "Timeout"
+# and the name of the running test in the log, instead of running until the CI job's time limit.
+set_tests_properties(Tests PROPERTIES FIXTURES_SETUP OfxPluginCache TIMEOUT 1800
     ENVIRONMENT "NATRON_TESTS_CACHE_DIR=${NATRON_TESTS_CACHE_DIR}")
-set_tests_properties(TestsOfxCache PROPERTIES FIXTURES_REQUIRED OfxPluginCache
+set_tests_properties(TestsOfxCache PROPERTIES FIXTURES_REQUIRED OfxPluginCache TIMEOUT 600
     ENVIRONMENT "NATRON_TESTS_KEEP_OFX_CACHE=1;NATRON_TESTS_CACHE_DIR=${NATRON_TESTS_CACHE_DIR}")
 # A copy of that cache, made unreadable: Natron discards it, scans all the plug-ins again and rewrites it
 # (see OfxCacheCorrupt.cmake).
