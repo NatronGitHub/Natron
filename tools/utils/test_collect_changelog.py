@@ -164,6 +164,15 @@ class InsertTest(unittest.TestCase):
                              ('dependencies',))
         self.assertEqual(cc.collect([bot], old, cc.INTERNAL_LABELS)[1], [])
 
+    def test_unknown_heading_line_shared_by_two_prs(self):
+        # The same line (with its own reference, so no PR number is added)
+        # in two PRs: each PR is reported, not the first one twice.
+        body = '### CHANGELOG\nRelease notes:\n- Shared. #1700\n'
+        prs = [cc.PullRequest(cc.MAIN_REPO, 8, body, '2026-11-24T10:00:00Z'),
+               cc.PullRequest(cc.MAIN_REPO, 9, body, '2026-11-24T11:00:00Z')]
+        _, problems = cc.collect(prs, _read('CHANGELOG.md'))
+        self.assertEqual([p.pr for p in problems], ['#8', '#9'])
+
     def test_idempotent(self):
         prs = [_pr('pr_colon_headings.md', 1800, '2026-11-24T10:00:00Z')]
         once, _ = cc.collect(prs, _read('CHANGELOG.md'))
