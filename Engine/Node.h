@@ -773,6 +773,20 @@ public:
      **/
     void destroyNode(bool blockingDestroy, bool autoReconnect);
 
+    /* Marks the run of a Python callback of a node (onParamChanged, onInputChanged, onNodeCreated,
+       onNodeDeletion) in this thread: while one runs, destroyNode(false) doesn't destroy the node at once,
+       since the code that runs the callback may still use the node it destroys. */
+    class PythonCallbackScope
+    {
+    public:
+        PythonCallbackScope();
+        ~PythonCallbackScope();
+        PythonCallbackScope(const PythonCallbackScope&) = delete;
+        PythonCallbackScope& operator=(const PythonCallbackScope&) = delete;
+
+        static bool isRunning();
+    };
+
 private:
 
     void doDestroyNodeInternalEnd(bool autoReconnect);
