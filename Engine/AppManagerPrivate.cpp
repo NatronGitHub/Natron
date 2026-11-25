@@ -543,36 +543,24 @@ restoreCache(AppManagerPrivate* p,
         return;
     }
     if ( p->checkForCacheDiskStructure( cache->getCachePath(), cache->isTileCache() ) ) {
-        std::string settingsFilePath = cache->getRestoreFilePath();
-        FStreamsSupport::ifstream ifile;
-        // Binary: on Windows, a text-mode read would turn CR-LF into LF and stop at the first 0x1A (#1594)
-        FStreamsSupport::open(&ifile, settingsFilePath, std::ios_base::in | std::ios_base::binary);
-        if (!ifile) {
-            std::cerr << "Failure to open cache restore file at: " << settingsFilePath << std::endl;
+        typename Cache<T>::CacheTOC tableOfContents;
+        switch ( cache->readRestoreFile(&tableOfContents) ) {
+        case eRestoreFileStatusRead:
+            break;
+        case eRestoreFileStatusNotOpened:
 
             return;
-        }
-        typename Cache<T>::CacheTOC tableOfContents;
-        unsigned int cacheVersion = 0x1; //< default to 1 before NATRON_CACHE_VERSION was introduced
-        try {
-            boost::archive::binary_iarchive iArchive(ifile);
-            if (cache->cacheVersion() >= NATRON_CACHE_VERSION) {
-                iArchive >> cacheVersion;
-            }
-            //Only load caches with same version, otherwise wipe it!
-            if ( cacheVersion == cache->cacheVersion() ) {
-                iArchive >> tableOfContents;
-            } else {
-                p->cleanUpCacheDiskStructure( cache->getCachePath(), cache->isTileCache() );
-            }
-        } catch (const std::exception & e) {
-            qDebug() << "Exception when reading disk cache TOC:" << e.what();
+        case eRestoreFileStatusOtherVersion:
+            // Only load caches with the same version, otherwise wipe it!
+            p->cleanUpCacheDiskStructure( cache->getCachePath(), cache->isTileCache() );
+            break;
+        case eRestoreFileStatusUnreadable:
             p->cleanUpCacheDiskStructure( cache->getCachePath(), cache->isTileCache() );
 
             return;
         }
 
-        QFile restoreFile( QString::fromUtf8( settingsFilePath.c_str() ) );
+        QFile restoreFile( QString::fromUtf8( cache->getRestoreFilePath().c_str() ) );
         restoreFile.remove();
 
         cache->restore(tableOfContents);

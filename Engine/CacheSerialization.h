@@ -40,6 +40,8 @@
 #include <QFileInfo>
 #include <QSaveFile>
 
+#include "Global/FStreamsSupport.h"
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // clang-format off
@@ -149,6 +151,40 @@ Cache<EntryType>::writeRestoreFile()
     }
 
     return true;
+}
+
+template<typename EntryType>
+RestoreFileStatusEnum
+Cache<EntryType>::readRestoreFile(CacheTOC* tableOfContents) const
+{
+    const std::string path = getRestoreFilePath();
+    FStreamsSupport::ifstream ifile;
+    // Binary: on Windows, a text-mode read would turn CR-LF into LF and stop at the first 0x1A (#1594)
+    FStreamsSupport::open(&ifile, path, std::ios_base::in | std::ios_base::binary);
+    if (!ifile) {
+        std::cerr << "Failure to open cache restore file at: " << path << std::endl;
+
+        return eRestoreFileStatusNotOpened;
+    }
+    CacheTOC read;
+    try {
+        boost::archive::binary_iarchive iArchive(ifile);
+        unsigned int version = 0x1; //< default to 1 before NATRON_CACHE_VERSION was introduced
+        if (cacheVersion() >= NATRON_CACHE_VERSION) {
+            iArchive >> version;
+        }
+        if ( version != cacheVersion() ) {
+            return eRestoreFileStatusOtherVersion;
+        }
+        iArchive >> read;
+    } catch (const std::exception & e) {
+        std::cerr << "Exception when reading the table of contents of the cache " << cacheName() << ": " << e.what() << std::endl;
+
+        return eRestoreFileStatusUnreadable;
+    }
+    tableOfContents->swap(read);
+
+    return eRestoreFileStatusRead;
 }
 
 /*Restores the cache from disk.*/

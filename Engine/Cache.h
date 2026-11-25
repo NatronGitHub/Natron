@@ -73,6 +73,15 @@ GCC_DIAG_ON(deprecated)
 
 NATRON_NAMESPACE_ENTER
 
+// What Cache::readRestoreFile() found
+enum RestoreFileStatusEnum
+{
+    eRestoreFileStatusRead, // the table of contents was read
+    eRestoreFileStatusNotOpened, // the file could not be opened
+    eRestoreFileStatusOtherVersion, // the file is that of another cache version
+    eRestoreFileStatusUnreadable, // the file is truncated or corrupt
+};
+
 /**
  * @brief The point of this thread is to delete the content of the list in a separate thread so the thread calling
  * get() doesn't wait for all the entries to be deleted (which can be expensive for large images)
@@ -1736,6 +1745,10 @@ public:
        (Cache::_lock guards the entries read by save(), each call writes its own temporary file): the last
        complete write wins. */
     bool writeRestoreFile();
+
+    /* Reads the table of contents that writeRestoreFile() wrote (#1815). tableOfContents is filled only if
+       eRestoreFileStatusRead is returned. */
+    RestoreFileStatusEnum readRestoreFile(CacheTOC* tableOfContents) const;
 
 
     /*Restores the cache from disk. Must not be called if another process uses the cache
