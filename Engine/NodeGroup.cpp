@@ -3215,9 +3215,10 @@ exportProjectSettings(int indentLevel,
 } // exportProjectSettings
 
 // Project's member, defined here to use the PyPlug exporter above. Main thread only (gExportedBytes).
-void
-Project::exportToPython(QString& output)
+QString
+Project::exportToPython()
 {
+    QString output;
     QTextStream ts(&output);
 
     gExportedBytes = 0;
@@ -3248,6 +3249,9 @@ Project::exportToPython(QString& output)
     // the loader runs the file with "app" set to the project's app (see AppInstance::runPythonProjectScript())
     WRITE_STATIC_LINE("if __name__ == \"__main__\":");
     WRITE_INDENT(1); WRITE_STATIC_LINE("createProject(app)");
+    ts.flush();
+
+    return output;
 } // Project::exportToPython
 
 NATRON_NAMESPACE_EXIT

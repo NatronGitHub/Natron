@@ -250,7 +250,7 @@ public:
      * (with the Viewers), written by the PyPlug exporter (NodeCollection::exportGroupToPython()).
      * It is defined in NodeGroup.cpp, with that exporter.
      **/
-    void exportToPython(QString& output);
+    QString exportToPython() WARN_UNUSED_RETURN;
 
     /**
      * @brief If fileName is the name of an auto-save, ending with .ntp.autosave (text, by Natron 2.5 and earlier)
