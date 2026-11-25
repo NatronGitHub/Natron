@@ -46,21 +46,14 @@ NATRON_NAMESPACE_USING
 
 namespace {
 class OfxCustomParamInterpTest
-    : public ::testing::Test
+    : public NatronTestPlugin::ParamsNodeTest
 {
 protected:
-    NodePtr _node;
     KnobStringPtr _custom;
 
     virtual void SetUp() OVERRIDE
     {
-        if ( !NatronTestPlugin::isAvailable(kNatronTestPluginParams) ) {
-            return;
-        }
-        AppInstancePtr app = appPTR->getTopLevelInstance();
-        CreateNodeArgs args( kNatronTestPluginParams, app->getProject() );
-        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-        _node = app->createNode(args);
+        ParamsNodeTest::SetUp();
         if (_node) {
             _custom = std::dynamic_pointer_cast<KnobString>( _node->getKnobByName("customFrom") );
         }
@@ -69,21 +62,7 @@ protected:
     virtual void TearDown() OVERRIDE
     {
         _custom.reset();
-        if (_node) {
-            _node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
-            _node.reset();
-        }
-    }
-
-    bool skipped()
-    {
-        if (!_node) {
-            NatronTestPlugin::reportMissing(kNatronTestPluginParams);
-
-            return true;
-        }
-
-        return false;
+        ParamsNodeTest::TearDown();
     }
 };
 } // anonymous namespace

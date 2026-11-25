@@ -178,6 +178,45 @@ setCounter(const std::string& name,
 #endif
 }
 
+// A test with a node of the net.natron.test.Params plug-in (_node), destroyed after each test. A test
+// returns at once if skipped() is true (the plug-in was not loaded: see reportMissing()).
+class ParamsNodeTest
+    : public ::testing::Test
+{
+protected:
+    NATRON_NAMESPACE::NodePtr _node;
+
+    virtual void SetUp() OVERRIDE
+    {
+        if ( !isAvailable(kNatronTestPluginParams) ) {
+            return;
+        }
+        NATRON_NAMESPACE::AppInstancePtr app = NATRON_NAMESPACE::appPTR->getTopLevelInstance();
+        NATRON_NAMESPACE::CreateNodeArgs args( kNatronTestPluginParams, app->getProject() );
+        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        _node = app->createNode(args);
+    }
+
+    virtual void TearDown() OVERRIDE
+    {
+        if (_node) {
+            _node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
+            _node.reset();
+        }
+    }
+
+    bool skipped()
+    {
+        if (!_node) {
+            reportMissing(kNatronTestPluginParams);
+
+            return true;
+        }
+
+        return false;
+    }
+};
+
 // Render the output of node at time, view 0 and scale 1, as an interactive render (like the preview
 // render of Node::makePreviewImage()). allowGPURendering is passed to renderRoI(). Returns the
 // rendered image, or a null image if the render failed.

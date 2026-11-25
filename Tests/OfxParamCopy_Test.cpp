@@ -53,41 +53,9 @@ const char* const kParamsPrefixes[] = {
 };
 
 class OfxParamCopyTest
-    : public ::testing::Test
+    : public NatronTestPlugin::ParamsNodeTest
 {
 protected:
-    NodePtr _node;
-
-    virtual void SetUp() OVERRIDE
-    {
-        if ( !NatronTestPlugin::isAvailable(kNatronTestPluginParams) ) {
-            return;
-        }
-        AppInstancePtr app = appPTR->getTopLevelInstance();
-        CreateNodeArgs args( kNatronTestPluginParams, app->getProject() );
-        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-        _node = app->createNode(args);
-    }
-
-    virtual void TearDown() OVERRIDE
-    {
-        if (_node) {
-            _node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
-            _node.reset();
-        }
-    }
-
-    bool skipped()
-    {
-        if (!_node) {
-            NatronTestPlugin::reportMissing(kNatronTestPluginParams);
-
-            return true;
-        }
-
-        return false;
-    }
-
     KnobIPtr knob(const std::string& name) const
     {
         return _node->getKnobByName(name);
