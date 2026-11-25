@@ -23,6 +23,7 @@
 
 #ifdef __NATRON_WAYLAND__
 
+#include <algorithm> // min
 #include <array>
 #include <cerrno>
 #include <cstring>
@@ -138,8 +139,7 @@ struct OSGLContext_waylandPrivate
     void createContextEGL(OSGLContext_egl_data* eglInfo, const FramebufferConfig& fbconfig, int major, int minor, bool coreProfile, int rendererID, const OSGLContext_wayland* shareContext);
 
     void createWindow(OSGLContext_egl_data* eglInfo,
-                      const EGLConfig& native,
-                      int depth);
+                      const EGLConfig& native);
 
     // Release the EGL surface and context and the Wayland window, whichever exist.
     void destroy(const OSGLContext_egl_data* eglInfo);
@@ -177,12 +177,14 @@ registry_handle_global(void* data, wl_registry* registry, uint32_t id, const cha
 {
     auto state = reinterpret_cast<WaylandData*>(data);
     if (std::strcmp(interface, wl_compositor_interface.name) == 0) {
-        state->compositor = reinterpret_cast<wl_compositor*>(wl_registry_bind(registry, id, &wl_compositor_interface, 4));
+        // Binding a higher version than the compositor advertises is a protocol error.
+        const uint32_t boundVersion = std::min<uint32_t>(version, 4);
+        state->compositor = reinterpret_cast<wl_compositor*>(wl_registry_bind(registry, id, &wl_compositor_interface, boundVersion));
     }
 }
 
 static void
-registry_handle_global_remove(void* data, wl_registry* registry, uint32_t id)
+registry_handle_global_remove(void* /*data*/, wl_registry* /*registry*/, uint32_t /*id*/)
 {
 }
 
@@ -397,7 +399,7 @@ chooseFBConfig(const OSGLContext_egl_data* eglInfo,
 // Create the Wayland window (and its colormap)
 //
 void
-OSGLContext_waylandPrivate::createWindow(OSGLContext_egl_data* eglInfo, const EGLConfig& native, int depth)
+OSGLContext_waylandPrivate::createWindow(OSGLContext_egl_data* eglInfo, const EGLConfig& native)
 {
     const int width = 32;
     const int height = 32;
@@ -525,11 +527,9 @@ OSGLContext_wayland::OSGLContext_wayland(const FramebufferConfig& pixelFormatAtt
 
     EGLConfig native;
 
-    int depth;
-
     chooseFBConfig(eglInfo, pixelFormatAttrs, &native);
     try {
-        _imp->createWindow(eglInfo, native, depth);
+        _imp->createWindow(eglInfo, native);
         _imp->createContextEGL(eglInfo, pixelFormatAttrs, major, minor, coreProfile, rendererID.renderID, shareContext);
     } catch (...) {
         // The destructor won't run: release what was created so far.
