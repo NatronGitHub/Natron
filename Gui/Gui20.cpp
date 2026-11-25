@@ -28,8 +28,8 @@
 #include <cassert>
 #include <sstream> // stringstream
 #include <algorithm> // min, max, find
-#include <iterator> // begin, end
 #include <map>
+#include <vector>
 #include <list>
 #include <utility>
 #include <stdexcept>
@@ -160,6 +160,24 @@ public:
         QApplication::restoreOverrideCursor();
     }
 };
+
+// fileName with the extension of a project file of this format if it has the extension of the other kind
+// ("comp.ntp" -> "comp.py" for a Python project, "comp.py" -> "comp.ntp" else), else fileName
+QString
+withProjectFileExtension(const QString& fileName,
+                         ProjectFileFormatEnum format)
+{
+    const bool python = (format == eProjectFileFormatPython);
+    const QString wanted = QString::fromUtf8(python ? "py" : NATRON_PROJECT_FILE_EXT);
+    const QString other = QString::fromUtf8(python ? NATRON_PROJECT_FILE_EXT : "py");
+    const QString suffix = QFileInfo(fileName).suffix();
+
+    if ( suffix.compare(other, Qt::CaseInsensitive) != 0 ) {
+        return fileName;
+    }
+
+    return fileName.left(fileName.size() - suffix.size()) + wanted;
+}
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
@@ -1197,11 +1215,12 @@ Gui::saveProjectAs(const std::string& filename,
 {
     std::string fileCopy = filename;
     ProjectPtr project = getApp()->getProject();
+    const QString fileName = QString::fromUtf8( fileCopy.c_str() );
 
     // As the save dialog (FileSystemModel::addFileExtension()): "comp.v003" -> "comp.v003.ntp", "comp.NTP" is kept.
     // A Python project keeps its name, as in NatronRenderer (see Project::getFileFormatForSave()).
-    if ( ( project->getFileFormatForSave(QString::fromUtf8( fileCopy.c_str() ), format) != eProjectFileFormatPython ) &&
-         ( QFileInfo( QString::fromUtf8( fileCopy.c_str() ) ).suffix().compare(QString::fromUtf8(NATRON_PROJECT_FILE_EXT), Qt::CaseInsensitive) != 0 ) ) {
+    if ( ( project->getFileFormatForSave(fileName, format) != eProjectFileFormatPython ) &&
+         ( QFileInfo(fileName).suffix().compare(QString::fromUtf8(NATRON_PROJECT_FILE_EXT), Qt::CaseInsensitive) != 0 ) ) {
         fileCopy.append("." NATRON_PROJECT_FILE_EXT);
     }
     std::string path = SequenceParsing::removePath(fileCopy);
@@ -1260,42 +1279,51 @@ Gui::saveProjectAs(ProjectFileFormatEnum defaultFormat)
     const QString pythonHint = tr("Python script (.py): a script that rebuilds the project, easy to read, diff and generate. "
                                   "It has no GUI data (window layout, viewer settings), no Tracker tracks, no paint strokes and no "
                                   "keyframe tangents (they are computed again). Needs %1 2.6 or later.").arg(appName);
-    // the format of each entry
-    static const ProjectFileFormatEnum formats[] = { eProjectFileFormatBinary, eProjectFileFormatText, eProjectFileFormatPython };
-    formatCombo->addItem( tr("Binary"), QIcon(), QKeySequence(), binaryHint );
-    formatCombo->addItem( tr("Text (%1 2.5 compatible)").arg(appName), QIcon(), QKeySequence(), textHint );
-    formatCombo->addItem( tr("Python script"), QIcon(), QKeySequence(), pythonHint );
-    formatCombo->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("The format of the project file.") + QLatin1Char('\n') +
-                                                                   binaryHint + QLatin1Char('\n') + textHint + QLatin1Char('\n') + pythonHint + QLatin1Char('\n') +
-                                                                   tr("The project keeps this format: later saves use it. Auto-saves are always binary."),
-                                                                   NATRON_NAMESPACE::WhiteSpaceNormal) );
-    formatCombo->setCurrentIndex_no_emit( (int)( std::find( std::begin(formats), std::end(formats), defaultFormat ) - std::begin(formats) ) );
+    // the entries, in the order of the menu
+    struct FormatEntry
+    {
+        ProjectFileFormatEnum format;
+        QString label;
+        QString hint;
+    };
+    const std::vector<FormatEntry> entries = {
+        { eProjectFileFormatBinary, tr("Binary"), binaryHint },
+        { eProjectFileFormatText, tr("Text (%1 2.5 compatible)").arg(appName), textHint },
+        { eProjectFileFormatPython, tr("Python script"), pythonHint },
+    };
+    QString toolTip = tr("The format of the project file.");
+    for (const FormatEntry& entry : entries) {
+        formatCombo->addItem( entry.label, QIcon(), QKeySequence(), entry.hint );
+        toolTip += QLatin1Char('\n') + entry.hint;
+        if (entry.format == defaultFormat) {
+            formatCombo->setCurrentIndex_no_emit(formatCombo->count() - 1);
+        }
+    }
+    toolTip += QLatin1Char('\n') + tr("The project keeps this format: later saves use it. Auto-saves are always binary.");
+    formatCombo->setToolTip( NATRON_NAMESPACE::convertFromPlainText(toolTip, NATRON_NAMESPACE::WhiteSpaceNormal) );
     formatLayout->addWidget(formatCombo);
 
     // the dialog owns formatWidget: read the choice before it returns
     ProjectFileFormatEnum format = defaultFormat;
-    QObject::connect( formatCombo, static_cast<void (ComboBox::*)(int)>(&ComboBox::currentIndexChanged), formatWidget, [&format](int i) {
-        format = formats[i];
+    QObject::connect( formatCombo, static_cast<void (ComboBox::*)(int)>(&ComboBox::currentIndexChanged), formatWidget, [&format, &entries](int i) {
+        format = entries[i].format;
     } );
     std::string outFile = popSaveFileDialog( false, filter, initialDir.toStdString(), false, formatWidget );
     if ( outFile.empty() ) {
         return false;
     }
-    if (format == eProjectFileFormatPython) {
-        // the dialog adds the extension of its file type menu: "comp" -> "comp.ntp" -> "comp.py"
-        QString name = QString::fromUtf8( outFile.c_str() );
-        const QString ntpSuffix = QString::fromUtf8("." NATRON_PROJECT_FILE_EXT);
-        if ( name.endsWith(ntpSuffix, Qt::CaseInsensitive) ) {
-            name.chop( ntpSuffix.size() );
-            name += QString::fromUtf8(".py");
-            // the dialog asked about replacing the .ntp file, not this one, which may be a script
-            if ( QFile::exists(name) &&
-                 ( Dialogs::questionDialog( tr("Save").toStdString(), tr("%1 already exists.\nDo you want to replace it?").arg(name).toStdString(), false,
-                                            StandardButtons(eStandardButtonYes | eStandardButtonNo), eStandardButtonNo ) != eStandardButtonYes ) ) {
-                return false;
-            }
-            outFile = name.toStdString();
+    // The dialog adds the extension of its file type menu, which may be that of the other kind of format
+    // ("comp" -> "comp.py" -> "comp.ntp" when Binary is chosen after the dialog opened for a Python project).
+    // It asked about replacing the file it showed, not this one, which may be another project.
+    const QString shownName = QString::fromUtf8( outFile.c_str() );
+    const QString name = withProjectFileExtension(shownName, format);
+    if (name != shownName) {
+        if ( QFile::exists(name) &&
+             ( Dialogs::questionDialog( tr("Save").toStdString(), tr("%1 already exists.\nDo you want to replace it?").arg(name).toStdString(), false,
+                                        StandardButtons(eStandardButtonYes | eStandardButtonNo), eStandardButtonNo ) != eStandardButtonYes ) ) {
+            return false;
         }
+        outFile = name.toStdString();
     }
 
     return saveProjectAs(outFile, format);
