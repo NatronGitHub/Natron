@@ -673,12 +673,13 @@ TEST(OfxProjectLoad, MovedPyPlugIsFoundInSearchPaths)
                                              false, false, 0, false, 2, 0, false );
     ASSERT_TRUE(plugin);
     plugin->setPythonModule(savedDir + moduleName);
-    // The value of the preference "loadFromPyFile" that makes NodeCollectionSerialization::restoreFromSerialization()
-    // load the PyPlugs from their file on RB-2.6 (it works backwards, #1646: flip it with the fix of #1646)
+    // NodeCollectionSerialization::restoreFromSerialization() loads the PyPlugs from their file, and offers the
+    // update, only when the preference "loadFromPyFile" is on, as its tooltip says (it was the reverse from 2.2.3
+    // to 2.6, #1646)
     KnobBoolPtr loadFromPyFile = std::dynamic_pointer_cast<KnobBool>( appPTR->getCurrentSettings()->getKnobByName("loadFromPyFile") );
     ASSERT_TRUE( bool(loadFromPyFile) );
     const bool oldLoadFromPyFile = loadFromPyFile->getValue();
-    loadFromPyFile->setValue(false);
+    loadFromPyFile->setValue(true);
 
     // a project with the PyPlug, version 1
     AppInstancePtr app = appPTR->getTopLevelInstance();
