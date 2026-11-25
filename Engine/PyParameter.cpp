@@ -982,19 +982,24 @@ IntParam::setDefaultValue(int value,
     knob->setDefaultValueWithoutApplying(value, dimension);
 }
 
+// The default value of a dimension of knob, or 0, as getValue(dimension), without the knob or the dimension
+template <typename T, typename KNOB>
+static T
+defaultValueOf(const std::shared_ptr<KNOB>& knob,
+               int dimension)
+{
+    if (!knob) {
+        return T();
+    }
+    const std::vector<T> defaultValues = knob->getDefaultValues_mt_safe();
+
+    return ( (dimension >= 0) && ( dimension < (int)defaultValues.size() ) ) ? defaultValues[dimension] : T();
+}
+
 int
 IntParam::getDefaultValue(int dimension) const
 {
-    KnobIntPtr knob = _intKnob.lock();
-    if (!knob) {
-        return 0;
-    }
-    const std::vector<int> defaultValues = knob->getDefaultValues_mt_safe();
-    if ( (dimension < 0) || ( dimension >= (int)defaultValues.size() ) ) {
-        return 0; // as getValue(dimension)
-    }
-
-    return defaultValues[dimension];
+    return defaultValueOf<int>(_intKnob.lock(), dimension);
 }
 
 void
@@ -1361,16 +1366,7 @@ DoubleParam::setDefaultValue(double value,
 double
 DoubleParam::getDefaultValue(int dimension) const
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
-    if (!knob) {
-        return 0.;
-    }
-    const std::vector<double> defaultValues = knob->getDefaultValues_mt_safe();
-    if ( (dimension < 0) || ( dimension >= (int)defaultValues.size() ) ) {
-        return 0.; // as getValue(dimension)
-    }
-
-    return defaultValues[dimension];
+    return defaultValueOf<double>(_doubleKnob.lock(), dimension);
 }
 
 void
@@ -1636,16 +1632,7 @@ ColorParam::setDefaultValue(double value,
 double
 ColorParam::getDefaultValue(int dimension) const
 {
-    KnobColorPtr knob = _colorKnob.lock();
-    if (!knob) {
-        return 0.;
-    }
-    const std::vector<double> defaultValues = knob->getDefaultValues_mt_safe();
-    if ( (dimension < 0) || ( dimension >= (int)defaultValues.size() ) ) {
-        return 0.; // as getValue(dimension)
-    }
-
-    return defaultValues[dimension];
+    return defaultValueOf<double>(_colorKnob.lock(), dimension);
 }
 
 void
