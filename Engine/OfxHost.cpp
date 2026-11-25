@@ -170,10 +170,6 @@ struct OfxHostPrivate
     OFX::Host::ImageEffect::PluginCachePtr imageEffectPluginCache;
     std::shared_ptr<TLSHolder<OfxHost::OfxHostTLSData> > tlsData;
 
-#ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
-    std::list<OfxSuiteMutex*> pluginsMutexes;
-    QMutex* pluginsMutexesLock; //<protects _pluginsMutexes
-#endif
     // The state of the plug-in loading that the host name hook (getStringProperty(kOfxPropName)) reads.
     // Only the thread that loads plug-ins (loadingThread) writes and reads the members below: the scan
     // (loadOFXPlugins(), loadingStatus(), loadingBinary()), or getPluginContextAndDescribe(), under
@@ -211,10 +207,6 @@ struct OfxHostPrivate
     OfxHostPrivate()
         : imageEffectPluginCache()
         , tlsData( new TLSHolder<OfxHost::OfxHostTLSData>() )
-#ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
-        , pluginsMutexes()
-        , pluginsMutexesLock(0)
-#endif
         , loadingThread(nullptr)
         , loadingPluginID()
         , loadingPluginVersionMajor(0)
@@ -244,10 +236,6 @@ OfxHost::~OfxHost()
 {
     //Clean up, to be polite.
     unloadPlugins();
-
-#ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
-    delete _imp->pluginsMutexesLock;
-#endif
 }
 
 OfxHost::OfxHostDataTLSPtr
@@ -1925,12 +1913,6 @@ OfxHost::mutexCreate(OfxMutexHandle *mutex,
             m->mutex.lock();
         }
         *mutex = (OfxMutexHandle)(m);
-#ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
-        {
-            QMutexLocker l(_pluginsMutexesLock);
-            _pluginsMutexes.push_back(m);
-        }
-#endif
 
         return kOfxStatOK;
     } catch (std::bad_alloc&) {
@@ -1960,20 +1942,9 @@ OfxHost::mutexDestroy(const OfxMutexHandle mutex)
     }
     // suite functions should not throw
     try {
-#ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
-        {
-            QMutexLocker l(_pluginsMutexesLock);
-            std::list<OfxSuiteMutex*>::iterator found = std::find(_pluginsMutexes.begin(), _pluginsMutexes.end(), m);
-            if ( found != _pluginsMutexes.end() ) {
-                delete *found;
-                _pluginsMutexes.erase(found);
-            }
-        }
-#else
         // mutexCreate() allocates an OfxSuiteMutex, whose QRecursiveMutex is destroyed as one (in Qt6 it
         // does not derive from QMutex)
         delete m;
-#endif
 
         return kOfxStatOK;
     } catch (std::bad_alloc&) {
