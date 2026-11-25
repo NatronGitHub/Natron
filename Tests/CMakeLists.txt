@@ -407,6 +407,14 @@ add_test(NAME CreateNodePropertiesHeadless
 set_tests_properties(CreateNodePropertiesHeadless PROPERTIES TIMEOUT 120
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/create-node-properties-headless-cache")
 
+# The ExprUtils noise functions and App.render(tasks) accept any sequence and raise TypeError for a wrong
+# argument, instead of reading garbage or crashing (#1795): NatronRenderer runs the script, which exits with
+# natron.quit(status).
+add_test(NAME SequenceArgsHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_sequence_args.py")
+set_tests_properties(SequenceArgsHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/sequence-args-headless-cache")
+
 # A PyPlug is created after the script rebinds the global "app" (#1525)
 add_test(NAME PyPlugReboundAppHeadless
     COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_pyplug_rebound_app.py")

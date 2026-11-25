@@ -447,11 +447,14 @@ This function should only be used to render with a Write node or DiskCache node.
     :noindex:
 
 
-    :param tasks: :class:`sequence`
+    :param tasks: :class:`list`
 
-This function takes a sequence of tuples of the form *(effect,firstFrame,lastFrame[,frameStep])*
+This function takes a list of tuples (or of other sequences, such as lists) of the form
+*(effect,firstFrame,lastFrame[,frameStep])*.
 The *frameStep* is optional in the tuple and if not set will default to the value of the
 **Frame Increment** parameter in the Write node.
+A task whose first item is not an :class:`Effect<NatronEngine.Effect>`, or whose frames are not numbers,
+raises :class:`TypeError`.
 
 This is an overloaded function. Same as :func:`render(effect,firstFrame,lastFrame,frameStep)<NatronEngine.App.render>`
 but all *tasks* will be rendered concurrently.
