@@ -195,7 +195,9 @@ else()
     set(_natron_openmp_default OFF)
 endif()
 # An explicit -DNATRON_USE_OPENMP=ON fails if OpenMP is missing; the default only warns. Whether it
-# was explicit is known only at the first configure: later, the option is in the cache anyway.
+# was explicit is known only at the first configure: later, the option is in the cache anyway (in a
+# build directory configured before this entry existed, the option counts as explicit: to go back
+# to the default, cmake -U NATRON_USE_OPENMP).
 if(NOT DEFINED CACHE{_NATRON_OPENMP_EXPLICIT})
     if(DEFINED NATRON_USE_OPENMP)
         set(_NATRON_OPENMP_EXPLICIT ON CACHE INTERNAL "NATRON_USE_OPENMP was given at the first configure")
