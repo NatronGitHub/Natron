@@ -51,6 +51,12 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/EngineFwd.h"
 
 
+// Script names of project parameters that the code refers to by name
+#define kProjectParamFrameRange "frameRange"
+#define kProjectParamSoftwareVersion "softwareVersion"
+#define kProjectParamLastAuthor "lastAuthor"
+#define kProjectParamLastSaveDate "lastSaveDate"
+
 NATRON_NAMESPACE_ENTER
 
 struct ProjectPrivate;
@@ -463,6 +469,7 @@ public:
     bool isFrameRangeLocked() const;
 
     void getFrameRange(double* first, double* last) const;
+    void setFrameRange(int first, int last);
 
     void unionFrameRangeWith(int first, int last);
 

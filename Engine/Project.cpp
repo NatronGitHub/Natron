@@ -1781,7 +1781,7 @@ Project::initializeKnobs()
     _imp->frameRange->setDimensionName(0, "first");
     _imp->frameRange->setDimensionName(1, "last");
     _imp->frameRange->setEvaluateOnChange(false);
-    _imp->frameRange->setName("frameRange");
+    _imp->frameRange->setName(kProjectParamFrameRange);
     _imp->frameRange->setHintToolTip( tr("The frame range of the project as seen by plug-ins. New viewers are created automatically "
                                          "with this frame-range. By default when the first Read node is created, this range "
                                          "will be set to the "
@@ -1937,7 +1937,7 @@ Project::initializeKnobs()
     infoPage->addKnob(_imp->projectPath);
 
     _imp->natronVersion = AppManager::createKnob<KnobString>( this, tr("Saved With") );
-    _imp->natronVersion->setName("softwareVersion");
+    _imp->natronVersion->setName(kProjectParamSoftwareVersion);
     _imp->natronVersion->setHintToolTip( tr("The version of %1 that saved this project for the last time.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     // _imp->natronVersion->setAsLabel();
     _imp->natronVersion->setDefaultEnabled(0, false);
@@ -1959,7 +1959,7 @@ Project::initializeKnobs()
     infoPage->addKnob(_imp->originalAuthorName);
 
     _imp->lastAuthorName = AppManager::createKnob<KnobString>( this, tr("Last Author") );
-    _imp->lastAuthorName->setName("lastAuthor");
+    _imp->lastAuthorName->setName(kProjectParamLastAuthor);
     _imp->lastAuthorName->setHintToolTip( tr("The user name and host name of the last author of the project.") );
     // _imp->lastAuthorName->setAsLabel();
     _imp->lastAuthorName->setDefaultEnabled(0, false);
@@ -1980,7 +1980,7 @@ Project::initializeKnobs()
     infoPage->addKnob(_imp->projectCreationDate);
 
     _imp->saveDate = AppManager::createKnob<KnobString>( this, tr("Last Saved On") );
-    _imp->saveDate->setName("lastSaveDate");
+    _imp->saveDate->setName(kProjectParamLastSaveDate);
     _imp->saveDate->setHintToolTip( tr("The date this project was last saved.") );
     //_imp->saveDate->setAsLabel();
     _imp->saveDate->setDefaultEnabled(0, false);
@@ -3877,9 +3877,16 @@ Project::unionFrameRangeWith(int first,
     curLast = _imp->frameRange->getValue(1);
     curFirst = !mustSet ? std::min(first, curFirst) : first;
     curLast = !mustSet ? std::max(last, curLast) : last;
+    setFrameRange(curFirst, curLast);
+}
+
+void
+Project::setFrameRange(int first,
+                       int last)
+{
     beginChanges();
-    _imp->frameRange->setValue(curFirst, ViewSpec::all(), 0);
-    _imp->frameRange->setValue(curLast, ViewSpec::all(), 1);
+    _imp->frameRange->setValue(first, ViewSpec::all(), 0);
+    _imp->frameRange->setValue(last, ViewSpec::all(), 1);
     endChanges();
 }
 

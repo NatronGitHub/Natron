@@ -3186,8 +3186,8 @@ exportProjectSettings(int indentLevel,
         // What each save stamps (the loader sets the version, as for an .ntp file): no difference between two saves
         // of the same project
         const std::string& name = (*it)->getName();
-        if ( !(*it)->getIsPersistent() || (name == "softwareVersion") || (name == "lastSaveDate") || (name == "lastAuthor") ||
-             (name == "frameRange") ) { // written after the nodes (see Project::exportToPython())
+        if ( !(*it)->getIsPersistent() || (name == kProjectParamSoftwareVersion) || (name == kProjectParamLastSaveDate) ||
+             (name == kProjectParamLastAuthor) || (name == kProjectParamFrameRange) ) { // the frame range: after the nodes (see exportToPython())
             continue;
         }
         if (*it == envVars) {
@@ -3238,7 +3238,7 @@ Project::exportToPython(QString& output)
     exportGroupInternal(1, this, NodePtr(), QString(), true, ts);
     // After the nodes, which extend it when they read their file (Node::onFileNameParameterChanged()); the .ntp
     // loader restores it as saved
-    const KnobIPtr frameRange = getKnobByName("frameRange");
+    const KnobIPtr frameRange = getKnobByName(kProjectParamFrameRange);
     if (frameRange) {
         WRITE_INDENT(1); WRITE_STATIC_LINE("# Project frame range");
         exportKnobValues(1, frameRange, QString::fromUtf8("app.getProjectParam(") + ESC( frameRange->getName() ) + QString::fromUtf8(")"), true, ts, eExportedValuesAll);

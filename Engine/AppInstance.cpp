@@ -916,9 +916,8 @@ AppInstance::runPythonProjectScript(const QString& filePath,
         // (kOfxChangePluginEdited, as after loading an .ntp file, see OfxEffectInstance.cpp): not a user edit,
         // after which the plug-in would set the parameters (colorspace...) from the file. Reading it extends the project frame range
         // (Node::onFileNameParameterChanged()), which the .ntp loader doesn't: keep the one the script set.
-        const KnobIntPtr projectRange = std::dynamic_pointer_cast<KnobInt>( getProject()->getKnobByName("frameRange") );
-        const int savedFirst = projectRange ? projectRange->getValue(0) : 0;
-        const int savedLast = projectRange ? projectRange->getValue(1) : 0;
+        double savedFirst, savedLast;
+        getProject()->getFrameRange(&savedFirst, &savedLast);
         NodesList nodes;
         getProject()->getNodes_recursive(nodes, true);
         for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -948,12 +947,7 @@ AppInstance::runPythonProjectScript(const QString& filePath,
                 }
             }
         }
-        if (projectRange) {
-            getProject()->beginChanges();
-            projectRange->setValue(savedFirst, ViewSpec::all(), 0);
-            projectRange->setValue(savedLast, ViewSpec::all(), 1);
-            getProject()->endChanges();
-        }
+        getProject()->setFrameRange( (int)savedFirst, (int)savedLast );
         getProject()->forceComputeInputDependentDataOnAllTrees();
     }
     if ( !output.empty() ) {
