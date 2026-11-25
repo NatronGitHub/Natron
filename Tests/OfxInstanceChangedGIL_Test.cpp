@@ -291,8 +291,8 @@ TEST(OfxInstanceChangedGIL, MultiThreadSuiteThreadsNeedTheGIL)
     if ( NatronTestPlugin::counter("GILWait.threadReadsOnOtherThread") == onOtherThread ) {
         // multiThread() ran the thread functions in the calling thread (one CPU, multithreading off in the
         // preferences, or QFuture::waitForFinished() ran them): nothing waited for another thread
-        std::cerr << "[  SKIPPED ] OfxInstanceChangedGIL.MultiThreadSuiteThreadsNeedTheGIL: the thread functions ran in the calling thread ("
-                  << NatronTestPlugin::counter("GILWait.numCPUs") << " CPUs): this run tests nothing" << std::endl;
+        NatronTest::skip("the thread functions ran in the calling thread (" + std::to_string( NatronTestPlugin::counter("GILWait.numCPUs") ) +
+                         " CPUs): this run tests nothing");
     }
     EXPECT_EQ( threadReads + 2, NatronTestPlugin::counter("GILWait.threadReads") );
     EXPECT_EQ( threadReadsFailed, NatronTestPlugin::counter("GILWait.threadReadsFailed") );

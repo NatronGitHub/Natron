@@ -41,6 +41,8 @@
 #include "Engine/Project.h"
 #include "Engine/WriteNode.h"
 
+#include "TestUtils.h"
+
 NATRON_NAMESPACE_USING
 
 // The Views parameter of WriteOIIO in multi-view projects (#1312): it is hidden when the file name has
@@ -48,28 +50,6 @@ NATRON_NAMESPACE_USING
 // shows it for formats that can hold several views in one file (EXR).
 
 namespace {
-bool
-isPluginAvailable(const char* pluginID)
-{
-    try {
-        Plugin* p = appPTR->getPluginBinary(QString::fromUtf8(pluginID), -1, -1, false);
-
-        return p && p->getLibraryBinary();
-    } catch (...) {
-        return false;
-    }
-}
-
-// The bundled google-test predates GTEST_SKIP(): the tests return early and are reported as passed,
-// so say clearly that they did not run, as RotoPaint_Test does.
-// TODO: Convert to GTEST_SKIP() when gtest updated.
-void
-reportSkipped(const std::string& why)
-{
-    const testing::TestInfo* info = testing::UnitTest::GetInstance()->current_test_info();
-
-    std::cerr << "[  SKIPPED ] " << info->test_case_name() << '.' << info->name() << ": " << why << std::endl;
-}
 } // anonymous namespace
 
 class WriteNodeViewsTest
@@ -179,9 +159,7 @@ protected:
 
 TEST_F(WriteNodeViewsTest, ViewPattern)
 {
-    if ( !isPluginAvailable(PLUGINID_OFX_WRITEOIIO) ) {
-        reportSkipped("plug-in not found (needs " PLUGINID_OFX_WRITEOIIO " from openfx-io in OFX_PLUGIN_PATH)");
-
+    if ( !NatronTest::requirePlugins({ PLUGINID_OFX_WRITEOIIO }, "openfx-io") ) {
         return;
     }
     _app->getProject()->setupProjectForStereo();
@@ -211,9 +189,7 @@ TEST_F(WriteNodeViewsTest, ViewPattern)
 // 2.5 took any '%' or 'v' for a view pattern): the parameter is shown after the load.
 TEST_F(WriteNodeViewsTest, LoadProjectSavedWithViewsHidden)
 {
-    if ( !isPluginAvailable(PLUGINID_OFX_WRITEOIIO) ) {
-        reportSkipped("plug-in not found (needs " PLUGINID_OFX_WRITEOIIO " from openfx-io in OFX_PLUGIN_PATH)");
-
+    if ( !NatronTest::requirePlugins({ PLUGINID_OFX_WRITEOIIO }, "openfx-io") ) {
         return;
     }
     _app->getProject()->setupProjectForStereo();
@@ -227,9 +203,7 @@ TEST_F(WriteNodeViewsTest, LoadProjectSavedWithViewsHidden)
 // saved visible.
 TEST_F(WriteNodeViewsTest, LoadProjectWithViewPattern)
 {
-    if ( !isPluginAvailable(PLUGINID_OFX_WRITEOIIO) ) {
-        reportSkipped("plug-in not found (needs " PLUGINID_OFX_WRITEOIIO " from openfx-io in OFX_PLUGIN_PATH)");
-
+    if ( !NatronTest::requirePlugins({ PLUGINID_OFX_WRITEOIIO }, "openfx-io") ) {
         return;
     }
     _app->getProject()->setupProjectForStereo();
@@ -241,9 +215,7 @@ TEST_F(WriteNodeViewsTest, LoadProjectWithViewPattern)
 // Single-view projects follow the same rules: without a view pattern, the plug-in decides.
 TEST_F(WriteNodeViewsTest, SingleView)
 {
-    if ( !isPluginAvailable(PLUGINID_OFX_WRITEOIIO) ) {
-        reportSkipped("plug-in not found (needs " PLUGINID_OFX_WRITEOIIO " from openfx-io in OFX_PLUGIN_PATH)");
-
+    if ( !NatronTest::requirePlugins({ PLUGINID_OFX_WRITEOIIO }, "openfx-io") ) {
         return;
     }
     ASSERT_EQ(_app->getProject()->getProjectViewsCount(), 1);
@@ -260,9 +232,7 @@ TEST_F(WriteNodeViewsTest, SingleView)
 // it still is in the name of an image sequence.
 TEST_F(WriteNodeViewsTest, VideoFileNameKeepsHash)
 {
-    if ( !isPluginAvailable(PLUGINID_OFX_WRITEFFMPEG) || !isPluginAvailable(PLUGINID_OFX_WRITEOIIO) ) {
-        reportSkipped("plug-in not found (needs " PLUGINID_OFX_WRITEFFMPEG " and " PLUGINID_OFX_WRITEOIIO " from openfx-io in OFX_PLUGIN_PATH)");
-
+    if ( !NatronTest::requirePlugins({ PLUGINID_OFX_WRITEFFMPEG, PLUGINID_OFX_WRITEOIIO }, "openfx-io") ) {
         return;
     }
     const std::string video = _dir + "/take#1.mov";

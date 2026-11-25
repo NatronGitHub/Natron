@@ -66,10 +66,14 @@ versionsAvailable()
         try {
             Plugin* oldPlugin = appPTR->getPluginBinary(QString::fromUtf8(ids[i]), kOldMajor, 0, false);
             Plugin* newestPlugin = appPTR->getPluginBinary(QString::fromUtf8(ids[i]), -1, -1, false);
-            if ( !oldPlugin || !newestPlugin || (oldPlugin->getMajorVersion() != kOldMajor) ||
-                 (newestPlugin->getMajorVersion() != kNewestMajor) ) {
-                // e.g. a real plug-in with that ID and a major of 91 or more is installed
+            if ( !oldPlugin || !newestPlugin ) {
                 NatronTestPlugin::reportSkipped(ids[i]);
+
+                return false;
+            }
+            if ( (oldPlugin->getMajorVersion() != kOldMajor) || (newestPlugin->getMajorVersion() != kNewestMajor) ) {
+                // e.g. a real plug-in with that ID and a major of 91 or more is installed
+                NatronTest::skip(std::string("the versions of ") + ids[i] + " are not those of the test plug-ins");
 
                 return false;
             }
@@ -300,7 +304,7 @@ TEST(ReadWriteVersion, MissingPluginKeepsVersion)
     const char* const defaultIDs[] = { PLUGINID_OFX_READOIIO, PLUGINID_OFX_WRITEOIIO };
     for (const char* id : defaultIDs) {
         if (lowestMajor(id) < 0) {
-            NatronTestPlugin::reportSkipped(id);
+            NatronTest::skip(std::string("plug-in ") + id + " not found (needs openfx-io in OFX_PLUGIN_PATH)");
 
             return;
         }
