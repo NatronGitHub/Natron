@@ -27,6 +27,7 @@
 
 #include <cassert>
 #include <stdexcept>
+#include <string>
 
 #include "Engine/AppInstance.h"
 #include "Engine/Bezier.h"
@@ -651,16 +652,24 @@ Roto::createLayer()
 
 // A shape needs internal nodes (RotoDrawableItem::createNodes()), whose creation throws if it fails: a C++
 // exception must not go through the Python interpreter, which it leaves broken ("SystemError: unknown opcode",
-// then a hang or a crash, #1828). Print the error and return null (None), as App.createNode() does.
+// then a hang or a crash, #1828). Print the error and return null (None), as App.createNode() does (a Python
+// exception set with PyErr_SetString() doesn't reach the script: the binding of these functions returns None).
 template <typename MakeShape>
 static BezierPtr
 makeShape(const RotoContextPtr& context,
           MakeShape make)
 {
+    std::string error;
     try {
         return make();
     } catch (const std::exception& e) {
-        context->getNode()->getApp()->appendToScriptEditor( e.what() );
+        error = e.what();
+    } catch (...) {
+        error = "Unknown error while creating the shape";
+    }
+    NodePtr node = context->getNode();
+    if (node) {
+        node->getApp()->appendPlainTextToScriptEditor(error);
     }
 
     return BezierPtr();

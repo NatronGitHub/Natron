@@ -29,6 +29,7 @@
 
 #include "Global/Macros.h"
 
+#include <iostream>
 #include <list>
 #include <string>
 
@@ -97,9 +98,17 @@ TEST(ReadNodeInputs, DecoderWithoutSourceClip)
     } catch (...) {
         plugin = 0;
     }
-    if ( !plugin || (plugin->getMajorVersion() != kNoSourceMajor) ) {
-        // e.g. a real ReadPDF with a major of 91 or more is installed
+    if (!plugin) {
         NatronTestPlugin::reportSkipped(PLUGINID_OFX_READPDF);
+
+        return;
+    }
+    if (plugin->getMajorVersion() != kNoSourceMajor) {
+        // a real ReadPDF with a major of 91 or more is installed
+        const testing::TestInfo* info = testing::UnitTest::GetInstance()->current_test_info();
+        std::cerr << "[  SKIPPED ] " << info->test_case_name() << '.' << info->name() << ": the newest "
+                  << PLUGINID_OFX_READPDF << " is version " << plugin->getMajorVersion() << ", not the test reader"
+                  << std::endl;
 
         return;
     }
@@ -123,8 +132,8 @@ TEST(ReadNodeInputs, DecoderWithoutSourceClip)
     EXPECT_EQ( 1, read->getNInputs() );
 
     // the decoder has no clip for an input
-    EXPECT_TRUE(ofxDecoder->getClipCorrespondingToInput(0) == 0);
-    EXPECT_TRUE(ofxDecoder->getClipCorrespondingToInput(-1) == 0);
+    EXPECT_EQ( nullptr, ofxDecoder->getClipCorrespondingToInput(0) );
+    EXPECT_EQ( nullptr, ofxDecoder->getClipCorrespondingToInput(-1) );
 
     // the Read node's input still accepts images
     std::list<ImagePlaneDesc> comps;

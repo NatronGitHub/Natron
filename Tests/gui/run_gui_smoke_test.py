@@ -143,12 +143,11 @@ def waitForAutosave():
 def start():
     app = natron.getGuiInstance(0)
     app.createNode("fr.inria.built-in.Viewer")
-    # changing a parameter triggers the auto-save
-    roto = app.createNode("fr.inria.built-in.Roto")
-    for param in roto.getParams():
-        if isinstance(param, NatronEngine.DoubleParam):
-            param.set(param.get() + 0.25)
-            break
+    # changing a parameter triggers the auto-save; this run has no OFX plug-ins, so use a node that needs
+    # none (a Roto node needs openfx-misc, #1828)
+    dot = app.createNode("fr.inria.built-in.Dot")
+    param = dot.createDoubleParam("smokeTestValue", "Smoke test value")
+    param.set(param.get() + 0.25)
     waitForAutosave()
 
 before = autosaveFiles()
