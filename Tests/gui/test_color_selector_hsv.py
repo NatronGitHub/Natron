@@ -67,10 +67,11 @@ for hex_field in hexes:
     check_close(sat, 1.0, 1e-3, "S of #ff8000")
     check_close(val, 1.0, 1e-3, "V of #ff8000")
 
-    # a grey typed in the RGB fields keeps the hue: (0.2159, 0.2159, 0) is yellow (H = 1/6), then B = 0.2159
-    type_value(selector, "ColorSelectorRed", 0.2159)
-    check_close(float(child(selector, "ColorSelectorHue").text()), 1. / 6, 2e-3, "H of (0.2159, 0.2159, 0)")
-    type_value(selector, "ColorSelectorBlue", 0.2159)
+    # a grey typed in the RGB fields keeps the hue: (0.5, 0.5, 0) is yellow (H = 1/6), then B = 0.5
+    type_value(selector, "ColorSelectorRed", 0.5)
+    type_value(selector, "ColorSelectorGreen", 0.5)
+    check_close(float(child(selector, "ColorSelectorHue").text()), 1. / 6, 2e-3, "H of (0.5, 0.5, 0)")
+    type_value(selector, "ColorSelectorBlue", 0.5)
     check_close(float(child(selector, "ColorSelectorSat").text()), 0.0, 1e-3, "S of a grey")
     check_close(float(child(selector, "ColorSelectorHue").text()), 1. / 6, 2e-3, "H of a grey typed in RGB")
 
