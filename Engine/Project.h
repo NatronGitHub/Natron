@@ -572,6 +572,10 @@ private:
     // Loads a project saved in eProjectFileFormatPython (see loadProjectImpl())
     void loadPythonProjectInternal(const QString & path, const QString & name);
 
+    // The end of both loads: takes the project lock (a lock file), unless an auto-save was loaded, runs the
+    // afterProjectLoad callback and processes the pending events
+    void finishLoad(bool isAutoSave);
+
     QString saveProjectInternal(const QString & path, const QString & name, bool autosave, bool updateProjectProperties, QStringList* warnings,
                                 ProjectFileFormatEnum format);
 
