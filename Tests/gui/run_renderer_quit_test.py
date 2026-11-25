@@ -32,8 +32,8 @@ of the project calls natron.quit(4) when the prompt creates a node. The SystemEx
 callback must end the prompt once the callback has returned (the commands after it must not
 run), and the exit status must be 4.
 
-Exit status: 0 on success, 77 if skipped (in CI unless NATRON_GUI_TESTS=1, or the Read/Write
-PNG plug-ins of openfx-io are not available: set OFX_PLUGIN_PATH), 1 on failure.
+Exit status: 0 on success, 77 if skipped (the Read/Write PNG plug-ins of openfx-io are not
+available: set OFX_PLUGIN_PATH), 1 on failure.
 --debugger runs NatronRenderer under natron-lldb.sh (see run_gui_smoke_test.py), or set
 NATRON_TEST_WRAPPER.
 """
@@ -141,9 +141,6 @@ def main(argv):
     if len(argv) < 2:
         sys.stderr.write(__doc__)
         return 2
-    if os.environ.get("CI") and os.environ.get("NATRON_GUI_TESTS") != "1":
-        print("renderer quit test skipped in CI (set NATRON_GUI_TESTS=1 to run it, as for GuiSmokeTest)")
-        return SKIP
     wrapper = []
     if "--debugger" in argv[2:]:
         wrapper = [os.path.join(HERE, "natron-lldb.sh")]
