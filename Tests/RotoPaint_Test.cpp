@@ -537,3 +537,34 @@ TEST_F(RotoPaintOverlayTest, CtrlShiftDragChangesBrushOpacity)
     EXPECT_NEAR(0.5, opacity->getValue(), 1e-9);
     EXPECT_TRUE( _context->getCurvesByRenderOrder(false).empty() ) << "the drag must not paint";
 }
+
+// Selecting the Clone or Reveal tool again keeps the source the user chose for it: it used to be reset to
+// the tool's default (background for Clone), also when a tablet eraser switched back to the tool: issue 1814.
+TEST_F(RotoPaintOverlayTest, CloneToolKeepsChosenSource)
+{
+    if (!_havePlugins) {
+        return;
+    }
+    KnobChoicePtr sourceType = std::dynamic_pointer_cast<KnobChoice>( _node->getKnobByName(kRotoUIParamSourceType) );
+    ASSERT_TRUE( bool(sourceType) );
+
+    selectTool(kRotoUIParamCloneBrushToolButton, kRotoUIParamCloneToolButtonAction);
+    EXPECT_EQ( 1, sourceType->getValue() ); // background, the default of the Clone tool
+    sourceType->setValue(0); // foreground
+
+    selectTool(kRotoUIParamCloneBrushToolButton, kRotoUIParamRevealToolButtonAction);
+    EXPECT_EQ( 2, sourceType->getValue() ); // background 2, the default of the Reveal tool
+    sourceType->setValue(3); // background 3
+
+    selectTool(kRotoUIParamPaintBrushToolButton, kRotoUIParamDrawBrushToolButtonAction);
+    selectTool(kRotoUIParamCloneBrushToolButton, kRotoUIParamCloneToolButtonAction);
+    EXPECT_EQ( 0, sourceType->getValue() ) << "the Clone tool lost its source";
+
+    // as a tablet eraser does: the eraser, then back to the last paint tool
+    selectTool(kRotoUIParamPaintBrushToolButton, kRotoUIParamEraserToolButtonAction);
+    selectTool(kRotoUIParamCloneBrushToolButton, kRotoUIParamCloneToolButtonAction);
+    EXPECT_EQ( 0, sourceType->getValue() ) << "the Clone tool lost its source after the eraser";
+
+    selectTool(kRotoUIParamCloneBrushToolButton, kRotoUIParamRevealToolButtonAction);
+    EXPECT_EQ( 3, sourceType->getValue() ) << "the Reveal tool lost its source";
+}
