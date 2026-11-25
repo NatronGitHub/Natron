@@ -188,6 +188,27 @@ KnobSerialization::createKnob(const std::string & typeName,
     return ret;
 }
 
+// declared in KnobTypes.h
+KnobIPtr
+createKnobCopy(const KnobIPtr & originalKnob)
+{
+    const std::string & typeName = originalKnob->typeName();
+
+    // only the knobs that hold values (KnobLayers was never copied either)
+    if ( (typeName == KnobButton::typeNameStatic()) || (typeName == KnobSeparator::typeNameStatic()) ||
+         (typeName == KnobGroup::typeNameStatic()) || (typeName == KnobPage::typeNameStatic()) ||
+         (typeName == KnobLayers::typeNameStatic()) ) {
+        return KnobIPtr();
+    }
+    KnobIPtr copy = KnobSerialization::createKnob( typeName, originalKnob->getDimension() );
+    if (copy) {
+        ///make a clone of the original knob at that time and stash it
+        copy->clone(originalKnob);
+    }
+
+    return copy;
+}
+
 
 void
 KnobSerialization::restoreBytesKnob()
