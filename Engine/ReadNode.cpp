@@ -35,8 +35,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // clang-format off
 GCC_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
 // /usr/local/include/boost/serialization/shared_ptr.hpp:112:5: warning: unused typedef 'boost_static_assert_typedef_112' [-Wunused-local-typedef]
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/version.hpp>
@@ -278,17 +276,8 @@ public:
 
     void destroyReadNode();
 
-    // Sets the version knob to the version of the decoder if it is the plug-in of the plug-in ID
-    // knob: the project saves it, and loads that version (#1681). Else (e.g. the decoder saved in
-    // the project is not installed) the version is kept, so that the project still saves it.
+    // syncPluginVersionKnob() for the decoder
     void syncVersionKnob();
-
-    // Sets the version knob to -1 (unknown), before the user's choice of a file or decoder creates
-    // another decoder (#1681)
-    void resetVersionKnob();
-
-    // Sets both dimensions of the version knob without calling knobChanged()
-    void setVersionKnob(int major, int minor);
 
     void cloneGenericKnobs();
 
@@ -476,105 +465,60 @@ ReadNodePrivate::destroyReadNode()
     }
     KnobsVec knobs = _publicInterface->getKnobs();
 
-    genericKnobsSerialization.clear();
+    // the parameters of the decoder that this node keeps for the next one (see copyKnobSerializations())
+    std::list<KnobSerializationPtr> serialized;
+    for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        // The internal node still holds a shared ptr to the knob.
+        // Since we want to keep some knobs around, ensure they do not get deleted in the destructor of the embedded node
+        embeddedPlugin->getEffectInstance()->removeKnobFromList(it->get());
 
-    std::string serializationString;
-    try {
-        std::ostringstream ss;
-        {   // see http://boost.2283326.n4.nabble.com/the-boost-xml-serialization-to-a-stringstream-does-not-have-an-end-tag-td2580772.html
-            // xml_oarchive must be destroyed before obtaining ss.str(), or the </boost_serialization> tag is missing,
-            // which throws an exception in boost 1.66.0, due to the following change:
-            // https://fossies.org/diffs/boost/1_65_1_vs_1_66_0/libs/serialization/src/basic_xml_grammar.ipp-diff.html
-            // see also https://svn.boost.org/trac10/ticket/13400
-            // see also https://svn.boost.org/trac10/ticket/13354
-            
-            boost::archive::xml_oarchive oArchive(ss);
-            std::list<KnobSerializationPtr> serialized;
-            
-            
-            for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
-                
-                // The internal node still holds a shared ptr to the knob.
-                // Since we want to keep some knobs around, ensure they do not get deleted in the destructor of the embedded node
-                embeddedPlugin->getEffectInstance()->removeKnobFromList(it->get());
-                
-                if ( !(*it)->isDeclaredByPlugin() ) {
-                    continue;
-                }
-                
-                //If it is a knob of this ReadNode, do not destroy it
-                bool isReadNodeKnob = false;
-                for (std::list<KnobIWPtr>::iterator it2 = readNodeKnobs.begin(); it2 != readNodeKnobs.end(); ++it2) {
-                    if (it2->lock() == *it) {
-                        isReadNodeKnob = true;
-                        break;
-                    }
-                }
-                if (isReadNodeKnob) {
-                    continue;
-                }
-                
-                //Keep pages around they will be re-used
-                KnobPage* isPage = dynamic_cast<KnobPage*>( it->get() );
-                if (isPage) {
-                    continue;
-                }
-                
-                //This is a knob of the Reader plug-in
-                
-                //Serialize generic knobs and keep them around until we create a new Reader plug-in
-                bool mustSerializeKnob;
-                bool isGeneric = isGenericKnob( (*it)->getName(), &mustSerializeKnob );
-                if (!isGeneric || mustSerializeKnob) {
-                    
-                    /* if (!isGeneric && !(*it)->getDefaultIsSecret()) {
-                     // Don't save the secret state otherwise some knobs could be invisible when cloning the serialization even if we change format
-                     (*it)->setSecret(false);
-                     }*/
-                    
-                    KnobSerializationPtr s = std::make_shared<KnobSerialization>(*it);
-                    serialized.push_back(s);
-                }
-                if (!isGeneric) {
-                    try {
-                        _publicInterface->deleteKnob(it->get(), false);
-                    } catch (...) {
-                        
-                    }
-                }
-            }
-            
-            int n = (int)serialized.size();
-            oArchive << boost::serialization::make_nvp("numItems", n);
-            for (std::list<KnobSerializationPtr>::const_iterator it = serialized.begin(); it!= serialized.end(); ++it) {
-                oArchive << boost::serialization::make_nvp("item", **it);
-                
+        if ( !(*it)->isDeclaredByPlugin() ) {
+            continue;
+        }
+
+        //If it is a knob of this ReadNode, do not destroy it
+        bool isReadNodeKnob = false;
+        for (std::list<KnobIWPtr>::iterator it2 = readNodeKnobs.begin(); it2 != readNodeKnobs.end(); ++it2) {
+            if (it2->lock() == *it) {
+                isReadNodeKnob = true;
+                break;
             }
         }
-        serializationString = ss.str();
-    } catch (...) {
-        assert(false);
-    }
-
-    try {
-        std::stringstream ss(serializationString);
-        boost::archive::xml_iarchive iArchive(ss);
-        int n ;
-        iArchive >> boost::serialization::make_nvp("numItems", n);
-        for (int i = 0; i < n; ++i) {
-            KnobSerializationPtr s = std::make_shared<KnobSerialization>();
-            iArchive >> boost::serialization::make_nvp("item", *s);
-            genericKnobsSerialization.push_back(s);
-
+        if (isReadNodeKnob) {
+            continue;
         }
-    } catch (const std::exception& e) {
-        qDebug() << e.what();
-        assert(false);
-    } catch (...) {
-        assert(false);
-    }
 
-    
+        //Keep pages around they will be re-used
+        KnobPage* isPage = dynamic_cast<KnobPage*>( it->get() );
+        if (isPage) {
+            continue;
+        }
+
+        //This is a knob of the Reader plug-in
+
+        //Serialize generic knobs and keep them around until we create a new Reader plug-in
+        bool mustSerializeKnob;
+        bool isGeneric = isGenericKnob( (*it)->getName(), &mustSerializeKnob );
+        if (!isGeneric || mustSerializeKnob) {
+
+            /* if (!isGeneric && !(*it)->getDefaultIsSecret()) {
+             // Don't save the secret state otherwise some knobs could be invisible when cloning the serialization even if we change format
+             (*it)->setSecret(false);
+             }*/
+
+            KnobSerializationPtr s = std::make_shared<KnobSerialization>(*it);
+            serialized.push_back(s);
+        }
+        if (!isGeneric) {
+            try {
+                _publicInterface->deleteKnob(it->get(), false);
+            } catch (...) {
+
+            }
+        }
+    }
+    genericKnobsSerialization = copyKnobSerializations(serialized);
+
     //This will remove the GUI of non generic parameters
     _publicInterface->recreateKnobs(true);
 //#pragma message WARN("TODO: if Gui, refresh pluginID, version, help tooltip in DockablePanel to reflect embedded node change")
@@ -668,6 +612,50 @@ getFileNameFromSerialization(const std::list<KnobSerializationPtr>& serializatio
 }
 
 void
+setPluginVersionKnob(const KnobIntPtr& versionKnob,
+                     int major,
+                     int minor)
+{
+    if (!versionKnob) {
+        return;
+    }
+    versionKnob->blockValueChanges();
+    versionKnob->setValue(major, ViewSpec(0), 0);
+    versionKnob->setValue(minor, ViewSpec(0), 1);
+    versionKnob->unblockValueChanges();
+}
+
+void
+syncPluginVersionKnob(const KnobIntPtr& versionKnob,
+                      const NodePtr& embedded,
+                      const std::string& pluginID)
+{
+    const Plugin* plugin = embedded ? embedded->getPlugin() : 0;
+
+    if ( plugin && (embedded->getPluginID() == pluginID) ) {
+        setPluginVersionKnob( versionKnob, plugin->getMajorVersion(), plugin->getMinorVersion() );
+    }
+}
+
+void
+setPluginVersionCreateArgs(const KnobIntPtr& versionKnob,
+                           bool userEdited,
+                           const NodeSerializationPtr& serialization,
+                           CreateNodeArgs* args)
+{
+    if (userEdited || !versionKnob) {
+        return;
+    }
+    if (versionKnob->getValue(0) >= 0) {
+        args->setProperty<int>(kCreateNodeArgsPropPluginVersion, versionKnob->getValue(0), 0);
+        args->setProperty<int>(kCreateNodeArgsPropPluginVersion, versionKnob->getValue(1), 1);
+    } else if ( serialization && !serialization->hasKnob( versionKnob->getName() ) ) {
+        args->setProperty<int>(kCreateNodeArgsPropPluginVersion, 0, 0);
+        args->setProperty<int>(kCreateNodeArgsPropPluginVersion, 0, 1);
+    }
+}
+
+void
 ReadNodePrivate::syncVersionKnob()
 {
     KnobStringPtr pluginIDKnob = pluginIDStringKnob.lock();
@@ -680,32 +668,7 @@ ReadNodePrivate::syncVersionKnob()
         QMutexLocker k(&embeddedPluginMutex);
         decoder = embeddedPlugin;
     }
-    const Plugin* plugin = decoder ? decoder->getPlugin() : 0;
-    if ( !plugin || ( decoder->getPluginID() != pluginIDKnob->getValue() ) ) {
-        return;
-    }
-    setVersionKnob( plugin->getMajorVersion(), plugin->getMinorVersion() );
-}
-
-void
-ReadNodePrivate::resetVersionKnob()
-{
-    setVersionKnob(-1, -1);
-}
-
-void
-ReadNodePrivate::setVersionKnob(int major,
-                                int minor)
-{
-    KnobIntPtr versionKnob = pluginVersionKnob.lock();
-
-    if (!versionKnob) {
-        return;
-    }
-    versionKnob->blockValueChanges();
-    versionKnob->setValue(major, ViewSpec(0), 0);
-    versionKnob->setValue(minor, ViewSpec(0), 1);
-    versionKnob->unblockValueChanges();
+    syncPluginVersionKnob( pluginVersionKnob.lock(), decoder, pluginIDKnob->getValue() );
 }
 
 void
@@ -780,7 +743,8 @@ ReadNodePrivate::createReadNode(bool throwErrors,
 
     NodePtr node;
     if (userEdited) {
-        resetVersionKnob(); // the new decoder is the newest, and the version is -1 if there is none (#1681)
+        // the new decoder is the newest, and the version is unknown if there is none (#1681)
+        setPluginVersionKnob(pluginVersionKnob.lock(), -1, -1);
     }
 
     //Find the appropriate reader
@@ -807,23 +771,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         args.setProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, _publicInterface->getNode());
         args.setProperty<NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization, serialization);
         args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
-        // Unless the user chose another file or decoder, create the version of the decoder that was
-        // saved in the project (or given to createNode()), not the newest one: getPluginBinary() falls
-        // back to the closest major above, else the newest, if that major is not installed (#1681).
-        // A node saved without the version, i.e. by a Natron older than 2.6 (a 2.6 node always has
-        // one once a decoder was created, see syncVersionKnob()), gets the lowest major, the closest
-        // above 0: e.g. ReadSVG 3, not ReadSVG 4 (openfx-arena#224). This assumes that a decoder
-        // never adds a major below the one that Natron 2.5 had. A new node gets the newest major.
-        KnobIntPtr versionKnob = pluginVersionKnob.lock();
-        if (!userEdited && versionKnob) {
-            if (versionKnob->getValue(0) >= 0) {
-                args.setProperty<int>(kCreateNodeArgsPropPluginVersion, versionKnob->getValue(0), 0);
-                args.setProperty<int>(kCreateNodeArgsPropPluginVersion, versionKnob->getValue(1), 1);
-            } else if ( serialization && !serialization->hasKnob(kNatronReadNodeParamDecodingPluginVersion) ) {
-                args.setProperty<int>(kCreateNodeArgsPropPluginVersion, 0, 0);
-                args.setProperty<int>(kCreateNodeArgsPropPluginVersion, 0, 1);
-            }
-        }
+        setPluginVersionCreateArgs(pluginVersionKnob.lock(), userEdited, serialization, &args);
 
         if (serialization || wasCreatedAsHiddenNode) {
             args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
