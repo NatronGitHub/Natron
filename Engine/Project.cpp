@@ -2410,7 +2410,8 @@ Project::onKnobValueChanged(KnobI* knob,
         shouldAutoSave = true;
     } else if ( knob == _imp->frameRange.get() ) {
         // The frame range of a node may follow the project's (e.g. a DiskCache node set to "Project frame range"),
-        // but the node hash, under which the frame range is cached, doesn't depend on it (#1812)
+        // but the node hash, under which the frame range and the other action results are cached, doesn't depend
+        // on it (#1812)
         NodesList nodes;
         getNodes_recursive(nodes, false);
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
