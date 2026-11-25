@@ -1612,6 +1612,26 @@ natronTestGetCounter(const std::string& name)
     return found == gCounters.end() ? 0 : found->second;
 }
 
+void
+natronTestSetCounter(const std::string& name,
+                     int value)
+{
+    setCounter(name, value);
+}
+
+int
+natronTestExchangeCounter(const std::string& name,
+                          int value)
+{
+    std::lock_guard<std::mutex> l(gMutex);
+    int& counter = gCounters[name];
+    const int previous = counter;
+
+    counter = value;
+
+    return previous;
+}
+
 extern "C" {
 // For the tests (Tests/OfxTestPlugin.h): the value of a counter, 0 if it was never set.
 OfxExport int NatronTestPluginGetCounter(const char* name);
