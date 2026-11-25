@@ -76,6 +76,8 @@ RotoPaintInteract::RotoPaintInteract(RotoPaintPrivate* p)
     , click()
     , selectedTool(eRotoToolSelectAll)
     , selectedRole(eRotoRoleSelection)
+    , cloneSourceType(1) // background
+    , revealSourceType(2) // background 2
     , state(eEventStateNone)
     , hoverState(eHoverStateNothing)
     , lastClickPos()
@@ -724,6 +726,13 @@ RotoPaintInteract::onToolChangedInternal(const KnobButtonPtr& actionButton)
         return true;
     }
 
+    // The source the user chose for the Clone or Reveal tool is kept for when it is selected again (#1814)
+    if (selectedTool == eRotoToolClone) {
+        cloneSourceType = sourceTypeChoice.lock()->getValue();
+    } else if (selectedTool == eRotoToolReveal) {
+        revealSourceType = sourceTypeChoice.lock()->getValue();
+    }
+
     bool isPaintRole = (selectedRole == eRotoRolePaintBrush) || (selectedRole == eRotoRoleCloneBrush) || (selectedRole == eRotoRoleMergeBrush) ||
                        (selectedRole == eRotoRoleEffectBrush);
     if (isPaintRole) {
@@ -733,9 +742,9 @@ RotoPaintInteract::onToolChangedInternal(const KnobButtonPtr& actionButton)
         sourceTypeChoice.lock()->setInViewerContextSecret(selectedRole != eRotoRoleCloneBrush);
         resetCloneOffsetButton.lock()->setInViewerContextSecret(selectedRole != eRotoRoleCloneBrush);
         if (tool == eRotoToolClone) {
-            sourceTypeChoice.lock()->setValue(1);
+            sourceTypeChoice.lock()->setValue(cloneSourceType);
         } else if (tool == eRotoToolReveal) {
-            sourceTypeChoice.lock()->setValue(2);
+            sourceTypeChoice.lock()->setValue(revealSourceType);
         }
 
         if ( (tool == eRotoToolSolidBrush ) || ( tool == eRotoToolOpenBezier ) ) {

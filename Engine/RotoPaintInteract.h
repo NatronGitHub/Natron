@@ -525,6 +525,8 @@ public:
     QPointF click; // used for drawing ellipses and rectangles, to handle center/constrain. May also be used for the selection bbox.
     RotoToolEnum selectedTool;
     RotoRoleEnum selectedRole;
+    int cloneSourceType; //< the source (sourceTypeChoice) of the Clone tool, kept while another tool is selected
+    int revealSourceType; //< the source of the Reveal tool
     KnobButtonWPtr lastPaintToolAction;
     EventStateEnum state;
     HoverStateEnum hoverState;
