@@ -155,6 +155,9 @@ private:
     void setSaturationChannel(float value);
     void setValueChannel(float value);
     void setAlphaChannel(float value);
+    // Show the linear RGB color in the RGB and HSV channels; a grey, which has no hue, shows hueIfGrey
+    // (e.g. the H shown, so that choosing a grey and then a saturation keeps the hue)
+    void setChannelsFromLinearRGB(float r, float g, float b, float hueIfGrey);
     void setTriangle(float r, float g, float b, float a);
     void setHex(const QColor &color);
 

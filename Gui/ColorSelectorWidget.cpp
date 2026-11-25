@@ -698,8 +698,27 @@ ColorSelectorWidget::setColor(float r,
                               float b,
                               float a)
 {
+    setChannelsFromLinearRGB( r, g, b, _spinH->value() );
+    if (_slideA) {
+        setAlphaChannel(a);
+    }
+    setTriangle(r, g, b, _slideA ? a : 1.);
+    setHex( _triangle->color() );
+}
+
+void
+ColorSelectorWidget::setChannelsFromLinearRGB(float r,
+                                              float g,
+                                              float b,
+                                              float hueIfGrey)
+{
+    // HSV of the linear RGB values, not of their sRGB (triangle) color, so that a color shows the same HSV
+    // values however it was set (#1248)
     float h, s, v;
     Color::rgb_to_hsv(r, g, b, &h, &s, &v);
+    if (s == 0.f) {
+        h = hueIfGrey; // a grey has no hue
+    }
 
     setRedChannel(r);
     setGreenChannel(g);
@@ -707,11 +726,6 @@ ColorSelectorWidget::setColor(float r,
     setHueChannel(h);
     setSaturationChannel(s);
     setValueChannel(v);
-    if (_slideA) {
-        setAlphaChannel(a);
-    }
-    setTriangle(r, g, b, _slideA ? a : 1.);
-    setHex( _triangle->color() );
 }
 
 void
@@ -1004,25 +1018,12 @@ void
 ColorSelectorWidget::handleTriangleColorChanged(const QColor &color,
                                                 bool announce)
 {
-    const float r = Color::from_func_srgb( color.redF() );
-    const float g = Color::from_func_srgb( color.greenF() );
-    const float b = Color::from_func_srgb( color.blueF() );
-    // HSV of the linear RGB values, as in setColor() and manageColorRGBChanged() (not of the sRGB
-    // triangle color), so that a color shows the same HSV values however it was set (#1248)
-    float h, s, v;
-    Color::rgb_to_hsv(r, g, b, &h, &s, &v);
-    if (s == 0.f) {
-        // a grey has no hue: follow the hue ring (the triangle sends its hue with a grey), else keep the H shown
-        const qreal ringHue = color.hsvHueF();
-        h = (ringHue >= 0.) ? ringHue : _spinH->value();
-    }
-
-    setRedChannel(r);
-    setGreenChannel(g);
-    setBlueChannel(b);
-    setHueChannel(h);
-    setSaturationChannel(s);
-    setValueChannel(v);
+    // a grey follows the hue ring (the triangle sends its hue with a grey; a hex grey has none)
+    const qreal ringHue = color.hsvHueF();
+    setChannelsFromLinearRGB( Color::from_func_srgb( color.redF() ),
+                              Color::from_func_srgb( color.greenF() ),
+                              Color::from_func_srgb( color.blueF() ),
+                              (ringHue >= 0.) ? ringHue : _spinH->value() );
     setHex(color);
 
     if (announce) {
@@ -1036,12 +1037,8 @@ void ColorSelectorWidget::manageColorRGBChanged(bool announce)
     float g = _spinG->value();
     float b = _spinB->value();
     float a = _slideA ? _spinA->value() : 1.;
-    float h, s, v;
-    Color::rgb_to_hsv(r, g, b, &h, &s, &v);
 
-    setHueChannel(h);
-    setSaturationChannel(s);
-    setValueChannel(v);
+    setChannelsFromLinearRGB( r, g, b, _spinH->value() );
     setTriangle(r, g, b, a);
     setHex( _triangle->color() );
 
