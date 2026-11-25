@@ -114,17 +114,21 @@ TLSHolder<T>::canCleanupPerThreadData(const QThread* curThread) const
 }
 
 template <typename T>
-bool
+TLSHolderBase::CleanupResult
 TLSHolder<T>::cleanupPerThreadData(const QThread* curThread) const
 {
+    CleanupResult ret;
     std::unique_lock<std::shared_mutex> k(perThreadDataMutex);
 
     typename ThreadDataMap::iterator found = perThreadData.find(curThread);
     if ( found != perThreadData.end() ) {
+        // not destroyed here, under perThreadDataMutex (see CleanupResult)
+        ret.removedData = std::move(found->second.value);
         perThreadData.erase(found);
     }
+    ret.holderEmpty = perThreadData.empty();
 
-    return perThreadData.empty();
+    return ret;
 }
 
 template <typename T>
@@ -240,8 +244,17 @@ AppTLS::copyTLSFromSpawnerThread(const TLSHolderBase* holder,
         _spawns.erase(foundSpawned);
     }
     {
+        // the holders are released after _objectMutex (see AppTLS::copyTLS())
+        std::vector<TLSHolderBaseConstPtr> holders;
         std::unique_lock<std::shared_mutex> k(_objectMutex);
-        std::shared_ptr<T> retval = copyTLSFromSpawnerThreadInternal<T>(holder, curThread, foundThread);
+        holders.reserve( _object->objects.size() );
+        for (TLSObjects::iterator it = _object->objects.begin(); it != _object->objects.end(); ++it) {
+            TLSHolderBaseConstPtr p = (*it).lock();
+            if (p) {
+                holders.push_back( std::move(p) );
+            }
+        }
+        std::shared_ptr<T> retval = copyTLSFromSpawnerThreadInternal<T>(holders, holder, curThread, foundThread);
 
 
         return retval;
@@ -250,34 +263,31 @@ AppTLS::copyTLSFromSpawnerThread(const TLSHolderBase* holder,
 
 template <typename T>
 std::shared_ptr<T>
-AppTLS::copyTLSFromSpawnerThreadInternal(const TLSHolderBase* holder,
+AppTLS::copyTLSFromSpawnerThreadInternal(const std::vector<TLSHolderBaseConstPtr>& holders,
+                                         const TLSHolderBase* holder,
                                          const QThread* curThread,
                                          const QThread* spawnerThread)
 {
     //Private - should be locked
-    // _objectMutex must be locked for writing by the caller
+    // _objectMutex must be locked for writing by the caller; holders are the live holders of _object->objects
 
     std::shared_ptr<T> tls;
 
     //This is a spawned thread and the first time we need the TLS for this thread, copy the whole TLS on all objects
-    for (TLSObjects::iterator it = _object->objects.begin();
-         it != _object->objects.end(); ++it) {
-        TLSHolderBaseConstPtr p = (*it).lock();
-        if (p) {
-            const TLSHolder<T>* foundHolder = 0;
-            if (p.get() == holder) {
-                //This is the object from which it has been required to create the TLS data, copy
-                //the TLS data from the spawner thread and mark it to 'tls'.
-                foundHolder = dynamic_cast<const TLSHolder<T>*>( p.get() );
-                if (foundHolder) {
-                    tls = foundHolder->copyAndReturnNewTLS(spawnerThread, curThread);
-                }
+    for (const TLSHolderBaseConstPtr& p : holders) {
+        const TLSHolder<T>* foundHolder = 0;
+        if (p.get() == holder) {
+            //This is the object from which it has been required to create the TLS data, copy
+            //the TLS data from the spawner thread and mark it to 'tls'.
+            foundHolder = dynamic_cast<const TLSHolder<T>*>( p.get() );
+            if (foundHolder) {
+                tls = foundHolder->copyAndReturnNewTLS(spawnerThread, curThread);
             }
+        }
 
-            if (!foundHolder) {
-                //Copy anyway
-                p->copyTLS(spawnerThread, curThread);
-            }
+        if (!foundHolder) {
+            //Copy anyway
+            p->copyTLS(spawnerThread, curThread);
         }
     }
 

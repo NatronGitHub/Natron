@@ -22,6 +22,7 @@ Functions
 - def :meth:`getDerivativeAtTime<NatronEngine.AnimatedParam.getDerivativeAtTime>` (time[, dimension=0])
 - def :meth:`getExpression<NatronEngine.AnimatedParam.getExpression>` (dimension)
 - def :meth:`getIntegrateFromTimeToTime<NatronEngine.AnimatedParam.getIntegrateFromTimeToTime>` (time1, time2[, dimension=0])
+- def :meth:`getInterpolationAtTime<NatronEngine.AnimatedParam.getInterpolationAtTime>` (time[, dimension=0])
 - def :meth:`getIsAnimated<NatronEngine.AnimatedParam.getIsAnimated>` ([dimension=0])
 - def :meth:`getKeyIndex<NatronEngine.AnimatedParam.getKeyIndex>` (time[, dimension=0])
 - def :meth:`getKeyTime<NatronEngine.AnimatedParam.getKeyTime>` (index, dimension)
@@ -114,6 +115,26 @@ Integrates the value of the parameter over the range [*time1* - *time2*].
 This is done using the animation curve of the parameter of the given *dimension*.
 Note that if this parameter has an expression, the return value is irrelevant.
 
+
+
+.. method:: AnimatedParam.getInterpolationAtTime(time[, dimension=0])
+
+    :param time: :class:`float`
+    :param dimension: :class:`int`
+    :rtype: :class:`KeyframeTypeEnum<NatronEngine.Natron.KeyframeTypeEnum>`
+
+Returns the interpolation of the keyframe at the given *time* on the animation curve of the
+given *dimension*, as set by :func:`setInterpolationAtTime()<NatronEngine.AnimatedParam.setInterpolationAtTime>`.
+If there is no keyframe at that *time*, or the *dimension* does not exist, this method returns
+``NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeNone``.
+
+.. versionadded:: 2.6
+
+
+Example::
+
+    if app1.Blur2.size.getInterpolationAtTime(56) == NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeConstant:
+        print("constant")
 
 
 .. method:: AnimatedParam.getIsAnimated([dimension=0])

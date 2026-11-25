@@ -285,6 +285,18 @@ public:
     Effect* getInput(const QString& inputLabel) const;
 
     /**
+     * @brief Returns the Effects connected to an output of this node, each one once, in the order of the
+     * connections. The caller is responsible for freeing them.
+     **/
+    std::list<Effect*> getOutputs() const;
+
+    /**
+     * @brief Returns the group that contains this node: the group node (an Effect) for a node inside a group,
+     * or the App for a node at the top level of the project. The caller is responsible for freeing it.
+     **/
+    Group* getContainerGroup() const;
+
+    /**
      * @brief Returns the name of the Effect as used internally
      **/
     QString getScriptName() const;
@@ -389,7 +401,22 @@ public:
 
     bool addUserPlane(const QString& planeName, const QStringList& channels);
 
+    /**
+     * @brief Returns the layers available in input inputNb of the node (in its output if inputNb is -1),
+     * at the current frame of the timeline and in the first view.
+     **/
     std::list<ImageLayer> getAvailableLayers(int inputNb) const;
+
+    /**
+     * @brief Same as getAvailableLayers(inputNb), at the given time and view.
+     **/
+    std::list<ImageLayer> getAvailableLayers(int inputNb, double time, int /* Python API: do not use ViewIdx */ view = 0) const;
+
+    /**
+     * @brief Returns the frame range (first, last) of the node, which is infinite if the node has no frame range
+     * and no input.
+     **/
+    std::pair<double, double> getFrameRange() const;
 
     RectI getOutputFormat() const;
 

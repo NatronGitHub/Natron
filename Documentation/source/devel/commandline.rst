@@ -38,6 +38,10 @@ The command line selects one of these modes:
 - **Interpreter**: ``NatronRenderer -t [<script.py|project.ntp>]`` runs the optional script, or
   loads the optional project, then reads Python commands from the standard input.
 
+In all modes, a project saved as a Python script by
+:meth:`App.saveProjectAsPython<NatronEngine.App.saveProjectAsPython>` (a ``.py`` file with the
+``# Natron Project`` header) is loaded as a project, as a ``.ntp`` file is, not run as a script.
+
 In all modes, the Python variable ``app`` points to the application instance (the project).
 
 General options

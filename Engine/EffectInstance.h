@@ -1835,6 +1835,8 @@ protected:
      * @brief Plug-ins that are flagged eRenderSafetyInstanceSafe or lower can implement this function to make a copy
      * of the effect that will be used to render. The copy should be as fast as possible, meaning any clip or parameter should
      * share pointers (since internally these classes are thread-safe) and ensure that any private data member is copied.
+     * The clones are kept for the next renders; if they share state that the subclass owns, its destructor must call
+     * clearRenderInstances() first: ~EffectInstance() destroys them too late (#1801).
      **/
     virtual EffectInstancePtr createRenderClone() { return EffectInstancePtr(); }
 

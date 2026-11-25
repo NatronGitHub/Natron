@@ -37,16 +37,6 @@ that are more complicated than a simple boolean value.
    - eStandardButtonReset              = 0x04000000,
    - eStandardButtonRestoreDefaults    = 0x08000000
 
-.. attribute:: Natron.ImagePlaneDescEnum
-
-   Can have the following values:
-
-   - eImageComponentNone = 0,
-   - eImageComponentAlpha,
-   - eImageComponentRGB,
-   - eImageComponentRGBA
-
-
 .. attribute:: Natron.ImageBitDepthEnum
 
    Can have the following values:
@@ -145,7 +135,8 @@ that are more complicated than a simple boolean value.
 
    - eProjectFileFormatNone = -1, (a project that was never saved; when saving: the format of the project)
    - eProjectFileFormatText = 0, (XML text, compatible with Natron 2.5 and earlier)
-   - eProjectFileFormatBinary = 1 (portable binary, Natron 2.6 and later)
+   - eProjectFileFormatBinary = 1, (portable binary, Natron 2.6 and later)
+   - eProjectFileFormatPython = 2 (a Python script, Natron 2.6 and later, see :meth:`App.saveProjectAsPython<NatronEngine.App.saveProjectAsPython>`)
 
    .. versionadded:: 2.6
 
@@ -162,3 +153,61 @@ that are more complicated than a simple boolean value.
    - eViewerColorSpaceLinear,
    - eViewerColorSpaceRec709
 
+
+.. attribute:: Natron.MergingFunctionEnum
+
+   The compositing operators of :func:`BezierCurve.setCompositingOperator()<NatronEngine.BezierCurve.setCompositingOperator>`.
+   Can have the following values:
+
+   - eMergeATop = 0,
+   - eMergeAverage,
+   - eMergeColor,
+   - eMergeColorBurn,
+   - eMergeColorDodge,
+   - eMergeConjointOver,
+   - eMergeCopy,
+   - eMergeDifference,
+   - eMergeDisjointOver,
+   - eMergeDivide,
+   - eMergeExclusion,
+   - eMergeFreeze,
+   - eMergeFrom,
+   - eMergeGeometric,
+   - eMergeGrainExtract,
+   - eMergeGrainMerge,
+   - eMergeHardLight,
+   - eMergeHue,
+   - eMergeHypot,
+   - eMergeIn,
+   - eMergeLuminosity,
+   - eMergeMask,
+   - eMergeMatte,
+   - eMergeMax,
+   - eMergeMin,
+   - eMergeMinus,
+   - eMergeMultiply,
+   - eMergeOut,
+   - eMergeOver,
+   - eMergeOverlay,
+   - eMergePinLight,
+   - eMergePlus,
+   - eMergeReflect,
+   - eMergeSaturation,
+   - eMergeScreen,
+   - eMergeSoftLight,
+   - eMergeStencil,
+   - eMergeUnder,
+   - eMergeXOR
+
+.. attribute:: Natron.DisplayChannelsEnum
+
+   The channels displayed by a Viewer (:func:`PyViewer.setChannels()<NatronGui.PyViewer.setChannels>`).
+   Can have the following values:
+
+   - eDisplayChannelsRGB = 0,
+   - eDisplayChannelsR,
+   - eDisplayChannelsG,
+   - eDisplayChannelsB,
+   - eDisplayChannelsA,
+   - eDisplayChannelsY,
+   - eDisplayChannelsMatte

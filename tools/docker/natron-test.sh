@@ -113,12 +113,12 @@ if [ -f result.txt ]; then
         case $t in */*)
             d=${t%%/*}/formats/${t#*/}
             if [ -d "$d" ]; then
-                for f in "$d"/reference*.jpg "$d"/output*.jpg "$d"/comp*.jpg; do
+                for f in "$d"/reference*.jpg "$d"/output*.jpg "$d"/comp*.jpg "$d"/reference*.png "$d"/output*.png "$d"/comp*.png; do
                     [ ! -f "$f" ] || cp "$f" "failed/$(echo "$t" | tr / -)-$(basename "$f")"
                 done
             else
                 d=${t%/*}; n=${t##*/}
-                for f in "$d/reference$n.jpg" "$d/output$n.jpg" "$d/comp$n.jpg"; do
+                for f in "$d/reference$n.jpg" "$d/output$n.jpg" "$d/comp$n.jpg" "$d/reference$n.png" "$d/output$n.png" "$d/comp$n.png"; do
                     [ ! -f "$f" ] || cp "$f" "failed/$(echo "$d" | tr / -)-$(basename "$f")"
                 done
             fi ;;

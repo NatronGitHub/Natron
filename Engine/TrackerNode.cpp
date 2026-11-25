@@ -570,11 +570,9 @@ TrackerNode::knobChanged(KnobI* k,
 
     ctx->onKnobsLoaded();
 
+    // overlay is NULL without a viewer (NatronRenderer, Python scripts): the buttons then use the project's
+    // frame range and timeline, and nudging the tracks, which needs the viewer, does nothing (#1256)
     OverlaySupport* overlay = getCurrentViewportForOverlays();
-    if (!overlay || !overlay->getInternalViewerNode()) {
-        return false;
-    }
-    
     bool ret = true;
     if ( k == _imp->ui->trackRangeDialogOkButton.lock().get() ) {
         int first = _imp->ui->trackRangeDialogFirstFrame.lock()->getValue();

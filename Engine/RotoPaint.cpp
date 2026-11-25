@@ -1211,6 +1211,12 @@ RotoPaint::knobChanged(KnobI* k,
         ctx->onRippleEditChanged( _imp->ui->rippleEditEnabledButton.lock()->getValue() );
     } else if ( k == _imp->ui->colorWheelButton.lock().get() ) {
         _imp->ui->onBreakMultiStrokeTriggered();
+    } else if ( k == _imp->ui->multiStrokeEnabled.lock().get() ) {
+        // a stroke already in the hierarchy must not be painted again as a new item
+        _imp->ui->onBreakMultiStrokeTriggered();
+    } else if ( k == _imp->ui->sourceTypeChoice.lock().get() ) {
+        // the source of a stroke can't change while it is painted, and a foreground source needs a new stroke
+        _imp->ui->onBreakMultiStrokeTriggered();
     } else if ( k == _imp->ui->pressureOpacityButton.lock().get() ) {
         _imp->ui->onBreakMultiStrokeTriggered();
     } else if ( k == _imp->ui->pressureSizeButton.lock().get() ) {
@@ -3089,17 +3095,18 @@ RotoPaint::onOverlayPenMotion(double time,
         break;
     }
     case eEventStateDraggingBrushOpacity: {
-        KnobDoublePtr opaSb = _imp->ui->sizeSpinbox.lock();
+        KnobDoublePtr opaSb = _imp->ui->opacitySpinbox.lock();
         double opa = 0;
         if (opaSb) {
             opa = opaSb->getValue();
         }
-        double newOpa = opa + ( (dx + dy) / 2. );
-        if (opa != 0) {
-            newOpa = std::max( 0., std::min(1., newOpa / opa) );
-            newOpa = newOpa > 0 ? std::min(1., opa + 0.05) : std::max(0., opa - 0.05);
-        } else {
-            newOpa = newOpa < 0 ? .0 : 0.05;
+        // steps of 0.05: more opaque to the right or up, less to the left or down
+        const double delta = (dx + dy) / 2.;
+        double newOpa = opa;
+        if (delta > 0) {
+            newOpa = std::min(1., opa + 0.05);
+        } else if (delta < 0) {
+            newOpa = std::max(0., opa - 0.05);
         }
         const double scale = 0.01;      // i.e. round to nearest one-hundreth
         newOpa = std::floor(newOpa / scale + 0.5) * scale;

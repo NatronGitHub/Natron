@@ -976,6 +976,13 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     bool multiPlanar = effect->isMultiPlanar();
     RectI renderWindow;
     Transform::Matrix3x3Ptr transform;
+    // Rendering the input may wait for other threads (a render lock held by another render, tiles, the
+    // multi-thread suite, an image being rendered elsewhere), and so may locking the image below (OfxImage takes
+    // a ReadAccess, which waits while another render writes into the same image). Those threads may need the GIL,
+    // e.g. to evaluate a Python expression. This thread holds it when a Python script triggered the action
+    // (param.set() calling kOfxActionInstanceChanged): release it until the image is locked (#1653). The render
+    // takes it again where it runs Python.
+    PythonGILUnlocker gilUnlocker;
     ImagePtr image = effect->getImage(inputnb, time, renderScale, view,
                                       optionalBounds ? &bounds : NULL,
                                       &comp,

@@ -28,6 +28,7 @@
 
 #include "Global/Macros.h"
 
+#include <atomic>
 #include <set>
 #include <map>
 #include <list>
@@ -156,6 +157,10 @@ public:
 
     ///The support for tiles is local to a render and may change depending on GPU usage or other parameters
     bool tilesSupported : 1;
+
+    ///The result of EffectInstance::isFrameVaryingOrAnimated_Recursive() for this node in this render: -1 until it is
+    ///computed, then 0 or 1. Atomic, not a bit-field: the render args may be shared by the threads of the render.
+    std::atomic<signed char> frameVaryingOrAnimatedRecursive;
 
     ParallelRenderArgs();
 

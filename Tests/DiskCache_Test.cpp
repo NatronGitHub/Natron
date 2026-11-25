@@ -23,6 +23,9 @@
 // - #1265: NATRON_DISK_CACHE_PATH takes precedence over the "Disk cache path" preference;
 // - #192: the disk space of the cache files is allocated before they are written;
 // - the unreferenced files are not deleted while another Natron process uses the cache.
+// - #1594: the table of contents is replaced atomically, so a reader never sees a partial one.
+// - #1815: the table of contents is read back as it was written.
+// - #1812: the frame range of a DiskCache node follows the project range.
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -32,11 +35,14 @@
 
 #include "Global/Macros.h"
 
+#include <atomic>
 #include <chrono>
 #include <cstring>
 #include <iostream>
 #include <list>
 #include <memory>
+#include <set>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -61,6 +67,7 @@
 #include "Engine/Cache.h"
 #include "Engine/CacheSerialization.h"
 #include "Engine/CreateNodeArgs.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/FrameKey.h"
 #include "Engine/FrameParams.h"
@@ -431,6 +438,121 @@ TEST(MemoryFileTest, ReserveFailsWhenTheDiskIsFull)
     EXPECT_FALSE( QFile::exists( QString::fromUtf8( path.c_str() ) ) );
 }
 
+// #1594: the restore file (the table of contents) used to be truncated and rewritten in place on every project save,
+// so another Natron process restoring it (or a crash during the write) could see an empty or partial file.
+// Here a thread reads it while the cache rewrites it: every read must be a complete table of contents.
+TEST_F(DiskCacheTest, RestoreFileIsReplacedAtomically)
+{
+    const int nEntries = 50;
+    for (int i = 0; i < nEntries; ++i) {
+        createImageOnDisk( _cache, makeKey(0x1000000000000000ULL + i), 0 );
+    }
+    ASSERT_EQ( (std::size_t)nEntries, allEntries(_cache).size() );
+    ASSERT_TRUE( _cache->writeRestoreFile() );
+    const QString restoreFilePath = QString::fromUtf8( _cache->getRestoreFilePath().c_str() );
+
+    std::atomic<bool> writing(true);
+    int reads = 0;
+    int badReads = 0;
+    std::string firstError;
+    std::thread reader([&]() {
+        while ( writing.load() ) {
+            QFile f(restoreFilePath);
+            // On Windows, the file may be missing or locked while it is replaced
+            if ( !f.open(QIODevice::ReadOnly) ) {
+                std::this_thread::yield();
+                continue;
+            }
+            const QByteArray bytes = f.readAll();
+            f.close();
+            // let the writer replace the file (on Windows, it can't while the file is open)
+            std::this_thread::yield();
+            ++reads;
+            std::istringstream data( std::string( bytes.constData(), bytes.size() ) );
+            ImageCache::CacheTOC toc;
+            try {
+                boost::archive::binary_iarchive iArchive(data);
+                unsigned int version = 0;
+                iArchive >> version;
+                iArchive >> toc;
+                if (toc.size() != (std::size_t)nEntries) {
+                    throw std::runtime_error("wrong number of entries");
+                }
+            } catch (const std::exception& e) {
+                if (badReads == 0) {
+                    firstError = std::string(e.what()) + " (" + std::to_string( bytes.size() ) + " bytes)";
+                }
+                ++badReads;
+            }
+        }
+    });
+    int writes = 0;
+    for (int i = 0; i < 100; ++i) {
+        // On Windows, replacing the file fails while the reader has it open: the previous file is kept
+        if ( _cache->writeRestoreFile() ) {
+            ++writes;
+        }
+    }
+    writing = false;
+    reader.join();
+
+    EXPECT_GT(writes, 0);
+    EXPECT_GT(reads, 0);
+    EXPECT_EQ(0, badReads) << "out of " << reads << " reads; first error: " << firstError;
+    // No temporary file is left next to it
+    const QStringList files = QDir( _cache->getCachePath() ).entryList(QDir::Files | QDir::Hidden);
+    EXPECT_EQ( QStringList() << QFileInfo(restoreFilePath).fileName(), files );
+}
+
+// #1815: Cache::readRestoreFile() reads back the table of contents that Cache::writeRestoreFile() wrote, also when
+// it contains the bytes that a text-mode read changes on Windows: CR-LF (0x0D 0x0A) becomes LF, and 0x1A ends the
+// file (#1594). A file of another cache version, or a truncated one, is reported as such.
+TEST_F(DiskCacheTest, RestoreFileRoundTrip)
+{
+    // The node hashes are serialized as they are, so the file contains these bytes
+    const U64 hashes[] = { 0x0D0A0D0A0D0A0D0AULL, 0x1A1A1A1A1A1A1A1AULL, 0x0A0D1A0D0A1A0D0AULL };
+    for (U64 hash : hashes) {
+        createImageOnDisk( _cache, makeKey(hash), 0 );
+    }
+    ASSERT_TRUE( _cache->writeRestoreFile() );
+    QFile file( QString::fromUtf8( _cache->getRestoreFilePath().c_str() ) );
+    ASSERT_TRUE( file.open(QIODevice::ReadOnly) );
+    const QByteArray bytes = file.readAll();
+    file.close();
+    ASSERT_TRUE( bytes.contains("\r\n") );
+    ASSERT_TRUE( bytes.contains('\x1a') );
+
+    ImageCache::CacheTOC toc;
+    ASSERT_EQ( eRestoreFileStatusRead, _cache->readRestoreFile(&toc) );
+    std::set<U64> readHashes;
+    for (ImageCache::CacheTOC::const_iterator it = toc.begin(); it != toc.end(); ++it) {
+        readHashes.insert( it->key.getTreeVersion() );
+    }
+    EXPECT_EQ( std::set<U64>( hashes, hashes + sizeof(hashes) / sizeof(hashes[0]) ), readHashes );
+
+    // The entries are restored from it
+    _cache.reset();
+    _cache = makeCache();
+    _cache->restore(toc);
+    EXPECT_EQ( toc.size(), allEntries(_cache).size() );
+
+    // A cache of another version doesn't read it
+    {
+        const ImageCache otherVersion(_cacheName, NATRON_CACHE_VERSION + 1, 1024ULL * 1024ULL, 0.);
+        ImageCache::CacheTOC otherToc;
+        EXPECT_EQ( eRestoreFileStatusOtherVersion, otherVersion.readRestoreFile(&otherToc) );
+        EXPECT_TRUE( otherToc.empty() );
+    }
+
+    // A truncated file
+    ASSERT_TRUE( file.open(QIODevice::WriteOnly | QIODevice::Truncate) );
+    file.write( bytes.left(bytes.size() / 2) );
+    file.close();
+    ImageCache::CacheTOC truncatedToc;
+    EXPECT_EQ( eRestoreFileStatusUnreadable, _cache->readRestoreFile(&truncatedToc) );
+    EXPECT_TRUE( truncatedToc.empty() );
+}
+
 // #1112: the restore cleanup of a tiled cache (the viewer cache) removes the files of its folder that are not
 // referenced by the table of contents, and keeps the tile files that are.
 TEST_F(DiskCacheTest, TiledRestoreRemovesUnreferencedFiles)
@@ -564,4 +686,51 @@ TEST(DiskCacheLocation, InstanceFileIsTouchedWithoutEventLoop)
     }
     appPTR->setDiskCacheInstanceFileTouchInterval(10 * 60 * 1000);
     EXPECT_TRUE(touched);
+}
+
+// #1812: the frame range of a DiskCache node set to "Project frame range" follows the project's. The frame range of a
+// node is cached under its hash, which doesn't depend on the project range, so the old range was returned.
+TEST(DiskCacheNode, ProjectFrameRangeFollowsTheProject)
+{
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+    CreateNodeArgs args(PLUGINID_NATRON_DISKCACHE, project);
+    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+    NodePtr node = app->createNode(args);
+    ASSERT_TRUE( bool(node) );
+    KnobIntPtr projectRange = std::dynamic_pointer_cast<KnobInt>( project->getKnobByName("frameRange") );
+    ASSERT_TRUE( bool(projectRange) );
+    // Restores the project range and destroys the node, also when an assertion fails
+    struct Restore
+    {
+        NodePtr node;
+        KnobIntPtr range;
+        int first, last;
+
+        ~Restore()
+        {
+            range->setValue(first, ViewSpec::all(), 0);
+            range->setValue(last, ViewSpec::all(), 1);
+            node->destroyNode(true, false);
+        }
+    } restore = { node, projectRange, projectRange->getValue(0), projectRange->getValue(1) };
+
+    KnobChoicePtr frameRange = std::dynamic_pointer_cast<KnobChoice>( node->getKnobByName("frameRange") );
+    ASSERT_TRUE( bool(frameRange) );
+    frameRange->setValue(1); // Project frame range
+
+    EffectInstancePtr effect = node->getEffectInstance();
+    projectRange->setValue(1, ViewSpec::all(), 0);
+    projectRange->setValue(10, ViewSpec::all(), 1);
+    double first = 0., last = 0.;
+    effect->getFrameRange_public(effect->getHash(), &first, &last);
+    EXPECT_EQ(1., first);
+    EXPECT_EQ(10., last);
+
+    projectRange->setValue(5, ViewSpec::all(), 0);
+    projectRange->setValue(20, ViewSpec::all(), 1);
+    effect->getFrameRange_public(effect->getHash(), &first, &last);
+    EXPECT_EQ(5., first);
+    EXPECT_EQ(20., last);
 }

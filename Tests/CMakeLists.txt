@@ -23,6 +23,7 @@ set(Tests_SOURCES
     google-mock/src/gmock-all.cc
     BaseTest.cpp
     CLArgs_Test.cpp
+    CacheHolderID_Test.cpp
     Curve_Test.cpp
     DeepGraphRender_Test.cpp
     DiskCache_Test.cpp
@@ -53,6 +54,7 @@ set(Tests_SOURCES
     MultiInputLinks_Test.cpp
     NaNGuards_FastMath.cpp
     NaNGuards_Test.cpp
+    NodeCreatedCallback_Test.cpp
     NodeGroup_Test.cpp
     NodePresets_Test.cpp
     NodePreview_Test.cpp
@@ -67,6 +69,7 @@ set(Tests_SOURCES
     OfxHostProperties_Test.cpp
     OfxImageMemory_Test.cpp
     OfxInstanceChanged_Test.cpp
+    OfxInstanceChangedGIL_Test.cpp
     OfxInstanceEdit_Test.cpp
     OfxMultiThreadSuite_Test.cpp
     OfxMultiplePAR_Test.cpp
@@ -82,6 +85,7 @@ set(Tests_SOURCES
     OfxPluginScan_Test.cpp
     OfxProjectLoad_Test.cpp
     OfxQuestion_Test.cpp
+    OfxRenderClone_Test.cpp
     OfxSequenceRenderArgs_Test.cpp
     OfxSingleInstance_Test.cpp
     OfxSuiteStatus_Test.cpp
@@ -102,6 +106,7 @@ set(Tests_SOURCES
     PythonScript_Test.cpp
     ProjectFileFormat_Test.cpp
     PythonExpressionScope_Test.cpp
+    ReadNodeInputs_Test.cpp
     ReadNodeOverlay_Test.cpp
     ReadWriteVersion_Test.cpp
     RenderThreadSafety_Test.cpp
@@ -112,6 +117,7 @@ set(Tests_SOURCES
     ShuffleAutoConnect_Test.cpp
     StrUtilsFormat_Test.cpp
     Tracker_Test.cpp
+    TrackerHeadless_Test.cpp
     ViewerCache_Test.cpp
     ViewerTexture_Test.cpp
     WriteNodeViews_Test.cpp
@@ -157,9 +163,11 @@ add_test(NAME TestsOfxCache COMMAND Tests "--gtest_filter=OfxHostProperties.*:Of
 # The caches of both (the same OFX plug-in cache) in the build tree, not in the user's cache directory, which
 # every build of this version shares (#1569). NATRON_DISK_CACHE_PATH, if set, takes precedence (see wmain.cpp).
 set(NATRON_TESTS_CACHE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests-cache")
-set_tests_properties(Tests PROPERTIES FIXTURES_SETUP OfxPluginCache
+# A hung test fails after 30 minutes (the whole binary takes 1 to 10 minutes on CI), with ctest's "Timeout"
+# and the name of the running test in the log, instead of running until the CI job's time limit.
+set_tests_properties(Tests PROPERTIES FIXTURES_SETUP OfxPluginCache TIMEOUT 1800
     ENVIRONMENT "NATRON_TESTS_CACHE_DIR=${NATRON_TESTS_CACHE_DIR}")
-set_tests_properties(TestsOfxCache PROPERTIES FIXTURES_REQUIRED OfxPluginCache
+set_tests_properties(TestsOfxCache PROPERTIES FIXTURES_REQUIRED OfxPluginCache TIMEOUT 600
     ENVIRONMENT "NATRON_TESTS_KEEP_OFX_CACHE=1;NATRON_TESTS_CACHE_DIR=${NATRON_TESTS_CACHE_DIR}")
 # A copy of that cache, made unreadable: Natron discards it, scans all the plug-ins again and rewrites it
 # (see OfxCacheCorrupt.cmake).
@@ -295,6 +303,10 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME ConvertProjectTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_convert_project_test.py $<TARGET_FILE:NatronRenderer>)
     set_tests_properties(ConvertProjectTest PROPERTIES TIMEOUT 300)
+    # App.saveProjectAsPython(), and loading its file with app.loadProject() and from the command line (#1669)
+    add_test(NAME ProjectPythonTest
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_project_python_test.py $<TARGET_FILE:NatronRenderer>)
+    set_tests_properties(ProjectPythonTest PROPERTIES TIMEOUT 400)
 endif()
 if(Python3_Interpreter_FOUND)
     # NatronRenderer -t exits at the end of a stdin that is not a console (the null device, a pipe)
@@ -378,12 +390,33 @@ add_test(NAME NodeNamingHeadless
 set_tests_properties(NodeNamingHeadless PROPERTIES TIMEOUT 300
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/node-naming-headless-cache")
 
+# App.timelineSetTime(frame) moves the current frame, also in background mode (#1796): NatronRenderer runs
+# the script, which exits with natron.quit(status).
+add_test(NAME TimelineSetTimeHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_timeline_set_time.py")
+set_tests_properties(TimelineSetTimeHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/timeline-set-time-headless-cache")
+
+# Effect.destroy() takes effect before it returns: the node is no longer found and its name is free (#1805):
+# NatronRenderer runs the script, which exits with natron.quit(status).
+add_test(NAME DestroyNodeHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_destroy_node.py")
+set_tests_properties(DestroyNodeHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/destroy-node-headless-cache")
+
 # ColorParam.get(frame) returns the alpha of an RGBA color, not its blue (#1712): NatronRenderer runs the
 # script, which exits with natron.quit(status).
 add_test(NAME ColorGetFrameHeadless
     COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_color_get_frame.py")
 set_tests_properties(ColorGetFrameHeadless PROPERTIES TIMEOUT 120
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/color-get-frame-headless-cache")
+
+# Effect.getOutputs() lists the nodes downstream of a node, Effect.getContainerGroup() returns its group (#1797):
+# NatronRenderer runs the script, which exits with natron.quit(status).
+add_test(NAME EffectOutputsHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_effect_outputs.py")
+set_tests_properties(EffectOutputsHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/effect-outputs-headless-cache")
 
 # Undo groups do nothing in background mode (App.undoGroup(), #1455): NatronRenderer runs the script,
 # which exits with natron.quit(status).
@@ -397,6 +430,39 @@ add_test(NAME KeyframeDerivativesHeadless
     COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_keyframe_derivatives.py")
 set_tests_properties(KeyframeDerivativesHeadless PROPERTIES TIMEOUT 120
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/keyframe-derivatives-headless-cache")
+# BezierCurve.setKeyframeInterpolation() (#1749), headless; skipped without the Roto plug-in (openfx-misc)
+add_test(NAME RotoInterpolationHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_roto_interpolation.py")
+set_tests_properties(RotoInterpolationHeadless PROPERTIES TIMEOUT 120 SKIP_RETURN_CODE 77
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/roto-interpolation-headless-cache")
+
+# App.createNode(), createReader() and createWriter() take their properties argument, also on Windows (#1827)
+add_test(NAME CreateNodePropertiesHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_create_node_properties.py")
+set_tests_properties(CreateNodePropertiesHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/create-node-properties-headless-cache")
+
+# The ExprUtils noise functions and App.render(tasks) accept any sequence and raise TypeError for a wrong
+# argument, instead of reading garbage or crashing (#1795): NatronRenderer runs the script, which exits with
+# natron.quit(status).
+add_test(NAME SequenceArgsHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_sequence_args.py")
+set_tests_properties(SequenceArgsHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/sequence-args-headless-cache")
+
+# Without openfx-misc's Roto and Merge plug-ins, app.createNode() of a Roto or RotoPaint node returns None
+# (#1828), headless; skipped (77) when openfx-misc is installed
+add_test(NAME RotoWithoutMiscHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_roto_without_misc.py")
+set_tests_properties(RotoWithoutMiscHeadless PROPERTIES TIMEOUT 120 SKIP_RETURN_CODE 77
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/roto-without-misc-headless-cache")
+
+# The shapes of Roto and RotoPaint nodes keep their channels and are not clipped at the project format, whatever
+# the defaults of openfx-misc's Roto plug-in, headless; skipped (77) without openfx-misc or openfx-io's WriteOIIO
+add_test(NAME RotoShapeChannelsHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_roto_shape_channels.py")
+set_tests_properties(RotoShapeChannelsHeadless PROPERTIES TIMEOUT 120 SKIP_RETURN_CODE 77
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/roto-shape-channels-headless-cache")
 
 # A PyPlug is created after the script rebinds the global "app" (#1525)
 add_test(NAME PyPlugReboundAppHeadless
@@ -411,9 +477,23 @@ add_test(NAME RenameGroupExpressionsHeadless
 set_tests_properties(RenameGroupExpressionsHeadless PROPERTIES TIMEOUT 120
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/rename-group-expressions-headless-cache")
 
+# AnimatedParam.getInterpolationAtTime() reads the interpolation of a keyframe (#1798): NatronRenderer runs the
+# script, which exits with natron.quit(status).
+add_test(NAME GetInterpolationHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_get_interpolation.py")
+set_tests_properties(GetInterpolationHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/get-interpolation-headless-cache")
+
 # The color plane goes through a Shuffle that writes to another layer (it was black): NatronRenderer runs the
 # script, which exits with natron.quit(status), 77 when openfx-misc or openfx-io are not in OFX_PLUGIN_PATH.
 add_test(NAME LayerPassThroughHeadless
     COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_layer_passthrough.py")
 set_tests_properties(LayerPassThroughHeadless PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 300
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/layer-passthrough-headless-cache")
+
+# Effect.getFrameRange() and Effect.getAvailableLayers(inputNb, time, view) (#1799): NatronRenderer runs the
+# script, which exits with natron.quit(status).
+add_test(NAME FrameRangeHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_frame_range.py")
+set_tests_properties(FrameRangeHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/frame-range-headless-cache")

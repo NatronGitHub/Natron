@@ -2006,9 +2006,6 @@ TrackScheduler::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
         } // while (cur != end) {
     } // IsTrackingFlagSetter_RAII
     TrackerContext* isContext = dynamic_cast<TrackerContext*>(_imp->paramsProvider);
-    if (isContext) {
-        isContext->solveTransformParams();
-    }
 
     appPTR->getAppTLS()->cleanupTLSForThread();
 
@@ -2038,6 +2035,20 @@ TrackScheduler::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
     if ( _imp->paramsProvider && _imp->paramsProvider->getUpdateViewer() ) {
         //Refresh all viewers to the current frame
         timeline->seekFrame(lastValidFrame, true, 0, eTimelineChangeReasonOtherSeek);
+    }
+
+    if (isContext) {
+        // Solve on the main thread, as the other solves, once the tracks' knobs are slaved again: the solve sets
+        // parameters, whose change handlers must run on the main thread, and in background mode it no longer
+        // runs in the thread pool (#1256). It is queued before this thread stops working, so a script that sees
+        // that the tracking is finished gets it with the next processing of the events. The context is the
+        // receiver, so the call is dropped if the context is deleted first.
+        QMetaObject::invokeMethod(isContext, [isContext]() {
+            // the node may have been deleted since, if something else keeps the context alive
+            if ( isContext->getNode() ) {
+                isContext->solveTransformParams();
+            }
+        }, Qt::QueuedConnection);
     }
 
     return state;

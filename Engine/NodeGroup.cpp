@@ -38,8 +38,11 @@
 #include <QCoreApplication>
 #include <QTextStream>
 
+#include <ofxImageEffect.h> // kOfxImageEffectFileParamName
+
 #include "Engine/AppInstance.h"
 #include "Engine/Bezier.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/BezierCP.h"
 #include "Engine/Curve.h"
 #include "Engine/GroupInput.h"
@@ -54,14 +57,18 @@
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
 #include "Engine/PrecompNode.h"
+#include "Engine/ReadNode.h"
 #include "Engine/RotoContext.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/WriteNode.h"
 
-#define NATRON_PYPLUG_EXPORTER_VERSION 10
+#define NATRON_PYPLUG_EXPORTER_VERSION 11
+// The version of the Python project files written by Project::exportToPython()
+#define NATRON_PROJECT_PYTHON_EXPORTER_VERSION 1
 
 NATRON_NAMESPACE_ENTER
 
@@ -292,15 +299,18 @@ NodeCollection::quitAnyProcessingForAllNodes_non_blocking()
 bool
 NodeCollection::isCacheIDAlreadyTaken(const std::string& name) const
 {
-    QMutexLocker k(&_imp->nodesMutex);
+    {
+        QMutexLocker k(&_imp->nodesMutex);
 
-    for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ( (*it)->getCacheID() == name ) {
-            return true;
+        for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
+            if ( (*it)->getCacheID() == name ) {
+                return true;
+            }
         }
     }
 
-    return false;
+    // nodesMutex is unlocked: AppManager::isCacheIDRetired() locks its own mutex
+    return appPTR->isCacheIDRetired(name);
 }
 
 bool
@@ -1009,57 +1019,6 @@ NodeCollection::forceComputeInputDependentDataOnAllTrees()
     }
 }
 
-void
-NodeCollection::getParallelRenderArgs(std::map<NodePtr, ParallelRenderArgsPtr>& argsMap) const
-{
-    NodesList nodes = getNodes();
-
-    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( !(*it)->isActivated() ) {
-            continue;
-        }
-        ParallelRenderArgsPtr args = (*it)->getEffectInstance()->getParallelRenderArgsTLS();
-        if (args) {
-            argsMap.insert( std::make_pair(*it, args) );
-        }
-
-        if ( (*it)->isMultiInstance() ) {
-            ///If the node has children, set the thread-local storage on them too, even if they do not render, it can be useful for expressions
-            ///on parameters.
-            NodesList children;
-            (*it)->getChildrenMultiInstance(&children);
-            for (NodesList::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
-                ParallelRenderArgsPtr childArgs = (*it2)->getEffectInstance()->getParallelRenderArgsTLS();
-                if (childArgs) {
-                    argsMap.insert( std::make_pair(*it2, childArgs) );
-                }
-            }
-        }
-
-        //If the node has an attached stroke, that means it belongs to the roto paint tree, hence it is not in the project.
-        RotoContextPtr rotoContext = (*it)->getRotoContext();
-        if (args && rotoContext) {
-            for (NodesList::const_iterator it2 = args->rotoPaintNodes.begin(); it2 != args->rotoPaintNodes.end(); ++it2) {
-                ParallelRenderArgsPtr args2 = (*it2)->getEffectInstance()->getParallelRenderArgsTLS();
-                if (args2) {
-                    argsMap.insert( std::make_pair(*it2, args2) );
-                }
-            }
-        }
-
-
-        const NodeGroup* isGrp = (*it)->isEffectGroup();
-        if (isGrp) {
-            isGrp->getParallelRenderArgs(argsMap);
-        }
-
-        const PrecompNode* isPrecomp = dynamic_cast<const PrecompNode*>( (*it)->getEffectInstance().get() );
-        if (isPrecomp) {
-            isPrecomp->getPrecompApp()->getProject()->getParallelRenderArgs(argsMap);
-        }
-    }
-}
-
 struct NodeGroupPrivate
 {
     mutable QRecursiveMutex nodesLock;
@@ -1741,16 +1700,89 @@ escapeString(const std::string& str)
 
 /* *INDENT-ON* */
 
+// The Python name of an interpolation, e.g. "NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeSmooth"
+static QString
+keyframeTypeToPython(KeyframeTypeEnum type)
+{
+    const char* name = "eKeyframeTypeNone";
+    switch (type) {
+    case eKeyframeTypeNone:
+        break;
+    case eKeyframeTypeSmooth:
+        name = "eKeyframeTypeSmooth";
+        break;
+    case eKeyframeTypeBroken:
+        name = "eKeyframeTypeBroken";
+        break;
+    case eKeyframeTypeCatmullRom:
+        name = "eKeyframeTypeCatmullRom";
+        break;
+    case eKeyframeTypeConstant:
+        name = "eKeyframeTypeConstant";
+        break;
+    case eKeyframeTypeCubic:
+        name = "eKeyframeTypeCubic";
+        break;
+    case eKeyframeTypeFree:
+        name = "eKeyframeTypeFree";
+        break;
+    case eKeyframeTypeHorizontal:
+        name = "eKeyframeTypeHorizontal";
+        break;
+    case eKeyframeTypeLinear:
+        name = "eKeyframeTypeLinear";
+        break;
+    }
+
+    return QString::fromUtf8(NATRON_ENGINE_PYTHON_MODULE_NAME ".Natron.KeyframeTypeEnum.") + QString::fromUtf8(name);
+}
+
+// The keyframes of curve with the derivatives that Natron computes for them (Curve::evaluateCurveChanged()),
+// which a script that only sets the keyframes gets: a keyframe whose derivatives differ (free or broken, or computed
+// by an older Natron) must get its own.
+static KeyFrameSet
+keyFramesWithComputedDerivatives(const Curve& curve)
+{
+    Curve computed(curve);
+    const KeyFrameSet keys = curve.getKeyFrames_mt_safe();
+
+    computed.clearKeyFrames();
+    for (KeyFrameSet::const_iterator k = keys.begin(); k != keys.end(); ++k) {
+        // a free or broken keyframe keeps its derivatives, which its neighbours' depend on
+        const bool keepsDerivatives = (k->getInterpolation() == eKeyframeTypeFree) || (k->getInterpolation() == eKeyframeTypeBroken);
+        computed.addKeyFrame( KeyFrame( k->getTime(), k->getValue(), keepsDerivatives ? k->getLeftDerivative() : 0.,
+                                        keepsDerivatives ? k->getRightDerivative() : 0., k->getInterpolation() ) );
+    }
+
+    return computed.getKeyFrames_mt_safe();
+}
+
+static bool
+hasOwnDerivatives(const KeyFrame& key,
+                  const KeyFrame& computed)
+{
+    return (key.getInterpolation() == eKeyframeTypeFree) || (key.getInterpolation() == eKeyframeTypeBroken) ||
+           ( key.getLeftDerivative() != computed.getLeftDerivative() ) || ( key.getRightDerivative() != computed.getRightDerivative() );
+}
+
 // The bytes of the KnobBytes values written by the current exportGroupToPython() (main thread): their total must
 // stay below KnobBytes::maxExportLength(), for the script to fit in a QString.
 static std::size_t gExportedBytes = 0;
+
+// Which values exportKnobValues() writes when a dimension is not animated
+enum ExportedValuesEnum
+{
+    eExportedValuesModified, // only the ones that differ from the default value
+    eExportedValuesAll, // also the others (the parameter of a PyPlug instance: its PyPlug may have another default)
+};
 
 static bool
 exportKnobValues(int indentLevel,
                  const KnobIPtr knob,
                  const QString& paramFullName,
                  bool mustDefineParam,
-                 QTextStream& ts)
+                 QTextStream& ts,
+                 ExportedValuesEnum exportedValues = eExportedValuesModified)
 {
     bool hasExportedValue = false;
 
@@ -1786,7 +1818,11 @@ exportKnobValues(int indentLevel,
         }
     }
 
-    int innerIdent = mustDefineParam ? 2 : 1;
+    // No value to restore (Python's ButtonParam and SeparatorParam have no setValue()): only their visibility and enabled state
+    const bool hasValue = !dynamic_cast<KnobButton*>( knob.get() ) && !dynamic_cast<KnobSeparator*>( knob.get() );
+    // (all the other callers pass indentLevel 1)
+    int innerIdent = mustDefineParam ? indentLevel + 1 : indentLevel;
+    const KnobHelper* knobHelper = dynamic_cast<const KnobHelper*>( knob.get() );
 
     for (int i = 0; i < knob->getDimension(); ++i) {
         if (isParametric) {
@@ -1807,40 +1843,13 @@ exportKnobValues(int indentLevel,
                 if ( !keys.empty() ) {
                     WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.deleteAllControlPoints(") + NUM_INT(i) + QString::fromUtf8(")") );
                 }
-                for (KeyFrameSet::iterator it3 = keys.begin(); it3 != keys.end(); ++it3) {
-                    QString interpStr;
-                    switch ( it3->getInterpolation() ) {
-                    case eKeyframeTypeNone:
-                        interpStr = QString::fromUtf8("NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeNone");
-                        break;
-                    case eKeyframeTypeSmooth:
-                        interpStr = QString::fromUtf8("NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeSmooth");
-                        break;
-                    case eKeyframeTypeBroken:
-                        interpStr = QString::fromUtf8("NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeBroken");
-                        break;
-                    case eKeyframeTypeCatmullRom:
-                        interpStr = QString::fromUtf8("NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeCatmullRom");
-                        break;
-                    case eKeyframeTypeConstant:
-                        interpStr = QString::fromUtf8("NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeConstant");
-                        break;
-                    case eKeyframeTypeCubic:
-                        interpStr = QString::fromUtf8("NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeCubic");
-                        break;
-                    case eKeyframeTypeFree:
-                        interpStr = QString::fromUtf8("NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeFree");
-                        break;
-                    case eKeyframeTypeHorizontal:
-                        interpStr = QString::fromUtf8("NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeHorizontal");
-                        break;
-                    case eKeyframeTypeLinear:
-                        interpStr = QString::fromUtf8("NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeLinear");
-                        break;
-                    default:
-                        break;
-                    }
-
+                // a control point added with its derivatives gets the computed ones, unless it is free or broken
+                const KeyFrameSet computedKeys = keyFramesWithComputedDerivatives(*curve);
+                KeyFrameSet::const_iterator computedKey = computedKeys.begin();
+                for (KeyFrameSet::iterator it3 = keys.begin(); it3 != keys.end(); ++it3, ++computedKey) {
+                    const bool ownDerivatives = ( computedKey != computedKeys.end() ) && hasOwnDerivatives(*it3, *computedKey) &&
+                                                (it3->getInterpolation() != eKeyframeTypeBroken);
+                    const QString interpStr = keyframeTypeToPython(ownDerivatives ? eKeyframeTypeFree : it3->getInterpolation() );
 
                     WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.addControlPoint(") + NUM_INT(i) + QString::fromUtf8(", ") +
                                                             NUM_TIME( it3->getTime() ) + QString::fromUtf8(", ") +
@@ -1863,6 +1872,14 @@ exportKnobValues(int indentLevel,
                     }
                 }
 
+                // the keyframes whose derivatives differ from the computed ones get theirs explicitly
+                KeyFrameSet computedKeys;
+                if (isDouble) {
+                    computedKeys = keyFramesWithComputedDerivatives(*curve);
+                }
+                KeyFrameSet::const_iterator computedKey = computedKeys.begin();
+                std::list<KeyFrame> derivatives;
+
                 for (KeyFrameSet::iterator it3 = keys.begin(); it3 != keys.end(); ++it3) {
                     if (isAnimatedStr) {
                         std::string value = isAnimatedStr->getValueAtTime(it3->getTime(), i, ViewIdx(0), true);
@@ -1879,11 +1896,37 @@ exportKnobValues(int indentLevel,
                     } else {
                         WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setValueAtTime(") + NUM_VALUE( it3->getValue() ) + QString::fromUtf8(", ")
                                                                 + NUM_TIME( it3->getTime() ) + QString::fromUtf8(", ") + NUM_INT(i) + QLatin1Char(')') );
+                        bool ownDerivatives = false;
+                        if ( computedKey != computedKeys.end() ) {
+                            ownDerivatives = hasOwnDerivatives(*it3, *computedKey);
+                            ++computedKey;
+                        }
+                        if (ownDerivatives) {
+                            // after all the keyframes are set, which change the derivatives of their neighbours
+                            derivatives.push_back(*it3);
+                        } else if ( isDouble && (it3->getInterpolation() != eKeyframeTypeSmooth) ) {
+                            // a new keyframe is smooth (KeyFrame::KeyFrame())
+                            WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setInterpolationAtTime(") + NUM_TIME( it3->getTime() ) + QString::fromUtf8(", ") +
+                                                                    keyframeTypeToPython( it3->getInterpolation() ) + QString::fromUtf8(", ") + NUM_INT(i) + QLatin1Char(')') );
+                        }
+                    }
+                }
+                // The keyframe becomes free: a smooth one whose derivatives an older Natron computed stays free. A
+                // broken one is broken again, which keeps its derivatives.
+                for (std::list<KeyFrame>::const_iterator k = derivatives.begin(); k != derivatives.end(); ++k) {
+                    WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setDerivativesAtTime(") + NUM_TIME( k->getTime() ) + QString::fromUtf8(", ") +
+                                                            NUM_VALUE( k->getLeftDerivative() ) + QString::fromUtf8(", ") + NUM_VALUE( k->getRightDerivative() ) +
+                                                            QString::fromUtf8(", ") + NUM_INT(i) + QLatin1Char(')') );
+                    if (k->getInterpolation() == eKeyframeTypeBroken) {
+                        WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setInterpolationAtTime(") + NUM_TIME( k->getTime() ) + QString::fromUtf8(", ") +
+                                                                keyframeTypeToPython(eKeyframeTypeBroken) + QString::fromUtf8(", ") + NUM_INT(i) + QLatin1Char(')') );
                     }
                 }
             }
 
-            if ( ( !curve || (curve->getKeyFramesCount() == 0) ) && knob->hasModifications(i) ) {
+            // Also a value equal to a default that an .ntp file restored (KnobSerialization), which a new node
+            // doesn't have (e.g. the center of a Roto node, set from the project format when it was created)
+            if ( hasValue && ( !curve || (curve->getKeyFramesCount() == 0) ) && ( (exportedValues == eExportedValuesAll) || knob->hasModifications(i) || ( knobHelper && knobHelper->hasDefaultValueChanged(i) ) ) ) {
                 if (!hasExportedValue) {
                     hasExportedValue = true;
                     if (mustDefineParam) {
@@ -2434,29 +2477,8 @@ exportRotoLayer(int indentLevel,
             WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("bezier = roto.createBezier(0, 0, ") + NUM_TIME(time) + QString::fromUtf8(")") );
             WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("bezier.setScriptName(") + ESC( isBezier->getScriptName() ) + QString::fromUtf8(")") );
             WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("bezier.setLabel(") + ESC( isBezier->getLabel() ) + QString::fromUtf8(")") );
-            QString lockedStr = isBezier->getLocked() ? QString::fromUtf8("True") : QString::fromUtf8("False");
-            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("bezier.setLocked(") + lockedStr + QString::fromUtf8(")") );
             QString visibleStr = isBezier->isGloballyActivated() ? QString::fromUtf8("True") : QString::fromUtf8("False");
             WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("bezier.setVisible(") + visibleStr + QString::fromUtf8(")") );
-
-            KnobBoolPtr activatedKnob = isBezier->getActivatedKnob();
-            exportKnobValues(indentLevel, activatedKnob, QString::fromUtf8("bezier.getActivatedParam()"), true, ts);
-
-            KnobDoublePtr featherDist = isBezier->getFeatherKnob();
-            exportKnobValues(indentLevel, featherDist, QString::fromUtf8("bezier.getFeatherDistanceParam()"), true, ts);
-
-            KnobDoublePtr opacityKnob = isBezier->getOpacityKnob();
-            exportKnobValues(indentLevel, opacityKnob, QString::fromUtf8("bezier.getOpacityParam()"), true, ts);
-
-            KnobDoublePtr fallOffKnob = isBezier->getFeatherFallOffKnob();
-            exportKnobValues(indentLevel, fallOffKnob, QString::fromUtf8("bezier.getFeatherFallOffParam()"), true, ts);
-
-            KnobColorPtr colorKnob = isBezier->getColorKnob();
-            exportKnobValues(indentLevel, colorKnob, QString::fromUtf8("bezier.getColorParam()"), true, ts);
-
-            KnobChoicePtr compositing = isBezier->getOperatorKnob();
-            exportKnobValues(indentLevel, compositing, QString::fromUtf8("bezier.getCompositingOperatorParam()"), true, ts);
-
 
             WRITE_INDENT(indentLevel); WRITE_STRING( parentLayerName + QString::fromUtf8(".addItem(bezier)") );
             WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("");
@@ -2484,26 +2506,62 @@ exportRotoLayer(int indentLevel,
                     exportBezierPointAtTime(indentLevel, *fpIt, true, time, idx, ts);
                 }
             }
+            // the keyframes that are not smooth, as a new shape's (e.g. linear, as Natron 2.3.15 and earlier made them)
+            {
+                std::list<std::pair<double, KeyframeTypeEnum> > keyInterpolations;
+                cps.front()->getKeyFrames(false, &keyInterpolations);
+                for (std::list<std::pair<double, KeyframeTypeEnum> >::const_iterator k = keyInterpolations.begin(); k != keyInterpolations.end(); ++k) {
+                    if (k->second != eKeyframeTypeSmooth) {
+                        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("bezier.setKeyframeInterpolation(") + NUM_TIME(k->first) + QString::fromUtf8(", ") +
+                                                                 keyframeTypeToPython(k->second) + QString::fromUtf8(")") );
+                    }
+                }
+            }
             if ( isBezier->isCurveFinished() ) {
                 WRITE_INDENT(indentLevel); WRITE_STRING("bezier.setCurveFinished(True)");
             }
+            // All the parameters of the shape (also its lifetime, its transform, its motion blur...), after its
+            // points. setCurveFinished() set its center to the center of the shape: always write the center
+            // that it has.
+            const std::list<KnobIPtr>& shapeKnobs = isBezier->getKnobs();
+            const KnobDoublePtr center = isBezier->getCenterKnob();
+            for (std::list<KnobIPtr>::const_iterator k = shapeKnobs.begin(); k != shapeKnobs.end(); ++k) {
+                if ( !(*k)->getIsPersistent() ) {
+                    continue;
+                }
+                if ( (*k == center) && !center->isAnimated(0) && !center->isAnimated(1) ) {
+                    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("bezier.getParam(") + ESC( center->getName() ) + QString::fromUtf8(").setValue(") + NUM_VALUE( center->getValue(0) ) +
+                                                             QString::fromUtf8(", 0)") );
+                    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("bezier.getParam(") + ESC( center->getName() ) + QString::fromUtf8(").setValue(") + NUM_VALUE( center->getValue(1) ) +
+                                                             QString::fromUtf8(", 1)") );
+                    continue;
+                }
+                exportKnobValues(indentLevel, *k, QString::fromUtf8("bezier.getParam(") + ESC( (*k)->getName() ) + QString::fromUtf8(")"), true, ts);
+            }
+            // Last: locking (or unlocking) a shape stops the changes of its parameters (RotoContext::onItemLockedChanged())
+            if ( isBezier->getLocked() ) {
+                WRITE_INDENT(indentLevel); WRITE_STRING("bezier.setLocked(True)");
+            }
 
             WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del bezier");
-        } else {
+        } else if (isLayer) {
+            // (the paint strokes of a RotoPaint node are not exported, see Project::exportToPython())
             QString name =  QString::fromUtf8( isLayer->getScriptName().c_str() );
             QString layerName = name + QString::fromUtf8("_layer");
-            WRITE_INDENT(indentLevel); WRITE_STRING( name + QString::fromUtf8(" = roto.createLayer()") );
+            WRITE_INDENT(indentLevel); WRITE_STRING( layerName + QString::fromUtf8(" = roto.createLayer()") );
             WRITE_INDENT(indentLevel); WRITE_STRING( layerName +  QString::fromUtf8(".setScriptName(") + ESC(name) + QString::fromUtf8(")") );
             WRITE_INDENT(indentLevel); WRITE_STRING( layerName + QString::fromUtf8(".setLabel(") + ESC( isLayer->getLabel() ) + QString::fromUtf8(")") );
-            QString lockedStr = isLayer->getLocked() ? QString::fromUtf8("True") : QString::fromUtf8("False");
-            WRITE_INDENT(indentLevel); WRITE_STRING( layerName + QString::fromUtf8(".setLocked()") + lockedStr + QString::fromUtf8(")") );
             QString visibleStr = isLayer->isGloballyActivated() ? QString::fromUtf8("True") : QString::fromUtf8("False");
             WRITE_INDENT(indentLevel); WRITE_STRING( layerName + QString::fromUtf8(".setVisible(") + visibleStr + QString::fromUtf8(")") );
 
-            WRITE_INDENT(indentLevel); WRITE_STRING(parentLayerName + QString::fromUtf8(".addItem(") + layerName);
+            WRITE_INDENT(indentLevel); WRITE_STRING( parentLayerName + QString::fromUtf8(".addItem(") + layerName + QString::fromUtf8(")") );
 
             const std::list<RotoItemPtr>& items = isLayer->getItems();
             exportRotoLayer(indentLevel, items, isLayer, ts);
+            // after its items (see the shapes above)
+            if ( isLayer->getLocked() ) {
+                WRITE_INDENT(indentLevel); WRITE_STRING( layerName + QString::fromUtf8(".setLocked(True)") );
+            }
             WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("del ") + layerName);
         }
         WRITE_STATIC_LINE("");
@@ -2589,16 +2647,75 @@ exportAllNodeKnobs(int indentLevel,
 
             WRITE_INDENT(indentLevel); WRITE_STRING( baseLayerToken + QString::fromUtf8(".setScriptName(") + ESC(baseLayerName) + QString::fromUtf8(")") );
             WRITE_INDENT(indentLevel); WRITE_STRING( baseLayerToken + QString::fromUtf8(".setLabel(") + ESC( baseLayer->getLabel() ) + QString::fromUtf8(")") );
-            QString lockedStr = baseLayer->getLocked() ? QString::fromUtf8("True") : QString::fromUtf8("False");
-            WRITE_INDENT(indentLevel); WRITE_STRING( baseLayerToken + QString::fromUtf8(".setLocked(") + lockedStr + QString::fromUtf8(")") );
             QString visibleStr = baseLayer->isGloballyActivated() ? QString::fromUtf8("True") : QString::fromUtf8("False");
             WRITE_INDENT(indentLevel); WRITE_STRING( baseLayerToken + QString::fromUtf8(".setVisible(") + visibleStr + QString::fromUtf8(")") );
             exportRotoLayer(indentLevel, baseLayer->getItems(), baseLayer,  ts);
+            // after its items (see exportRotoLayer())
+            if ( baseLayer->getLocked() ) {
+                WRITE_INDENT(indentLevel); WRITE_STRING( baseLayerToken + QString::fromUtf8(".setLocked(True)") );
+            }
             WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("del ") + baseLayerToken);
             WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("del roto") );
         }
     }
 } // exportAllNodeKnobs
+
+// The parameter values of a PyPlug instance. Its PyPlug creates its user parameters and its nodes (see exportGroupInternal()).
+static void
+exportPyPlugKnobValues(int indentLevel,
+                       const NodePtr& node,
+                       QTextStream& ts)
+{
+    const KnobsVec& knobs = node->getKnobs();
+
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        if ( !(*it)->getIsPersistent() || (*it)->getName().empty() ) {
+            continue;
+        }
+        // its user parameters (the ones its PyPlug creates) keep the value that the instance had when it was
+        // saved: the PyPlug may have changed its default value since (e.g. Glow's iterations, in a Natron 2.0 project)
+        const ExportedValuesEnum exportedValues = (*it)->isUserKnob() ? eExportedValuesAll : eExportedValuesModified;
+        if ( exportKnobValues(indentLevel, *it, QString::fromUtf8("lastNode.getParam(") + ESC( (*it)->getName() ) + QString::fromUtf8(")"), true, ts, exportedValues) ) {
+            WRITE_STATIC_LINE("");
+        }
+    }
+}
+
+// The parameters of the nodes inside a PyPlug instance, which the PyPlug creates: the .ntp loader restores the saved
+// ones over them (NodeCollectionSerialization::restoreFromSerialization()). A node that the PyPlug no longer has is
+// skipped; the nodes of a Group inside the PyPlug are not.
+static void
+exportPyPlugNodesKnobValues(int indentLevel,
+                            const NodeCollection* pyPlug,
+                            const QString& pyPlugName,
+                            QTextStream& ts)
+{
+    assert(pyPlug);
+    const NodesList nodes = pyPlug->getNodes();
+
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if ( !(*it)->isActivated() || !(*it)->isPartOfProject() || (*it)->isEffectViewer() ) {
+            continue;
+        }
+        QString values;
+        {
+            QTextStream valuesStream(&values);
+            const KnobsVec& knobs = (*it)->getKnobs();
+            for (KnobsVec::const_iterator k = knobs.begin(); k != knobs.end(); ++k) {
+                if ( (*k)->getIsPersistent() && !(*k)->getName().empty() ) {
+                    exportKnobValues(indentLevel + 1, *k, QString::fromUtf8("pyPlugNode.getParam(") + ESC( (*k)->getName() ) + QString::fromUtf8(")"), true, valuesStream);
+                }
+            }
+        }
+        if ( values.isEmpty() ) {
+            continue;
+        }
+        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("pyPlugNode = ") + pyPlugName + QString::fromUtf8(".getNode(") + ESC( (*it)->getScriptName_mt_safe() ) + QString::fromUtf8(")") );
+        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("if pyPlugNode is not None:");
+        ts << values;
+        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del pyPlugNode");
+    }
+}
 
 static bool
 exportKnobLinks(int indentLevel,
@@ -2691,11 +2808,13 @@ exportKnobLinks(int indentLevel,
     return hasExportedLink;
 } // exportKnobLinks
 
+// exportViewers: false for a PyPlug, true for a project (see Project::exportToPython())
 static void
 exportGroupInternal(int indentLevel,
                     const NodeCollection* collection,
                     const NodePtr& upperLevelGroupNode,
                     const QString& upperLevelGroupName,
+                    bool exportViewers,
                     QTextStream& ts)
 {
     assert(collection);
@@ -2746,12 +2865,14 @@ exportGroupInternal(int indentLevel,
     newNodes.insert( newNodes.end(), rotos.begin(), rotos.end() );
 
     for (NodesList::iterator it = newNodes.begin(); it != newNodes.end(); ++it) {
-        ///Don't create viewer while exporting
+        ///Don't create viewer while exporting a PyPlug
         ViewerInstance* isViewer = (*it)->isEffectViewer();
-        if (isViewer) {
+        if (isViewer && !exportViewers) {
             continue;
         }
-        if ( !(*it)->isActivated() ) {
+        // the internal nodes of other nodes (e.g. the decoder of a Read) are created by them, as for an .ntp file
+        // (NodeCollectionSerialization::initialize())
+        if ( !(*it)->isActivated() || !(*it)->isPartOfProject() ) {
             continue;
         }
 
@@ -2762,12 +2883,56 @@ exportGroupInternal(int indentLevel,
             continue;
         }
 
+        if (isViewer) {
+            // NatronRenderer has no Viewers (app.createNode() returns None): only their name, position and inputs
+            // (see below), not their settings, which are GUI data
+            const QString viewerName = groupName + QString::fromUtf8( (*it)->getScriptName_mt_safe().c_str() );
+            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("# Viewer ") + ESC( (*it)->getScriptName_mt_safe() ) );
+            WRITE_INDENT(indentLevel); WRITE_STRING( viewerName + QString::fromUtf8(" = app.createNode(") + ESC( (*it)->getPluginID() ) + QString::fromUtf8(", ") +
+                                                     NUM_INT( (*it)->getMajorVersion() ) + QString::fromUtf8(", ") + groupName + QString::fromUtf8(")") );
+            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("if ") + viewerName + QString::fromUtf8(" is not None:") );
+            WRITE_INDENT(indentLevel + 1); WRITE_STRING( viewerName + QString::fromUtf8(".setScriptName(") + ESC( (*it)->getScriptName_mt_safe() ) + QString::fromUtf8(")") );
+            double r, g, b;
+            if ( (*it)->getColor(&r, &g, &b) ) {
+                double x, y;
+                (*it)->getPosition(&x, &y);
+                WRITE_INDENT(indentLevel + 1); WRITE_STRING( viewerName + QString::fromUtf8(".setPosition(") + NUM_PIXEL(x) + QString::fromUtf8(", ") + NUM_PIXEL(y) + QString::fromUtf8(")") );
+            }
+            WRITE_STATIC_LINE("");
+            continue;
+        }
+
         QString nodeName = QString::fromUtf8( (*it)->getPluginID().c_str() );
+
+        // A Read (Write) creates its decoder (encoder) when it is created: give it its file and its decoder
+        // (encoder), as the .ntp loader does (ReadNode::onKnobsAboutToBeLoaded()). Set later, while the script
+        // runs, they would not create it (no knob changes are handled then, see EffectInstance::onKnobValueChanged()),
+        // and the node would render nothing.
+        QString createProperties;
+        {
+            const char* pluginIDKnobName = 0;
+            if ( (*it)->getPluginID() == PLUGINID_NATRON_READ ) {
+                pluginIDKnobName = kNatronReadNodeParamDecodingPluginID;
+            } else if ( (*it)->getPluginID() == PLUGINID_NATRON_WRITE ) {
+                pluginIDKnobName = kNatronWriteNodeParamEncodingPluginID;
+            }
+            KnobStringBase* pluginIDKnob = pluginIDKnobName ? dynamic_cast<KnobStringBase*>( (*it)->getKnobByName(pluginIDKnobName).get() ) : 0;
+            KnobStringBase* fileKnob = pluginIDKnobName ? dynamic_cast<KnobStringBase*>( (*it)->getKnobByName(kOfxImageEffectFileParamName).get() ) : 0;
+            if (pluginIDKnob && fileKnob) {
+                const QString prop = QString::fromUtf8(NATRON_ENGINE_PYTHON_MODULE_NAME ".StringNodeCreationProperty(");
+                createProperties = QString::fromUtf8(", {\"" kCreateNodeArgsPropNodeInitialParamValues "\": ") + prop + QString::fromUtf8("[") +
+                                   ESC( std::string(pluginIDKnobName) ) + QString::fromUtf8(", ") + ESC( std::string(kOfxImageEffectFileParamName) ) + QString::fromUtf8("]), ") +
+                                   ESC( QString::fromUtf8(kCreateNodeArgsPropParamValue "_") + QString::fromUtf8(pluginIDKnobName) ) + QString::fromUtf8(": ") +
+                                   prop + ESC( pluginIDKnob->getValue() ) + QString::fromUtf8("), ") +
+                                   ESC( QString::fromUtf8(kCreateNodeArgsPropParamValue "_" kOfxImageEffectFileParamName) ) + QString::fromUtf8(": ") +
+                                   prop + ESC( fileKnob->getValue() ) + QString::fromUtf8(")}");
+            }
+        }
 
         WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("# Start of node ") + ESC( (*it)->getScriptName_mt_safe() ) );
         WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode = app.createNode(") + ESC(nodeName) + QString::fromUtf8(", ") +
-                                                 NUM_INT( (*it)->getPlugin()->getMajorVersion() ) + QString::fromUtf8(", ") + groupName +
-                                                 QString::fromUtf8(")") );
+                                                 NUM_INT( (*it)->getMajorVersion() ) + QString::fromUtf8(", ") + groupName +
+                                                 createProperties + QString::fromUtf8(")") );
         if ( !dynamic_cast<GroupOutput*>( (*it)->getEffectInstance().get() ) ) {
             // Do not set script name of Output nodes:
             // it triggers an exception in Node::setScriptName()
@@ -2775,19 +2940,19 @@ exportGroupInternal(int indentLevel,
             WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setScriptName(") + ESC( (*it)->getScriptName_mt_safe() ) + QString::fromUtf8(")") );
         }
         WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setLabel(") + ESC( (*it)->getLabel_mt_safe() ) + QString::fromUtf8(")") );
-        double x, y;
-        (*it)->getPosition(&x, &y);
-        double w, h;
-        (*it)->getSize(&w, &h);
-        // a precision of 1 pixel is enough for the position on the nodegraph
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setPosition(") + NUM_PIXEL(x) + QString::fromUtf8(", ") + NUM_PIXEL(y) + QString::fromUtf8(")") );
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setSize(") + NUM_PIXEL(w) + QString::fromUtf8(", ") + NUM_PIXEL(h) + QString::fromUtf8(")") );
-
         double r, g, b;
-        bool hasColor = (*it)->getColor(&r, &g, &b);
-        Q_UNUSED(hasColor);
-        // a precision of 3 digits is enough for the node color
-        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setColor(") + NUM_COLOR(r) + QString::fromUtf8(", ") + NUM_COLOR(g) + QString::fromUtf8(", ") + NUM_COLOR(b) +  QString::fromUtf8(")") );
+        // Without a GUI (NatronRenderer), a node has no position, size or colour: don't write zeros (black nodes)
+        if ( (*it)->getColor(&r, &g, &b) ) {
+            double x, y;
+            (*it)->getPosition(&x, &y);
+            double w, h;
+            (*it)->getSize(&w, &h);
+            // a precision of 1 pixel is enough for the position on the nodegraph
+            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setPosition(") + NUM_PIXEL(x) + QString::fromUtf8(", ") + NUM_PIXEL(y) + QString::fromUtf8(")") );
+            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setSize(") + NUM_PIXEL(w) + QString::fromUtf8(", ") + NUM_PIXEL(h) + QString::fromUtf8(")") );
+            // a precision of 3 digits is enough for the node color
+            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setColor(") + NUM_COLOR(r) + QString::fromUtf8(", ") + NUM_COLOR(g) + QString::fromUtf8(", ") + NUM_COLOR(b) +  QString::fromUtf8(")") );
+        }
 
         std::list<ImagePlaneDesc> userComps;
         (*it)->getUserCreatedComponents(&userComps);
@@ -2807,7 +2972,18 @@ exportGroupInternal(int indentLevel,
         QString nodeNameInScript = groupName + QString::fromUtf8( (*it)->getScriptName_mt_safe().c_str() );
         WRITE_INDENT(indentLevel); WRITE_STRING( nodeNameInScript + QString::fromUtf8(" = lastNode") );
         WRITE_STATIC_LINE("");
-        exportAllNodeKnobs(indentLevel, *it, ts);
+        // A PyPlug instance is created by its PyPlug, with its user parameters and its nodes: only set the
+        // parameters, its own and its nodes'. Nodes added or removed inside it are not exported (Convert to
+        // Group exports them).
+        const bool isPyPlug = (*it)->isPyPlug();
+        if (isPyPlug) {
+            exportPyPlugKnobValues(indentLevel, *it, ts);
+            if ( const NodeGroup* pyPlug = (*it)->isEffectGroup() ) {
+                exportPyPlugNodesKnobValues(indentLevel, pyPlug, nodeNameInScript, ts);
+            }
+        } else {
+            exportAllNodeKnobs(indentLevel, *it, ts);
+        }
         WRITE_INDENT(indentLevel); WRITE_STRING("del lastNode");
         WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("# End of node ") + ESC( (*it)->getScriptName_mt_safe() ) );
         WRITE_STATIC_LINE("");
@@ -2818,11 +2994,16 @@ exportGroupInternal(int indentLevel,
             WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Create children if the node is a multi-instance such as a tracker");
             for (std::list<NodePtr> ::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
                 if ( (*it2)->isActivated() ) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode = ") + nodeNameInScript + QString::fromUtf8(".createChild()") );
+                    // as NodeCollectionSerialization::restoreFromSerialization() (there is no Effect.createChild())
+                    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode = app.createNode(") + ESC( (*it2)->getPluginID() ) + QString::fromUtf8(", ") +
+                                                             NUM_INT( (*it2)->getMajorVersion() ) + QString::fromUtf8(", ") + groupName +
+                                                             QString::fromUtf8(", {\"" kCreateNodeArgsPropMultiInstanceParentName "\": " NATRON_ENGINE_PYTHON_MODULE_NAME ".StringNodeCreationProperty(") +
+                                                             ESC( (*it)->getScriptName_mt_safe() ) + QString::fromUtf8(")})") );
                     WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setScriptName(\"") + QString::fromUtf8( (*it2)->getScriptName_mt_safe().c_str() ) + QString::fromUtf8("\")") );
                     WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setLabel(\"") + QString::fromUtf8( (*it2)->getLabel_mt_safe().c_str() ) + QString::fromUtf8("\")") );
                     exportAllNodeKnobs(indentLevel, *it2, ts);
-                    WRITE_INDENT(indentLevel); WRITE_STRING( nodeNameInScript + QString::fromUtf8(".") + QString::fromUtf8( (*it2)->getScriptName_mt_safe().c_str() ) + QString::fromUtf8(" = lastNode") );
+                    // the name that the links below use (exportKnobLinks())
+                    WRITE_INDENT(indentLevel); WRITE_STRING( groupName + QString::fromUtf8( (*it2)->getScriptName_mt_safe().c_str() ) + QString::fromUtf8(" = lastNode") );
                     WRITE_INDENT(indentLevel); WRITE_STRING("del lastNode");
                 }
             }
@@ -2830,9 +3011,9 @@ exportGroupInternal(int indentLevel,
         }
 
         NodeGroup* isGrp = (*it)->isEffectGroup();
-        if (isGrp) {
+        if (isGrp && !isPyPlug) {
             WRITE_INDENT(indentLevel); WRITE_STRING(groupName + QString::fromUtf8("group = ") + nodeNameInScript);
-            exportGroupInternal(indentLevel, isGrp, groupNode, groupName, ts);
+            exportGroupInternal(indentLevel, isGrp, groupNode, groupName, exportViewers, ts);
             WRITE_STATIC_LINE("");
         }
     }
@@ -2844,13 +3025,21 @@ exportGroupInternal(int indentLevel,
         QString nodeQualifiedName( groupName + QString::fromUtf8( (*it)->getScriptName_mt_safe().c_str() ) );
 
         if ( !(*it)->getParentMultiInstance() ) {
+            // a Viewer is None in NatronRenderer
+            const bool isViewer = (*it)->isEffectViewer() != 0;
+            bool hasInput = false;
             for (int i = 0; i < (*it)->getNInputs(); ++i) {
                 NodePtr inputNode = (*it)->getRealInput(i);
                 if (inputNode) {
+                    if (isViewer && !hasInput) {
+                        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("if ") + nodeQualifiedName + QString::fromUtf8(" is not None:") );
+                    }
+                    hasInput = true;
                     hasConnected = true;
                     QString inputQualifiedName( groupName  + QString::fromUtf8( inputNode->getScriptName_mt_safe().c_str() ) );
-                    WRITE_INDENT(indentLevel); WRITE_STRING( nodeQualifiedName + QString::fromUtf8(".connectInput(") + NUM_INT(i) +
-                                                             QString::fromUtf8(", ") + inputQualifiedName + QString::fromUtf8(")") );
+                    const int connectIndent = isViewer ? indentLevel + 1 : indentLevel;
+                    WRITE_INDENT(connectIndent); WRITE_STRING( nodeQualifiedName + QString::fromUtf8(".connectInput(") + NUM_INT(i) +
+                                                                 QString::fromUtf8(", ") + inputQualifiedName + QString::fromUtf8(")") );
                 }
             }
         }
@@ -2862,6 +3051,9 @@ exportGroupInternal(int indentLevel,
     bool hasExported = false;
 
     for (NodesList::iterator it = exportedNodes.begin(); it != exportedNodes.end(); ++it) {
+        if ( (*it)->isEffectViewer() ) {
+            continue; // no settings (see above)
+        }
         QString nodeQualifiedName( groupName + QString::fromUtf8( (*it)->getScriptName_mt_safe().c_str() ) );
         if ( exportKnobLinks(indentLevel, groupNode, *it, groupName, nodeQualifiedName, ts) ) {
             hasExported = true;
@@ -2948,7 +3140,7 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
 
     WRITE_STATIC_LINE("def createInstance(app,group):");
 
-    exportGroupInternal(1, this, NodePtr(), QString(), ts);
+    exportGroupInternal(1, this, NodePtr(), QString(), false, ts);
 
     ///Import user hand-written code
     WRITE_INDENT(1); WRITE_STATIC_LINE("try:");
@@ -2960,6 +3152,96 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
     WRITE_INDENT(1); WRITE_STRING(testAttr);
     WRITE_INDENT(2); WRITE_STRING("extModule.createInstanceExt(app,group)");
 } // NodeCollection::exportGroupToPython
+
+// The project settings, as the .ntp loader restores them (see ProjectPrivate::restoreFromSerialization())
+static void
+exportProjectSettings(int indentLevel,
+                      Project* project,
+                      QTextStream& ts)
+{
+    WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Project settings");
+
+    // the formats that the project format may be, before it is set
+    std::list<Format> formats;
+    project->getAdditionalFormats(&formats);
+    for (std::list<Format>::const_iterator it = formats.begin(); it != formats.end(); ++it) {
+        QString spec;
+        if ( !it->getName().empty() ) {
+            spec = QString::fromUtf8( it->getName().c_str() ) + QLatin1Char(' ');
+        }
+        spec += NUM_INT( it->width() ) + QLatin1Char('x') + NUM_INT( it->height() ) + QLatin1Char(' ') + NUM_VALUE( it->getPixelAspectRatio() );
+        WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("app.addFormat(") + ESC(spec) + QString::fromUtf8(")") );
+    }
+
+    const KnobPathPtr envVars = project->getEnvVarKnob();
+    const KnobsVec& knobs = project->getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        // What each save stamps (the loader sets the version, as for an .ntp file): no difference between two saves
+        // of the same project
+        const std::string& name = (*it)->getName();
+        if ( !(*it)->getIsPersistent() || (name == "softwareVersion") || (name == "lastSaveDate") || (name == "lastAuthor") ||
+             (name == "frameRange") ) { // written after the nodes (see Project::exportToPython())
+            continue;
+        }
+        if (*it == envVars) {
+            // The loader sets [Project] (the folder of the file) and [OCIO] (the OCIO configuration of this
+            // computer) before running the script, as the .ntp loader does: add the other project paths to them.
+            std::list<std::vector<std::string> > table;
+            envVars->decodeFromKnobTableFormat(envVars->getValue(), &table);
+            for (std::list<std::vector<std::string> >::iterator row = table.begin(); row != table.end(); ) {
+                if ( !row->empty() && ( ( (*row)[0] == NATRON_PROJECT_ENV_VAR_NAME ) || ( (*row)[0] == NATRON_OCIO_ENV_VAR_NAME ) ) ) {
+                    row = table.erase(row);
+                } else {
+                    ++row;
+                }
+            }
+            if ( !table.empty() ) {
+                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param = app.getProjectParam(") + ESC( envVars->getName() ) + QString::fromUtf8(")") );
+                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setValue(param.getValue() + ") + ESC( envVars->encodeToKnobTableFormat(table) ) + QString::fromUtf8(")") );
+                WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del param");
+            }
+            continue;
+        }
+        exportKnobValues(indentLevel, *it, QString::fromUtf8("app.getProjectParam(") + ESC( (*it)->getName() ) + QString::fromUtf8(")"), true, ts);
+    }
+    WRITE_STATIC_LINE("");
+} // exportProjectSettings
+
+// Project's member, defined here to use the PyPlug exporter above. Main thread only (gExportedBytes).
+void
+Project::exportToPython(QString& output)
+{
+    QTextStream ts(&output);
+
+    gExportedBytes = 0;
+    // coding must be set in first or second line, see https://www.python.org/dev/peps/pep-0263/
+    WRITE_STATIC_LINE("# -*- coding: utf-8 -*-");
+    WRITE_STATIC_LINE(NATRON_PROJECT_PYTHON_MAGIC);
+    WRITE_STRING( QString::fromUtf8("# Saved by %1 %2 (Python project format version %3).").arg( QString::fromUtf8(NATRON_APPLICATION_NAME), QString::fromUtf8(NATRON_VERSION_STRING) ).arg(NATRON_PROJECT_PYTHON_EXPORTER_VERSION) );
+    WRITE_STRING( QString::fromUtf8("# Open it with File > Open, or with %1Renderer or app.loadProject(), as a .%2 project.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME), QString::fromUtf8(NATRON_PROJECT_FILE_EXT) ) );
+    WRITE_STATIC_LINE("");
+    WRITE_STATIC_LINE("import " NATRON_ENGINE_PYTHON_MODULE_NAME);
+    WRITE_STATIC_LINE("");
+    WRITE_STATIC_LINE("");
+    WRITE_STATIC_LINE("def createProject(app):");
+    WRITE_INDENT(1); WRITE_STATIC_LINE("# the nodes of the project are in app, its top-level group");
+    WRITE_INDENT(1); WRITE_STATIC_LINE("group = app");
+    WRITE_STATIC_LINE("");
+    exportProjectSettings(1, this, ts);
+    exportGroupInternal(1, this, NodePtr(), QString(), true, ts);
+    // After the nodes, which extend it when they read their file (Node::onFileNameParameterChanged()); the .ntp
+    // loader restores it as saved
+    const KnobIPtr frameRange = getKnobByName("frameRange");
+    if (frameRange) {
+        WRITE_INDENT(1); WRITE_STATIC_LINE("# Project frame range");
+        exportKnobValues(1, frameRange, QString::fromUtf8("app.getProjectParam(") + ESC( frameRange->getName() ) + QString::fromUtf8(")"), true, ts, eExportedValuesAll);
+    }
+    WRITE_STATIC_LINE("");
+    WRITE_STATIC_LINE("");
+    // the loader runs the file with "app" set to the project's app (see AppInstance::runPythonProjectScript())
+    WRITE_STATIC_LINE("if __name__ == \"__main__\":");
+    WRITE_INDENT(1); WRITE_STATIC_LINE("createProject(app)");
+} // Project::exportToPython
 
 NATRON_NAMESPACE_EXIT
 

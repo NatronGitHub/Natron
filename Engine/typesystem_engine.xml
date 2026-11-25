@@ -250,33 +250,62 @@
    </object-type>
 
    <object-type name="ExprUtils">
+       <inject-code class="native" position="beginning">
+       #include &lt;vector&gt;
+
+       namespace {
+       // Converts the Python sequence seq (a tuple, a list, a Double3DTuple...) of minSize to maxSize numbers
+       // to doubles. Returns an empty vector, with a Python exception set, if seq is not such a sequence
+       // (minSize is never 0, so an empty result is always an error).
+       std::vector&lt;double&gt;
+       sequenceToDoubles(PyObject* seq,
+                         Py_ssize_t minSize,
+                         Py_ssize_t maxSize)
+       {
+           Shiboken::AutoDecRef fast( PySequence_Fast(seq, "the argument must be a sequence of numbers") );
+           if ( fast.isNull() ) {
+               return std::vector&lt;double&gt;();
+           }
+           const Py_ssize_t size = PySequence_Fast_GET_SIZE( fast.object() );
+           if ( (size &lt; minSize) || (size &gt; maxSize) ) {
+               if (minSize == maxSize) {
+                   PyErr_Format(PyExc_TypeError, "the sequence must have %zd items, not %zd", minSize, size);
+               } else {
+                   PyErr_Format(PyExc_TypeError, "the sequence must have %zd to %zd items, not %zd", minSize, maxSize, size);
+               }
+               return std::vector&lt;double&gt;();
+           }
+           std::vector&lt;double&gt; values(size);
+           for (Py_ssize_t i = 0; i &lt; size; ++i) {
+               // a TypeError if the item is not a number
+               values[i] = PyFloat_AsDouble( PySequence_Fast_GET_ITEM(fast.object(), i) );
+               if ( (values[i] == -1.) &amp;&amp; PyErr_Occurred() ) {
+                   return std::vector&lt;double&gt;();
+               }
+           }
+           return values;
+       }
+       } // anonymous namespace
+       </inject-code>
        <modify-function signature="noise(Double2DTuple)">
            <modify-argument index="1">
                <replace-type modified-type="PyObject"/>
            </modify-argument>
            <inject-code class="target" position="beginning">
-               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
-               if (tupleSize != 4 &amp;&amp; tupleSize != 3  &amp;&amp; tupleSize != 2) {
-                PyErr_SetString(PyExc_TypeError, "the tuple must have 2, 3 or 4 items.");
-                return 0;
+               const std::vector&lt;double&gt; x = sequenceToDoubles(%PYARG_1, 2, 4);
+               if ( x.empty() ) {
+                   return 0;
                }
 
                double ret = 0.;
-               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
-               if (tupleSize == 2) {
-                double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
-                Double2DTuple p = {x1, x2};
+               if (x.size() == 2) {
+                Double2DTuple p = {x[0], x[1]};
                 ret = %CPPSELF.%FUNCTION_NAME(p);
-               } else if (tupleSize == 3) {
-                double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
-                double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
-                Double3DTuple p = {x1, x2, x3};
+               } else if (x.size() == 3) {
+                Double3DTuple p = {x[0], x[1], x[2]};
                 ret = %CPPSELF.%FUNCTION_NAME(p);
-               } else if (tupleSize == 4) {
-                double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
-                double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
-                double x4 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 3));
-                ColorTuple p = {x1, x2, x3, x4};
+               } else {
+                ColorTuple p = {x[0], x[1], x[2], x[3]};
                 ret = %CPPSELF.%FUNCTION_NAME(p);
                }
                %PYARG_0 = %CONVERTTOPYTHON[double](ret);
@@ -292,15 +321,11 @@
                <replace-type modified-type="PyObject"/>
            </modify-argument>
            <inject-code class="target" position="beginning">
-               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
-               if (tupleSize != 3) {
-               PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
-               return 0;
+               const std::vector&lt;double&gt; x = sequenceToDoubles(%PYARG_1, 3, 3);
+               if ( x.empty() ) {
+                   return 0;
                }
-               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
-               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
-               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
-               Double3DTuple p = {x1, x2, x3};
+               Double3DTuple p = {x[0], x[1], x[2]};
                double ret = %CPPSELF.%FUNCTION_NAME(p);
                %PYARG_0 = %CONVERTTOPYTHON[double](ret);
                return %PYARG_0;
@@ -314,15 +339,11 @@
                <replace-type modified-type="PyObject"/>
            </modify-argument>
            <inject-code class="target" position="beginning">
-               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
-               if (tupleSize != 3) {
-               PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
-               return 0;
+               const std::vector&lt;double&gt; x = sequenceToDoubles(%PYARG_1, 3, 3);
+               if ( x.empty() ) {
+                   return 0;
                }
-               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
-               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
-               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
-               Double3DTuple p = {x1, x2, x3};
+               Double3DTuple p = {x[0], x[1], x[2]};
                Double3DTuple ret = %CPPSELF.%FUNCTION_NAME(p);
                %PYARG_0 = PyTuple_New(3);
                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[double](ret.x));
@@ -339,15 +360,11 @@
                <replace-type modified-type="PyObject"/>
            </modify-argument>
            <inject-code class="target" position="beginning">
-               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
-               if (tupleSize != 3) {
-               PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
-               return 0;
+               const std::vector&lt;double&gt; x = sequenceToDoubles(%PYARG_1, 3, 3);
+               if ( x.empty() ) {
+                   return 0;
                }
-               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
-               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
-               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
-               Double3DTuple p = {x1, x2, x3};
+               Double3DTuple p = {x[0], x[1], x[2]};
                Double3DTuple ret = %CPPSELF.%FUNCTION_NAME(p);
                %PYARG_0 = PyTuple_New(3);
                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[double](ret.x));
@@ -361,16 +378,11 @@
                <replace-type modified-type="PyObject"/>
            </modify-argument>
            <inject-code class="target" position="beginning">
-               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
-               if (tupleSize != 4) {
-               PyErr_SetString(PyExc_TypeError, "the tuple must have 4 items.");
-               return 0;
+               const std::vector&lt;double&gt; x = sequenceToDoubles(%PYARG_1, 4, 4);
+               if ( x.empty() ) {
+                   return 0;
                }
-               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
-               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
-               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
-               double x4 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 3));
-               ColorTuple p = {x1, x2, x3, x4};
+               ColorTuple p = {x[0], x[1], x[2], x[3]};
                double ret = %CPPSELF.%FUNCTION_NAME(p);
                %PYARG_0 = %CONVERTTOPYTHON[double](ret);
                return %PYARG_0;
@@ -384,16 +396,11 @@
                <replace-type modified-type="PyObject"/>
            </modify-argument>
            <inject-code class="target" position="beginning">
-               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
-               if (tupleSize != 4) {
-               PyErr_SetString(PyExc_TypeError, "the tuple must have 4 items.");
-               return 0;
+               const std::vector&lt;double&gt; x = sequenceToDoubles(%PYARG_1, 4, 4);
+               if ( x.empty() ) {
+                   return 0;
                }
-               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
-               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
-               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
-               double x4 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 3));
-               ColorTuple p = {x1, x2, x3, x4};
+               ColorTuple p = {x[0], x[1], x[2], x[3]};
                Double3DTuple ret = %CPPSELF.%FUNCTION_NAME(p);
                %PYARG_0 = PyTuple_New(3);
                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[double](ret.x));
@@ -410,16 +417,11 @@
                <replace-type modified-type="PyObject"/>
            </modify-argument>
            <inject-code class="target" position="beginning">
-               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
-               if (tupleSize != 4) {
-               PyErr_SetString(PyExc_TypeError, "the tuple must have 4 items.");
-               return 0;
+               const std::vector&lt;double&gt; x = sequenceToDoubles(%PYARG_1, 4, 4);
+               if ( x.empty() ) {
+                   return 0;
                }
-               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
-               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
-               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
-               double x4 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 3));
-               ColorTuple p = {x1, x2, x3, x4};
+               ColorTuple p = {x[0], x[1], x[2], x[3]};
                Double3DTuple ret = %CPPSELF.%FUNCTION_NAME(p);
                %PYARG_0 = PyTuple_New(3);
                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[double](ret.x));
@@ -433,15 +435,11 @@
                <replace-type modified-type="PyObject"/>
            </modify-argument>
            <inject-code class="target" position="beginning">
-               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
-               if (tupleSize != 3) {
-               PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
-               return 0;
+               const std::vector&lt;double&gt; x = sequenceToDoubles(%PYARG_1, 3, 3);
+               if ( x.empty() ) {
+                   return 0;
                }
-               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
-               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
-               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
-               Double3DTuple p = {x1, x2, x3};
+               Double3DTuple p = {x[0], x[1], x[2]};
                double ret = %CPPSELF.%FUNCTION_NAME(p, %2, %3, %4);
                %PYARG_0 = %CONVERTTOPYTHON[double](ret);
                return %PYARG_0;
@@ -455,15 +453,11 @@
                <replace-type modified-type="PyObject"/>
            </modify-argument>
            <inject-code class="target" position="beginning">
-               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
-               if (tupleSize != 3) {
-               PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
-               return 0;
+               const std::vector&lt;double&gt; x = sequenceToDoubles(%PYARG_1, 3, 3);
+               if ( x.empty() ) {
+                   return 0;
                }
-               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
-               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
-               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
-               Double3DTuple p = {x1, x2, x3};
+               Double3DTuple p = {x[0], x[1], x[2]};
                Double3DTuple ret = %CPPSELF.%FUNCTION_NAME(p, %2, %3, %4);
                %PYARG_0 = PyTuple_New(3);
                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[double](ret.x));
@@ -480,15 +474,11 @@
                <replace-type modified-type="PyObject"/>
            </modify-argument>
            <inject-code class="target" position="beginning">
-               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
-               if (tupleSize != 3) {
-               PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
-               return 0;
+               const std::vector&lt;double&gt; x = sequenceToDoubles(%PYARG_1, 3, 3);
+               if ( x.empty() ) {
+                   return 0;
                }
-               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
-               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
-               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
-               Double3DTuple p = {x1, x2, x3};
+               Double3DTuple p = {x[0], x[1], x[2]};
                Double3DTuple ret = %CPPSELF.%FUNCTION_NAME(p, %2, %3, %4);
                %PYARG_0 = PyTuple_New(3);
                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[double](ret.x));
@@ -502,15 +492,11 @@
                <replace-type modified-type="PyObject"/>
            </modify-argument>
            <inject-code class="target" position="beginning">
-               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
-               if (tupleSize != 3) {
-               PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
-               return 0;
+               const std::vector&lt;double&gt; x = sequenceToDoubles(%PYARG_1, 3, 3);
+               if ( x.empty() ) {
+                   return 0;
                }
-               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
-               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
-               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
-               Double3DTuple p = {x1, x2, x3};
+               Double3DTuple p = {x[0], x[1], x[2]};
                double ret = %CPPSELF.%FUNCTION_NAME(p, %2, %3, %4);
                %PYARG_0 = %CONVERTTOPYTHON[double](ret);
                return %PYARG_0;
@@ -524,15 +510,11 @@
                <replace-type modified-type="PyObject"/>
            </modify-argument>
            <inject-code class="target" position="beginning">
-               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
-               if (tupleSize != 3) {
-               PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
-               return 0;
+               const std::vector&lt;double&gt; x = sequenceToDoubles(%PYARG_1, 3, 3);
+               if ( x.empty() ) {
+                   return 0;
                }
-               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
-               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
-               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
-               Double3DTuple p = {x1, x2, x3};
+               Double3DTuple p = {x[0], x[1], x[2]};
                Double3DTuple ret = %CPPSELF.%FUNCTION_NAME(p, %2, %3, %4);
                %PYARG_0 = PyTuple_New(3);
                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[double](ret.x));
@@ -546,16 +528,11 @@
                <replace-type modified-type="PyObject"/>
            </modify-argument>
            <inject-code class="target" position="beginning">
-               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
-               if (tupleSize != 4) {
-               PyErr_SetString(PyExc_TypeError, "the tuple must have 4 items.");
-               return 0;
+               const std::vector&lt;double&gt; x = sequenceToDoubles(%PYARG_1, 4, 4);
+               if ( x.empty() ) {
+                   return 0;
                }
-               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
-               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
-               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
-               double x4 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 3));
-               ColorTuple p = {x1, x2, x3, x4};
+               ColorTuple p = {x[0], x[1], x[2], x[3]};
                double ret = %CPPSELF.%FUNCTION_NAME(p, %2, %3, %4);
                %PYARG_0 = %CONVERTTOPYTHON[double](ret);
                return %PYARG_0;
@@ -569,16 +546,11 @@
                <replace-type modified-type="PyObject"/>
            </modify-argument>
            <inject-code class="target" position="beginning">
-               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
-               if (tupleSize != 4) {
-               PyErr_SetString(PyExc_TypeError, "the tuple must have 4 items.");
-               return 0;
+               const std::vector&lt;double&gt; x = sequenceToDoubles(%PYARG_1, 4, 4);
+               if ( x.empty() ) {
+                   return 0;
                }
-               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
-               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
-               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
-               double x4 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 3));
-               ColorTuple p = {x1, x2, x3, x4};
+               ColorTuple p = {x[0], x[1], x[2], x[3]};
                Double3DTuple ret = %CPPSELF.%FUNCTION_NAME(p, %2, %3, %4);
                %PYARG_0 = PyTuple_New(3);
                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[double](ret.x));
@@ -595,15 +567,11 @@
                <replace-type modified-type="PyObject"/>
            </modify-argument>
            <inject-code class="target" position="beginning">
-               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
-               if (tupleSize != 3) {
-               PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
-               return 0;
+               const std::vector&lt;double&gt; x = sequenceToDoubles(%PYARG_1, 3, 3);
+               if ( x.empty() ) {
+                   return 0;
                }
-               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
-               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
-               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
-               Double3DTuple p = {x1, x2, x3};
+               Double3DTuple p = {x[0], x[1], x[2]};
                Double3DTuple ret = %CPPSELF.%FUNCTION_NAME(p, %2, %3, %4);
                %PYARG_0 = PyTuple_New(3);
                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[double](ret.x));
@@ -620,16 +588,11 @@
                <replace-type modified-type="PyObject"/>
            </modify-argument>
            <inject-code class="target" position="beginning">
-               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
-               if (tupleSize != 4) {
-               PyErr_SetString(PyExc_TypeError, "the tuple must have 4 items.");
-               return 0;
+               const std::vector&lt;double&gt; x = sequenceToDoubles(%PYARG_1, 4, 4);
+               if ( x.empty() ) {
+                   return 0;
                }
-               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
-               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
-               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
-               double x4 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 3));
-               ColorTuple p = {x1, x2, x3, x4};
+               ColorTuple p = {x[0], x[1], x[2], x[3]};
                Double3DTuple ret = %CPPSELF.%FUNCTION_NAME(p, %2, %3, %4);
                %PYARG_0 = PyTuple_New(3);
                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[double](ret.x));
@@ -643,15 +606,11 @@
                <replace-type modified-type="PyObject"/>
            </modify-argument>
            <inject-code class="target" position="beginning">
-               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
-               if (tupleSize != 3) {
-               PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
-               return 0;
+               const std::vector&lt;double&gt; x = sequenceToDoubles(%PYARG_1, 3, 3);
+               if ( x.empty() ) {
+                   return 0;
                }
-               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
-               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
-               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
-               Double3DTuple p = {x1, x2, x3};
+               Double3DTuple p = {x[0], x[1], x[2]};
                double ret = %CPPSELF.%FUNCTION_NAME(p);
                %PYARG_0 = %CONVERTTOPYTHON[double](ret);
                return %PYARG_0;
@@ -665,15 +624,11 @@
                <replace-type modified-type="PyObject"/>
            </modify-argument>
            <inject-code class="target" position="beginning">
-               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
-               if (tupleSize != 3) {
-               PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
-               return 0;
+               const std::vector&lt;double&gt; x = sequenceToDoubles(%PYARG_1, 3, 3);
+               if ( x.empty() ) {
+                   return 0;
                }
-               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
-               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
-               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
-               Double3DTuple p = {x1, x2, x3};
+               Double3DTuple p = {x[0], x[1], x[2]};
                Double3DTuple ret = %CPPSELF.%FUNCTION_NAME(p);
                %PYARG_0 = PyTuple_New(3);
                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[double](ret.x));
@@ -690,24 +645,16 @@
                <replace-type modified-type="PyObject"/>
            </modify-argument>
            <inject-code class="target" position="beginning">
-               int tupleSize = PyTuple_GET_SIZE(%PYARG_1);
-               if (tupleSize != 3) {
-               PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
-               return 0;
+               const std::vector&lt;double&gt; x = sequenceToDoubles(%PYARG_1, 3, 3);
+               if ( x.empty() ) {
+                   return 0;
                }
-               tupleSize = PyTuple_GET_SIZE(%PYARG_2);
-               if (tupleSize != 3) {
-               PyErr_SetString(PyExc_TypeError, "the tuple must have 3 items.");
-               return 0;
+               const std::vector&lt;double&gt; t = sequenceToDoubles(%PYARG_2, 3, 3);
+               if ( t.empty() ) {
+                   return 0;
                }
-               double x1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 0));
-               double x2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 1));
-               double x3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_1, 2));
-               double p1 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_2, 0));
-               double p2 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_2, 1));
-               double p3 = %CONVERTTOCPP[double](PyTuple_GET_ITEM(%PYARG_2, 2));
-               Double3DTuple p = {x1, x2, x3};
-               Double3DTuple period = {p1, p2, p3};
+               Double3DTuple p = {x[0], x[1], x[2]};
+               Double3DTuple period = {t[0], t[1], t[2]};
                double ret = %CPPSELF.%FUNCTION_NAME(p, period);
                %PYARG_0 = %CONVERTTOPYTHON[double](ret);
                return %PYARG_0;
@@ -851,25 +798,39 @@
                 
                 int size = (int)PyList_GET_SIZE(%PYARG_1);
                 for (int i = 0; i &lt; size; ++i) {
-                    PyObject* tuple = PyList_GET_ITEM(%PYARG_1,i);
-                    if (!tuple) {
-                        PyErr_SetString(PyExc_TypeError, "tasks must be a list of tuple objects.");
+                    // a task is any sequence (effect, firstFrame, lastFrame[, frameStep])
+                    Shiboken::AutoDecRef task( PySequence_Fast(PyList_GET_ITEM(%PYARG_1, i), "a task must be a sequence (effect, firstFrame, lastFrame[, frameStep]).") );
+                    if ( task.isNull() ) {
                         return 0;
                     }
-                    
-                    int tupleSize = PyTuple_GET_SIZE(tuple);
-                    if (tupleSize != 4 &amp;&amp; tupleSize != 3) {
-                        PyErr_SetString(PyExc_TypeError, "the tuple must have 3 or 4 items.");
+
+                    const Py_ssize_t taskSize = PySequence_Fast_GET_SIZE( task.object() );
+                    if (taskSize != 4 &amp;&amp; taskSize != 3) {
+                        PyErr_SetString(PyExc_TypeError, "a task must have 3 or 4 items.");
                         return 0;
                     }
-                    Effect* writeNode = %CONVERTTOCPP[Effect*](PyTuple_GET_ITEM(tuple, 0));
-                    int firstFrame = %CONVERTTOCPP[int](PyTuple_GET_ITEM(tuple, 1));
-                    int lastFrame = %CONVERTTOCPP[int](PyTuple_GET_ITEM(tuple, 2));
+                    PyObject* pyWriteNode = PySequence_Fast_GET_ITEM(task.object(), 0);
+                    if ( (pyWriteNode == Py_None) || !%CHECKTYPE[Effect*](pyWriteNode) ) {
+                        PyErr_SetString(PyExc_TypeError, "the first item of a task must be an Effect.");
+                        return 0;
+                    }
+                    for (Py_ssize_t j = 1; j &lt; taskSize; ++j) {
+                        if ( !PyNumber_Check( PySequence_Fast_GET_ITEM(task.object(), j) ) ) {
+                            PyErr_SetString(PyExc_TypeError, "the frames of a task must be numbers.");
+                            return 0;
+                        }
+                    }
+                    Effect* writeNode = %CONVERTTOCPP[Effect*](pyWriteNode);
+                    int firstFrame = %CONVERTTOCPP[int](PySequence_Fast_GET_ITEM(task.object(), 1));
+                    int lastFrame = %CONVERTTOCPP[int](PySequence_Fast_GET_ITEM(task.object(), 2));
                     int frameStep;
-                    if (tupleSize == 4) {
-                        frameStep = %CONVERTTOCPP[int](PyTuple_GET_ITEM(tuple, 3));
+                    if (taskSize == 4) {
+                        frameStep = %CONVERTTOCPP[int](PySequence_Fast_GET_ITEM(task.object(), 3));
                     } else {
                         frameStep = std::numeric_limits&lt;int&gt;::min();
+                    }
+                    if ( PyErr_Occurred() ) {
+                        return 0;
                     }
                     effects.push_back(writeNode);
                     firstFrames.push_back(firstFrame);
@@ -1021,6 +982,37 @@
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
+        </modify-function>
+        <modify-function signature="getOutputs()const">
+            <inject-code class="target" position="beginning">
+                std::list&lt;Effect*&gt; effects = %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
+                PyObject* ret = PyList_New((int) effects.size());
+                int idx = 0;
+                for (std::list&lt;Effect*&gt;::iterator it = effects.begin(); it!=effects.end(); ++it,++idx) {
+                PyObject* item = %CONVERTTOPYTHON[Effect*](*it);
+                // Ownership transferences.
+                Shiboken::Object::getOwnership(item);
+                PyList_SET_ITEM(ret, idx, item);
+                }
+                return ret;
+            </inject-code>
+        </modify-function>
+        <modify-function signature="getContainerGroup()const">
+            <inject-code class="target" position="beginning">
+                // convert to the Python type of the group (Effect or App), not to a plain Group
+                Group* group = %CPPSELF.%FUNCTION_NAME();
+                if (Effect* effect = dynamic_cast&lt;Effect*&gt;(group)) {
+                    %PYARG_0 = %CONVERTTOPYTHON[Effect*](effect);
+                } else if (App* app = dynamic_cast&lt;App*&gt;(group)) {
+                    %PYARG_0 = %CONVERTTOPYTHON[App*](app);
+                } else {
+                    delete group;
+                    Py_RETURN_NONE;
+                }
+                // Ownership transferences.
+                Shiboken::Object::getOwnership(%PYARG_0);
+                return %PYARG_0;
+            </inject-code>
         </modify-function>
         <modify-function signature="getParam(QString)const">
             <modify-argument index="return">
@@ -1259,7 +1251,7 @@
         <add-function signature="__getitem__(int)"  return-type="PyObject*">
             <inject-code class="target" position="beginning">
                 if (_i &lt; 0 || _i &gt;= 2) {
-                PyErr_BadArgument();
+                PyErr_SetString(PyExc_IndexError, "tuple index out of range");
                 return 0;
                 } else {
                 int ret;
@@ -1292,7 +1284,7 @@
         <add-function signature="__getitem__(int)"  return-type="PyObject*">
             <inject-code class="target" position="beginning">
                 if (_i &lt; 0 || _i &gt;= 3) {
-                PyErr_BadArgument();
+                PyErr_SetString(PyExc_IndexError, "tuple index out of range");
                 return 0;
                 } else {
                 int ret;
@@ -1330,7 +1322,7 @@
         <add-function signature="__getitem__(int)"  return-type="PyObject*">
             <inject-code class="target" position="beginning">
                 if (_i &lt; 0 || _i &gt;= 2) {
-                PyErr_BadArgument();
+                PyErr_SetString(PyExc_IndexError, "tuple index out of range");
                 return 0;
                 } else {
                 double ret;
@@ -1353,7 +1345,7 @@
         <add-function signature="__getitem__(int)"  return-type="PyObject*">
             <inject-code class="target" position="beginning">
                 if (_i &lt; 0 || _i &gt;= 3) {
-                PyErr_BadArgument();
+                PyErr_SetString(PyExc_IndexError, "tuple index out of range");
                 return 0;
                 } else {
                 double ret;
@@ -1389,7 +1381,7 @@
         <add-function signature="__getitem__(int)"  return-type="PyObject*">
             <inject-code class="target" position="beginning">
                 if (_i &lt; 0 || _i &gt;= 4) {
-                    PyErr_BadArgument();
+                    PyErr_SetString(PyExc_IndexError, "tuple index out of range");
                     return 0;
                 } else {
                     double ret;

@@ -3099,7 +3099,16 @@ private:
         }
 
         if ( (status[0] == ViewerInstance::eViewerRenderRetCodeFail) && (status[1] == ViewerInstance::eViewerRenderRetCodeFail) ) {
+            // Nothing to show at this frame (no input, or an input tree that can't render): clear the viewer, and
+            // give the scheduler thread, which waits for this frame, a frame without tiles, so that the playback
+            // goes on. Without it, the playback waited forever (#1652).
             viewer->disconnectViewer();
+            UpdateViewerParamsPtr emptyFrame = std::make_shared<UpdateViewerParams>();
+            emptyFrame->time = time;
+            emptyFrame->view = view;
+            emptyFrame->setUniqueID(0);
+            _imp->scheduler->appendToBuffer(time, view, stats, emptyFrame);
+
             return;
         }
 

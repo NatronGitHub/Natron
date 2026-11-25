@@ -607,6 +607,25 @@ AnimatedParam::setInterpolationAtTime(double time,
     return knob->setInterpolationAtTime(eCurveChangeReasonInternal, ViewSpec::current(), dimension, time, interpolation, &newKey);
 }
 
+KeyframeTypeEnum
+AnimatedParam::getInterpolationAtTime(double time,
+                                      int dimension) const
+{
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return eKeyframeTypeNone;
+    }
+    // NULL if the dimension does not exist
+    CurvePtr curve = knob->getCurve(ViewSpec::current(), dimension);
+    KeyFrame key;
+    if ( !curve || !curve->getKeyFrameWithTime(time, &key) ) {
+        return eKeyframeTypeNone;
+    }
+
+    return key.getInterpolation();
+}
+
 bool
 AnimatedParam::setDerivativesAtTime(double time,
                                     double left,
@@ -657,9 +676,17 @@ AnimatedParam::setExpression(const QString& expr,
     if (!thisKnob) {
         return false;
     }
+    if ( (dimension < 0) || ( dimension >= thisKnob->getDimension() ) ) {
+        return false;
+    }
+    const std::string oldExpression = thisKnob->getExpression(dimension);
+    const bool oldHasRetVariable = thisKnob->isExpressionUsingRetVariable(dimension);
+    const bool oldIsValid = thisKnob->isExpressionValid(dimension, 0);
+    bool ok = false;
     try {
         recordForUndoGroup(thisKnob);
         thisKnob->setExpression(dimension, expr.toStdString(), hasRetVariable, true);
+        ok = true;
     } catch (const std::exception& e) {
         // Keep returning False (no exception, for the scripts that test the result), but say why,
         // else the failure is easy to miss (#1250)
@@ -684,13 +711,21 @@ AnimatedParam::setExpression(const QString& expr,
                                        .arg(dimension)
                                        .arg( QString::fromUtf8( error.c_str() ) ).toStdString() );
         }
-
-        return false;
     } catch (...) {
-        return false;
     }
 
-    return true;
+    // The value of the parameter changes with its expression: tell its holder (e.g. kOfxActionInstanceChanged for an
+    // OpenFX plug-in, and the onParamChanged callback) and re-render, as the GUI does (SetExpressionCommand), with the
+    // reason of setValue() (#1336). As setValue(), only if something changed, e.g. an invalid expression of a loaded
+    // project that the same text makes valid again. A failed setExpression() also removes the previous expression.
+    const std::string newExpression = thisKnob->getExpression(dimension);
+    if ( (newExpression != oldExpression) ||
+         ( !newExpression.empty() && ( (thisKnob->isExpressionUsingRetVariable(dimension) != oldHasRetVariable) ||
+                                       (thisKnob->isExpressionValid(dimension, 0) != oldIsValid) ) ) ) {
+        thisKnob->evaluateValueChange(dimension, thisKnob->getCurrentTime(), ViewIdx(0), eValueChangedReasonNatronInternalEdited);
+    }
+
+    return ok;
 }
 
 QString
@@ -1784,7 +1819,9 @@ ChoiceParam::set(const QString& label)
         return;
     }
     std::string choiceID = label.toStdString();
-    AppInstancePtr app = knob->getHolder()->getApp();
+    // the parameters of a Roto shape (Bezier.getCompositingOperatorParam()) have no holder
+    KnobHolder* holder = knob->getHolder();
+    AppInstancePtr app = holder ? holder->getApp() : AppInstancePtr();
     if (app && app->isCreatingPythonGroup()) {
         // Before Natron 2.2.3, all dynamic choice parameters for multiplane had a string parameter.
         // The string parameter had the same name as the choice parameter plus "Choice" appended.
@@ -1795,6 +1832,13 @@ ChoiceParam::set(const QString& label)
     KnobHelper::ValueChangedReturnCodeEnum s = knob->setValueFromID(choiceID, 0);
 
     Q_UNUSED(s);
+    if ( app && app->isCreatingPythonGroup() &&
+         ( KnobChoice::choiceMatch(choiceID, knob->getEntries_mt_safe(), 0) < 0 ) ) {
+        // A PyPlug or a Python project file: the option may not exist yet, e.g. a layer of an input that is
+        // connected later. Keep it, as the .ntp loader does (KnobChoice::choiceRestoration()): it is
+        // selected when the options are refreshed (KnobChoice::findAndSetOldChoice()).
+        knob->setActiveEntry( ChoiceOption(choiceID) );
+    }
 }
 
 int

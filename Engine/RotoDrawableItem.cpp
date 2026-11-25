@@ -68,6 +68,10 @@
 #define kTimeOffsetParamOffset "timeOffset"
 #define kFrameHoldParamFirstFrame "firstFrame"
 
+// Clip To, a parameter of openfx-misc's Roto plug-in (PLUGINID_OFX_ROTO), and its No Clip option
+#define kRotoParamClipType "clipType"
+#define kRotoParamClipTypeOptionNone "none"
+
 #define kTransformParamTranslate "translate"
 #define kTransformParamRotate "rotate"
 #define kTransformParamScale "scale"
@@ -150,6 +154,20 @@ RotoDrawableItem::setNodesThreadSafetyForRotopainting()
     }
 }
 
+// The Roto plug-in draws the shape (its Roto input, rendered by Natron) over its Source, which is not connected. Its
+// Clip To parameter (openfx-misc #413) can clip that drawing to the project format: set it to No Clip, the output of
+// Roto 1.0, so that shapes are never clipped whatever the default of the plug-in version (Roto 1.0 has no Clip To).
+// Process R, G, B and A are checked by Node::attachRotoItem(); Premultiply and Replace only change the Source.
+static void
+setRotoPluginNoClip(Node& rotoNode)
+{
+    KnobChoicePtr clipType = std::dynamic_pointer_cast<KnobChoice>( rotoNode.getKnobByName(kRotoParamClipType) );
+
+    if (clipType) {
+        clipType->setValueFromID(kRotoParamClipTypeOptionNone, 0);
+    }
+}
+
 void
 RotoDrawableItem::createNodes(bool connectNodes)
 {
@@ -223,6 +241,10 @@ RotoDrawableItem::createNodes(bool connectNodes)
             throw std::runtime_error("Rotopaint requires the plug-in " + pluginId.toStdString() + " in order to work");
         }
         assert(_imp->effectNode);
+
+        if (type == eRotoStrokeTypeSolid) {
+            setRotoPluginNoClip(*_imp->effectNode);
+        }
 
         if ( (type == eRotoStrokeTypeClone) || (type == eRotoStrokeTypeReveal) ) {
             {

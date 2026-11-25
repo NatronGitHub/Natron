@@ -96,7 +96,8 @@ public:
     void invalidateUiContext();
     enum ViewerRenderRetCode
     {
-        //The render failed and should clear to black the viewer and stop any ongoing playback
+        //The render failed and should clear to black the viewer. During playback, a render that fails stops the
+        //playback, but a frame that has nothing to render (no input, or a tree that can't render) is shown empty
         eViewerRenderRetCodeFail = 0,
 
         //The render did nothing requiring updating the current texture

@@ -92,13 +92,18 @@ AppTLS::copyTLS(QThread* fromThread,
 
     copyAbortInfo(fromThread, toThread);
 
+    // The holders are released after _objectMutex (declared before the lock): one of them may be the last
+    // reference to its holder, and destroying a holder may destroy effects (see cleanupTLSForThread()).
+    std::vector<TLSHolderBaseConstPtr> holders;
     std::shared_lock<std::shared_mutex> k(_objectMutex);
     const TLSObjects& objectsCRef = _object->objects; // take a const ref, since it's a read lock
+    holders.reserve( objectsCRef.size() );
     for (TLSObjects::const_iterator it = objectsCRef.begin();
          it != objectsCRef.end(); ++it) {
         TLSHolderBaseConstPtr p = (*it).lock();
         if (p) {
             p->copyTLS(fromThread, toThread);
+            holders.push_back( std::move(p) );
         }
     }
 }
@@ -141,51 +146,47 @@ AppTLS::cleanupTLSForThread()
     }
     std::list<TLSHolderBaseConstPtr> objectsToClean;
     {
+        // the holders that need no cleanup are released after _objectMutex (see copyTLS())
+        std::vector<TLSHolderBaseConstPtr> otherHolders;
         std::shared_lock<std::shared_mutex> k(_objectMutex);
         const TLSObjects& objectsCRef = _object->objects;
+        otherHolders.reserve( objectsCRef.size() );
         for (TLSObjects::iterator it = objectsCRef.begin();
              it != objectsCRef.end();
              ++it) {
             TLSHolderBaseConstPtr p = (*it).lock();
             if (p) {
                 if ( p->canCleanupPerThreadData(curThread) ) {
-                    objectsToClean.push_back(p);
+                    objectsToClean.push_back( std::move(p) );
+                } else {
+                    otherHolders.push_back( std::move(p) );
                 }
             }
         }
     }
     if ( !objectsToClean.empty() ) {
-#if 1
-        // version from 1a0712b
-        // should be OK, since the bug in 1a0712b was in canCleanupPerThreadData
+        // The removed data is destroyed after _objectMutex is released (declared before the lock, and
+        // reserved so that no allocation can fail under the lock): it may hold the last references to effects
+        // of deleted nodes, and destroying them runs plug-in actions that register thread-local storage, which
+        // takes _objectMutex (a self-deadlock, #1653). Those actions may create thread-local data for this
+        // thread again (e.g. OfxHost's, with empty stacks): this cleanup doesn't remove it.
+        std::vector<std::shared_ptr<const void>> removedData;
+        removedData.reserve( objectsToClean.size() );
         std::unique_lock<std::shared_mutex> k(_objectMutex);
         for (std::list<TLSHolderBaseConstPtr>::iterator it = objectsToClean.begin();
              it != objectsToClean.end();
              ++it) {
-            if ( (*it)->cleanupPerThreadData(curThread) ) {
+            TLSHolderBase::CleanupResult cleanup = (*it)->cleanupPerThreadData(curThread);
+            if (cleanup.removedData) {
+                removedData.push_back( std::move(cleanup.removedData) ); // no allocation: reserved
+            }
+            if (cleanup.holderEmpty) {
                 TLSObjects::iterator found = _object->objects.find(*it);
                 if ( found != _object->objects.end() ) {
                     _object->objects.erase(found);
                 }
             }
         }
-#else
-        // original version
-        TLSObjects newObjects;
-        std::unique_lock<std::shared_mutex> k(_objectMutex);
-        for (TLSObjects::iterator it = _object->objects.begin();
-             it != _object->objects.end(); ++it) {
-            TLSHolderBaseConstPtr p = (*it).lock();
-            if (p) {
-                if ( !p->cleanupPerThreadData(curThread) ) {
-                    //The TLSHolder still has TLS on it for another thread and is still alive,
-                    //then leave it in the set
-                    newObjects.insert(p);
-                }
-            }
-        }
-        _object->objects = newObjects;
-#endif
     }
 } // AppTLS::cleanupTLSForThread
 

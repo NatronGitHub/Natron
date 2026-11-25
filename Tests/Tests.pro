@@ -57,6 +57,7 @@ NATRON_THIRD_PARTY_SOURCES += \
 SOURCES += \
     BaseTest.cpp \
     CLArgs_Test.cpp \
+    CacheHolderID_Test.cpp \
     Curve_Test.cpp \
     DeepGraphRender_Test.cpp \
     DiskCache_Test.cpp \
@@ -87,6 +88,7 @@ SOURCES += \
     MultiInputLinks_Test.cpp \
     NaNGuards_FastMath.cpp \
     NaNGuards_Test.cpp \
+    NodeCreatedCallback_Test.cpp \
     NodeGroup_Test.cpp \
     NodePresets_Test.cpp \
     NodePreview_Test.cpp \
@@ -101,6 +103,7 @@ SOURCES += \
     OfxHostProperties_Test.cpp \
     OfxImageMemory_Test.cpp \
     OfxInstanceChanged_Test.cpp \
+    OfxInstanceChangedGIL_Test.cpp \
     OfxInstanceEdit_Test.cpp \
     OfxMultiThreadSuite_Test.cpp \
     OfxMultiplePAR_Test.cpp \
@@ -116,6 +119,7 @@ SOURCES += \
     OfxPluginScan_Test.cpp \
     OfxProjectLoad_Test.cpp \
     OfxQuestion_Test.cpp \
+    OfxRenderClone_Test.cpp \
     OfxSequenceRenderArgs_Test.cpp \
     OfxSingleInstance_Test.cpp \
     OfxSuiteStatus_Test.cpp \
@@ -136,6 +140,7 @@ SOURCES += \
     PythonScript_Test.cpp \
     ProjectFileFormat_Test.cpp \
     PythonExpressionScope_Test.cpp \
+    ReadNodeInputs_Test.cpp \
     ReadNodeOverlay_Test.cpp \
     ReadWriteVersion_Test.cpp \
     RenderThreadSafety_Test.cpp \
@@ -146,6 +151,7 @@ SOURCES += \
     ShuffleAutoConnect_Test.cpp \
     StrUtilsFormat_Test.cpp \
     Tracker_Test.cpp \
+    TrackerHeadless_Test.cpp \
     ViewerCache_Test.cpp \
     ViewerTexture_Test.cpp \
     WriteNodeViews_Test.cpp \

@@ -1249,10 +1249,13 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
         //std::string ext = sequence->fileExtension();
         std::string extLower = sequence->fileExtension();
         std::transform(extLower.begin(), extLower.end(), extLower.begin(), [](char c) { return std::tolower(c, std::locale()); });
-        if (extLower == NATRON_PROJECT_FILE_EXT) {
-            const std::map<int, SequenceParsing::FileNameContent>& content = sequence->getFrameIndexes();
-            assert( !content.empty() );
-            AppInstancePtr appInstance = openProject( content.begin()->second.absoluteFileName() );
+        const std::map<int, SequenceParsing::FileNameContent>& frames = sequence->getFrameIndexes();
+        // a project saved as a Python script is opened as a project, not run in the Script Editor
+        const bool isPythonProject = (extLower == "py") && !frames.empty() &&
+                                     Project::isPythonProjectFile( QString::fromUtf8( frames.begin()->second.absoluteFileName().c_str() ) );
+        if ( (extLower == NATRON_PROJECT_FILE_EXT) || isPythonProject ) {
+            assert( !frames.empty() );
+            AppInstancePtr appInstance = openProject( frames.begin()->second.absoluteFileName() );
             Q_UNUSED(appInstance);
         } else if (extLower == "py") {
             const std::map<int, SequenceParsing::FileNameContent>& content = sequence->getFrameIndexes();

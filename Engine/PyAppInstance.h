@@ -85,6 +85,8 @@ public:
 
 };
 
+// C++ only: the declarations that Shiboken reads (the Python API) must not use it, but spell out the std::map, which
+// Shiboken2 5.15.19 with libclang 23 (MSYS2) doesn't resolve otherwise (see App::createNode()).
 typedef std::map<QString, NodeCreationProperty*> NodeCreationPropertyMap;
 
 class IntNodeCreationProperty : public NodeCreationProperty
@@ -296,6 +298,9 @@ public:
 
     AppInstancePtr getInternalApp() const;
 
+    // createNode(), createReader() and createWriter(): props is spelled out, not NodeCreationPropertyMap, which
+    // Shiboken2 5.15.19 with libclang 23 (MSYS2) doesn't resolve: it dropped the parameter, and a call with
+    // properties failed with "too many arguments" (#1827).
     /**
      * @brief Creates a new instance of the plugin identified by the given pluginID.
      * @param majorVersion If different than -1, it will try to load a specific major version
@@ -306,15 +311,20 @@ public:
     Effect* createNode(const QString& pluginID,
                        int majorVersion = -1,
                        Group* group = 0,
-                       const NodeCreationPropertyMap& props = NodeCreationPropertyMap()) const;
+                       const std::map<QString, NodeCreationProperty*>& props = std::map<QString, NodeCreationProperty*>()) const;
     Effect* createReader(const QString& filename,
                          Group* group = 0,
-                         const NodeCreationPropertyMap& props = NodeCreationPropertyMap()) const;
+                         const std::map<QString, NodeCreationProperty*>& props = std::map<QString, NodeCreationProperty*>()) const;
     Effect* createWriter(const QString& filename,
                          Group* group = 0,
-                         const NodeCreationPropertyMap& props = NodeCreationPropertyMap()) const;
+                         const std::map<QString, NodeCreationProperty*>& props = std::map<QString, NodeCreationProperty*>()) const;
 
     int timelineGetTime() const;
+
+    /**
+     * @brief Moves the current frame of the timeline to frame, as a seek in the timeline does.
+     **/
+    void timelineSetTime(int frame);
 
     int timelineGetLeftBound() const;
 
@@ -338,6 +348,10 @@ public:
     bool saveProjectCopy(const QString& filename, Natron::ProjectFileFormatEnum format = Natron::ProjectFileFormatEnum::eProjectFileFormatNone);
     // Same as saveProjectCopy(), kept for compatibility (Natron 2.5 Python API).
     bool saveTempProject(const QString& filename, Natron::ProjectFileFormatEnum format = Natron::ProjectFileFormatEnum::eProjectFileFormatNone);
+
+    // saveProjectCopy(filename, eProjectFileFormatPython): a copy of the project as a Python script, which
+    // loadProject() loads (see Project::exportToPython()). It doesn't change the project.
+    bool saveProjectAsPython(const QString& filename);
 
     // The format of the project file: the format of the file it was loaded from or last saved to,
     // eProjectFileFormatNone for a project that was never saved.

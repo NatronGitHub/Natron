@@ -805,7 +805,12 @@ Node::doDestroyNodeInternalEnd(bool autoReconnect)
 
     ///Remove all images in the cache associated to this node
     ///This will not remove from the disk cache if the project is closing
-    removeAllImagesFromCache(false);
+    if ( removeAllImagesFromCache(false) ) {
+        // The cleaner threads of the caches remove the entries later: a node created in the meantime must not get
+        // this cache ID, else they would remove its entries too (#1848). When the project closes, nothing is removed
+        // (the disk cache keeps its entries for the next time the project is opened): the cache ID is not retired.
+        appPTR->retireCacheID( getCacheID() );
+    }
 
     if (app) {
         app->recheckInvalidExpressions();
@@ -876,6 +881,27 @@ Node::onProcessingQuitInDestroyNodeInternal(int taskID,
 }
 
 
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+// The number of PythonCallbackScope objects alive in this thread
+thread_local int pythonCallbacksRunning = 0;
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
+Node::PythonCallbackScope::PythonCallbackScope()
+{
+    ++pythonCallbacksRunning;
+}
+
+Node::PythonCallbackScope::~PythonCallbackScope()
+{
+    --pythonCallbacksRunning;
+}
+
+bool
+Node::PythonCallbackScope::isRunning()
+{
+    return pythonCallbacksRunning > 0;
+}
+
 void
 Node::destroyNode(bool blockingDestroy, bool autoReconnect)
 {
@@ -888,19 +914,40 @@ Node::destroyNode(bool blockingDestroy, bool autoReconnect)
         _imp->isBeingDestroyed = true;
     }
 
-    bool allProcessingQuit = areAllProcessingThreadsQuit();
-    if (allProcessingQuit || blockingDestroy) {
-        if (!allProcessingQuit) {
+    // No preview starts from now on
+    _imp->forbidPreviews();
+    if (blockingDestroy) {
+        if ( !areAllProcessingThreadsQuit() ) {
             quitAnyProcessing_blocking(false);
         }
-        doDestroyNodeInternalEnd(false);
+        doDestroyNodeInternalEnd(autoReconnect);
+
+        return;
+    }
+
+    // A deferred destruction is already pending (e.g. a second Effect.destroy())
+    if (_imp->renderWatcher) {
+        return;
+    }
+
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>( _imp->effect.get() );
+    NodesList nodesToWatch;
+    nodesToWatch.push_back( shared_from_this() );
+    if (isGrp) {
+        isGrp->getNodes_recursive(nodesToWatch, false);
+    }
+    // The node is destroyed at once (#1805), unless it or a node in it is processing, or a Python callback of a
+    // node is running: the code that runs the callback may still use the node (e.g. a node that destroys itself
+    // from its onParamChanged callback). The destruction is then done once the processing has quit, from the
+    // event loop.
+    bool destroyNow = !PythonCallbackScope::isRunning();
+    for (NodesList::const_iterator it = nodesToWatch.begin(); it != nodesToWatch.end(); ++it) {
+        (*it)->_imp->forbidPreviews();
+        destroyNow = destroyNow && (*it)->areAllProcessingThreadsQuit();
+    }
+    if (destroyNow) {
+        doDestroyNodeInternalEnd(autoReconnect);
     } else {
-        NodeGroup* isGrp = dynamic_cast<NodeGroup*>( _imp->effect.get() );
-        NodesList nodesToWatch;
-        nodesToWatch.push_back( shared_from_this() );
-        if (isGrp) {
-            isGrp->getNodes_recursive(nodesToWatch, false);
-        }
         _imp->renderWatcher = std::make_shared<NodeRenderWatcher>(nodesToWatch);
         QObject::connect( _imp->renderWatcher.get(), SIGNAL(taskFinished(int,GenericWatcherCallerArgsPtr)), this, SLOT(onProcessingQuitInDestroyNodeInternal(int,GenericWatcherCallerArgsPtr)) );
         NodeDestroyNodeInternalArgsPtr args = std::make_shared<NodeDestroyNodeInternalArgs>();

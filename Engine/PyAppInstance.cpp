@@ -228,6 +228,12 @@ App::timelineGetTime() const
     return getInternalApp()->getTimeLine()->currentFrame();
 }
 
+void
+App::timelineSetTime(int frame)
+{
+    getInternalApp()->getTimeLine()->seekFrame(frame, false, NULL, eTimelineChangeReasonOtherSeek);
+}
+
 int
 App::timelineGetLeftBound() const
 {
@@ -290,6 +296,7 @@ AppSettings::saveSettings()
 void
 AppSettings::restoreDefaultSettings()
 {
+    _settings->removeSettingsFile();
     _settings->restoreDefault();
 }
 
@@ -459,6 +466,17 @@ App::saveProjectAs(const QString& filename,
     Project::expandVariable(env, outFile);
 
     return getInternalApp()->saveAs(outFile, format);
+}
+
+bool
+App::saveProjectAsPython(const QString& filename)
+{
+    std::string outFile = filename.toStdString();
+    std::map<std::string, std::string> env;
+    getInternalApp()->getProject()->getEnvironmentVariables(env);
+    Project::expandVariable(env, outFile);
+
+    return getInternalApp()->saveTemp(outFile, eProjectFileFormatPython);
 }
 
 ProjectFileFormatEnum

@@ -1186,7 +1186,7 @@ EffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,
 }
 
 StatusEnum
-EffectInstance::getRegionOfDefinition(U64 hash,
+EffectInstance::getRegionOfDefinition(U64 /*hash*/,
                                       double time,
                                       const RenderScale & scale,
                                       ViewIdx view,
@@ -1205,7 +1205,11 @@ EffectInstance::getRegionOfDefinition(U64 hash,
         if (input) {
             RectD inputRod;
             bool isProjectFormat;
-            StatusEnum st = input->getRegionOfDefinition_public(hash, time, renderMappedScale, view, &inputRod, &isProjectFormat);
+            // the hash of the input, as for OFX plug-ins (OfxClipInstance::getRegionOfDefinitionInternal()):
+            // with the hash of this effect, the RoD of the input was cached under a key that its own
+            // lookups never find, so that the RoD of a chain of such effects (e.g. Dots) was computed
+            // again for every node of the chain, quadratic in its length
+            StatusEnum st = input->getRegionOfDefinition_public(input->getRenderHash(), time, renderMappedScale, view, &inputRod, &isProjectFormat);
             assert(inputRod.x2 >= inputRod.x1 && inputRod.y2 >= inputRod.y1);
             if (st == eStatusFailed) {
                 return st;
@@ -1263,7 +1267,8 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
                 if (input->supportsRenderScaleMaybe() == eSupportsNo) {
                     inputScale = RenderScale::identity;
                 }
-                StatusEnum st = input->getRegionOfDefinition_public(hash, time, inputScale, view, &inputRod, &isProjectFormat);
+                // the hash of the input, not of this effect (see getRegionOfDefinition())
+                StatusEnum st = input->getRegionOfDefinition_public(input->getRenderHash(), time, inputScale, view, &inputRod, &isProjectFormat);
                 if (st != eStatusFailed) {
                     if (firstInput) {
                         inputsUnion = inputRod;
@@ -1402,7 +1407,9 @@ EffectInstance::getFrameRange(double *first,
         EffectInstancePtr input = getInput(i);
         if (input) {
             double inpFirst, inpLast;
-            input->getFrameRange(&inpFirst, &inpLast);
+            // cached, as in OfxEffectInstance::getFrameRange(): the uncached getFrameRange() of the input
+            // recursed over the whole graph upstream, for every node of a chain of such effects (e.g. Dots)
+            input->getFrameRange_public(input->getRenderHash(), &inpFirst, &inpLast);
             if (i == 0) {
                 *first = inpFirst;
                 *last = inpLast;
@@ -4130,8 +4137,12 @@ EffectInstance::getOrCreateRenderInstance()
 void
 EffectInstance::clearRenderInstances()
 {
-    QMutexLocker k(&_imp->renderClonesMutex);
-    _imp->renderClonesPool.clear();
+    std::list<EffectInstancePtr> clones;
+    {
+        QMutexLocker k(&_imp->renderClonesMutex);
+        clones.swap(_imp->renderClonesPool);
+    }
+    // the clones are destroyed here, outside the lock: their destructor calls the plug-in
 }
 
 void
@@ -5311,31 +5322,73 @@ EffectInstance::isFrameVaryingOrAnimated_Recursive() const
 {
     // Iterative, with a set of visited nodes: the recursion overflowed the stack on very deep graphs
     // (#1440), and it visited a node once per path to it, which is exponential on chains of diamonds.
+    // renderRoI() calls this on every node of the tree: the result of each visited node is kept in its
+    // render args of this thread, if it has some, so that a render doesn't walk the graph upstream of
+    // every node again, which is quadratic in the depth of the graph.
+    struct Visit
+    {
+        const EffectInstance* effect;
+        EffectInstancePtr keepAlive; // keeps the visited input alive (null for this)
+        ParallelRenderArgsPtr args; // where its result is kept (null if it has no render args)
+        int nextInput;
+    };
     std::set<const EffectInstance*> visited;
-    std::vector<EffectInstancePtr> toVisit; // the inputs to visit, kept alive until they are visited
-    EffectInstancePtr current; // keeps the visited input alive
-    const EffectInstance* node = this;
+    std::vector<Visit> path; // from this to the node whose inputs are being visited
 
-    for (;;) {
-        if ( visited.insert(node).second ) {
-            if ( node->isFrameVarying() || node->getHasAnimation() || node->getNode()->getRotoContext() ) {
-                return true;
-            }
-            const int maxInputs = node->getNInputs();
-            for (int i = maxInputs - 1; i >= 0; --i) { // input 0 is visited first, as before
-                EffectInstancePtr input = node->getInput(i);
-                if (input) {
-                    toVisit.push_back(input);
-                }
-            }
-        }
-        if ( toVisit.empty() ) {
+    // Returns true if effect, or the graph upstream of it, is frame varying or animated, as far as it is
+    // known. Otherwise, effect is pushed on path if its inputs remain to be visited.
+    auto visit = [&visited, &path](const EffectInstance* effect,
+                                   EffectInstancePtr keepAlive) {
+        if ( !visited.insert(effect).second ) {
+            // already visited: the graph has no cycle, so its result is false (true ends the walk)
             return false;
         }
-        current = toVisit.back();
-        toVisit.pop_back();
-        node = current.get();
+        ParallelRenderArgsPtr args = effect->getParallelRenderArgsTLS();
+        if (args) {
+            const signed char known = args->frameVaryingOrAnimatedRecursive.load(std::memory_order_relaxed);
+            if (known >= 0) {
+                return known == 1;
+            }
+        }
+        if ( effect->isFrameVarying() || effect->getHasAnimation() || effect->getNode()->getRotoContext() ) {
+            if (args) {
+                args->frameVaryingOrAnimatedRecursive.store(1, std::memory_order_relaxed);
+            }
+
+            return true;
+        }
+        path.push_back( Visit { effect, std::move(keepAlive), std::move(args), 0 } );
+
+        return false;
+    };
+
+    bool result = visit( this, EffectInstancePtr() );
+    while ( !result && !path.empty() ) {
+        // not a reference: visit() may reallocate path
+        const EffectInstance* const effect = path.back().effect;
+        const int inputNb = path.back().nextInput++;
+        if ( inputNb < effect->getNInputs() ) {
+            // input 0 is visited first, as before
+            EffectInstancePtr input = effect->getInput(inputNb);
+            if (input) {
+                const EffectInstance* const inputEffect = input.get();
+                result = visit( inputEffect, std::move(input) );
+            }
+        } else {
+            if (path.back().args) {
+                path.back().args->frameVaryingOrAnimatedRecursive.store(0, std::memory_order_relaxed);
+            }
+            path.pop_back();
+        }
     }
+    // the nodes left on path are downstream of the one that is frame varying or animated
+    for (std::vector<Visit>::const_iterator it = path.begin(); it != path.end(); ++it) {
+        if (it->args) {
+            it->args->frameVaryingOrAnimatedRecursive.store(1, std::memory_order_relaxed);
+        }
+    }
+
+    return result;
 }
 
 bool

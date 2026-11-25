@@ -158,6 +158,19 @@ embeddedMajor(const NodePtr& node)
     return plugin ? plugin->getMajorVersion() : -1;
 }
 
+// the value of the plug-in ID parameter of a Read or Write node, or "<no node>"
+std::string
+pluginIDKnobValue(const NodePtr& node,
+                  const char* knobName)
+{
+    if (!node) {
+        return "<no node>";
+    }
+    KnobStringPtr knob = std::dynamic_pointer_cast<KnobString>( node->getKnobByName(knobName) );
+
+    return knob ? knob->getValue() : "<no knob>";
+}
+
 // Resets the shared app's project when the test ends, also when an ASSERT fails, so that the next
 // tests get an untitled empty project, not one in a removed directory.
 struct ResetProjectOnExit
@@ -275,8 +288,8 @@ TEST(ReadWriteVersion, ProjectWithoutVersionLoadsLowestMajor)
     EXPECT_EQ( kNewestMajor, embeddedMajor( createIONode(PLUGINID_OFX_WRITEPFM, -1, filename) ) );
 }
 
-// A project loaded where its decoder and encoder are not installed keeps their version: saved there and
-// loaded again where they are installed, it gets the version it had, not the lowest one.
+// A project loaded where its decoder and encoder are not installed keeps their IDs and versions: saved there
+// and loaded again where they are installed, it gets the plug-ins and versions it had, not the lowest ones.
 TEST(ReadWriteVersion, MissingPluginKeepsVersion)
 {
     if ( !versionsAvailable() ) {
@@ -324,11 +337,17 @@ TEST(ReadWriteVersion, MissingPluginKeepsVersion)
     ASSERT_TRUE( replaceInFile(projectPath, writeID, missingWriteID) );
     ASSERT_TRUE( replaceInFile(projectPath, extension, missingExtension) );
     ASSERT_TRUE( project->loadProject(dir, projectName) );
+    // the Read and Write nodes keep the IDs of the missing decoder and encoder, with their version (#1825):
+    // before, the ID became that of the plug-in for the file extension (none here), while the version
+    // stayed, so the next load gave that version to another plug-in
+    EXPECT_EQ( std::string( missingReadID.constData() ), pluginIDKnobValue( project->getNodeByName(readName), kNatronReadNodeParamDecodingPluginID ) );
+    EXPECT_EQ( std::string( missingWriteID.constData() ), pluginIDKnobValue( project->getNodeByName(writeName), kNatronWriteNodeParamEncodingPluginID ) );
     ASSERT_TRUE( project->saveProject( dir, projectName, &savedPath, eProjectFileFormatText ) );
 
-    // where they are installed again: the versions were saved, but not the IDs of the missing decoder and
-    // encoder (a Read or Write node doesn't keep them, also before #1681), so the Read and Write nodes create
-    // the decoder and encoder of the file extension, in the saved version: the newest, not the lowest
+    // where they are installed again: the IDs and the versions were saved, so the Read and Write nodes
+    // create the same decoder and encoder, in the saved version: the newest, not the lowest
+    ASSERT_TRUE( replaceInFile(projectPath, missingReadID, readID) );
+    ASSERT_TRUE( replaceInFile(projectPath, missingWriteID, writeID) );
     ASSERT_TRUE( replaceInFile(projectPath, missingExtension, extension) );
     ASSERT_TRUE( project->loadProject(dir, projectName) );
     EXPECT_EQ( kNewestMajor, embeddedMajor( project->getNodeByName(readName) ) );

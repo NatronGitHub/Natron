@@ -196,6 +196,13 @@ public:
     ProjectFileFormatEnum getFileFormatForSave() const WARN_UNUSED_RETURN;
 
     /**
+     * @brief The format of a save to fileName: format, unless it is eProjectFileFormatNone; then a .py file is
+     * eProjectFileFormatPython, a .ntp file has the format of the project if it is text or binary, else the
+     * "Save projects as binary by default" preference, and another name getFileFormatForSave().
+     **/
+    ProjectFileFormatEnum getFileFormatForSave(const QString& fileName, ProjectFileFormatEnum format) const WARN_UNUSED_RETURN;
+
+    /**
      * @brief Sets the format of the next saves, e.g. the one chosen in the "Save As..." dialog.
      **/
     void setFileFormat(ProjectFileFormatEnum format);
@@ -217,14 +224,29 @@ public:
     static ProjectFileFormatEnum detectFileFormat(const QString& filePath) WARN_UNUSED_RETURN;
 
     /**
+     * @brief Whether filePath is a project saved as a Python script (eProjectFileFormatPython): its first or
+     * second line is NATRON_PROJECT_PYTHON_MAGIC. loadProject() loads such a file by running it.
+     **/
+    static bool isPythonProjectFile(const QString& filePath) WARN_UNUSED_RETURN;
+
+    /**
+     * @brief The file written by a save in eProjectFileFormatPython: the project settings, then the nodes
+     * (with the Viewers), written by the PyPlug exporter (NodeCollection::exportGroupToPython()).
+     * It is defined in NodeGroup.cpp, with that exporter.
+     **/
+    void exportToPython(QString& output);
+
+    /**
      * @brief If fileName is the name of an auto-save, ending with .ntp.autosave (text, by Natron 2.5 and earlier)
      * or .ntp.binautosave (binary, by Natron 2.6 and later), possibly followed by a time hash for an untitled
      * project (".<digits>"), returns the position of ".ntp" and sets suffixSize to the size of the auto-save suffix
      * after it. Returns -1 otherwise, e.g. for the temporary file of a save (<auto-save name>.XXXXXX, see QSaveFile).
      * Natron 2.5 only looks for ".ntp.autosave", so it never offers to restore a binary auto-save, which it can't load. Its Project::clearAutoSavesDir() (when the user declines to restore one of its
      * own untitled auto-saves, and Cache > Clear all caches) still removes the untitled ones in the Autosaves directory.
+     * The auto-save of a Python project (eProjectFileFormatPython) is <name>.py.binautosave: the position of ".py"
+     * is returned. projectNameSize, if not null, is set to the size of the name of the project file (with its extension).
      **/
-    static int findAutoSaveSuffix(const QString& fileName, int* suffixSize = 0) WARN_UNUSED_RETURN;
+    static int findAutoSaveSuffix(const QString& fileName, int* suffixSize = 0, int* projectNameSize = 0) WARN_UNUSED_RETURN;
 
     bool isSaveUpToDate() const WARN_UNUSED_RETURN;
 
@@ -536,6 +558,9 @@ private:
     bool loadProjectImpl(const QString & path, const QString & name, bool isUntitledAutosave, bool attemptToLoadAutosave, bool isNamedAutoSave);
     NodesRestoreStatus loadProjectInternal(const QString & path, const QString & name, bool isAutoSave,
                                            bool isUntitledAutosave, bool* mustSave) WARN_UNUSED_RETURN;
+
+    // Loads a project saved in eProjectFileFormatPython (see loadProjectImpl())
+    void loadPythonProjectInternal(const QString & path, const QString & name);
 
     QString saveProjectInternal(const QString & path, const QString & name, bool autosave, bool updateProjectProperties, QStringList* warnings,
                                 ProjectFileFormatEnum format);

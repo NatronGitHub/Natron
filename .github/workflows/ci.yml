@@ -55,6 +55,9 @@ jobs:
   # Documentation/source/maintainers/qt6-migration.rst); the fixes go to RB-2.6.
   unix_test:
     timeout-minutes: 180
+    # Draft pull requests run no CI (maintainer, 2026-11-25): a draft is rebased on the latest base before it is
+    # marked ready, so its earlier runs would have to be redone anyway. Marking it ready (ready_for_review) runs CI.
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     name: Test ${{ matrix.os }} Qt6 Python ${{ matrix.python-version }} ${{ matrix.config }}
     runs-on: ${{ matrix.os }}
     defaults:
@@ -101,6 +104,9 @@ jobs:
       - name: Check that qmake and CMake build the same sources
         shell: bash
         run: python3 tools/utils/checkQmakeSources.py
+      - name: Unit tests of the Python tools (tools/utils)
+        shell: bash
+        run: python3 -m unittest discover -s tools/utils -p 'test_*.py' -v
       - name: Install Linux system packages
         shell: bash
         run: |
@@ -218,8 +224,11 @@ jobs:
 
   win-test:
     # Disabled on RB-2.7 until it builds with Qt6 (maintainer, 2026-11-20); re-enable it by removing
-    # the next line. (RB-2.6 runs this job always, drafts included.)
+    # the next line and uncommenting the draft condition below it (RB-2.6 runs this job except on drafts).
     if: false
+    # Draft pull requests run no CI (maintainer, 2026-11-25): a draft is rebased on the latest base before it is
+    # marked ready, so its earlier runs would have to be redone anyway. Marking it ready (ready_for_review) runs CI.
+    # if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     timeout-minutes: 240
     name: Test ${{ matrix.os }} UCRT64 Python ${{ matrix.python-version }} ${{ matrix.config }}
     runs-on: ${{ matrix.os }}
@@ -380,7 +389,7 @@ jobs:
     # overlay (tools/MacPorts) and MACPORTS_CACHE_VERSION (bump it when the
     # port list below changes).
     # macOS arm64 runners are scarce: run only once Linux and Windows have passed, and not on draft
-    # pull requests (Linux and Windows do run on drafts; macOS runs when the PR is marked ready). Merging only
+    # pull requests (no job runs on drafts; CI runs when the PR is marked ready). Merging only
     # requires Linux and Windows; this job is informative. Weekly, it always runs, whatever the
     # Linux and Windows results.
     needs: [unix_test, win-test]

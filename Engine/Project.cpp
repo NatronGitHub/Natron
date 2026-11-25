@@ -90,9 +90,12 @@
 #include "Engine/ProjectSerialization.h"
 #include "Engine/RectDSerialization.h"
 #include "Engine/RectISerialization.h"
+#include "Engine/RotoContext.h"
 #include "Engine/RotoLayer.h"
+#include "Engine/RotoStrokeItem.h"
 #include "Engine/Settings.h"
 #include "Engine/StandardPaths.h"
+#include "Engine/TrackerContext.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewIdx.h"
 
@@ -268,6 +271,25 @@ Project::detectFileFormat(const QString& filePath)
     return detectFileFormat( header.constData(), (std::size_t)header.size() );
 }
 
+bool
+Project::isPythonProjectFile(const QString& filePath)
+{
+    QFile f(filePath);
+
+    if ( !f.open(QIODevice::ReadOnly) ) {
+        return false;
+    }
+    // exportToPython() writes the magic line after the coding line, which must be the first or the second line
+    // (PEP 263). A PyPlug has NATRON_PYPLUG_MAGIC instead.
+    for (int i = 0; i < 2 && !f.atEnd(); ++i) {
+        if ( f.readLine(256).trimmed() == QByteArray(NATRON_PROJECT_PYTHON_MAGIC) ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 // The suffix of the auto-saves, after ".ntp". Binary auto-saves don't use the ".autosave" suffix of
 // Natron 2.5 and earlier, which would offer to restore them and fail to load them (see findAutoSaveSuffix()).
 #define kAutoSaveSuffixText ".autosave"
@@ -275,19 +297,25 @@ Project::detectFileFormat(const QString& filePath)
 
 int
 Project::findAutoSaveSuffix(const QString& fileName,
-                            int* suffixSize)
+                            int* suffixSize,
+                            int* projectNameSize)
 {
+    // a Python project (eProjectFileFormatPython) is a .py file, and only has binary auto-saves
+    const QString pyExt = QString::fromUtf8(".py");
     const QString ntpExt = QLatin1Char('.') + QString::fromUtf8(NATRON_PROJECT_FILE_EXT);
-    const char* suffixes[] = { kAutoSaveSuffixBinary, kAutoSaveSuffixText };
+    const std::pair<QString, const char*> patterns[] = {
+        { ntpExt, kAutoSaveSuffixBinary }, { ntpExt, kAutoSaveSuffixText }, { pyExt, kAutoSaveSuffixBinary }
+    };
 
-    for (const char* suffix : suffixes) {
-        const QString suffixStr = QString::fromUtf8(suffix);
-        int pos = fileName.indexOf(ntpExt + suffixStr);
+    for (const std::pair<QString, const char*>& pattern : patterns) {
+        const QString& ext = pattern.first;
+        const QString suffixStr = QString::fromUtf8(pattern.second);
+        int pos = fileName.indexOf(ext + suffixStr);
         if (pos != -1) {
             // The suffix ends the name, or is followed by the time hash of an untitled project (".<digits>").
             // Not, for example, by the ".XXXXXX" of the temporary file QSaveFile writes next to the auto-save
             // (see saveProjectInternal()): one left by a crash must not be offered for restoration.
-            const int end = pos + ntpExt.size() + suffixStr.size();
+            const int end = pos + ext.size() + suffixStr.size();
             if ( end < fileName.size() ) {
                 bool isTimeHash = ( fileName.at(end) == QLatin1Char('.') ) && (end + 1 < fileName.size());
                 for (int i = end + 1; isTimeHash && i < fileName.size(); ++i) {
@@ -299,6 +327,9 @@ Project::findAutoSaveSuffix(const QString& fileName,
             }
             if (suffixSize) {
                 *suffixSize = suffixStr.size();
+            }
+            if (projectNameSize) {
+                *projectNameSize = pos + ext.size();
             }
 
             return pos;
@@ -326,6 +357,29 @@ Project::getFileFormatForSave() const
     }
 
     return format;
+}
+
+ProjectFileFormatEnum
+Project::getFileFormatForSave(const QString& fileName,
+                              ProjectFileFormatEnum format) const
+{
+    if (format != eProjectFileFormatNone) {
+        return format;
+    }
+    const QString suffix = QFileInfo(fileName).suffix();
+    if ( suffix.compare(QString::fromUtf8("py"), Qt::CaseInsensitive) == 0 ) {
+        return eProjectFileFormatPython;
+    }
+    if ( suffix.compare(QString::fromUtf8(NATRON_PROJECT_FILE_EXT), Qt::CaseInsensitive) == 0 ) {
+        const ProjectFileFormatEnum current = getFileFormat();
+        if ( (current == eProjectFileFormatText) || (current == eProjectFileFormatBinary) ) {
+            return current;
+        }
+
+        return appPTR->getCurrentSettings()->saveAsBinary() ? eProjectFileFormatBinary : eProjectFileFormatText;
+    }
+
+    return getFileFormatForSave();
 }
 
 void
@@ -444,7 +498,17 @@ Project::loadProjectImpl(const QString & path,
         }
 
         bool mustSave = false;
-        const NodesRestoreStatus status = loadProjectInternal(realPath, realName, isAutoSave, isUntitledAutosave, &mustSave);
+        NodesRestoreStatus status;
+        if ( isPythonProjectFile(realPath + realName) ) {
+            // a project saved in eProjectFileFormatPython (its auto-saves are binary)
+            loadPythonProjectInternal(realPath, realName);
+        } else if ( realName.endsWith( QString::fromUtf8(".py"), Qt::CaseInsensitive ) ) {
+            // e.g. a script chosen in File > Open, which offers the Python projects
+            throw std::invalid_argument( tr("%1 is not a %2 project file: it doesn't start with the \"%3\" header.")
+                                         .arg( realPath + realName, QString::fromUtf8(NATRON_APPLICATION_NAME), QString::fromUtf8(NATRON_PROJECT_PYTHON_MAGIC) ).toStdString() );
+        } else {
+            status = loadProjectInternal(realPath, realName, isAutoSave, isUntitledAutosave, &mustSave);
+        }
         if (status.showErrorLog) {
             appPTR->showErrorLog();
         } else if (mustSave && !status.dataLost) {
@@ -589,7 +653,8 @@ Project::loadProjectInternal(const QString & path,
             if (isAutoSave) {
                 // auto-saves are always binary, but "Save" must write the format of the original project
                 projectFormat = ( (originalFormat == eProjectFileFormatText) ? eProjectFileFormatText :
-                                  (originalFormat == eProjectFileFormatBinary) ? eProjectFileFormatBinary : eProjectFileFormatNone );
+                                  (originalFormat == eProjectFileFormatBinary) ? eProjectFileFormatBinary :
+                                  (originalFormat == eProjectFileFormatPython) ? eProjectFileFormatPython : eProjectFileFormatNone );
             }
         }
     } catch (const ProjectTooRecentError &) {
@@ -640,10 +705,10 @@ Project::loadProjectInternal(const QString & path,
         _imp->autoSetProjectFormat = false;
         if (!isUntitledAutosave) {
             QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
-            int found = findAutoSaveSuffix(projectFilename);
-            if (found != -1) {
-                // keep the .ntp extension
-                _imp->setProjectFilename( projectFilename.left( found + 1 + (int)std::strlen(NATRON_PROJECT_FILE_EXT) ).toStdString() );
+            int projectNameSize;
+            if (findAutoSaveSuffix(projectFilename, 0, &projectNameSize) != -1) {
+                // keep the .ntp (or .py) extension
+                _imp->setProjectFilename( projectFilename.left(projectNameSize).toStdString() );
             }
             _imp->hasProjectBeenSavedByUser = true;
         } else {
@@ -684,6 +749,70 @@ Project::loadProjectInternal(const QString & path,
 
     return ret;
 } // Project::loadProjectInternal
+
+void
+Project::loadPythonProjectInternal(const QString & path,
+                                   const QString & name)
+{
+    const QString filePath = path + name;
+
+    std::cout << tr("Loading project: %1").arg(filePath).toStdString() << std::endl;
+    LoadProjectSplashScreen_RAII __raii_splashscreen__(getApp(), name);
+
+    // Before the script creates the nodes, as ProjectPrivate::restoreFromSerialization() does before it restores
+    // them: the project format is the one the script sets, not the one of its first Read, and [Project] is the
+    // folder of the file (the script keeps it, see exportToPython()), so that the Reads find their files.
+    _imp->autoSetProjectFormat = false;
+    _imp->setProjectFilename( name.toStdString() );
+    _imp->setProjectPath( path.toStdString() );
+    if (appPTR->getAppType() != AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui) {
+        _imp->autoSetProjectDirectory(path);
+    }
+    onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(), false);
+
+    std::string error;
+    if ( !getApp()->runPythonProjectScript(filePath, &error) ) {
+        // the script stopped at the first error: the project is incomplete (loadProjectImpl() sets fileLoadedWithErrors())
+        throw std::runtime_error( tr("%1: the Python script failed: %2").arg( filePath, QString::fromUtf8( error.c_str() ) ).toStdString() );
+    }
+
+    _imp->natronVersion->setValue( generateUserFriendlyNatronVersionName() );
+    {
+        // as at the end of ProjectPrivate::restoreFromSerialization() and loadProjectInternal(): "Save" writes the
+        // script again
+        const QDateTime time = QDateTime::currentDateTime();
+        QMutexLocker l(&_imp->projectLock);
+        _imp->hasProjectBeenSavedByUser = true;
+        _imp->fileFormat = eProjectFileFormatPython;
+        _imp->fileHasGuiData = false;
+        _imp->fileLoadedWithErrors = false;
+        _imp->ageSinceLastSave = time;
+        _imp->lastAutoSave = time;
+    }
+    // The decoders of the Reads read their file after the script (see AppInstance::runPythonProjectScript()),
+    // which started the auto-save timer, as a change of the project: it is not one.
+    if ( QThread::currentThread() == qApp->thread() ) {
+        _imp->autoSaveTimer->stop();
+    }
+
+    Format f;
+    getProjectDefaultFormat(&f);
+    Q_EMIT formatChanged(f);
+    Q_EMIT projectNameChanged(filePath, false);
+
+    if ( !QFile::exists( getLockAbsoluteFilePath() ) ) {
+        createLockFile();
+    }
+
+    _imp->runOnProjectLoadCallback();
+
+    {
+#ifdef DEBUG
+        boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
+        QCoreApplication::processEvents();
+    }
+} // Project::loadPythonProjectInternal
 
 bool
 Project::saveProject(const QString & path,
@@ -1085,6 +1214,42 @@ callSaveCommitHookForTesting()
     return !hook || hook();
 }
 
+// What the Python format doesn't save (see exportToPython()), that a save in that format loses: one line per node
+static QStringList
+notSavedInPython(const NodesList& nodes)
+{
+    QStringList ret;
+
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        // the nodes of a PyPlug instance are created by the PyPlug
+        NodeGroup* parentGroup = dynamic_cast<NodeGroup*>( (*it)->getGroup().get() );
+        if ( parentGroup && parentGroup->getNode()->isPyPlug() ) {
+            continue;
+        }
+        const QString name = QString::fromUtf8( (*it)->getFullyQualifiedName().c_str() );
+        TrackerContextPtr tracker = (*it)->getTrackerContext();
+        std::vector<TrackMarkerPtr> markers;
+        if (tracker) {
+            tracker->getAllMarkers(&markers);
+        }
+        if ( !markers.empty() ) {
+            ret.append( Project::tr("%1: its tracks").arg(name) );
+        }
+        RotoContextPtr roto = (*it)->getRotoContext();
+        if (roto) {
+            const std::list<RotoDrawableItemPtr> items = roto->getCurvesByRenderOrder(false);
+            for (std::list<RotoDrawableItemPtr>::const_iterator item = items.begin(); item != items.end(); ++item) {
+                if ( std::dynamic_pointer_cast<RotoStrokeItem>(*item) ) {
+                    ret.append( Project::tr("%1: its paint strokes").arg(name) );
+                    break;
+                }
+            }
+        }
+    }
+
+    return ret;
+}
+
 QString
 Project::saveProjectInternal(const QString & path,
                              const QString & name,
@@ -1152,7 +1317,7 @@ Project::saveProjectInternal(const QString & path,
     // Auto-saves are always binary (faster, smaller); they record the format of the project.
     // The format is an argument, not set on the project before the save: this save may wait for a running
     // auto-save, which must record the format the project has until this save succeeds.
-    const ProjectFileFormatEnum projectFormat = (format != eProjectFileFormatNone && !autoSave) ? format : getFileFormatForSave();
+    const ProjectFileFormatEnum projectFormat = autoSave ? getFileFormatForSave() : getFileFormatForSave(name, format);
     const ProjectFileFormatEnum fileFormat = autoSave ? eProjectFileFormatBinary : projectFormat;
 
     // The file to write. If filePath is a symbolic link (latest.ntp -> v012.ntp), the link is kept: its target
@@ -1227,7 +1392,22 @@ Project::saveProjectInternal(const QString & path,
             }
             QIODeviceStreamBuf streamBuf(&saveFile);
             std::ostream ofile(&streamBuf);
-            if (fileFormat == eProjectFileFormatText) {
+            if (fileFormat == eProjectFileFormatPython) {
+                // a script that rebuilds the project (see exportToPython()), in UTF-8, the same on every system
+                if (warnings && (attempt == 1) ) {
+                    NodesList nodes;
+                    getNodes_recursive(nodes, true);
+                    const QStringList notSaved = notSavedInPython(nodes);
+                    if ( !notSaved.isEmpty() ) {
+                        warnings->append( tr("The Python format doesn't save these, which are not in %1:").arg(filePath) );
+                        *warnings += notSaved;
+                    }
+                }
+                QString script;
+                exportToPython(script);
+                const QByteArray utf8 = script.toUtf8();
+                ofile.write( utf8.constData(), utf8.size() );
+            } else if (fileFormat == eProjectFileFormatText) {
                 boost::archive::xml_oarchive oArchive(ofile);
                 saveToArchive(oArchive);
             } else {
@@ -1480,11 +1660,11 @@ Project::findAutoSaveForProject(const QString& projectPath,
     QStringList candidates;
 
     Q_FOREACH(const QString &entry, entries) {
-        int suffixPos = findAutoSaveSuffix(entry);
-        if ( (suffixPos == -1) || entry.contains( QString::fromUtf8("RENDER_SAVE") ) ) {
+        int projectNameSize;
+        if ( (findAutoSaveSuffix(entry, 0, &projectNameSize) == -1) || entry.contains( QString::fromUtf8("RENDER_SAVE") ) ) {
             continue;
         }
-        QString filename = projectPath + entry.left( suffixPos + 1 + (int)std::strlen(NATRON_PROJECT_FILE_EXT) );
+        QString filename = projectPath + entry.left(projectNameSize);
         if (filename != projectAbsFilePath) {
             continue;
         }
@@ -2409,6 +2589,18 @@ Project::onKnobValueChanged(KnobI* knob,
         forceComputeInputDependentDataOnAllTrees();
         shouldAutoSave = true;
     } else if ( knob == _imp->frameRange.get() ) {
+        // The frame range of a node may follow the project's (e.g. a DiskCache node set to "Project frame range"),
+        // but the node hash, under which the frame range and the other action results are cached, doesn't depend
+        // on it (#1812)
+        NodesList nodes;
+        getNodes_recursive(nodes, false);
+        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            EffectInstancePtr effect = (*it)->getEffectInstance();
+            // A node is in its group before load() creates its effect, and loading a Read node may change the project range
+            if (effect) {
+                effect->clearActionsCache();
+            }
+        }
         int first = _imp->frameRange->getValue(0);
         int last = _imp->frameRange->getValue(1);
         Q_EMIT frameRangeChanged(first, last);

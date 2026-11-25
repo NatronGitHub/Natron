@@ -103,18 +103,23 @@ TEST(PyEffect, EqualityAndHash)
 }
 
 // An Effect whose node is gone is only equal to itself (two null nodes would compare equal otherwise).
-// Effect.destroy() doesn't free the node at once in background mode, so this uses Effects without a node.
+// Effect.destroy() frees the node before it returns (#1805).
 TEST(PyEffect, NoNodeOnlyEqualsItself)
 {
     typedef NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::Effect PyEffect;
-    PyEffect dead1( (NodePtr()) ), dead2( (NodePtr()) );
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ASSERT_TRUE( bool(app) );
+    PyEffect dead1( createDot(app) ), dead2( createDot(app) );
+    ASSERT_TRUE( dead1.getInternalNode() && dead2.getInternalNode() );
+    dead1.destroy();
+    dead2.destroy();
+    ASSERT_FALSE( dead1.getInternalNode() );
+    ASSERT_FALSE( dead2.getInternalNode() );
 
     EXPECT_TRUE(dead1 == dead1);
     EXPECT_FALSE(dead1 == dead2);
     EXPECT_TRUE(dead1 != dead2);
 
-    AppInstancePtr app = appPTR->getTopLevelInstance();
-    ASSERT_TRUE( bool(app) );
     NodePtr dot = createDot(app);
     ASSERT_TRUE( bool(dot) );
     {
