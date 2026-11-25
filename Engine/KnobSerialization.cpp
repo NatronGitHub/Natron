@@ -253,7 +253,7 @@ KnobSerialization::storeKnobLinks(const KnobIPtr & knob)
             knob->storeLink(-1, aliasNodeNameFull, aliasNodeName, masterTrackName, aliasKnobName, -1);
         }
     } else {
-        assert(_masters.size() == _dimension);
+        assert( _masters.size() == static_cast<std::size_t>(_dimension) );
         int slaveDim = 0;
         for (std::list<MasterSerialization>::iterator it = _masters.begin(); it != _masters.end(); ++it, ++slaveDim) {
             if (it->masterDimension != -1) {
