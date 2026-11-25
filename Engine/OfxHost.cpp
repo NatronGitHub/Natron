@@ -631,13 +631,16 @@ OfxHost::vmessage(const char* msgtype,
         Dialogs::informationDialog(NATRON_APPLICATION_NAME, message);
     } else if (type == kOfxMessageQuestion) {
         // As for a question posted on an effect (OfxImageEffectInstance::vmessage(), Node::question()): the user's
-        // reply, or an error if nobody can answer, in background mode or before the first project window (where
-        // Dialogs::questionDialog() answers yes, e.g. during the plug-in scan) or from another thread: "It is an error to post a question message if the plugin is not in an
-        // interactive session" (ofxMessage.h).
+        // reply, or an error if nobody can answer: in background mode or before the first project window (where
+        // Dialogs::questionDialog() answers yes, e.g. during the plug-in scan), or from another thread. "It is an
+        // error to post a question message if the plugin is not in an interactive session" (ofxMessage.h).
         if ( appPTR->isBackground() || ( QThread::currentThread() != qApp->thread() ) || !appPTR->getTopLevelInstance() ) {
             // as Node::question(): say which question was not asked
-            appPTR->writeToErrorLog_mt_safe( QString::fromUtf8(NATRON_APPLICATION_NAME), QDateTime::currentDateTime(),
-                                             QString::fromUtf8("Question not asked (nobody can answer it): %1").arg( QString::fromUtf8( message.c_str() ) ) );
+            const QString notAsked = QString::fromUtf8("Question not asked (nobody can answer it): %1").arg( QString::fromUtf8( message.c_str() ) );
+            appPTR->writeToErrorLog_mt_safe( QString::fromUtf8(NATRON_APPLICATION_NAME), QDateTime::currentDateTime(), notAsked );
+            if ( appPTR->isBackground() ) {
+                std::cerr << notAsked.toStdString() << std::endl;
+            }
 
             return kOfxStatFailed;
         }
