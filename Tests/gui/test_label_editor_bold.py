@@ -58,3 +58,17 @@ wait_idle()
 value = label.getValue()
 check(value.startswith("<b><font") and value.endswith("another note</font></b>"),
       "the edited label is %r: not bold" % value)
+
+# a label with a bold part, but not bold as a whole (e.g. set from Python while the panel is open): Bold on
+# and off adds and removes the editor's bold, not the label's own
+bold[0].click()  # Bold off on the edited label
+wait_idle()
+check(not bold[0].isChecked(), "Bold is still checked")
+label.setValue("Note: <b>keep</b>")
+wait_idle()
+bold[0].click()
+wait_idle()
+check(label.getValue() == "<b>Note: <b>keep</b></b>", "after Bold on: the label is %r" % label.getValue())
+bold[0].click()
+wait_idle()
+check(label.getValue() == "Note: <b>keep</b>", "after Bold off: the label is %r" % label.getValue())
