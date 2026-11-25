@@ -324,20 +324,14 @@ KnobI::restoreLinks(const NodesList & allNodes,
     KnobIPtr thisKnob = shared_from_this();
     // All the links are restored, even if one of them fails, then the failures are reported at once (#1612).
     std::vector<std::string> errors;
+    const std::string prefix("KnobI::restoreLinks(): Could not restore ");
     for (std::vector<Link>::const_iterator l = _links.begin(); l != _links.end(); ++l) {
+        const std::string linkName = "node/knob/track " + l->nodeName + '/' + l->knobName + '/' + l->trackName;
         KnobIPtr linkedKnob = findMaster(thisKnob, allNodes, l->nodeNameFull, l->nodeName, l->trackName, l->knobName, oldNewScriptNamesMapping);
         if (!linkedKnob) {
-            errors.push_back(std::string("KnobI::restoreLinks(): Could not restore link to node/knob/track ") + l->nodeName + '/' + l->knobName + '/' + l->trackName);
-            continue;
-        }
-        if (linkedKnob == thisKnob) {
-            qDebug() << "Link for" << getName().c_str()
-            << "failed to restore the following linkage:"
-            << "node=" << l->nodeName.c_str()
-            << "knob=" << l->knobName.c_str()
-            << "track=" << l->trackName.c_str()
-            << "because it returned the same Knob. Probably a pre-2.3.16 project with Group clones";
-            errors.push_back(std::string("KnobI::restoreLinks(): Could not restore link to node/knob/track ") + l->nodeName + '/' + l->knobName + '/' + l->trackName + " because it returned the same Knob. Probably a pre-2.3.16 project with Group clones.");
+            errors.push_back(prefix + "link to " + linkName);
+        } else if (linkedKnob == thisKnob) {
+            errors.push_back(prefix + "link to " + linkName + " because it returned the same Knob. Probably a pre-2.3.16 project with Group clones.");
         } else if (l->dimension == -1) {
             setKnobAsAliasOfThis(linkedKnob, true);
         } else if ( (l->slaveDimension < 0) || (l->slaveDimension >= getDimension()) ||
@@ -346,27 +340,31 @@ KnobI::restoreLinks(const NodesList & allNodes,
             // the number of dimensions of one of the two parameters since it was saved (#1612).
             EffectInstance* effect = dynamic_cast<EffectInstance*>( getHolder() );
             const std::string nodeName = ( effect && effect->getNode() ) ? effect->getNode()->getScriptName_mt_safe() + '/' : std::string();
-            const std::string err = "KnobI::restoreLinks(): Could not restore the link of dimension " + std::to_string(l->slaveDimension) +
-                                    " of " + nodeName + getName() + " (" + std::to_string( getDimension() ) + " dimension(s)) to dimension " +
-                                    std::to_string(l->dimension) + " of node/knob/track " + l->nodeName + '/' + l->knobName + '/' + l->trackName +
-                                    " (" + std::to_string( linkedKnob->getDimension() ) + " dimension(s))";
-            if (!throwOnFailure) {
-                // the callers that don't throw (paste, presets) would not report it otherwise
-                appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( getName().c_str() ), QDateTime::currentDateTime(), QString::fromUtf8( err.c_str() ) );
-            }
-            errors.push_back(err);
+            errors.push_back(prefix + "the link of dimension " + std::to_string(l->slaveDimension) +
+                             " of " + nodeName + getName() + " (" + std::to_string( getDimension() ) + " dimension(s)) to dimension " +
+                             std::to_string(l->dimension) + " of " + linkName +
+                             " (" + std::to_string( linkedKnob->getDimension() ) + " dimension(s))");
         } else {
             slaveTo(l->slaveDimension, linkedKnob, l->dimension);
         }
     }
     _links.clear();
-    if ( throwOnFailure && !errors.empty() ) {
-        std::string what = errors.front();
-        for (std::size_t i = 1; i < errors.size(); ++i) {
-            what += '\n' + errors[i];
-        }
-        throw std::runtime_error(what);
+    if ( errors.empty() ) {
+        return;
     }
+    if (!throwOnFailure) {
+        // the callers that don't throw (paste, presets) would not report them otherwise
+        for (const std::string& err : errors) {
+            appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( getName().c_str() ), QDateTime::currentDateTime(), QString::fromUtf8( err.c_str() ) );
+        }
+
+        return;
+    }
+    std::string what = errors.front();
+    for (std::size_t i = 1; i < errors.size(); ++i) {
+        what += '\n' + errors[i];
+    }
+    throw std::runtime_error(what);
 }
 
 void
