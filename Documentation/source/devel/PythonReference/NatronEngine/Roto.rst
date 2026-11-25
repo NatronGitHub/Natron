@@ -33,6 +33,9 @@ Its purpose is to manage all layers and shapes.
 You can create new shapes with the :func:`createBezier(x,y,time)<NatronEngine.Roto.createBezier>`,
 :func:`createEllipse(x,y,diameter,fromCenter,time)<NatronEngine.Roto.createEllipse>` and
 :func:`createRectangle(x,y,size,time)<NatronEngine.Roto.createRectangle>` functions.
+They return None, and print why, if the shape cannot be created, e.g. if a plug-in that renders
+it is not installed. A Roto or RotoPaint node needs the Roto and Merge plug-ins of openfx-misc:
+without them, :meth:`createNode()<NatronEngine.App.createNode>` returns None.
 
 To create a new :doc:`Layer` you can use the :func:`createLayer()<NatronEngine.Roto.createLayer>` function.
 
