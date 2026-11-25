@@ -464,6 +464,13 @@ add_test(NAME RotoShapeChannelsHeadless
 set_tests_properties(RotoShapeChannelsHeadless PROPERTIES TIMEOUT 120 SKIP_RETURN_CODE 77
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/roto-shape-channels-headless-cache")
 
+# ImageLayer == and < compare the plane and its channels, not the Python objects (#1810): NatronRenderer
+# runs the script, which exits with natron.quit(status).
+add_test(NAME ImageLayerCompareHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_image_layer_compare.py")
+set_tests_properties(ImageLayerCompareHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/image-layer-compare-headless-cache")
+
 # A PyPlug is created after the script rebinds the global "app" (#1525)
 add_test(NAME PyPlugReboundAppHeadless
     COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_pyplug_rebound_app.py")
