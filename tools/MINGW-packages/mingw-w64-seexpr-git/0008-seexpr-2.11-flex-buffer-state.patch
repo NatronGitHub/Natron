@@ -1,0 +1,54 @@
+flex 2.7.8 renamed the struct behind YY_BUFFER_STATE (yy_buffer_state becomes
+yy_c_buffer_state). SeExprParser.y named it, so libSeExpr failed to link
+(undefined SeExpr_delete_buffer(SeExpr_buffer_state*)). Only the lexer names
+it now, through the YY_BUFFER_STATE typedef, so every flex version works.
+
+--- SeExpr-2.11/src/SeExpr/SeExprParser.y.orig
++++ SeExpr-2.11/src/SeExpr/SeExprParser.y
+@@ -35,9 +35,10 @@
+ int yypos();
+ extern int yy_start;
+ extern char* yytext;
+-struct yy_buffer_state;
+-yy_buffer_state* yy_scan_string(const char *str);
+-void yy_delete_buffer(yy_buffer_state*);
++// wrappers of yy_scan_string() and yy_delete_buffer(): flex 2.7.8 renamed the
++// struct behind YY_BUFFER_STATE, so only SeExprParserLex.l may name it
++void SeExprScanStringBegin(const char *str);
++void SeExprScanStringEnd();
+ 
+ /*******************
+  parser declarations
+@@ -298,10 +299,10 @@
+     Expr = expr;
+     ParseStr = str;
+     resetCounters(stringTokens); // reset lineNumber and columnNumber in scanner
+-    yy_buffer_state* buffer = yy_scan_string(str);
++    SeExprScanStringBegin(str);
+     ParseResult = 0;
+     int resultCode = yyparse();
+-    yy_delete_buffer(buffer);
++    SeExprScanStringEnd();
+     SeExprlex_destroy ();
+     if (resultCode == 0) {
+ 	// success
+--- SeExpr-2.11/src/SeExpr/SeExprParserLex.l.orig
++++ SeExpr-2.11/src/SeExpr/SeExprParserLex.l
+@@ -118,3 +118,17 @@
+ {
+     return yy_c_buf_p - YY_CURRENT_BUFFER->yy_ch_buf - yyleng;
+ }
++
++/* Called by SeExprParse() in SeExprParser.y, which must not name the struct
++   behind YY_BUFFER_STATE: flex 2.7.8 renamed it from yy_buffer_state to
++   yy_c_buffer_state. */
++static YY_BUFFER_STATE scanStringBuffer = 0;
++void SeExprScanStringBegin(const char* str)
++{
++    scanStringBuffer = yy_scan_string(str);
++}
++void SeExprScanStringEnd()
++{
++    yy_delete_buffer(scanStringBuffer);
++    scanStringBuffer = 0;
++}
