@@ -150,10 +150,11 @@ jobs:
           echo "TEST_RESULTS_NAME=${TEST_RESULTS_NAME}" >> $GITHUB_OUTPUT
           echo "TEST_RESULTS_FILE=$(cygpath -m ${TEST_RESULTS_FILE})" >> $GITHUB_OUTPUT
 
-          TEST_FAILURES_DIR="${ARCHIVE_DIR}/${INSTALLER_NAME}-unit_tests_failures"
+          # runUnitTests.sh zips the failed tests' outputs (only if a test failed)
+          TEST_FAILURES_ZIP="${ARCHIVE_DIR}/${INSTALLER_NAME}-unit_tests_failures.zip"
           TEST_FAILURES_NAME="${INSTALLER_NAME}-unit_tests_failures"
           echo "TEST_FAILURES_NAME=${TEST_FAILURES_NAME}" >> $GITHUB_OUTPUT
-          echo "TEST_FAILURES_DIR=$(cygpath -m ${TEST_FAILURES_DIR})" >> $GITHUB_OUTPUT
+          echo "TEST_FAILURES_ZIP=$(cygpath -m ${TEST_FAILURES_ZIP})" >> $GITHUB_OUTPUT
 
       - name: Build verify_plugin_loads binary
         run: |
@@ -229,7 +230,8 @@ jobs:
         uses: actions/upload-artifact@v4.3.1
         with:
           name:  ${{ steps.build.outputs.TEST_FAILURES_NAME }}
-          path:  ${{ steps.build.outputs.TEST_FAILURES_DIR }}
+          path:  ${{ steps.build.outputs.TEST_FAILURES_ZIP }}
+          if-no-files-found: ignore
           retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
 
       - name: Verify plugin loading
