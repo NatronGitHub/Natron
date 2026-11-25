@@ -3,10 +3,7 @@
 import NatronGuiTest
 from natrontest import *
 
-try:
-    from PySide2 import QtCore, QtGui, QtWidgets
-except ImportError:
-    from PySide6 import QtCore, QtGui, QtWidgets
+QtCore, QtGui, QtWidgets = qt_modules()
 
 PARAMS = "net.natron.test.Params"  # has RGB and RGBA parameters (Tests/OfxTestPlugin)
 ROTOPAINT = "fr.inria.built-in.RotoPaint"
@@ -23,9 +20,7 @@ roto.connectInput(0, gen)
 viewer.connectInput(0, roto)
 
 # the overlay of a node is shown while its settings panel is open: select it and press Return
-app.clearSelection()
-app.selectNode(roto, True)
-NatronGuiTest.sendKey("NodeGraph", "Return")
+open_settings_panel(roto)
 fit_viewer()
 
 # created as the user does (in the node graph menu), so that its settings panel, with the picker of

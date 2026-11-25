@@ -11,12 +11,9 @@ import time
 import NatronGuiTest
 from natrontest import *
 
-if not os.environ.get("OCIO"):
-    # the Write node fails without an OCIO config ("Invalid OCIO config")
-    NatronGuiTest.skip("OCIO is not set to an OpenColorIO config")
+require_ocio()
 require_plugin(GENERATOR)
-if not any(i.startswith("fr.inria.openfx.WritePNG") for i in natron.getPluginIDs()):
-    NatronGuiTest.skip("plug-in fr.inria.openfx.WritePNG not found (OFX_PLUGIN_PATH=%s)" % os.environ.get("OFX_PLUGIN_PATH", ""))
+require_plugin("fr.inria.openfx.WritePNG")
 
 NFRAMES = 20
 
@@ -57,8 +54,8 @@ def frames_written(prefix):
 
 
 def process_events(seconds, until=None):
-    t0 = time.time()
-    while time.time() - t0 < seconds:
+    t0 = time.monotonic()
+    while time.monotonic() - t0 < seconds:
         if until is not None and until():
             return True
         NatronGuiTest.waitIdle(0.2)  # processes the events; it may time out while the process renders
@@ -97,10 +94,10 @@ try:
     # a render of the next project, run in a separate process too: queued behind the first one
     write2 = make_writer("next", 3, False)
     app.render(write2, 1, 3)
-    t0 = time.time()
+    t0 = time.monotonic()
     ok = app.waitForRenders(60)
     print("waitForRenders() -> %r in %.1f s, frames written: process %d, next %d"
-          % (ok, time.time() - t0, frames_written("process"), frames_written("next")))
+          % (ok, time.monotonic() - t0, frames_written("process"), frames_written("next")))
     process_events(1)  # the signals of the processes that just finished
     check(ok, "app.waitForRenders() timed out")
     check(frames_written("process") == NFRAMES, "the render process did not go on after the reset")
