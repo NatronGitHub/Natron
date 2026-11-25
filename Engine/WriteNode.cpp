@@ -263,7 +263,10 @@ public:
 
     void cloneGenericKnobs();
 
+    // As ReadNodePrivate::refreshPluginSelectorKnob() and setDefaultPluginIDForFile(), for the encoder (#1825)
     void refreshPluginSelectorKnob();
+
+    void setDefaultPluginIDForFile();
 
     void createDefaultWriteNode();
 
@@ -1042,9 +1045,7 @@ WriteNodePrivate::refreshPluginSelectorKnob()
 
     QString qpattern = QString::fromUtf8( filePattern.c_str() );
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
-    std::string pluginID;
     if ( !ext.empty() ) {
-        pluginID = appPTR->getWriterPluginIDForFileType(ext);
         IOPluginSetForFormat writersForFormat;
         appPTR->getWritersForFormat(ext, &writersForFormat);
 
@@ -1069,6 +1070,20 @@ WriteNodePrivate::refreshPluginSelectorKnob()
         pluginChoice->setSecret(true);
     } else {
         pluginChoice->setSecret(false);
+    }
+}
+
+void
+WriteNodePrivate::setDefaultPluginIDForFile()
+{
+    KnobOutputFilePtr fileKnob = outputFileKnob.lock();
+
+    assert(fileKnob);
+    QString qpattern = QString::fromUtf8( fileKnob->getValue().c_str() );
+    std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
+    std::string pluginID;
+    if ( !ext.empty() ) {
+        pluginID = appPTR->getWriterPluginIDForFileType(ext);
     }
 
     KnobStringPtr pluginIDKnob = pluginIDStringKnob.lock();
@@ -1347,6 +1362,7 @@ WriteNode::knobChanged(KnobI* k,
         }
         try {
             _imp->refreshPluginSelectorKnob();
+            _imp->setDefaultPluginIDForFile();
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
