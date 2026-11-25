@@ -1409,9 +1409,7 @@ Project::saveProjectInternal(const QString & path,
                         *warnings += notSaved;
                     }
                 }
-                QString script;
-                exportToPython(script);
-                const QByteArray utf8 = script.toUtf8();
+                const QByteArray utf8 = exportToPython().toUtf8();
                 ofile.write( utf8.constData(), utf8.size() );
             } else if (fileFormat == eProjectFileFormatText) {
                 boost::archive::xml_oarchive oArchive(ofile);

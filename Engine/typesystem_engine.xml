@@ -1045,7 +1045,7 @@
                 } else if (App* app = dynamic_cast&lt;App*&gt;(group)) {
                     %PYARG_0 = %CONVERTTOPYTHON[App*](app);
                 } else {
-                    delete group;
+                    assert(!group); // getContainerGroup() returns an Effect, an App or NULL
                     Py_RETURN_NONE;
                 }
                 // Ownership transferences.
