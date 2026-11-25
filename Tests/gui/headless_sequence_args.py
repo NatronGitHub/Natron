@@ -55,6 +55,7 @@ def check_render_tasks(app, node):
     assert_raises_type_error(app.render, [("Write1", 1, 1)])
     assert_raises_type_error(app.render, [(None, 1, 1)])
     assert_raises_type_error(app.render, [(node, "a", 1)])
+    assert_raises_type_error(app.render, [(node, 1j, 1)])
     assert_raises_type_error(app.render, [(node, 1)])
     assert_raises_type_error(app.render, [5])
 
