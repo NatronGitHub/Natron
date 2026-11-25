@@ -355,6 +355,13 @@ try:
     folder = os.path.dirname(first).replace("\\", "/")
     if "<Name>Project</Name><Value>%s</Value>" % folder not in paths:
         raise RuntimeError("[Project] is not %s: %s" % (folder, paths))
+    # the copies expand [Project], as saveProject() does
+    for save, name in ((loaded.saveProjectCopy, "copy.ntp"),
+                       (loaded.saveTempProject, "temp.ntp")):
+        if not save("[Project]/" + name):
+            raise RuntimeError("%s() failed" % save.__name__)
+        if not os.path.isfile(os.path.join(os.path.dirname(first), name)):
+            raise RuntimeError("%s() did not expand [Project]" % save.__name__)
     dump(loaded, os.environ["NATRON_TEST_LOADED"])
     if not loaded.saveProjectAsPython(os.environ["NATRON_TEST_SECOND"]):
         raise RuntimeError("saveProjectAsPython() failed")

@@ -610,7 +610,7 @@ inform the user of various information, warnings or errors.
     Same as :meth:`saveProjectCopy<NatronEngine.App.saveProjectCopy>`, kept for compatibility.
 
     .. versionchanged:: 2.6
-       The *format* parameter.
+       The *format* parameter. Project variables in *filename*, such as ``[Project]``, are expanded.
 
 .. method:: App.saveProjectCopy(filename[, format=NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatNone])
 
@@ -622,6 +622,8 @@ inform the user of various information, warnings or errors.
     such as the project path, last save time etc...
     *format* is the format of the copy: with *eProjectFileFormatNone*, the file name gives it, as in
     :meth:`saveProject<NatronEngine.App.saveProject>`. It doesn't change the format of the project.
+    Project variables in *filename*, such as ``[Project]``, are expanded, as in
+    :meth:`saveProject<NatronEngine.App.saveProject>`.
     This function returns *True* if it saved successfully, *False* otherwise.
 
     .. versionadded:: 2.6

@@ -430,11 +430,24 @@ App::addFormat(const QString& formatSpec)
     }
 }
 
+// filename with its project variables, such as [Project], expanded: all the save functions do it
+std::string
+App::expandedFileName(const QString& filename) const
+{
+    std::string outFile = filename.toStdString();
+    std::map<std::string, std::string> env;
+
+    getInternalApp()->getProject()->getEnvironmentVariables(env);
+    Project::expandVariable(env, outFile);
+
+    return outFile;
+}
+
 bool
 App::saveProjectCopy(const QString& filename,
                      ProjectFileFormatEnum format)
 {
-    return getInternalApp()->saveTemp(filename.toStdString(), format);
+    return getInternalApp()->saveTemp(expandedFileName(filename), format);
 }
 
 bool
@@ -448,35 +461,20 @@ bool
 App::saveProject(const QString& filename,
                  ProjectFileFormatEnum format)
 {
-    std::string outFile = filename.toStdString();
-    std::map<std::string, std::string> env;
-    getInternalApp()->getProject()->getEnvironmentVariables(env);
-    Project::expandVariable(env, outFile);
-
-    return getInternalApp()->save(outFile, format);
+    return getInternalApp()->save(expandedFileName(filename), format);
 }
 
 bool
 App::saveProjectAs(const QString& filename,
                    ProjectFileFormatEnum format)
 {
-    std::string outFile = filename.toStdString();
-    std::map<std::string, std::string> env;
-    getInternalApp()->getProject()->getEnvironmentVariables(env);
-    Project::expandVariable(env, outFile);
-
-    return getInternalApp()->saveAs(outFile, format);
+    return getInternalApp()->saveAs(expandedFileName(filename), format);
 }
 
 bool
 App::saveProjectAsPython(const QString& filename)
 {
-    std::string outFile = filename.toStdString();
-    std::map<std::string, std::string> env;
-    getInternalApp()->getProject()->getEnvironmentVariables(env);
-    Project::expandVariable(env, outFile);
-
-    return getInternalApp()->saveTemp(outFile, eProjectFileFormatPython);
+    return saveProjectCopy(filename, eProjectFileFormatPython);
 }
 
 ProjectFileFormatEnum
