@@ -731,7 +731,7 @@ step_rebuild_target() {
             # shellcheck disable=SC2086
             [ -z "${bdeps// /}" ] || $PORT install $bdeps || true   # a failure shows up in the rebuild below
         fi
-        out=$LOGDIR/rebuild-$p.out
+        out=/tmp/rebuild-$p.out   # not in $LOGDIR: the step log has it already
         if ! $PORT -n -s upgrade --force "$p" 2>&1 | tee "$out"; then
             # A port that can't be built while it is active (flite links the installed
             # libflite.dylib: "can't link a dylib with itself"): uninstall, build, or put the
@@ -754,7 +754,7 @@ step_rebuild_target() {
                 # shellcheck disable=SC2086
                 port -q installed "$p" 2> /dev/null | grep -q '(active)' || $PORT install "$p" $variants || true
                 # go on with the other ports, fail at the end
-                rm -f "$LOGDIR/rebuild-$p.variants"
+                rm -f "$LOGDIR/rebuild-$p.variants" "$out"
                 echo "ERROR: could not rebuild $p"
                 failed+=("$p")
                 continue
