@@ -54,8 +54,6 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/Plugin.h"
 
 
-//#define MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
-
 NATRON_NAMESPACE_ENTER
 
 struct OfxHostPrivate;
