@@ -75,7 +75,10 @@ restore)
     if ! id macports > /dev/null 2>&1; then
         # provision.sh's step, with its checksum and signature checks (its log and marker are
         # replaced by the saved ones below)
-        "$(cd "$(dirname "$0")/../.." && pwd)/tools/tart/provision.sh" macports
+        # (provision.sh reads the checkout at its tart path, ~/Documents/third_party/Natron)
+        mkdir -p "$HOME/Documents/third_party"
+        ln -sfn "$(cd "$(dirname "$0")/../.." && pwd)" "$HOME/Documents/third_party/Natron"
+        "$HOME/Documents/third_party/Natron/tools/tart/provision.sh" macports
         id macports
     fi
     sudo rm -rf /opt/local /opt/osmesa /opt/llvm /opt/MacPorts-Natron "$HOME/provision-logs"
