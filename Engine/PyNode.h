@@ -285,6 +285,18 @@ public:
     Effect* getInput(const QString& inputLabel) const;
 
     /**
+     * @brief Returns the Effects connected to an output of this node, each one once, in the order of the
+     * connections. The caller is responsible for freeing them.
+     **/
+    std::list<Effect*> getOutputs() const;
+
+    /**
+     * @brief Returns the group that contains this node: the group node (an Effect) for a node inside a group,
+     * or the App for a node at the top level of the project. The caller is responsible for freeing it.
+     **/
+    Group* getContainerGroup() const;
+
+    /**
      * @brief Returns the name of the Effect as used internally
      **/
     QString getScriptName() const;

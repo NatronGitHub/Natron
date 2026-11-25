@@ -26,6 +26,7 @@
 #include "PyNode.h"
 
 #include <cassert>
+#include <set>
 #include <stdexcept>
 
 #include "Engine/Node.h"
@@ -34,6 +35,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/PyAppInstance.h"
 #include "Engine/PyRoto.h"
 #include "Engine/PyTracker.h"
 #include "Engine/TimeLine.h"
@@ -388,6 +390,50 @@ Effect::getInput(const QString& inputLabel) const
         }
     }
     return 0;
+}
+
+std::list<Effect*>
+Effect::getOutputs() const
+{
+    std::list<Effect*> ret;
+    NodePtr node = getInternalNode();
+
+    if (!node) {
+        return ret;
+    }
+    NodesWList outputs;
+    node->getOutputs_mt_safe(outputs);
+    // an output node appears once per link to this node: list it once
+    std::set<NodePtr> listed;
+    for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        NodePtr output = it->lock();
+        if ( output && listed.insert(output).second ) {
+            ret.push_back( new Effect(output) );
+        }
+    }
+
+    return ret;
+}
+
+Group*
+Effect::getContainerGroup() const
+{
+    NodePtr node = getInternalNode();
+
+    if (!node) {
+        return NULL;
+    }
+    NodeCollectionPtr collection = node->getGroup();
+    NodeGroupPtr isGroup = std::dynamic_pointer_cast<NodeGroup>(collection);
+    if (isGroup) {
+        return new Effect( isGroup->getNode() );
+    }
+    if (collection) {
+        // the project
+        return new App( node->getApp() );
+    }
+
+    return NULL;
 }
 
 QString

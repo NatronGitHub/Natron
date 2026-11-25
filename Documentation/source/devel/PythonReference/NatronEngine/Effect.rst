@@ -26,6 +26,7 @@ Functions
 - def :meth:`getAvailableLayers<NatronEngine.Effect.getAvailableLayers>` (inputNb, time[, view=0])
 - def :meth:`getBitDepth<NatronEngine.Effect.getBitDepth>` ()
 - def :meth:`getColor<NatronEngine.Effect.getColor>` ()
+- def :meth:`getContainerGroup<NatronEngine.Effect.getContainerGroup>` ()
 - def :meth:`getCurrentTime<NatronEngine.Effect.getCurrentTime>` ()
 - def :meth:`getOutputFormat<NatronEngine.Effect.getOutputFormat>` ()
 - def :meth:`getFrameRange<NatronEngine.Effect.getFrameRange>` ()
@@ -35,6 +36,7 @@ Functions
 - def :meth:`getLabel<NatronEngine.Effect.getLabel>` ()
 - def :meth:`getInputLabel<NatronEngine.Effect.getInputLabel>` (inputNumber)
 - def :meth:`getMaxInputCount<NatronEngine.Effect.getMaxInputCount>` ()
+- def :meth:`getOutputs<NatronEngine.Effect.getOutputs>` ()
 - def :meth:`getParam<NatronEngine.Effect.getParam>` (name)
 - def :meth:`getParams<NatronEngine.Effect.getParams>` ()
 - def :meth:`getPluginID<NatronEngine.Effect.getPluginID>` ()
@@ -80,7 +82,8 @@ To get a specific :doc:`Param` by script-name, call the
 
 Input effects are mapped against a zero-based index. To retrieve an input Effect
 given an index, you can use the :func:`getInput(inputNumber) <NatronEngine.Effect.getInput>`
-function.
+function. The nodes connected to the outputs of an Effect are given by
+:func:`getOutputs() <NatronEngine.Effect.getOutputs>`.
 
 To manage inputs, you can connect them and disconnect them with respect to their input
 index with the :func:`connectInput(inputNumber,input)<NatronEngine.Effect.connectInput>` and
@@ -304,6 +307,16 @@ thread.
 
     Returns the frame-rate of the sequence in output of this node.
 
+.. method:: Effect.getContainerGroup()
+
+    :rtype: :class:`Group<NatronEngine.Group>`
+
+    Returns the group that contains this node: the group node (an :class:`Effect<NatronEngine.Effect>`)
+    for a node inside a group or a PyPlug, or the :class:`App<NatronEngine.App>` for a node at the top level
+    of the project. It can be passed as the *group* of :func:`App.createNode()<NatronEngine.App.createNode>`
+    to create a node next to this one. In the GUI, the App is an :class:`App<NatronEngine.App>`, not a
+    :class:`GuiApp<NatronGui.GuiApp>`: use ``natron.getGuiInstance()`` for the GUI functions.
+
 .. method:: Effect.getInput(inputNumber)
 
 
@@ -384,6 +397,15 @@ Returns all the :class:`Param<NatronEngine.Param>` of this Effect as a sequence.
 Returns the ID of the plug-in that this node instantiate.
 
 
+
+.. method:: Effect.getOutputs()
+
+    :rtype: :class:`list` of :class:`Effect<NatronEngine.Effect>`
+
+    Returns the nodes connected to the output of this node, each one once (in the order of the
+    connections), even if it is connected through several of its inputs. Use
+    :func:`getInput(inputNumber)<NatronEngine.Effect.getInput>` on each of them to know through which
+    inputs it is connected.
 
 .. method:: Effect.getPosition()
 
