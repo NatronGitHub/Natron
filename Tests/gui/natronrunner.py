@@ -79,12 +79,8 @@ def _descendants(pid):
     return ret
 
 
-def kill_tree(proc):
-    """Kills proc, its process group, and all its descendants.
-
-    Under lldb, Natron runs in its own process group, below debugserver, so killing the group of
-    the wrapper is not enough.
-    """
+def _kill(proc, pids):
+    """SIGKILLs proc, its process group and pids (its descendants, listed before it was terminated)."""
     if sys.platform == "win32":
         # no process groups nor SIGKILL: taskkill kills the whole tree
         subprocess.call(["taskkill", "/T", "/F", "/PID", str(proc.pid)],
@@ -93,16 +89,7 @@ def kill_tree(proc):
             proc.kill()
         except OSError:
             pass
-        proc.wait()
         return
-    # before the wrapper exits: its children are then no longer its descendants
-    pids = _descendants(proc.pid)
-    # let a wrapper such as natron-lldb.sh kill its inferior first
-    try:
-        proc.terminate()
-        proc.wait(timeout=10)
-    except (OSError, subprocess.TimeoutExpired):
-        pass
     try:
         os.killpg(proc.pid, signal.SIGKILL)
     except OSError:
@@ -112,6 +99,24 @@ def kill_tree(proc):
             os.kill(pid, signal.SIGKILL)
         except OSError:
             pass
+
+
+def kill_tree(proc):
+    """Kills proc, its process group, and all its descendants (proc's output is not read).
+
+    Under lldb, Natron runs in its own process group, below debugserver, so killing the group of
+    the wrapper is not enough. A wrapper such as natron-lldb.sh gets 10 s to kill its inferior first.
+    """
+    pids = []
+    if sys.platform != "win32":  # on Windows, terminate() kills proc at once: taskkill could not find its tree
+        # before the wrapper exits: its children are then no longer its descendants
+        pids = _descendants(proc.pid)
+        try:
+            proc.terminate()
+            proc.wait(timeout=10)
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+    _kill(proc, pids)
     proc.wait()
 
 
@@ -120,7 +125,8 @@ def run(cmd, env, timeout, stdin=None):
 
     The output is stdout and stderr, decoded, with "\\n" line ends. stdin is the path of a file to read
     stdin from (natron-lldb.sh reads it from NATRON_LLDB_STDIN), or None for the null device. The
-    command runs in its own process group: on a timeout, kill_tree() kills it with its wrapper.
+    command runs in its own process group: on a timeout, it is killed with its wrapper and its
+    descendants, at most 10 s later.
     """
     print("Running: " + " ".join(cmd) + (" < " + stdin if stdin else ""))
     sys.stdout.flush()
@@ -134,12 +140,18 @@ def run(cmd, env, timeout, stdin=None):
             status = proc.returncode
         except subprocess.TimeoutExpired:
             print("timeout after %g s: killing the process and its wrapper" % timeout)
-            # a wrapper such as natron-lldb.sh kills its inferior and prints its log: keep reading it
-            proc.terminate()
-            try:
-                out, _ = proc.communicate(timeout=10)
-            except subprocess.TimeoutExpired:
-                kill_tree(proc)
+            out = None
+            pids = []
+            if sys.platform != "win32":  # on Windows, terminate() kills proc at once: taskkill could not find its tree
+                pids = _descendants(proc.pid)
+                # a wrapper such as natron-lldb.sh kills its inferior and prints its log: keep reading it
+                proc.terminate()
+                try:
+                    out, _ = proc.communicate(timeout=10)
+                except subprocess.TimeoutExpired:
+                    pass
+            _kill(proc, pids)  # also the descendants that the wrapper left behind
+            if out is None:
                 out, _ = proc.communicate()
             status = None
     return status, out.decode(errors="replace").replace("\r\n", "\n")
