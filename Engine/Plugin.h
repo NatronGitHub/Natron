@@ -386,6 +386,10 @@ public:
     bool isOpenGLEnabled() const;
     void setOpenGLEnabled(bool b);
 
+    // Resets the user-settable flags above (activated, render scale, multi-threading, OpenGL)
+    // to their defaults: everything enabled, except that deprecated plug-ins are deactivated (#171).
+    void restoreDefaultFlags();
+
     void setOpenGLRenderSupport(Natron::PluginOpenGLRenderSupport support);
     Natron::PluginOpenGLRenderSupport getPluginOpenGLRenderSupport() const;
 };

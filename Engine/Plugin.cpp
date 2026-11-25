@@ -338,6 +338,15 @@ Plugin::setOpenGLEnabled(bool b)
 }
 
 void
+Plugin::restoreDefaultFlags()
+{
+    _activated = !_isDeprecated;
+    _renderScaleEnabled = true;
+    _multiThreadingEnabled = true;
+    _openglActivated = true;
+}
+
+void
 Plugin::setOpenGLRenderSupport(PluginOpenGLRenderSupport support)
 {
     _openglRenderSupport = support;
