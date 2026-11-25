@@ -57,7 +57,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: SDK key
+      # (the same step in the sdk job: *sdk_key)
+      - &sdk_key
+        name: SDK key
         env:
           # everything that defines the SDK: a change makes the next run update the SDK
           SDK_KEY: ${{ hashFiles('tools/MacPorts/*/*/**', 'tools/MacPorts/sync.sh', 'tools/tart/provision.sh', 'tools/tart/check-minos.sh', 'tools/jenkins/macos-release.sh', '.github/workflows/macos_x86_64_sdk.sh') }}
@@ -99,11 +101,7 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - name: SDK key
-        env:
-          # everything that defines the SDK: a change makes the next run update the SDK
-          SDK_KEY: ${{ hashFiles('tools/MacPorts/*/*/**', 'tools/MacPorts/sync.sh', 'tools/tart/provision.sh', 'tools/tart/check-minos.sh', 'tools/jenkins/macos-release.sh', '.github/workflows/macos_x86_64_sdk.sh') }}
-        run: echo "SDK_KEY_SHORT=${SDK_KEY:0:16}" >> "$GITHUB_ENV"
+      - *sdk_key
 
       - name: Download the SDK to update
         if: needs.find.outputs.what == 'update'
