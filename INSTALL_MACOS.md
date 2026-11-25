@@ -417,7 +417,7 @@ Do this every few weeks, and before a release build. Each step is safe to stop a
    cd $NATRON_SRC && git switch RB-2.6 && git pull
    ```
 
-2. **Use MacPorts, not Homebrew, in this terminal.** Run `port_switch` (see "MacPorts from scratch" above), or `export PATH=/opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin; unset HOMEBREW_PREFIX HOMEBREW_CELLAR HOMEBREW_REPOSITORY`. Then check that none of these resolve to `/opt/homebrew` or `/usr/local`:
+2. **Use MacPorts, not Homebrew, in this terminal.** Run `port_switch` (see "MacPorts from scratch" above), or `. $NATRON_SRC/tools/MacPorts/macports-env.sh`. Then check that none of these resolve to `/opt/homebrew` or `/usr/local`:
 
    ```Shell
    which port pkg-config cmake python3

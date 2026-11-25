@@ -137,8 +137,7 @@ jobs:
       - name: Provision (stage ${{ inputs.stage }})
         id: provision
         run: |
-          export PATH=/opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
-          for v in $(env | sed -n 's/^\(HOMEBREW_[A-Za-z_]*\)=.*/\1/p'); do unset "$v"; done
+          . tools/MacPorts/macports-env.sh
           steps=$("$SDK_TOOL" steps)
           # an SDK of an earlier run: update it, then run the steps that are not done (new ones)
           [ "${{ needs.find.outputs.what }}" != update ] || steps="update $steps"
