@@ -68,6 +68,15 @@ skip(const std::string& reason)
     std::cerr << "[  SKIPPED ] " << info->test_case_name() << '.' << info->name() << ": " << reason << std::endl;
 }
 
+// Says that a part of the current test did not run, and why; the rest of the test runs.
+inline void
+skipPart(const std::string& reason)
+{
+    const testing::TestInfo* info = testing::UnitTest::GetInstance()->current_test_info();
+
+    std::cerr << "[  PARTIAL  ] " << info->test_case_name() << '.' << info->name() << ": part not run: " << reason << std::endl;
+}
+
 // true if the host loaded a plug-in with that ID (any version)
 inline bool
 isPluginAvailable(const std::string& pluginID)
