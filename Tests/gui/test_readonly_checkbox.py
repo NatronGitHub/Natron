@@ -1,15 +1,8 @@
 # Regression test for #1744: Space toggled a read-only checkbox (AnimatedCheckBox::keyPressEvent()),
 # e.g. a disabled Boolean parameter, although a click doesn't.
-import NatronGuiTest
 from natrontest import *
 
-try:
-    from PySide2 import QtCore, QtGui, QtWidgets
-except ImportError:
-    try:
-        from PySide6 import QtCore, QtGui, QtWidgets
-    except ImportError:
-        NatronGuiTest.skip("PySide2/PySide6 not available")
+QtCore, QtGui, QtWidgets = qt_modules()
 
 
 def find_checkbox(param_name):
@@ -35,10 +28,7 @@ read_only = g.createBooleanParam("natronTestReadOnly", "Read-only")
 read_only.setEnabled(False)
 editable = g.createBooleanParam("natronTestEditable", "Editable")
 g.refreshUserParamsGUI()
-app.clearSelection()
-app.selectNode(g, True)
-NatronGuiTest.sendKey("NodeGraph", "Return")  # open its settings panel
-wait_idle()
+open_settings_panel(g)
 
 # the editable one toggles: the key reaches the checkbox
 press_space(find_checkbox("natronTestEditable"))

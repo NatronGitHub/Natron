@@ -5,10 +5,7 @@ import NatronEngine
 import NatronGuiTest
 from natrontest import *
 
-try:
-    from PySide2 import QtCore, QtWidgets
-except ImportError:
-    from PySide6 import QtCore, QtWidgets
+QtCore, QtGui, QtWidgets = qt_modules()
 
 PARAMS = "net.natron.test.Params"  # has RGB and RGBA parameters (Tests/OfxTestPlugin)
 require_plugin(PARAMS)

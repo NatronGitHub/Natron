@@ -1,15 +1,8 @@
 # A backdrop keeps the size the user gives it when its label changes: the label wraps to the
 # backdrop's width (#626). Its label editor accepts a label without Natron's full font tag (#1807).
-import NatronGuiTest
 from natrontest import *
 
-try:
-    from PySide2 import QtCore, QtGui, QtWidgets
-except ImportError:
-    try:
-        from PySide6 import QtCore, QtGui, QtWidgets
-    except ImportError:
-        QtWidgets = None
+QtCore, QtGui, QtWidgets = qt_modules()
 
 BACKDROP = "fr.inria.built-in.BackDrop"
 
@@ -47,10 +40,6 @@ check(bd.getSize()[0] > 0, "width after setSize(-10, 100): %r" % (bd.getSize(),)
 
 # #1807: the label editor asserted (Debug) or garbled the label (Release) when the label had no font tag
 # that Natron writes, <font size="..." color="..." face="...">, or only part of it
-if QtWidgets is None:
-    NatronGuiTest.skip("PySide2/PySide6 not available: the label editor is not tested")
-
-
 def editor_widget(widget_class, class_name=None, tooltip=None):
     """The widget of a class in the label editor of the backdrop's settings panel."""
     # The editor is the widget named after the param. Only allWidgets(): PySide2 invalidates the children
@@ -85,10 +74,7 @@ def check_label(expected, what):
 text = "a sticky note"
 label.setValue('<font size="7">' + text + '</font>')  # no color, no face
 wait_idle()
-app.clearSelection()
-app.selectNode(bd, True)
-NatronGuiTest.sendKey("NodeGraph", "Return")  # open its settings panel: it reads the font from the label
-wait_idle()
+open_settings_panel(bd)  # it reads the font from the label
 
 combo = editor_widget(QtWidgets.QFontComboBox)
 families = [combo.itemText(i) for i in range(combo.count()) if combo.itemText(i) != combo.currentFont().family()]

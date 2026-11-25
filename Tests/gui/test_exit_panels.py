@@ -1,16 +1,9 @@
 # Regression test for #1554: Natron exits cleanly with a Python panel in a floating pane, a floating node
 # settings panel, a modal dialog that was created but not shown, and two viewers in one pane.
-import NatronGuiTest
 import NatronGui
 from natrontest import *
 
-try:
-    from PySide2 import QtCore, QtWidgets
-except ImportError:
-    try:
-        from PySide6 import QtCore, QtWidgets
-    except ImportError:
-        NatronGuiTest.skip("PySide2/PySide6 not available")
+QtCore, QtGui, QtWidgets = qt_modules()
 
 require_plugin(GENERATOR)
 
@@ -41,10 +34,7 @@ dialog = app.createModalDialog()
 dialog.addWidget(QtWidgets.QLabel("exit test"))
 
 # the settings panel of the Generator, floated
-app.clearSelection()
-app.selectNode(gen, True)
-NatronGuiTest.sendKey("NodeGraph", "Return")
-wait_idle()
+open_settings_panel(gen)
 panels = [w for w in QtWidgets.QApplication.allWidgets()
           if w.metaObject().className() in ("Natron::NodeSettingsPanel", "Natron::DockablePanel") and w.isVisible()
           and w.objectName() == gen.getScriptName()]

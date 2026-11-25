@@ -4,17 +4,13 @@
 # The test passes only if Natron then exits cleanly.
 import os
 import tempfile
-import time
 
 import NatronGuiTest
 from natrontest import *
 
-if not os.environ.get("OCIO"):
-    # the Write node fails without an OCIO config ("Invalid OCIO config")
-    NatronGuiTest.skip("OCIO is not set to an OpenColorIO config")
+require_ocio()
 require_plugin(GENERATOR)
-if not any(i.startswith("fr.inria.openfx.WritePNG") for i in natron.getPluginIDs()):
-    NatronGuiTest.skip("plug-in fr.inria.openfx.WritePNG not found (OFX_PLUGIN_PATH=%s)" % os.environ.get("OFX_PLUGIN_PATH", ""))
+require_plugin("fr.inria.openfx.WritePNG")
 
 NFRAMES = 400  # more than the process renders before Natron exits
 
@@ -63,9 +59,8 @@ write.getParam("afterFrameRender").set("exitRenderProcessAfterFrame")
 wait_idle(10)
 
 app.render(write, 1, NFRAMES)  # returns at once: the process renders a saved copy of the project
-t0 = time.time()
-while time.time() - t0 < 60 and frames_written() < 2:
-    NatronGuiTest.waitIdle(0.2)  # processes the events; it may time out while the process renders
+# waitIdle() processes the events; it may time out while the process renders
+wait_until(lambda: frames_written() >= 2, 60)
 n = frames_written()
 print("frames written by the process before the exit: %d" % n)
 check(n >= 2, "the render process did not write 2 frames in 60 s")

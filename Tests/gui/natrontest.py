@@ -1,7 +1,9 @@
 # Helpers shared by the GUI tests (Natron --test test_*.py); see Documentation/source/devel/guitesting.rst.
 # The test script directory is on sys.path, so a test does "from natrontest import *".
 import ctypes
+import importlib
 import os
+import time
 
 import NatronGui
 import NatronGuiTest
@@ -20,6 +22,18 @@ def require_plugin(pluginID):
         NatronGuiTest.skip("plug-in %s not found (OFX_PLUGIN_PATH=%s)" % (pluginID, os.environ.get("OFX_PLUGIN_PATH", "")))
 
 
+def require_ocio():
+    """Skip the test without an OpenColorIO config: the Write nodes of openfx-io fail ("Invalid OCIO config")."""
+    if not os.environ.get("OCIO"):
+        NatronGuiTest.skip("OCIO is not set to an OpenColorIO config")
+
+
+def qt_modules():
+    """QtCore, QtGui and QtWidgets, from the PySide of Natron's Qt (QT_API, which Natron sets)."""
+    pyside = {"pyside6": "PySide6", "pyside2": "PySide2"}[os.environ["QT_API"]]
+    return tuple(importlib.import_module(pyside + "." + name) for name in ("QtCore", "QtGui", "QtWidgets"))
+
+
 def test_plugin_counter(name):
     """A counter of the test plug-in (see Tests/OfxTestPlugin/NatronTestPlugin.cpp), e.g. "Generator.render"."""
     path = os.environ.get("NATRON_TESTS_OFX_PLUGIN_BINARY")
@@ -34,6 +48,25 @@ def test_plugin_counter(name):
 def wait_idle(timeout=30.0):
     """Wait until no render runs and the events are processed; fail on timeout."""
     check(NatronGuiTest.waitIdle(timeout), "the GUI was not idle after %g s" % timeout)
+
+
+def wait_until(predicate, timeout, step=lambda: NatronGuiTest.waitIdle(0.2)):
+    """Calls step() until predicate() is true; returns False if it is still false after timeout seconds."""
+    deadline = time.monotonic() + timeout
+    while not predicate():
+        if time.monotonic() > deadline:
+            return False
+        step()
+    return True
+
+
+def open_settings_panel(node):
+    """Opens the settings panel of node, as the Return key does in the node graph."""
+    app = natron.getGuiInstance(0)
+    app.clearSelection()
+    app.selectNode(node, True)
+    NatronGuiTest.sendKey("NodeGraph", "Return")
+    wait_idle()
 
 
 def check(cond, msg):

@@ -20,9 +20,7 @@ node.connectInput(0, gen)
 viewer.connectInput(0, node)
 
 # the overlay of a node is shown while its settings panel is open: select it and press Return
-app.clearSelection()
-app.selectNode(node, True)
-NatronGuiTest.sendKey("NodeGraph", "Return")
+open_settings_panel(node)
 fit_viewer()
 
 x = node.getParam("x")

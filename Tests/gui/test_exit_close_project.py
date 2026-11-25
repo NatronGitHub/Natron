@@ -2,16 +2,9 @@
 # Natron (its only instance). The instance used to quit, and delete its window, inside the call, under
 # ScriptEditor::onExecScriptClicked(), which then writes to its output (a use after free once the window
 # is deleted when its instance quits). The test passes only if Natron then exits cleanly.
-import NatronGuiTest
 from natrontest import *
 
-try:
-    from PySide2 import QtWidgets
-except ImportError:
-    try:
-        from PySide6 import QtWidgets
-    except ImportError:
-        NatronGuiTest.skip("PySide2/PySide6 not available")
+QtCore, QtGui, QtWidgets = qt_modules()
 
 for n in app.getChildren():
     n.destroy(False)
