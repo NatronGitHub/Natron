@@ -185,6 +185,25 @@ private:
     std::unique_ptr<ReadNodePrivate> _imp;
 };
 
+// The "Plugin Version" knob of ReadNode and WriteNode, the version of their decoder or encoder (#1681), used by both:
+
+// Sets both dimensions of versionKnob without calling knobChanged(); (-1, -1) is unknown
+void setPluginVersionKnob(const KnobIntPtr& versionKnob, int major, int minor);
+
+// Sets versionKnob to the version of embedded if it is the plug-in of pluginID: the project saves it, and loads that
+// version. Else (e.g. the plug-in saved in the project is not installed) the version is kept, so that the project
+// still saves it.
+void syncPluginVersionKnob(const KnobIntPtr& versionKnob, const NodePtr& embedded, const std::string& pluginID);
+
+// The version of the embedded plug-in to create (kCreateNodeArgsPropPluginVersion): unless the user chose another file
+// or plug-in, the one in versionKnob, saved in the project (or given to createNode()), not the newest one;
+// getPluginBinary() falls back to the closest major above, else the newest, if that major is not installed. A node
+// saved without the version, i.e. by a Natron older than 2.6 (a 2.6 node always has one once its plug-in was created),
+// gets the lowest major, the closest above 0: e.g. ReadSVG 3, not ReadSVG 4 (openfx-arena#224). This assumes that a
+// plug-in never adds a major below the one that Natron 2.5 had. A new node gets the newest major.
+void setPluginVersionCreateArgs(const KnobIntPtr& versionKnob, bool userEdited, const NodeSerializationPtr& serialization,
+                                CreateNodeArgs* args);
+
 NATRON_NAMESPACE_EXIT
 
 #endif // READNODE_H

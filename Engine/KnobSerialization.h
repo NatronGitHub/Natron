@@ -1311,6 +1311,11 @@ private:
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 
+// A copy of the serializations, which keeps the values of the knobs at the time of the call, unlike the serializations
+// themselves, which read them when they are written (ReadNode and WriteNode keep the parameters of their decoder or
+// encoder this way while they replace it)
+std::list<KnobSerializationPtr> copyKnobSerializations(const std::list<KnobSerializationPtr>& serialized);
+
 NATRON_NAMESPACE_EXIT
 
 BOOST_CLASS_VERSION(NATRON_NAMESPACE::KnobSerialization, KNOB_SERIALIZATION_VERSION)

@@ -34,8 +34,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // clang-format off
 GCC_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
 // /usr/local/include/boost/serialization/shared_ptr.hpp:112:5: warning: unused typedef 'boost_static_assert_typedef_112' [-Wunused-local-typedef]
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/version.hpp>
@@ -248,10 +246,8 @@ public:
     void createWriteNode(bool throwErrors, const std::string& filename, const NodeSerializationPtr& serialization,
                          bool userEdited = false);
 
-    // As ReadNodePrivate::syncVersionKnob() and resetVersionKnob(), for the encoder (#1681)
+    // syncPluginVersionKnob() for the encoder
     void syncVersionKnob();
-    void resetVersionKnob();
-    void setVersionKnob(int major, int minor);
 
     void destroyWriteNode();
 
@@ -425,56 +421,6 @@ WriteNodePrivate::cloneGenericKnobs()
             }
         }
     }
-}
-
-// A copy of the serializations, which keeps the values of the knobs at the time of the call, unlike the serializations
-// themselves, which read them when they are written
-static std::list<KnobSerializationPtr>
-copyKnobSerializations(const std::list<KnobSerializationPtr>& serialized)
-{
-    std::string serializationString;
-    try {
-        std::ostringstream ss;
-        {   // see http://boost.2283326.n4.nabble.com/the-boost-xml-serialization-to-a-stringstream-does-not-have-an-end-tag-td2580772.html
-            // xml_oarchive must be destroyed before obtaining ss.str(), or the </boost_serialization> tag is missing,
-            // which throws an exception in boost 1.66.0, due to the following change:
-            // https://fossies.org/diffs/boost/1_65_1_vs_1_66_0/libs/serialization/src/basic_xml_grammar.ipp-diff.html
-            // see also https://svn.boost.org/trac10/ticket/13400
-            // see also https://svn.boost.org/trac10/ticket/13354
-
-            boost::archive::xml_oarchive oArchive(ss);
-            int n = (int)serialized.size();
-            oArchive << boost::serialization::make_nvp("numItems", n);
-            for (std::list<KnobSerializationPtr>::const_iterator it = serialized.begin(); it!= serialized.end(); ++it) {
-                oArchive << boost::serialization::make_nvp("item", **it);
-            }
-        }
-        serializationString = ss.str();
-    } catch (...) {
-        assert(false);
-    }
-
-    std::list<KnobSerializationPtr> copy;
-    try {
-        std::stringstream ss(serializationString);
-        {
-            boost::archive::xml_iarchive iArchive(ss);
-            int n ;
-            iArchive >> boost::serialization::make_nvp("numItems", n);
-            for (int i = 0; i < n; ++i) {
-                KnobSerializationPtr s = std::make_shared<KnobSerialization>();
-                iArchive >> boost::serialization::make_nvp("item", *s);
-                copy.push_back(s);
-            }
-        }
-    } catch (const std::exception& e) {
-        qDebug() << e.what();
-        assert(false);
-    } catch (...) {
-        assert(false);
-    }
-
-    return copy;
 }
 
 std::list<KnobSerializationPtr>
@@ -765,33 +711,7 @@ WriteNodePrivate::syncVersionKnob()
     if (!pluginIDKnob) {
         return;
     }
-    NodePtr encoder = embeddedPlugin.lock();
-    const Plugin* plugin = encoder ? encoder->getPlugin() : 0;
-    if ( !plugin || ( encoder->getPluginID() != pluginIDKnob->getValue() ) ) {
-        return;
-    }
-    setVersionKnob( plugin->getMajorVersion(), plugin->getMinorVersion() );
-}
-
-void
-WriteNodePrivate::resetVersionKnob()
-{
-    setVersionKnob(-1, -1);
-}
-
-void
-WriteNodePrivate::setVersionKnob(int major,
-                                 int minor)
-{
-    KnobIntPtr versionKnob = pluginVersionKnob.lock();
-
-    if (!versionKnob) {
-        return;
-    }
-    versionKnob->blockValueChanges();
-    versionKnob->setValue(major, ViewSpec(0), 0);
-    versionKnob->setValue(minor, ViewSpec(0), 1);
-    versionKnob->unblockValueChanges();
+    syncPluginVersionKnob( pluginVersionKnob.lock(), embeddedPlugin.lock(), pluginIDKnob->getValue() );
 }
 
 void
@@ -892,7 +812,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
     bool defaultFallback = false;
 
     if (userEdited) {
-        resetVersionKnob(); // as in ReadNodePrivate::createReadNode() (#1681)
+        setPluginVersionKnob(pluginVersionKnob.lock(), -1, -1); // as in ReadNodePrivate::createReadNode() (#1681)
     }
 
     //Find the appropriate reader
@@ -918,18 +838,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         args.setProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, _publicInterface->getNode());
         args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
 
-        // As in ReadNodePrivate::createReadNode(): the version of the encoder saved in the project,
-        // else, in a node saved without the version (by a Natron older than 2.6), the lowest major (#1681)
-        KnobIntPtr versionKnob = pluginVersionKnob.lock();
-        if (!userEdited && versionKnob) {
-            if (versionKnob->getValue(0) >= 0) {
-                args.setProperty<int>(kCreateNodeArgsPropPluginVersion, versionKnob->getValue(0), 0);
-                args.setProperty<int>(kCreateNodeArgsPropPluginVersion, versionKnob->getValue(1), 1);
-            } else if ( serialization && !serialization->hasKnob(kNatronWriteNodeParamEncodingPluginVersion) ) {
-                args.setProperty<int>(kCreateNodeArgsPropPluginVersion, 0, 0);
-                args.setProperty<int>(kCreateNodeArgsPropPluginVersion, 0, 1);
-            }
-        }
+        setPluginVersionCreateArgs(pluginVersionKnob.lock(), userEdited, serialization, &args);
 
         if (serialization) {
             args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
