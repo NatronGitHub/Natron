@@ -916,7 +916,8 @@ AppInstance::runPythonProjectScript(const QString& filePath,
         // (kOfxChangePluginEdited, as after loading an .ntp file, see OfxEffectInstance.cpp): not a user edit,
         // after which the plug-in would set the parameters (colorspace...) from the file. Reading it extends the project frame range
         // (Node::onFileNameParameterChanged()), which the .ntp loader doesn't: keep the one the script set.
-        double savedFirst, savedLast;
+        double savedFirst = 0.;
+        double savedLast = 0.;
         getProject()->getFrameRange(&savedFirst, &savedLast);
         NodesList nodes;
         getProject()->getNodes_recursive(nodes, true);
@@ -947,7 +948,7 @@ AppInstance::runPythonProjectScript(const QString& filePath,
                 }
             }
         }
-        getProject()->setFrameRange( (int)savedFirst, (int)savedLast );
+        getProject()->setFrameRange( static_cast<int>(savedFirst), static_cast<int>(savedLast) );
         getProject()->forceComputeInputDependentDataOnAllTrees();
     }
     if ( !output.empty() ) {
