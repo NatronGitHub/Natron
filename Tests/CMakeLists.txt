@@ -450,6 +450,13 @@ add_test(NAME RotoWithoutMiscHeadless
 set_tests_properties(RotoWithoutMiscHeadless PROPERTIES TIMEOUT 120 SKIP_RETURN_CODE 77
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/roto-without-misc-headless-cache")
 
+# The shapes of Roto and RotoPaint nodes keep their channels and are not clipped at the project format, whatever
+# the defaults of openfx-misc's Roto plug-in, headless; skipped (77) without openfx-misc or openfx-io's WriteOIIO
+add_test(NAME RotoShapeChannelsHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_roto_shape_channels.py")
+set_tests_properties(RotoShapeChannelsHeadless PROPERTIES TIMEOUT 120 SKIP_RETURN_CODE 77
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/roto-shape-channels-headless-cache")
+
 # A PyPlug is created after the script rebinds the global "app" (#1525)
 add_test(NAME PyPlugReboundAppHeadless
     COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_pyplug_rebound_app.py")
