@@ -23,6 +23,7 @@ set(Tests_SOURCES
     google-mock/src/gmock-all.cc
     BaseTest.cpp
     CLArgs_Test.cpp
+    CacheHolderID_Test.cpp
     Curve_Test.cpp
     DeepGraphRender_Test.cpp
     DiskCache_Test.cpp

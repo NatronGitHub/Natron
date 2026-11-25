@@ -121,6 +121,8 @@ public:
     ImageCachePtr _nodeCache; //< Images cache
     ImageCachePtr _diskCache; //< Images disk cache (used by DiskCache nodes)
     FrameEntryCachePtr _viewerCache; //< Viewer textures cache
+    mutable QMutex retiredCacheIDsMutex;
+    std::set<std::string> retiredCacheIDs; // protected by retiredCacheIDsMutex, see AppManager::retireCacheID()
     mutable QMutex diskCachesLocationMutex;
     QString diskCachesLocation;
     // The file that tells the other Natron processes that this one uses the disk caches in diskCachesLocation

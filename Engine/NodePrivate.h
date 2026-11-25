@@ -351,7 +351,8 @@ public:
     ///The cacheID is the first script name that was given to a node
     ///it is then used in the cache to identify images that belong to this node
     ///In order for the cache to be persistent, the cacheID is serialized with the node
-    ///and 2 nodes cannot have the same cacheID.
+    ///and 2 nodes of a group cannot have the same cacheID. A node is never assigned the cacheID of a node
+    ///destroyed by this process either (see AppManager::retireCacheID()).
     std::string cacheID;
     DeactivatedState deactivatedState;
     // For a group: the nodes in it that were active when deactivate() deactivated them with the

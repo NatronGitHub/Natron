@@ -1042,20 +1042,22 @@ Node::removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey)
     }
 }
 
-void
+bool
 Node::removeAllImagesFromCache(bool blocking)
 {
     AppInstancePtr app = getApp();
 
     if (!app) {
-        return;
+        return false;
     }
     ProjectPtr proj = app->getProject();
 
     if ( proj->isProjectClosing() || proj->isLoadingProject() ) {
-        return;
+        return false;
     }
     appPTR->removeAllCacheEntriesForHolder(this, blocking);
+
+    return true;
 }
 
 void
