@@ -13,18 +13,18 @@ from natrontest import *
 
 try:
     from PySide2 import QtCore, QtGui, QtWidgets
-    from PySide2.QtWidgets import QOpenGLWidget
 except ImportError:
     from PySide6 import QtCore, QtGui, QtWidgets
-    from PySide6.QtOpenGLWidgets import QOpenGLWidget  # Qt 6 moved it out of QtWidgets
 
 require_plugin(GENERATOR)  # fills R, G, B and A with 0.5
 
 
 def viewer_gl_and_tab():
     """The OpenGL widget of Viewer1 and the ViewerTab that contains it."""
+    # inherits(), not isinstance(): Qt 6 moved QOpenGLWidget to the QtOpenGLWidgets module, which
+    # CI's PySide6 packages don't install
     gls = [w for w in QtWidgets.QApplication.allWidgets()
-           if isinstance(w, QOpenGLWidget) and w.objectName() == "Viewer1"]
+           if w.inherits("QOpenGLWidget") and w.objectName() == "Viewer1"]
     check(len(gls) == 1, "found %d OpenGL widgets named Viewer1" % len(gls))
     tab = gls[0].parentWidget()
     while tab is not None and tab.metaObject().className() != "Natron::ViewerTab":
