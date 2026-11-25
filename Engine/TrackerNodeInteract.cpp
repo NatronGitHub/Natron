@@ -1126,6 +1126,10 @@ TrackerNodeInteract::makeMarkerKeyTexture(int time,
                                           const TrackMarkerPtr& track)
 {
     assert( QThread::currentThread() == qApp->thread() );
+    // As refreshSelectedMarkerTexture(): only drawn in a viewer, none in background mode (#1256)
+    if ( appPTR->isBackground() ) {
+        return;
+    }
     TrackRequestKey k;
     k.time = time;
     k.track = track;
