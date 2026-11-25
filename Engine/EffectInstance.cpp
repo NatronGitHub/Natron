@@ -2285,7 +2285,6 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
     }
 
 #ifndef NDEBUG
-    RenderScale scale = RenderScale::fromMipmapLevel(mipmapLevel);
     // check the dimensions of all input and output images
     const RectD & dstRodCanonical = firstPlaneToRender.renderMappedImage->getRoD();
     const RectI dstBounds = dstRodCanonical.toPixelEnclosing(firstPlaneToRender.renderMappedImage->getMipmapLevel(), par); // compute dstRod at level 0
