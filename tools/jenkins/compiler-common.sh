@@ -52,22 +52,28 @@ if [ "$PKGOS" = "OSX" ]; then
     case "${NATRON_MACOS_CLANG:-system}" in
         system)
             if [ "${NATRON_BUILD_SYSTEM:-cmake}" = cmake ] && [ "${PLUGINS_BUILD_SYSTEM:-cmake}" = cmake ]; then
-                system_clang_test=$(mktemp -d)
-                case "$CXXSTD" in
-                    c++20) cplusplus=202002L;;
-                    *) cplusplus=201703L;;
-                esac
-                # (a dynamic schedule: Apple clang's code needs a recent libomp, e.g. __kmpc_dispatch_deinit)
-                printf '#include <omp.h>\n#if __cplusplus < %s\n#error\n#endif\nint main() {\n  int n = 0;\n#pragma omp parallel for schedule(dynamic) reduction(+:n)\n  for (int i = 0; i < 4; ++i) n += i;\n  return n == 6 && omp_get_max_threads() > 0 ? 0 : 1;\n}\n' \
-                       "$cplusplus" > "$system_clang_test/t.cpp"
-                if /usr/bin/clang++ -std="$CXXSTD" -Xpreprocessor -fopenmp -I/opt/local/include/libomp \
-                       "$system_clang_test/t.cpp" -o "$system_clang_test/t" -L/opt/local/lib/libomp -lomp >/dev/null 2>&1; then
-                    use_system_clang=1
-                else
-                    echo "Warning: /usr/bin/clang++ can't build $CXXSTD with OpenMP (MacPorts libomp):" \
-                         "using a MacPorts clang-mp-N if there is one" >&2
+                # probed once per C++ standard: common.sh, which sources this file, is sourced by
+                # every build script
+                if [ "${NATRON_OMP_PROBE_STD:-}" != "$CXXSTD" ]; then
+                    case "$CXXSTD" in
+                        c++20) cplusplus=202002L;;
+                        *) cplusplus=201703L;;
+                    esac
+                    system_clang_test=$(mktemp -d)
+                    NATRON_OMP_PROBE_OK=0
+                    if /usr/bin/clang++ -std="$CXXSTD" -DREQUIRED_CPLUSPLUS="$cplusplus" -Xpreprocessor -fopenmp \
+                           -I/opt/local/include/libomp "$(dirname "${BASH_SOURCE[0]}")/omp-probe.cpp" \
+                           -o "$system_clang_test/t" -L/opt/local/lib/libomp -lomp >/dev/null 2>&1 &&
+                           "$system_clang_test/t"; then
+                        NATRON_OMP_PROBE_OK=1
+                    else
+                        echo "Warning: /usr/bin/clang++ can't build $CXXSTD with OpenMP (MacPorts libomp):" \
+                             "using a MacPorts clang-mp-N if there is one" >&2
+                    fi
+                    rm -rf "$system_clang_test"
+                    export NATRON_OMP_PROBE_STD=$CXXSTD NATRON_OMP_PROBE_OK
                 fi
-                rm -rf "$system_clang_test"
+                use_system_clang=$NATRON_OMP_PROBE_OK
             fi
             ;;
         macports) ;;
