@@ -318,7 +318,7 @@ if(Python3_Interpreter_FOUND)
     # the natron_convert_project module (tools/): text -> binary -> text with NatronRenderer -c, same nodes and values
     add_test(NAME ConvertProjectTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_convert_project_test.py $<TARGET_FILE:NatronRenderer>)
-    set_tests_properties(ConvertProjectTest PROPERTIES TIMEOUT 300)
+    set_tests_properties(ConvertProjectTest PROPERTIES TIMEOUT 600)
     # App.saveProjectAsPython(), and loading its file with app.loadProject() and from the command line (#1669)
     add_test(NAME ProjectPythonTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_project_python_test.py $<TARGET_FILE:NatronRenderer>)

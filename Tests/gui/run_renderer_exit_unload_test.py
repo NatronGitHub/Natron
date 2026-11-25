@@ -38,20 +38,16 @@ The commands of the prompt print "prompt ran", which the test checks, so that a 
 from its redirected stdin is not taken for a success.
 
 Exit status: 0 on success, 77 if skipped (the test plug-in was not built), 1 on failure.
---debugger runs NatronRenderer under natron-lldb.sh (see run_gui_smoke_test.py), or set
-NATRON_TEST_WRAPPER.
+--debugger runs NatronRenderer under natron-lldb.sh, or set NATRON_TEST_WRAPPER (see natronrunner.py).
 """
 
 import os
-import shlex
 import shutil
-import subprocess
 import sys
 import tempfile
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+from natronrunner import SKIP, natron_env, run, wrapper
 
-SKIP = 77
 PLUGIN_ID = "net.natron.test.Sequential"
 CASE_TIMEOUT = 100  # seconds per NatronRenderer run: the 5 runs (plus 10 s grace each) must fit in the ctest TIMEOUT (660 s)
 
@@ -75,13 +71,13 @@ CASES = [
 ]
 
 
-def checkLog(logPath):
+def check_log(log_path):
     """Returns the error messages: each loaded plug-in must be unloaded once, with no live instance."""
     errors = []
     loads = {}
     unloads = {}
     try:
-        with open(logPath) as f:
+        with open(log_path) as f:
             lines = f.read().splitlines()
     except OSError:
         lines = []
@@ -103,45 +99,26 @@ def checkLog(logPath):
     return errors
 
 
-def runCase(renderer, wrapper, pluginDir, outDir, index, case):
-    name, ending, interpreter, stdinText, expectedStatus = case
-    script = os.path.join(outDir, "exit_unload_%d.py" % index)
+def run_case(renderer, cmd_wrapper, plugin_dir, out_dir, index, case):
+    name, ending, interpreter, stdin_text, expected_status = case
+    script = os.path.join(out_dir, "exit_unload_%d.py" % index)
     with open(script, "w") as f:
         f.write(SCRIPT + ending)
-    logPath = os.path.join(outDir, "actions_%d.log" % index)
-    env = dict(os.environ)
-    env["OFX_PLUGIN_PATH"] = pluginDir
-    env["NATRON_TEST_PLUGIN_ACTION_LOG"] = logPath
-    env["NATRON_DISK_CACHE_PATH"] = os.path.join(outDir, "cache")
-    # Debug builds: no trapped floating point exception (#1537), as with Natron --test
-    env["NATRON_NO_FP_TRAPS"] = "1"
-    cmd = wrapper + [renderer, "--no-settings"] + (["-t"] if interpreter else []) + [script]
-    stdinPath = os.devnull
+    log_path = os.path.join(out_dir, "actions_%d.log" % index)
+    env = natron_env(out_dir, OFX_PLUGIN_PATH=plugin_dir, NATRON_TEST_PLUGIN_ACTION_LOG=log_path)
+    cmd = cmd_wrapper + [renderer, "--no-settings"] + (["-t"] if interpreter else []) + [script]
+    stdin_path = None
     if interpreter:
-        stdinPath = os.path.join(outDir, "stdin_%d.py" % index)
-        with open(stdinPath, "w") as f:
-            f.write(stdinText)
-        env["NATRON_LLDB_STDIN"] = stdinPath  # natron-lldb.sh reads stdin from there
-    print("=== %s: %s < %s" % (name, " ".join(cmd), stdinPath))
-    sys.stdout.flush()
-    with open(stdinPath, "rb") as stdin:
-        proc = subprocess.Popen(cmd, env=env, stdin=stdin, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        try:
-            outBytes, _ = proc.communicate(timeout=CASE_TIMEOUT)
-        except subprocess.TimeoutExpired:
-            # terminate() first, so that a wrapper such as natron-lldb.sh kills its inferior, then kill()
-            proc.terminate()
-            try:
-                outBytes, _ = proc.communicate(timeout=10)
-            except subprocess.TimeoutExpired:
-                proc.kill()
-                outBytes, _ = proc.communicate()
-            sys.stdout.write(outBytes.decode(errors="replace"))
-            print("FAILED (%s): timeout after %d s" % (name, CASE_TIMEOUT))
-            return False
-    out = outBytes.decode(errors="replace")
+        stdin_path = os.path.join(out_dir, "stdin_%d.py" % index)
+        with open(stdin_path, "w") as f:
+            f.write(stdin_text)
+    print("=== %s" % name)
+    status, out = run(cmd, env, CASE_TIMEOUT, stdin=stdin_path)
     sys.stdout.write(out)
-    print("NatronRenderer exited with status %d" % proc.returncode)
+    if status is None:
+        print("FAILED (%s): timeout after %d s" % (name, CASE_TIMEOUT))
+        return False
+    print("NatronRenderer exited with status %d" % status)
     ok = True
     if "node created: True" not in out:
         print("FAILED (%s): the script did not create the %s node" % (name, PLUGIN_ID))
@@ -149,10 +126,10 @@ def runCase(renderer, wrapper, pluginDir, outDir, index, case):
     if interpreter and "prompt ran" not in out:
         print("FAILED (%s): the commands of the -t prompt did not run" % name)
         ok = False
-    if proc.returncode != expectedStatus:
-        print("FAILED (%s): the exit status should be %d" % (name, expectedStatus))
+    if status != expected_status:
+        print("FAILED (%s): the exit status should be %d" % (name, expected_status))
         ok = False
-    for error in checkLog(logPath):
+    for error in check_log(log_path):
         print("FAILED (%s): %s" % (name, error))
         ok = False
     return ok
@@ -163,26 +140,22 @@ def main(argv):
         sys.stderr.write(__doc__)
         return 2
     renderer = argv[1]
-    pluginDir = argv[2]
-    if not os.path.isdir(os.path.join(pluginDir, "NatronTestPlugin.ofx.bundle")):
-        print("skipped: the test plug-in is not in %s" % pluginDir)
+    plugin_dir = argv[2]
+    if not os.path.isdir(os.path.join(plugin_dir, "NatronTestPlugin.ofx.bundle")):
+        print("skipped: the test plug-in is not in %s" % plugin_dir)
         return SKIP
-    wrapper = []
-    if "--debugger" in argv[3:]:
-        wrapper = [os.path.join(HERE, "natron-lldb.sh")]
-    elif os.environ.get("NATRON_TEST_WRAPPER"):
-        wrapper = shlex.split(os.environ["NATRON_TEST_WRAPPER"])
-    outDir = tempfile.mkdtemp(prefix="natron-exit-unload-test-")
+    cmd_wrapper = wrapper(argv[3:])
+    out_dir = tempfile.mkdtemp(prefix="natron-exit-unload-test-")
     try:
         ok = True
         for index, case in enumerate(CASES):
-            if not runCase(renderer, wrapper, pluginDir, outDir, index, case):
+            if not run_case(renderer, cmd_wrapper, plugin_dir, out_dir, index, case):
                 ok = False
         if ok:
             print("renderer exit unload test passed")
         return 0 if ok else 1
     finally:
-        shutil.rmtree(outDir, ignore_errors=True)
+        shutil.rmtree(out_dir, ignore_errors=True)
 
 
 if __name__ == "__main__":

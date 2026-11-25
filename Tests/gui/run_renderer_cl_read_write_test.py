@@ -29,23 +29,17 @@ the same frame for every frame). The frames of the sequence are all different (f
 pixels wide), so the frames written must be too.
 
 Exit status: 0 on success, 77 if skipped (without OCIO, or if the Read/Write PNG plug-ins of
-openfx-io are not available: set OFX_PLUGIN_PATH), 1 on failure.
---debugger runs NatronRenderer under natron-lldb.sh (see run_gui_smoke_test.py), or set
-NATRON_TEST_WRAPPER.
+openfx-io are not available: set OFX_PLUGIN_PATH), 1 on failure. --debugger runs NatronRenderer
+under natron-lldb.sh, or set NATRON_TEST_WRAPPER (see natronrunner.py).
 """
 
 import os
-import shlex
 import shutil
-import subprocess
 import sys
 import tempfile
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
-from run_gui_smoke_test import killTree, writePNG  # noqa: E402
+from natronrunner import SKIP, natron_env, run, wrapper, write_png
 
-SKIP = 77
 TIMEOUT = 120  # seconds per run; two runs stay below the ctest TIMEOUT (660)
 SEQUENCE = range(10, 21)  # the frames of plate.####.png
 FRAMES = [12, 13, 14]  # the frames rendered
@@ -75,32 +69,18 @@ else:
 """
 
 
-def run(cmd, env):
-    """Runs cmd and prints its output.
-
-    Returns:
-        (exit status, output), or None on a timeout.
-    """
-    print("Running: %s" % " ".join(cmd))
-    sys.stdout.flush()
-    # in its own process group, for killTree()
-    proc = subprocess.Popen(cmd, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                            start_new_session=(os.name == "posix"))
-    try:
-        outBytes, _ = proc.communicate(timeout=TIMEOUT)
-    except subprocess.TimeoutExpired:
-        killTree(proc)
-        outBytes, _ = proc.communicate()
-        sys.stdout.write(outBytes.decode(errors="replace"))
+def run_and_print(cmd, env):
+    """Runs cmd and prints its output: returns (exit status, output), or None on a timeout."""
+    status, out = run(cmd, env, TIMEOUT)
+    sys.stdout.write(out)
+    if status is None:
         print("FAILED: timeout after %d s" % TIMEOUT)
         return None
-    out = outBytes.decode(errors="replace")
-    sys.stdout.write(out)
-    print("exit status %d" % proc.returncode)
-    return proc.returncode, out
+    print("exit status %d" % status)
+    return status, out
 
 
-def readFile(path):
+def read_file(path):
     with open(path, "rb") as f:
         return f.read()
 
@@ -113,27 +93,18 @@ def main(argv):
         # the Write node fails without an OCIO config ("Invalid OCIO config"), as for the Tests binary
         print("renderer -i/-w test skipped: set OCIO to an OpenColorIO config")
         return SKIP
-    wrapper = []
-    if "--debugger" in argv[2:]:
-        wrapper = [os.path.join(HERE, "natron-lldb.sh")]
-    elif os.environ.get("NATRON_TEST_WRAPPER"):
-        wrapper = shlex.split(os.environ["NATRON_TEST_WRAPPER"])
-    outDir = tempfile.mkdtemp(prefix="natron-cl-read-write-test-")
-    env = dict(os.environ)
-    # a private disk cache (and OFX plug-in cache), removed with outDir, unless NATRON_DISK_CACHE_PATH is set
-    env.setdefault("NATRON_DISK_CACHE_PATH", os.path.join(outDir, "cache"))
-    # Debug builds: no trapped floating point exception (#1537), as with Natron --test
-    env["NATRON_NO_FP_TRAPS"] = "1"
-    project = os.path.join(outDir, "project.ntp")
-    env["NATRON_CL_READ_WRITE_TEST_DIR"] = outDir
+    cmd_wrapper = wrapper(argv[2:])
+    out_dir = tempfile.mkdtemp(prefix="natron-cl-read-write-test-")
+    env = natron_env(out_dir, NATRON_CL_READ_WRITE_TEST_DIR=out_dir)
+    project = os.path.join(out_dir, "project.ntp")
     try:
-        os.mkdir(os.path.join(outDir, "plate"))
+        os.mkdir(os.path.join(out_dir, "plate"))
         for frame in SEQUENCE:
-            writePNG(os.path.join(outDir, "plate", "plate.%04d.png" % frame), frame, 8)
-        script = os.path.join(outDir, "save_project.py")
+            write_png(os.path.join(out_dir, "plate", "plate.%04d.png" % frame), frame, 8)
+        script = os.path.join(out_dir, "save_project.py")
         with open(script, "w") as f:
             f.write(SAVE_SCRIPT)
-        ret = run(wrapper + [argv[1], "--no-settings", "-t", script], env)
+        ret = run_and_print(cmd_wrapper + [argv[1], "--no-settings", "-t", script], env)
         if ret is None:
             return 1
         status, out = ret
@@ -144,10 +115,10 @@ def main(argv):
             print("FAILED: the project was not saved")
             return 1
 
-        frameRange = "%d-%d" % (FRAMES[0], FRAMES[-1])
-        plate = os.path.join(outDir, "plate", "plate.####.png")
-        ret = run(wrapper + [argv[1], "--no-settings", project,
-                             "-i", "Read", plate, "-w", "Write", os.path.join(outDir, "out.####.png"), frameRange], env)
+        frame_range = "%d-%d" % (FRAMES[0], FRAMES[-1])
+        plate = os.path.join(out_dir, "plate", "plate.####.png")
+        ret = run_and_print(cmd_wrapper + [argv[1], "--no-settings", project, "-i", "Read", plate,
+                                           "-w", "Write", os.path.join(out_dir, "out.####.png"), frame_range], env)
         if ret is None:
             return 1
         status, out = ret
@@ -158,12 +129,12 @@ def main(argv):
         if "Cannot load frame" in out or "Error caught while rendering" in out:
             print("FAILED: the render reported an error")
             ok = False
-        written = sorted(f for f in os.listdir(outDir) if f.startswith("out.") and f.endswith(".png"))
+        written = sorted(f for f in os.listdir(out_dir) if f.startswith("out.") and f.endswith(".png"))
         expected = ["out.%04d.png" % frame for frame in FRAMES]
         if written != expected:
             print("FAILED: the render wrote [%s] instead of [%s]" % (" ".join(written), " ".join(expected)))
             ok = False
-        elif len(set(readFile(os.path.join(outDir, f)) for f in written)) != len(written):
+        elif len(set(read_file(os.path.join(out_dir, f)) for f in written)) != len(written):
             # (WritePNG dithers with a seed that depends on the frame: the same input frame could give different
             # bytes only if a row's random start column falls inside the image, at most 20 of 1920 columns)
             print("FAILED: the frames written are not all different: the same frame of the sequence was read "
@@ -173,7 +144,7 @@ def main(argv):
             print("renderer -i/-w test passed")
         return 0 if ok else 1
     finally:
-        shutil.rmtree(outDir, ignore_errors=True)
+        shutil.rmtree(out_dir, ignore_errors=True)
 
 
 if __name__ == "__main__":
