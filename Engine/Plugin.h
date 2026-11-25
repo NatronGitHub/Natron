@@ -225,12 +225,9 @@ public:
         , _isDeprecated(false)
         , _isInternalOnly(false)
         , _toolSetScript(false)
-        , _activated(true)
-        , _renderScaleEnabled(true)
-        , _multiThreadingEnabled(true)
-        , _openglActivated(true)
         , _openglRenderSupport(ePluginOpenGLRenderSupportNone)
     {
+        restoreDefaultFlags();
     }
 
     Plugin(LibraryBinary* binary,
@@ -268,12 +265,9 @@ public:
         , _isDeprecated(isDeprecated)
         , _isInternalOnly(false)
         , _toolSetScript(false)
-        , _activated(!isDeprecated)
-        , _renderScaleEnabled(true)
-        , _multiThreadingEnabled(true)
-        , _openglActivated(true)
         , _openglRenderSupport(ePluginOpenGLRenderSupportNone)
     {
+        restoreDefaultFlags();
         if ( _resourcesPath.isEmpty() ) {
             _resourcesPath = QLatin1String(":/Resources/");
         }
