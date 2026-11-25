@@ -90,7 +90,7 @@ jobs:
         with:
           # natron_package_repo-<version> (UCRT64), natron_package_repo-clangarm64-<version>: the
           # zip names of install_natron_pacman_repo.sh
-          name: natron_package_repo${{ matrix.repo_suffix }}-${{ steps.build-package-repo.outputs.REPO_VERSION }}
+          name: natron_package_repo${{ matrix.repo_suffix }}-weekly
           path: natron_repo
       - name: Check on failures
         if: steps.build-package-repo.outcome != 'success'
