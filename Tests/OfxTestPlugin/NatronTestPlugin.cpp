@@ -67,8 +67,9 @@
 // - net.natron.test.GPURenderFailed: supports OpenGL render, returns kOfxStatGPURenderFailed from the
 //   OpenGL render, and renders on the CPU otherwise. net.natron.test.GPUOnlyRenderFailed does the same,
 //   but sets kOfxImageEffectPropCPURenderSupported to "false".
-// - net.natron.test.Question: the "ask" and "askFromThread" push buttons post a kOfxMessageQuestion from
-//   kOfxActionInstanceChanged, on the calling thread or on a thread of the plug-in, and count the replies.
+// - net.natron.test.Question: the "ask", "askFromThread" and "askHost" push buttons post a kOfxMessageQuestion
+//   from kOfxActionInstanceChanged, on the calling thread, on a thread of the plug-in, or on the host (a NULL
+//   handle), and count the replies.
 //
 // The binary counts the calls of OfxGetNumberOfPlugins and OfxGetPlugin ("Binary.getNumberOfPlugins",
 // "Binary.getPlugin"). It exports OfxSetHost (OFX 1.5), and counts its calls ("Binary.setHost"), whether it came
@@ -1532,7 +1533,8 @@ questionPluginMain(const char* action,
         OfxPropertySetHandle props;
         if ( !paramSet ||
              (gParamSuite->paramDefine(paramSet, kOfxParamTypePushButton, "ask", &props) != kOfxStatOK) ||
-             (gParamSuite->paramDefine(paramSet, kOfxParamTypePushButton, "askFromThread", &props) != kOfxStatOK) ) {
+             (gParamSuite->paramDefine(paramSet, kOfxParamTypePushButton, "askFromThread", &props) != kOfxStatOK) ||
+             (gParamSuite->paramDefine(paramSet, kOfxParamTypePushButton, "askHost", &props) != kOfxStatOK) ) {
             return kOfxStatFailed;
         }
 
@@ -1549,6 +1551,9 @@ questionPluginMain(const char* action,
             });
             thread.join();
             recordReply("askFromThread", stat);
+        } else if (name == "askHost") {
+            // a NULL handle: the message is posted on the host (OfxHost::vmessage())
+            recordReply( "askHost", gMessageSuite->message(NULL, kOfxMessageQuestion, "", "Do you really want to (host)?") );
         }
 
         return kOfxStatOK;
