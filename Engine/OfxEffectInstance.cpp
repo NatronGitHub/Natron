@@ -1576,7 +1576,10 @@ OfxClipInstance*
 OfxEffectInstance::getClipCorrespondingToInput(int inputNo) const
 {
     assert(_imp->context != eContextNone);
-    assert( inputNo < (int)_imp->clipsInfos.size() );
+    // e.g. the input of a Read node, which it hands to its decoder, and a reader has no Source clip (#1826)
+    if ( (inputNo < 0) || ( inputNo >= (int)_imp->clipsInfos.size() ) ) {
+        return NULL;
+    }
 
     return _imp->clipsInfos[inputNo].clip;
 }
@@ -1635,7 +1638,9 @@ OfxEffectInstance::onInputChanged(int inputNo)
 {
     assert(_imp->context != eContextNone);
     OfxClipInstance* clip = getClipCorrespondingToInput(inputNo);
-    assert(clip);
+    if (!clip) {
+        return; // no such input clip (#1826)
+    }
     double time = getApp()->getTimeLine()->currentFrame();
     const OfxPointD scale = {1., 1.};
 
@@ -3492,7 +3497,9 @@ OfxEffectInstance::addAcceptedComponents(int inputNb,
 {
     if (inputNb >= 0) {
         OfxClipInstance* clip = getClipCorrespondingToInput(inputNb);
-        assert(clip);
+        if (!clip) {
+            return; // no such input clip (#1826)
+        }
         const std::vector<std::string> & supportedComps = clip->getSupportedComponents();
         for (U32 i = 0; i < supportedComps.size(); ++i) {
             try {

@@ -1179,7 +1179,8 @@ ReadNode::addAcceptedComponents(int inputNb,
                                 std::list<ImagePlaneDesc>* comps)
 {
     NodePtr p = getEmbeddedReader();
-    if (p) {
+    // The input of this node is input 0 of the decoder, which a reader doesn't have to define (#1826)
+    if ( p && ( inputNb < p->getEffectInstance()->getNInputs() ) ) {
         p->getEffectInstance()->addAcceptedComponents(inputNb, comps);
     } else {
         comps->push_back( ImagePlaneDesc::getRGBAComponents() );
@@ -1201,7 +1202,8 @@ void
 ReadNode::onInputChanged(int inputNo)
 {
     NodePtr p = getEmbeddedReader();
-    if (p) {
+    // as in addAcceptedComponents()
+    if ( p && ( inputNo < p->getEffectInstance()->getNInputs() ) ) {
         p->getEffectInstance()->onInputChanged(inputNo);
     }
 }

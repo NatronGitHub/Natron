@@ -299,6 +299,7 @@ public:
     virtual bool isHostMixingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /********OVERRIDDEN FROM EFFECT INSTANCE: END*************/
+    // the clip of an input, or NULL if the effect has no input inputNo (#1826)
     OfxClipInstance* getClipCorrespondingToInput(int inputNo) const;
     /**
      * @brief While an object of this class exists (main thread), a second active instance of a
