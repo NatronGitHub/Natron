@@ -2577,12 +2577,7 @@ AppInstance::execOnProjectCreatedCallback()
         return;
     }
     std::string appID = getAppIDString();
-    std::string script;
-    // In background mode, "app" stays app1, also for a Precomp's instance (see getAppIDString()).
-    if ( (appID != "app") && !appPTR->isBackground() ) {
-        script = script + "app = " + appID;
-    }
-    script = script + "\n" + cb + "(" + appID + ")\n";
+    const std::string script = getAppVariableAssignment() + cb + "(" + appID + ")\n";
     std::string err;
     std::string output;
     if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, &output) ) {
@@ -2593,6 +2588,12 @@ AppInstance::execOnProjectCreatedCallback()
         }
     }
 } // AppInstance::execOnProjectCreatedCallback
+
+std::string
+AppInstance::getAppVariableAssignment() const
+{
+    return appPTR->isBackground() ? std::string() : "app = " + getAppIDString() + '\n';
+}
 
 std::string
 AppInstance::getAppIDString() const
