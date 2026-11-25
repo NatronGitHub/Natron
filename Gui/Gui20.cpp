@@ -179,6 +179,23 @@ withProjectFileExtension(const QString& fileName,
     return fileName.left(fileName.size() - suffix.size()) + wanted;
 }
 
+// fileName first in the recent files menus
+void
+updateRecentFiles(const QString & filename)
+{
+    QSettings settings;
+    QStringList recentFiles = settings.value( QString::fromUtf8("recentFileList") ).toStringList();
+
+    recentFiles.removeAll(filename);
+    recentFiles.prepend(filename);
+    while (recentFiles.size() > NATRON_MAX_RECENT_FILES) {
+        recentFiles.removeLast();
+    }
+
+    settings.setValue(QString::fromUtf8("recentFileList"), recentFiles);
+    appPTR->updateAllRecentFileMenus();
+}
+
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 void
@@ -1123,51 +1140,13 @@ Gui::openProjectInternal(const std::string & absoluteFileName,
             ret = _imp->_appInstance.lock();
         }
     } else {
-        CLArgs cl;
-        // An empty instance: onProjectCreated must not run on the new window before the project is loaded,
-        // the load runs onProjectLoaded (#1463). It runs only if the load fails, on the empty project left.
-        AppInstancePtr newApp = appPTR->newAppInstance(cl, true);
-        // newAppInstance() returns NULL, after showing an error dialog, if the new window could not be
-        // loaded: this crashed, e.g. when app.loadProject() was called after a stale traceback (#1436).
-        if (newApp) {
-            bool ok  = newApp->getProject()->loadProject( path, fileUnPathed, false, attemptToLoadAutosave);
-            if (ok) {
-                ret = newApp;
-            } else {
-                newApp->execOnProjectCreatedCallback();
-            }
-        }
+        ret = GuiAppInstance::loadProjectInNewWindow(path, fileUnPathed, false, attemptToLoadAutosave);
     }
 
-    QSettings settings;
-    QStringList recentFiles = settings.value( QString::fromUtf8("recentFileList") ).toStringList();
-    recentFiles.removeAll( QString::fromUtf8( absoluteFileName.c_str() ) );
-    recentFiles.prepend( QString::fromUtf8( absoluteFileName.c_str() ) );
-    while (recentFiles.size() > NATRON_MAX_RECENT_FILES) {
-        recentFiles.removeLast();
-    }
-
-    settings.setValue(QString::fromUtf8("recentFileList"), recentFiles);
-    appPTR->updateAllRecentFileMenus();
+    updateRecentFiles( QString::fromUtf8( absoluteFileName.c_str() ) );
 
     return ret;
 } // Gui::openProjectInternal
-
-static void
-updateRecentFiles(const QString & filename)
-{
-    QSettings settings;
-    QStringList recentFiles = settings.value( QString::fromUtf8("recentFileList") ).toStringList();
-
-    recentFiles.removeAll(filename);
-    recentFiles.prepend(filename);
-    while (recentFiles.size() > NATRON_MAX_RECENT_FILES) {
-        recentFiles.removeLast();
-    }
-
-    settings.setValue(QString::fromUtf8("recentFileList"), recentFiles);
-    appPTR->updateAllRecentFileMenus();
-}
 
 bool
 Gui::saveProject(ProjectFileFormatEnum format)
