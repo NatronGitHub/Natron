@@ -1333,7 +1333,7 @@ public:
     double getHostMixingValue(double time, ViewIdx view) const;
 
     void removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey);
-    // Returns false if the entries are not removed (the project is closing or loading)
+    // Returns false if the entries are not removed (there is no app, or the project is closing or loading)
     bool removeAllImagesFromCache(bool blocking);
 
     bool isDraftModeUsed() const;

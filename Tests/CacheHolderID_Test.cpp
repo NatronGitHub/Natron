@@ -91,36 +91,53 @@ makeImageParams()
     return Image::makeParams(RectD(0., 0., 16., 16.), 1., 0, false, ImagePlaneDesc::getRGBAComponents(), eImageBitDepthByte,
                              eImagePremultiplicationPremultiplied, eImageFieldingOrderNone, eStorageModeRAM);
 }
+
+class CacheHolderID
+    : public testing::Test
+{
+protected:
+    virtual void TearDown() OVERRIDE
+    {
+        // Also when an assertion failed: the next tests must not see these nodes or their entries
+        if (_destroyed) {
+            _destroyed->destroyNode(true, false);
+        }
+        if (_node) {
+            _node->destroyNode(true, false);
+        }
+        appPTR->waitForCacheThreads();
+    }
+
+    NodePtr _destroyed, _node;
+};
 } // anonymous namespace
 
 // #1848: destroying a node queues the removal of its entries from the node cache, the disk cache and the viewer
 // cache (Node::destroyNode() -> removeAllImagesFromCache(false)), which the cleaner thread of each cache runs
 // later. The request is keyed by the cache ID of the node. A node created afterwards with the same name must get
 // another cache ID, so that the request can't remove its entries, however late it runs.
-TEST(CacheHolderID, CleanupOfDestroyedNodeKeepsEntriesOfNewNodeWithSameName)
+TEST_F(CacheHolderID, CleanupOfDestroyedNodeKeepsEntriesOfNewNodeWithSameName)
 {
     // No request left by the previous tests
     appPTR->waitForCacheThreads();
 
-    NodePtr destroyed = createDot();
-    ASSERT_TRUE( bool(destroyed) );
-    const std::string scriptName = destroyed->getScriptName();
-    const std::string destroyedCacheID = destroyed->getCacheID();
-    destroyed->destroyNode(true, false);
-    destroyed.reset();
+    _destroyed = createDot();
+    ASSERT_TRUE( bool(_destroyed) );
+    const std::string scriptName = _destroyed->getScriptName();
+    const std::string destroyedCacheID = _destroyed->getCacheID();
+    _destroyed->destroyNode(true, false);
+    _destroyed.reset();
 
-    NodePtr node = createDot();
+    _node = createDot();
+    const NodePtr& node = _node;
     ASSERT_TRUE( bool(node) );
     // The new node gets the name of the destroyed one
     ASSERT_EQ( scriptName, node->getScriptName() );
+    EXPECT_NE( destroyedCacheID, node->getCacheID() );
 
-    const ImageKey imageKey(node.get(), 0x1848184818481848ULL, false, 0., ViewIdx(0), 1., false, false);
-    {
-        ImagePtr image;
-        ASSERT_FALSE( appPTR->getImageOrCreate(imageKey, makeImageParams(), &image) );
-        ASSERT_TRUE( bool(image) );
-        image->allocateMemory();
-    }
+    // The hash of the node: a request queued for a change of its hash can't remove the entries
+    const U64 nodeHash = node->getHashValue();
+    const ImageKey imageKey(node.get(), nodeHash, false, 0., ViewIdx(0), 1., false, false);
     {
         ImagePtr image;
         ASSERT_FALSE( appPTR->getImageOrCreate_diskCache(imageKey, makeImageParams(), &image) );
@@ -128,7 +145,7 @@ TEST(CacheHolderID, CleanupOfDestroyedNodeKeepsEntriesOfNewNodeWithSameName)
         image->allocateMemory();
     }
     const RectI bounds(0, 0, 16, 16);
-    const FrameKey frameKey(node.get(), 1, 0x1848184818481848ULL, 1., 1., (int)eViewerColorSpaceSRGB, (int)eImageBitDepthByte,
+    const FrameKey frameKey(node.get(), 1, nodeHash, 1., 1., (int)eViewerColorSpaceSRGB, (int)eImageBitDepthByte,
                             (int)eDisplayChannelsRGB, ViewIdx(0), TextureRect(0, 0, 16, 16, 1, 1.), 0, "Input1",
                             ImagePlaneDesc::getRGBAComponents(), std::string(), false, false);
     {
@@ -137,6 +154,14 @@ TEST(CacheHolderID, CleanupOfDestroyedNodeKeepsEntriesOfNewNodeWithSameName)
         ASSERT_FALSE( appPTR->getTextureOrCreate(frameKey, params, NULL, &texture) );
         ASSERT_TRUE( bool(texture) );
         texture->allocateMemory();
+    }
+    // The node cache last: creating an entry in any cache evicts entries of the node cache while the free RAM of the
+    // system is below the "System RAM to keep free" preference (AppManager::checkCacheFreeMemoryIsGoodEnough())
+    {
+        ImagePtr image;
+        ASSERT_FALSE( appPTR->getImageOrCreate(imageKey, makeImageParams(), &image) );
+        ASSERT_TRUE( bool(image) );
+        image->allocateMemory();
     }
 
     // The request queued by destroyNode() may already have run: queue it again, as if the cleaner threads ran it
@@ -153,7 +178,4 @@ TEST(CacheHolderID, CleanupOfDestroyedNodeKeepsEntriesOfNewNodeWithSameName)
     std::list<FrameEntryPtr> textures;
     EXPECT_TRUE( appPTR->getTexture(frameKey, &textures) ) << "viewer cache, cache ID " << node->getCacheID();
     textures.clear();
-
-    node->destroyNode(true, false);
-    appPTR->waitForCacheThreads();
 }

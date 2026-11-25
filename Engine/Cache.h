@@ -211,8 +211,8 @@ class CacheCleanerThread
     struct CleanRequest
     {
         std::string holderID;
-        U64 nodeHash;
-        bool removeAll;
+        U64 nodeHash = 0;
+        bool removeAll = false; // quitThread() queues a default-initialized request
     };
 
     std::list<CleanRequest> _requestsQueues;
