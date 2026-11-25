@@ -905,7 +905,7 @@ TEST(ProjectFileFormat, InvalidKnobData)
         log.clear();
         appPTR->getErrorLog_mt_safe(&log);
         EXPECT_EQ( 1, std::count_if( log.begin(), log.end(), [](const LogEntry& e) {
-            return e.context == QString::fromUtf8("myInt2") && e.message.contains( QString::fromUtf8("Could not restore link to node/knob/track Group1/noSuchKnob/") );
+            return e.context == QString::fromUtf8("myInt2") && e.message.contains( QString::fromUtf8("Could not restore the link of Group1/myInt2 to node/knob/track Group1/noSuchKnob/") );
         } ) );
         // with throwOnFailure, the valid links after a bad one are still restored, then it throws
         myInt2->storeLink(0, "Group1", "Group1", "", "myInt", 1 /*master dimension*/);

@@ -325,23 +325,24 @@ KnobI::restoreLinks(const NodesList & allNodes,
     // All the links are restored, even if one of them fails, then the failures are reported at once (#1612).
     std::vector<std::string> errors;
     const std::string prefix("KnobI::restoreLinks(): Could not restore ");
+    EffectInstance* effect = dynamic_cast<EffectInstance*>( getHolder() );
+    // the knob, with its node: the log may have the same knob of several nodes (paste)
+    const std::string knobName = ( ( effect && effect->getNode() ) ? effect->getNode()->getScriptName_mt_safe() + '/' : std::string() ) + getName();
     for (std::vector<Link>::const_iterator l = _links.begin(); l != _links.end(); ++l) {
         const std::string linkName = "node/knob/track " + l->nodeName + '/' + l->knobName + '/' + l->trackName;
         KnobIPtr linkedKnob = findMaster(thisKnob, allNodes, l->nodeNameFull, l->nodeName, l->trackName, l->knobName, oldNewScriptNamesMapping);
         if (!linkedKnob) {
-            errors.push_back(prefix + "link to " + linkName);
+            errors.push_back(prefix + "the link of " + knobName + " to " + linkName);
         } else if (linkedKnob == thisKnob) {
-            errors.push_back(prefix + "link to " + linkName + " because it returned the same Knob. Probably a pre-2.3.16 project with Group clones.");
+            errors.push_back(prefix + "the link of " + knobName + " to " + linkName + " because it returned the same Knob. Probably a pre-2.3.16 project with Group clones.");
         } else if (l->dimension == -1) {
             setKnobAsAliasOfThis(linkedKnob, true);
         } else if ( (l->slaveDimension < 0) || (l->slaveDimension >= getDimension()) ||
                     (l->dimension < 0) || ( l->dimension >= linkedKnob->getDimension() ) ) {
             // The dimensions come from the file: it may be damaged, or a plug-in may have reduced
             // the number of dimensions of one of the two parameters since it was saved (#1612).
-            EffectInstance* effect = dynamic_cast<EffectInstance*>( getHolder() );
-            const std::string nodeName = ( effect && effect->getNode() ) ? effect->getNode()->getScriptName_mt_safe() + '/' : std::string();
             errors.push_back(prefix + "the link of dimension " + std::to_string(l->slaveDimension) +
-                             " of " + nodeName + getName() + " (" + std::to_string( getDimension() ) + " dimension(s)) to dimension " +
+                             " of " + knobName + " (" + std::to_string( getDimension() ) + " dimension(s)) to dimension " +
                              std::to_string(l->dimension) + " of " + linkName +
                              " (" + std::to_string( linkedKnob->getDimension() ) + " dimension(s))");
         } else {

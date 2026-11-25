@@ -31,6 +31,7 @@
 
 #include <algorithm> // min, max
 #include <cassert>
+#include <sstream>
 #include <stdexcept>
 
 #include <ofxNatron.h>
