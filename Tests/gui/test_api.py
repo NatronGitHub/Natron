@@ -1,6 +1,7 @@
 # Public API of #1455 part 2: undo/redo/history, waitForRenders, viewer fit/zoom/centre, getPixel/getImage,
 # widget names.
 import array
+import threading
 
 import NatronGuiTest
 from natrontest import *
@@ -19,6 +20,30 @@ viewer.connectInput(0, gen)
 v.fit()
 check(app.waitForRenders(30), "waitForRenders()")
 check(not NatronGuiTest.isRendering(), "no render after waitForRenders()")
+
+# the functions that change the viewer raise RuntimeError outside the main thread (e.g. in a callback that
+# runs in a render thread), as getPixel() and getImage() do
+outside = []
+
+
+def call_outside_main_thread():
+    for name, call in (("fit", v.fit), ("setZoom", lambda: v.setZoom(2.)), ("setCenter", lambda: v.setCenter(0., 0.)),
+                       ("getPixel", lambda: v.getPixel(0., 0.))):
+        try:
+            call()
+            outside.append((name, None))
+        except RuntimeError:
+            outside.append((name, "RuntimeError"))
+        except Exception as e:  # pylint: disable=broad-except
+            outside.append((name, type(e).__name__))
+
+
+thread = threading.Thread(target=call_outside_main_thread)
+thread.start()
+thread.join(30)
+check(not thread.is_alive(), "the viewer calls outside the main thread did not return")
+check(all(error == "RuntimeError" for _, error in outside) and len(outside) == 4,
+      "outside the main thread: %r, expected RuntimeError for each" % outside)
 
 # zoom and centre
 z = v.getZoom()
