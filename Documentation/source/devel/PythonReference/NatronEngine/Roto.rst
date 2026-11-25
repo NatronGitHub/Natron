@@ -60,7 +60,13 @@ Member functions description
     :rtype: :class:`BezierCurve<NatronEngine.BezierCurve>`
 
 Creates a new :doc:`BezierCurve` with one control point at position (x,y) and a keyframe
-at the given *time*.
+at the given *time*. The new shape is selected, so that its parameters follow the ones of the Roto
+node, except while a PyPlug or a Python project file creates its nodes: then it is not selected, and
+its own parameters can be set (as for :meth:`createEllipse<NatronEngine.Roto.createEllipse>` and
+:meth:`createRectangle<NatronEngine.Roto.createRectangle>`).
+
+.. versionchanged:: 2.6
+   The shape is not selected while a PyPlug or a Python project creates its nodes.
 
 
 

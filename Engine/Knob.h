@@ -1619,11 +1619,14 @@ private:
     virtual bool slaveToInternal(int dimension, const KnobIPtr &  other, int otherDimension, Natron::ValueChangedReasonEnum reason
                                  , bool ignoreMasterPersistence) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+public:
+    // Whether the default of this dimension is not the one the knob was created with, e.g. one an .ntp file
+    // restored (see the Python project exporter, exportKnobValues())
+    virtual bool hasDefaultValueChanged(int dimension) const = 0;
+
 protected:
 
     virtual bool setHasModifications(int dimension, bool value, bool lock) OVERRIDE FINAL;
-
-    virtual bool hasDefaultValueChanged(int dimension) const = 0;
     /**
      * @brief Protected so the implementation of unSlave can actually use this to reset the master pointer
      **/

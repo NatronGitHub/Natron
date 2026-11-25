@@ -508,6 +508,17 @@ TEST(ProjectFileFormat, AutoSaveNames)
         EXPECT_EQ( name.indexOf( QString::fromUtf8(".ntp") ), Project::findAutoSaveSuffix(name, &suffixSize) ) << n;
         EXPECT_EQ( 9, suffixSize ) << n;
     }
+    // the auto-save of a Python project (eProjectFileFormatPython), always binary
+    {
+        const QString name = QString::fromUtf8("foo.py.binautosave");
+        int suffixSize = 0;
+        int projectNameSize = 0;
+        EXPECT_EQ( 3, Project::findAutoSaveSuffix(name, &suffixSize, &projectNameSize) );
+        EXPECT_EQ( 12, suffixSize );
+        EXPECT_EQ( 6, projectNameSize ); // "foo.py"
+        EXPECT_EQ( -1, Project::findAutoSaveSuffix( QString::fromUtf8("foo.py.autosave") ) );
+        EXPECT_EQ( -1, Project::findAutoSaveSuffix( QString::fromUtf8("foo.py") ) );
+    }
     EXPECT_EQ( -1, Project::findAutoSaveSuffix( QString::fromUtf8("foo.ntp") ) );
     EXPECT_EQ( -1, Project::findAutoSaveSuffix( QString::fromUtf8("foo.ntp.~1~") ) );
     // the temporary files of a save (QSaveFile: <name>.XXXXXX), e.g. left by a crash, are not auto-saves (#1590)

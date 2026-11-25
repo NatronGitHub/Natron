@@ -1819,7 +1819,9 @@ ChoiceParam::set(const QString& label)
         return;
     }
     std::string choiceID = label.toStdString();
-    AppInstancePtr app = knob->getHolder()->getApp();
+    // the parameters of a Roto shape (Bezier.getCompositingOperatorParam()) have no holder
+    KnobHolder* holder = knob->getHolder();
+    AppInstancePtr app = holder ? holder->getApp() : AppInstancePtr();
     if (app && app->isCreatingPythonGroup()) {
         // Before Natron 2.2.3, all dynamic choice parameters for multiplane had a string parameter.
         // The string parameter had the same name as the choice parameter plus "Choice" appended.
@@ -1830,6 +1832,13 @@ ChoiceParam::set(const QString& label)
     KnobHelper::ValueChangedReturnCodeEnum s = knob->setValueFromID(choiceID, 0);
 
     Q_UNUSED(s);
+    if ( app && app->isCreatingPythonGroup() &&
+         ( KnobChoice::choiceMatch(choiceID, knob->getEntries_mt_safe(), 0) < 0 ) ) {
+        // A PyPlug or a Python project file: the option may not exist yet, e.g. a layer of an input that is
+        // connected later. Keep it, as the .ntp loader does (KnobChoice::choiceRestoration()): it is
+        // selected when the options are refreshed (KnobChoice::findAndSetOldChoice()).
+        knob->setActiveEntry( ChoiceOption(choiceID) );
+    }
 }
 
 int

@@ -1415,6 +1415,10 @@ KnobString::hasContentWithoutHtmlTags()
 
         foundNatronEndTag += customTagEnd.size();
         str.erase(foundNatronCustomDataTag, foundNatronEndTag - foundNatronCustomDataTag);
+        // only the custom data (e.g. "<Natron>(over)</Natron>", which the node writes from its sublabel)
+        if ( str.empty() ) {
+            return false;
+        }
     }
 
     std::size_t foundOpen = str.find("<");

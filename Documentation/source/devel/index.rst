@@ -23,6 +23,8 @@ Where to start:
 - :ref:`natronObjects` explains the objects that Natron gives to your scripts (``natron``, ``app1``,
   nodes, parameters), then :ref:`creatingNode` shows how to build a node graph.
 - :ref:`natronExec` explains how to render from the command line with NatronRenderer.
+- :ref:`pythonProjects` explains how to save and open projects as Python scripts, and how other
+  programs can generate Natron projects.
 - :ref:`guiTesting` explains how to drive and test the user interface from scripts.
 - :ref:`groups` explains how to turn a Group into a PyPlug, and :ref:`pyplugWriting` how to write one.
 - :ref:`debuggingPython` explains where the output and the errors of your scripts go.
@@ -39,6 +41,7 @@ Where to start:
     pyplugs
     python-gui
     commandline
+    python-projects
     guitesting
     openfx
     devel-faq

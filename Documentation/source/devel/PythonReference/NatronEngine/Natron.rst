@@ -135,7 +135,8 @@ that are more complicated than a simple boolean value.
 
    - eProjectFileFormatNone = -1, (a project that was never saved; when saving: the format of the project)
    - eProjectFileFormatText = 0, (XML text, compatible with Natron 2.5 and earlier)
-   - eProjectFileFormatBinary = 1 (portable binary, Natron 2.6 and later)
+   - eProjectFileFormatBinary = 1, (portable binary, Natron 2.6 and later)
+   - eProjectFileFormatPython = 2 (a Python script, Natron 2.6 and later, see :meth:`App.saveProjectAsPython<NatronEngine.App.saveProjectAsPython>`)
 
    .. versionadded:: 2.6
 
