@@ -54,7 +54,8 @@ PyPlugs (Python group plug-ins and toolsets), Natron looks into the following se
 
 7. The PyPlugs that ship with OpenFX plug-ins: the ``Contents/Resources/PyPlugs`` directory of each
    OpenFX plug-in bundle that Natron loaded (for example
-   ``Misc.ofx.bundle/Contents/Resources/PyPlugs``, which has PIKColor), in the order of the OpenFX
+   ``Misc.ofx.bundle/Contents/Resources/PyPlugs``, which has PIKColor, and
+   ``CImg.ofx.bundle/Contents/Resources/PyPlugs``, which has EdgeBlur), in the order of the OpenFX
    plug-in search path. These come last, so that a copy of one of these PyPlugs in any of the
    directories above overrides it: for example an old ``PIKColor.py`` left in ``~/.Natron`` hides
    the one of openfx-misc. A directory that is already in the list above is not added again. Like
@@ -62,8 +63,8 @@ PyPlugs (Python group plug-ins and toolsets), Natron looks into the following se
    ``initGui.py``), which run at every startup.
 
 If "Use bundled plug-ins" is unchecked, Natron loads no bundled PyPlugs at all. It doesn't load its
-bundled OpenFX plug-ins either (``Plugins/OFX/Natron``), so their PyPlugs, such as PIKColor in
-openfx-misc's ``Misc.ofx.bundle``, aren't loaded. The PyPlugs of the other OpenFX plug-in bundles
+bundled OpenFX plug-ins either (``Plugins/OFX/Natron``), so their PyPlugs, such as PIKColor and
+EdgeBlur in openfx-misc's bundles, aren't loaded. The PyPlugs of the other OpenFX plug-in bundles
 are loaded if their OpenFX plug-ins are.
 
 A PyPlug whose file name was already loaded from an earlier directory is skipped, whatever its ID

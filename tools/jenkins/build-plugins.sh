@@ -470,33 +470,41 @@ if [ "$BUILD_MISC" = "1" ] && [ -d "$TMP_PATH/openfx-misc" ]; then
         echo "Info: build openfx-misc using make... done!"
     fi
 
-    # The PIKColor PyPlug ships with openfx-misc, in Misc.ofx.bundle/Contents/Resources/PyPlugs/, where Natron
-    # loads it from (openfx-misc#414). Until every openfx-misc built here installs it there (the Makefiles, or a
-    # checkout older than openfx-misc#414), copy it from the openfx-misc sources. Nothing to copy when the bundle
-    # already has it.
-    misc_pyplugs="$TMP_BINARIES_PATH/OFX/Plugins/Misc.ofx.bundle/Contents/Resources/PyPlugs"
-    if [ -d "$TMP_BINARIES_PATH/OFX/Plugins/Misc.ofx.bundle" ]; then
-        if [ ! -f "$misc_pyplugs/PIKColor.py" ]; then
-            if [ ! -f PIK/PIKColor.py ]; then
-                echo "Error: $misc_pyplugs/PIKColor.py is missing, and openfx-misc has no PIK/PIKColor.py to copy there"
+    # The PIKColor and EdgeBlur PyPlugs ship with openfx-misc, in <bundle>/Contents/Resources/PyPlugs/, where Natron
+    # loads them from (openfx-misc#414). Until every openfx-misc built here installs them there (the Makefiles, or a
+    # checkout older than openfx-misc#414), copy them from the openfx-misc sources: nothing to copy when the bundle
+    # already has the PyPlug. Natron 2.6 projects have version 2 of both (#1679): an older openfx-misc (version 1)
+    # would downgrade them, so the version of the shipped copy is checked, however it got there.
+    # Usage: misc_bundle_pyplug <bundle> <source dir> <PyPlug> <minimum version> <other files of the source dir>...
+    misc_bundle_pyplug() {
+        local bundle="$TMP_BINARIES_PATH/OFX/Plugins/$1" srcdir="$2" pyplug="$3" minversion="$4"
+        shift 4
+        local pyplugs="$bundle/Contents/Resources/PyPlugs"
+        local f version
+        if [ ! -d "$bundle" ]; then
+            return 0
+        fi
+        if [ ! -f "$pyplugs/$pyplug.py" ]; then
+            if [ ! -f "$srcdir/$pyplug.py" ]; then
+                echo "Error: $pyplugs/$pyplug.py is missing, and openfx-misc has no $srcdir/$pyplug.py to copy there"
                 exit 1
             fi
-            echo "Info: copying the PIKColor PyPlug from openfx-misc/PIK to $misc_pyplugs"
-            mkdir -p "$misc_pyplugs"
-            for f in PIK/PIKColor.py PIK/fr.inria.PIKColor.png PIK/fr.inria.PIKColor.svg PIK/PIKColor.gizmo; do
-                if [ -f "$f" ]; then
-                    cp "$f" "$misc_pyplugs/"
+            echo "Info: copying the $pyplug PyPlug from openfx-misc/$srcdir to $pyplugs"
+            mkdir -p "$pyplugs"
+            for f in "$pyplug.py" "$@"; do
+                if [ -f "$srcdir/$f" ]; then
+                    cp "$srcdir/$f" "$pyplugs/"
                 fi
             done
         fi
-        # Natron 2.6 projects have PIKColor version 2 (#1679): an older openfx-misc (version 1) would downgrade them.
-        # Checked on the shipped copy, whether openfx-misc installed it or it was copied above.
-        pikcolor_version="$(sed -n '/^def getVersion/,/return/s/^ *return *\([0-9][0-9]*\).*/\1/p' "$misc_pyplugs/PIKColor.py")"
-        if [ -z "$pikcolor_version" ] || [ "$pikcolor_version" -lt 2 ]; then
-            echo "Error: $misc_pyplugs/PIKColor.py is version ${pikcolor_version:-unknown}, Natron needs version 2 or later (openfx-misc#414)"
+        version="$(sed -n '/^def getVersion/,/return/s/^ *return *\([0-9][0-9]*\).*/\1/p' "$pyplugs/$pyplug.py")"
+        if [ -z "$version" ] || [ "$version" -lt "$minversion" ]; then
+            echo "Error: $pyplugs/$pyplug.py is version ${version:-unknown}, Natron needs version $minversion or later (openfx-misc#414)"
             exit 1
         fi
-    fi
+    }
+    misc_bundle_pyplug Misc.ofx.bundle PIK PIKColor 2 fr.inria.PIKColor.png fr.inria.PIKColor.svg PIKColor.gizmo
+    misc_bundle_pyplug CImg.ofx.bundle CImg/Blur EdgeBlur 2 fr.inria.EdgeBlur.png fr.inria.EdgeBlur.svg EdgeBlur.gizmo
 
     maybe_cleanup_binary_files
 
