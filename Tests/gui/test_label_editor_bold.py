@@ -1,6 +1,7 @@
-# The label editor of a backdrop shows the bold and italic state of a label without Natron's font tag (e.g.
-# set from Python), and keeps it when the text is edited: it used to show Bold checked but drop the bold
-# when the text was edited (#1807).
+# The label editor of a backdrop on a bold label without Natron's font tag (e.g. set from Python): the bold
+# goes outside the font tag that the editor adds, as the editor writes it, so that the editor shows the
+# text without the tags, Italic can be turned on and off, and editing the text keeps the bold. Bold used to
+# be checked but dropped when the text was edited (#1807).
 import NatronGuiTest
 from natrontest import *
 
@@ -30,10 +31,30 @@ check(len(bold) == 1, "%d Bold buttons" % len(bold))
 check(bold[0].isChecked(), "Bold is not checked for %r" % label.getValue())
 text_edits = [w for w in widgets if isinstance(w, QtWidgets.QTextEdit) and editors[0].isAncestorOf(w)]
 check(len(text_edits) == 1, "%d text fields in the label editor" % len(text_edits))
+italic = [w for w in widgets if isinstance(w, QtWidgets.QPushButton) and editors[0].isAncestorOf(w)
+          and "Italic" in w.toolTip()]
+check(len(italic) == 1, "%d Italic buttons" % len(italic))
+
+
+def check_wrapped(prefix, suffix, what):
+    value = label.getValue()
+    check(value.startswith(prefix + '<font size="') and value.endswith("a sticky note</font>" + suffix),
+          "%s: the label is %r" % (what, value))
+
+
+check_wrapped("<b>", "</b>", "after opening the editor")
+check(text_edits[0].toPlainText() == "a sticky note", "the editor shows %r" % text_edits[0].toPlainText())
+
+italic[0].click()
+wait_idle()
+check_wrapped("<i><b>", "</b></i>", "after Italic on")
+italic[0].click()
+wait_idle()
+check_wrapped("<b>", "</b>", "after Italic off")
 
 text_edits[0].setPlainText("another note")
 check(QtCore.QMetaObject.invokeMethod(text_edits[0], "editingFinished"), "editingFinished() failed")
 wait_idle()
 value = label.getValue()
-check(value.startswith("<b>") and value.endswith("</b>") and "another note" in value,
+check(value.startswith("<b><font") and value.endswith("another note</font></b>"),
       "the edited label is %r: not bold" % value)

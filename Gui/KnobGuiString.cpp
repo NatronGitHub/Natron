@@ -658,26 +658,59 @@ KnobGuiString::addHtmlTags(QString text) const
     return text;
 }
 
+// If text is startTag...endTag around the whole text (no other such tag inside), removes them and returns true
+static bool
+unwrapTag(QString& text,
+          const char* startTag,
+          const char* endTag)
+{
+    const QString start = QString::fromUtf8(startTag);
+    const QString end = QString::fromUtf8(endTag);
+
+    if ( !text.startsWith(start) || !text.endsWith(end) || (text.size() < start.size() + end.size()) ) {
+        return false;
+    }
+    const QString inner = text.mid( start.size(), text.size() - start.size() - end.size() );
+    if ( inner.contains(start) || inner.contains(end) ) {
+        return false; // e.g. "<b>a</b> and <b>b</b>"
+    }
+    text = inner;
+
+    return true;
+}
+
 void
 KnobGuiString::restoreTextInfoFromString()
 {
     KnobStringPtr knob = _knob.lock();
     QString text = QString::fromUtf8( knob->getValue(0).c_str() );
 
-    // the bold and italic buttons, also for a label without the font tag
-    _italicActivated = text.contains( QString::fromUtf8(kItalicStartTag) );
-    _setItalicButton->setChecked(_italicActivated);
-    _setItalicButton->setDown(_italicActivated);
-    _boldActivated = text.contains( QString::fromUtf8(kBoldStartTag) );
-    _setBoldButton->setChecked(_boldActivated);
-    _setBoldButton->setDown(_boldActivated);
-
     if ( !text.contains( QString::fromUtf8(kFontSizeTag) ) ) {
-        // an empty label, or one without Natron's font tag (e.g. set from Python, #1807): give it the font shown
+        // An empty label, or one without Natron's font tag (e.g. set from Python, #1807): give it the font
+        // shown. Bold and italic around the whole label go outside the font tag, where addHtmlTags() puts
+        // them and where the other edits and removeAutoAddedHtmlTags() look for them.
+        QString content = text;
+        _boldActivated = false;
+        _italicActivated = false;
+        for (;;) {
+            if ( !_italicActivated && unwrapTag(content, kItalicStartTag, kItalicEndTag) ) {
+                _italicActivated = true;
+            } else if ( !_boldActivated && unwrapTag(content, kBoldStartTag, kBoldEndTag) ) {
+                _boldActivated = true;
+            } else {
+                break;
+            }
+        }
         _fontSize = _fontSizeSpinBox->value();
         _fontColor = Qt::black;
         _fontFamily = _fontCombo->currentFont().family();
-        text = decorateTextWithFontTag(_fontFamily, _fontSize, _fontColor, text);
+        text = decorateTextWithFontTag(_fontFamily, _fontSize, _fontColor, content);
+        if (_boldActivated) {
+            text = QString::fromUtf8(kBoldStartTag) + text + QString::fromUtf8(kBoldEndTag);
+        }
+        if (_italicActivated) {
+            text = QString::fromUtf8(kItalicStartTag) + text + QString::fromUtf8(kItalicEndTag);
+        }
         knob->setValue( text.toStdString() );
     } else {
         // The tag may lack the color or the face, e.g. when the label was set from Python (#1807): these
@@ -694,7 +727,13 @@ KnobGuiString::restoreTextInfoFromString()
         _fontSizeSpinBox->setValue(_fontSize);
 
         _fontColor = color;
+        _italicActivated = text.contains( QString::fromUtf8(kItalicStartTag) );
+        _boldActivated = text.contains( QString::fromUtf8(kBoldStartTag) );
     }
+    _setItalicButton->setChecked(_italicActivated);
+    _setItalicButton->setDown(_italicActivated);
+    _setBoldButton->setChecked(_boldActivated);
+    _setBoldButton->setDown(_boldActivated);
     updateFontColorIcon(_fontColor);
 } // restoreTextInfoFromString
 
