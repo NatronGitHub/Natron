@@ -56,15 +56,20 @@ PyPlugs (Python group plug-ins and toolsets), Natron looks into the following se
    OpenFX plug-in bundle that Natron loaded (for example
    ``Misc.ofx.bundle/Contents/Resources/PyPlugs``, which has PIKColor), in the order of the OpenFX
    plug-in search path. These come last, so that a copy of one of these PyPlugs in any of the
-   directories above overrides it. A directory that is already in the list above is not searched
-   twice.
+   directories above overrides it: for example an old ``PIKColor.py`` left in ``~/.Natron`` hides
+   the one of openfx-misc. A directory that is already in the list above is not added again. Like
+   the other search paths, these directories may have startup scripts (``init.py`` and
+   ``initGui.py``), which run at every startup.
 
-If "Use bundled plug-ins" is unchecked, Natron loads no bundled PyPlugs at all (the PyPlugs of the
-OpenFX plug-in bundles are still loaded, if their OpenFX plug-ins are).
+If "Use bundled plug-ins" is unchecked, Natron loads no bundled PyPlugs at all. It doesn't load its
+bundled OpenFX plug-ins either (``Plugins/OFX/Natron``), so their PyPlugs, such as PIKColor in
+openfx-misc's ``Misc.ofx.bundle``, aren't loaded. The PyPlugs of the other OpenFX plug-in bundles
+are loaded if their OpenFX plug-ins are.
 
-When two PyPlugs have the same ID and version, the first one found wins. A PyPlug with a higher
-version is also loaded, wherever it is, and new nodes use the highest version. A PyPlug whose
-file name was already loaded from an earlier directory is skipped (see below).
+A PyPlug whose file name was already loaded from an earlier directory is skipped, whatever its ID
+and version (see below). Among PyPlugs with different file names, when two have the same ID and
+version, the first one found wins. A PyPlug with a higher version is also loaded, and new nodes
+use the highest version.
 
 .. mermaid::
    :alt: The search order is: the bundled PyPlugs if "Use bundled plug-ins" and "Prefer
