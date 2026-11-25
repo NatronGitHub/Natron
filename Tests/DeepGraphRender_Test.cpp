@@ -35,9 +35,13 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdlib>
+#include <functional>
 #include <future>
 #include <iostream>
 #include <limits>
+#include <list>
+#include <map>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -50,6 +54,8 @@
 
 #include "Engine/AppInstance.h"
 #include "Engine/GraphDepthGuard.h"
+#include "Engine/Hash64.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/ThreadPool.h"
@@ -726,4 +732,358 @@ TEST(DeepGraphRender, DotChain)
     std::string output = testing::internal::GetCapturedStdout();
     EXPECT_FALSE( isGraphTooDeepError(output) ) << output;
     EXPECT_LT( 0, NatronTestPlugin::counter("Generator.render") - rendersBefore );
+}
+
+namespace {
+// The hash propagation of Node::computeHash() was a recursion until #1611. This is that recursion, written with the
+// public API, so that the test checks that the iterative version gives the same hashes.
+
+typedef std::map<const Node*, U64> HashMap;
+
+// Node::computeHashInternal() for the nodes of these tests (no Viewer, no RotoPaint), where the hash
+// of each input is read from hashes
+U64
+referenceNodeHash(const NodePtr& node,
+                  const HashMap& hashes)
+{
+    Hash64 hash;
+
+    hash.append( node->getKnobsAge() );
+    for (int i = 0; i < node->getNInputs(); ++i) {
+        NodePtr input = node->getInput(i);
+        if (input) {
+            hash.append( hashes.at( input.get() ) + (U32)i );
+        }
+    }
+    Hash64_appendQString( &hash, QString::fromUtf8( node->getScriptName().c_str() ) );
+    hash.append( node->getApp()->getProject()->getProjectCreationTime() );
+    hash.computeHash();
+
+    return hash.value();
+}
+
+// The former Node::computeHashRecursive(): hashes holds the hash of every node before the change,
+// and gets the new ones.
+void
+referenceComputeHashRecursive(const NodePtr& node,
+                              std::list<const Node*>& marked,
+                              HashMap& hashes)
+{
+    if ( std::find( marked.begin(), marked.end(), node.get() ) != marked.end() ) {
+        return;
+    }
+    const U64 oldHash = hashes.at( node.get() );
+    const U64 newHash = referenceNodeHash(node, hashes);
+    hashes[node.get()] = newHash;
+    marked.push_back( node.get() );
+    if (oldHash == newHash) {
+        return;
+    }
+    NodesList outputs;
+    node->getOutputsWithGroupRedirection(outputs);
+    for (NodesList::iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        referenceComputeHashRecursive(*it, marked, hashes);
+    }
+}
+
+ParallelRenderArgsSetter*
+makeRenderArgs(const NodePtr& root,
+               const AbortableRenderInfoPtr& abortInfo)
+{
+    return new ParallelRenderArgsSetter( 1., ViewIdx(0),
+                                         true, // isRenderUserInteraction
+                                         false, // isSequential
+                                         abortInfo,
+                                         root, // tree root
+                                         0, // texture index
+                                         root->getApp()->getTimeLine().get(),
+                                         NodePtr(), // rotoPaint node
+                                         false, // isAnalysis
+                                         false, // isDraft
+                                         RenderStatsPtr() );
+}
+
+// Sets up the render args of the tree of root on the calling thread, and checks the visits count of
+// the first and last node of the chain: they are only reached through the inputs, once.
+bool
+setRenderArgsOfChain(const NodePtr& root,
+                     const NodePtr& first)
+{
+    AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(false, 0);
+    std::unique_ptr<ParallelRenderArgsSetter> setter( makeRenderArgs(root, abortInfo) );
+    ParallelRenderArgsPtr rootArgs = root->getEffectInstance()->getParallelRenderArgsTLS();
+    ParallelRenderArgsPtr firstArgs = first->getEffectInstance()->getParallelRenderArgsTLS();
+
+    return rootArgs && firstArgs && (rootArgs->visitsCount == 1) && (firstArgs->visitsCount == 1);
+}
+
+// Sets up the render args of the tree of root on the calling thread, as a render does, and asks first whether to cache
+// its output, as renderRoI() does: Node::shouldCacheOutput() walks downstream of first through every identity node (the
+// Dot nodes of the chain) to the first node that is not one (addIdentityNodesDownstream(), a recursion before #1611).
+// Returns true once it is done (whether to cache doesn't matter here).
+bool
+askCachingOfChain(const NodePtr& root,
+                  const NodePtr& first)
+{
+    AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(false, 0);
+    std::unique_ptr<ParallelRenderArgsSetter> setter( makeRenderArgs(root, abortInfo) );
+
+    first->shouldCacheOutput(false /*isFrameVaryingOrAnimated*/, 1., ViewIdx(0), 1 /*visitsCount*/);
+
+    return true;
+}
+} // anon namespace
+
+// The iterative traversals (#1611) give the same render args and the same hashes as the former
+// recursions, on a graph where the order of the visits matters: the hash of a node reached through
+// two paths is computed when the first path reaches it, with the hash that the other path has not
+// updated yet.
+//
+//  Generator --> A (MultiPAR) --> M (MultiPAR, inputs A and B) --> P (Params) --> Dot --> DiskCache
+//            \-> B (MultiPAR) -/
+//
+// An expression of P reads X (Params, not connected).
+TEST(DeepGraphRender, IterativeTraversalsKeepResults)
+{
+    if ( !canRunTest() ) {
+        return;
+    }
+    if ( !NatronTestPlugin::isAvailable(kNatronTestPluginParams) ) {
+        NatronTestPlugin::reportSkipped(kNatronTestPluginParams);
+
+        return;
+    }
+    SmallProject smallProject;
+    std::vector<NodePtr> nodes;
+    struct Destroy
+    {
+        std::vector<NodePtr>& nodes;
+        ~Destroy()
+        {
+            for (std::vector<NodePtr>::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+                const KnobsVec& knobs = (*it)->getKnobs();
+                for (KnobsVec::const_iterator k = knobs.begin(); k != knobs.end(); ++k) {
+                    for (int i = 0; i < (*k)->getDimension(); ++i) {
+                        if ( !(*k)->getExpression(i).empty() ) {
+                            (*k)->clearExpression(i, true);
+                        }
+                    }
+                }
+            }
+            for (std::vector<NodePtr>::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+                (*it)->destroyNode(true, false);
+            }
+        }
+    } destroy = { nodes };
+    const char* ids[] = { kNatronTestPluginGenerator, kNatronTestPluginMultiPAR, kNatronTestPluginMultiPAR, kNatronTestPluginMultiPAR,
+                          kNatronTestPluginParams, PLUGINID_NATRON_DOT, PLUGINID_NATRON_DISKCACHE, kNatronTestPluginParams };
+    for (std::size_t i = 0; i < sizeof(ids) / sizeof(ids[0]); ++i) {
+        NodePtr node = createChainNode(ids[i]);
+        ASSERT_TRUE( bool(node) ) << ids[i];
+        nodes.push_back(node);
+    }
+    const NodePtr generator = nodes[0], a = nodes[1], b = nodes[2], m = nodes[3], p = nodes[4], dot = nodes[5], output = nodes[6], x = nodes[7];
+    ASSERT_LE( 2, m->getNInputs() );
+    ASSERT_LE( 1, p->getNInputs() );
+    ProjectPtr project = generator->getApp()->getProject();
+    ASSERT_TRUE( project->connectNodes(0, generator, a) );
+    ASSERT_TRUE( project->connectNodes(0, generator, b) );
+    ASSERT_TRUE( project->connectNodes(0, a, m) );
+    ASSERT_TRUE( project->connectNodes(1, b, m) );
+    ASSERT_TRUE( project->connectNodes(0, m, p) );
+    ASSERT_TRUE( project->connectNodes(0, p, dot) );
+    ASSERT_TRUE( project->connectNodes(0, dot, output) );
+    KnobDoublePtr pTo = std::dynamic_pointer_cast<KnobDouble>( p->getKnobByName("doubleTo") );
+    ASSERT_TRUE( bool(pTo) );
+    pTo->setExpression(0, x->getScriptName_mt_safe() + ".doubleFrom.get()",
+                       false /*hasRetVariable*/, false /*failIfInvalid*/);
+    ASSERT_FALSE( pTo->getExpression(0).empty() );
+
+    // the render args, as with the former recursion: the visits count of a node upstream is its number of connections
+    // downstream (the generator has two), and X, read by an expression, has render args but no visit
+    {
+        AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(false, 0);
+        std::unique_ptr<ParallelRenderArgsSetter> setter( makeRenderArgs(output, abortInfo) );
+        const int expectedVisits[] = { 2, 1, 1, 1, 1, 1, 1, 0 }; // in the order of nodes
+        for (std::size_t i = 0; i < nodes.size(); ++i) {
+            ParallelRenderArgsPtr args = nodes[i]->getEffectInstance()->getParallelRenderArgsTLS();
+            ASSERT_TRUE( bool(args) ) << nodes[i]->getScriptName();
+            EXPECT_EQ(expectedVisits[i], args->visitsCount) << nodes[i]->getScriptName();
+        }
+    }
+
+    // the hashes: change the generator, and compare with the former recursion
+    HashMap hashes;
+    for (std::vector<NodePtr>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        hashes[it->get()] = (*it)->getHashValue();
+    }
+    // check referenceNodeHash(): the graph is up to date
+    for (std::vector<NodePtr>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        ASSERT_EQ( hashes[it->get()], referenceNodeHash(*it, hashes) ) << (*it)->getScriptName();
+    }
+    generator->incrementKnobsAge();
+    {
+        std::list<const Node*> marked;
+        referenceComputeHashRecursive(generator, marked, hashes);
+    }
+    HashMap actual;
+    for (std::vector<NodePtr>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        actual[it->get()] = (*it)->getHashValue();
+    }
+    for (std::vector<NodePtr>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        EXPECT_EQ( hashes[it->get()], actual[it->get()] ) << (*it)->getScriptName();
+    }
+    EXPECT_EQ( x->getHashValue(), hashes[x.get()] );
+    // The test depends on the order: M was computed through A, before B changed.
+    EXPECT_NE( actual[m.get()], referenceNodeHash(m, actual) ) << "the order of the visits does not matter in this graph";
+}
+
+namespace {
+// The length of the Dot chain of VeryDeepDotChainRenderArgsAndHash: 1.6 times the depth at which the former recursions
+// overflowed the stack with little stack left (1871 nodes for the hash propagation and 1570 for the upstream traversal
+// of ParallelRenderArgsSetter, macOS arm64; see #1627).
+const int kVeryDeepDotChainLength = 3000;
+
+// The stack size of the thread that sets up the render args in VeryDeepDotChainRenderArgsAndHash
+const unsigned int kSmallStackSize = 256 * 1024;
+
+// A thread with a stack of kSmallStackSize bytes, which runs a function
+class SmallStackThread
+    : public QThread
+{
+public:
+    explicit SmallStackThread(const std::function<void()>& f)
+        : QThread()
+        , _f(f)
+    {
+        setStackSize(kSmallStackSize);
+    }
+
+private:
+    void run() OVERRIDE
+    {
+        _f();
+    }
+
+    std::function<void()> _f;
+};
+
+// see callWithLittleStackLeft()
+char* volatile gStackChunk = nullptr;
+
+// Calls f with about 256 KB of stack left on the main thread, whose stack size can't be changed, to overflow its stack
+// with a short chain: first uses the stack down to GraphDepthGuard's safety margin, then 768 KB of that margin, which is
+// 1 MB on stacks of 8 MB or more (the main thread's on every platform, see StackBounds).
+NEVER_INLINE void
+callWithLittleStackLeft(const std::function<void()>& f,
+                        int marginChunksToUse = 48)
+{
+    const std::size_t kChunkSize = 16 * 1024;
+    const bool aboveMargin = GraphDepthGuard::getStackLeft() >= 2 * kChunkSize;
+
+    if ( !aboveMargin && (marginChunksToUse <= 0) ) {
+        f();
+
+        return;
+    }
+    char chunk[kChunkSize];
+    // The address of the chunk escapes, so that the compiler keeps it on the stack, and the store after the call keeps
+    // it from being a tail call that would reuse this frame.
+    gStackChunk = chunk;
+    callWithLittleStackLeft(f, aboveMargin ? marginChunksToUse : marginChunksToUse - 1);
+    gStackChunk = nullptr;
+}
+} // anon namespace
+
+// The render args of a very deep chain are set up on every kind of thread, a change at its top changes the hash of
+// every node downstream, and shouldCacheOutput() walks down the chain, without overflowing the stack (#1611). To keep
+// the chain short, the traversals run on a thread with a small stack, or with little stack left on the main thread.
+TEST(DeepGraphRender, VeryDeepDotChainRenderArgsAndHash)
+{
+    if ( !canRunTest() ) {
+        return;
+    }
+    const int length = kVeryDeepDotChainLength;
+    SmallProject smallProject;
+    printStep("start");
+    DeepChain chain(length, PLUGINID_NATRON_DOT);
+    ASSERT_TRUE( chain.isValid() );
+    printStep("Dot chain built");
+    const NodePtr root = chain.output();
+    const NodePtr first = chain.nodes.front();
+
+    // the hash propagation, downstream, on the main thread (where the hash is always computed)
+    {
+        const U64 hashBefore = root->getHashValue();
+        callWithLittleStackLeft( [&first]() {
+            first->incrementKnobsAge();
+        } );
+        EXPECT_NE( hashBefore, root->getHashValue() );
+        printStep("hash changed");
+    }
+
+    // the upstream traversal of ParallelRenderArgsSetter, on the main thread
+    {
+        bool set = false;
+        callWithLittleStackLeft( [&root, &first, &set]() {
+            set = setRenderArgsOfChain(root, first);
+        } );
+        EXPECT_TRUE(set);
+        printStep("render args on the main thread");
+    }
+
+    // on a thread with a small stack
+    {
+        bool set = false;
+        SmallStackThread thread( [&root, &first, &set]() {
+            set = setRenderArgsOfChain(root, first);
+        } );
+        thread.start();
+        thread.wait();
+        EXPECT_TRUE(set);
+        printStep("render args on a thread with a small stack");
+    }
+
+    // the downstream walk of Node::shouldCacheOutput(), from the top of the chain, on the main thread and on a thread
+    // with a small stack
+    {
+        bool asked = false;
+        callWithLittleStackLeft( [&root, &first, &asked]() {
+            asked = askCachingOfChain(root, first);
+        } );
+        EXPECT_TRUE(asked);
+        printStep("shouldCacheOutput on the main thread");
+    }
+    {
+        bool asked = false;
+        SmallStackThread thread( [&root, &first, &asked]() {
+            asked = askCachingOfChain(root, first);
+        } );
+        thread.start();
+        thread.wait();
+        EXPECT_TRUE(asked);
+        printStep("shouldCacheOutput on a thread with a small stack");
+    }
+
+    // on a thread of the global thread pool
+    {
+        std::promise<bool> promise;
+        std::future<bool> set = promise.get_future();
+        QThreadPool::globalInstance()->start( [root, first, &promise]() {
+            promise.set_value( setRenderArgsOfChain(root, first) );
+        } );
+        EXPECT_TRUE( set.get() );
+        printStep("render args on the global thread pool");
+    }
+
+    // on a render thread: a render on disk sets up the render args before anything else (#1564), so
+    // it reaches the depth limit afterwards, in the region of definition
+    {
+        MaxGraphDepthSetter limit(100);
+        testing::internal::CaptureStdout();
+        NatronTestPlugin::renderSequence(root, 1, 1);
+        const std::string output = testing::internal::GetCapturedStdout();
+        EXPECT_TRUE( isGraphTooDeepError(output) ) << output;
+        printStep("render on a render thread");
+    }
 }

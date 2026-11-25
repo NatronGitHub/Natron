@@ -144,6 +144,16 @@ hash changes with it. This is how invalidation stays correct without explicit
 dirty-tracking. A consequence: undoing a change does not bring back the old
 hash, so the old image is not reused.
 
+``Node::computeHash`` propagates a change downstream depth-first, in a fixed
+order (``Node::computeHashDownstream``, iterative since #1611): each node's
+outputs in turn, then the nodes of its RotoPaint tree. A node is visited once,
+when the first path reaches it, and it stops the propagation if its hash
+didn't change. When two paths from the changed node meet at a node (a merge
+of two branches), that node's hash is computed with the old hash of the
+other branch, which is visited later, and the merge node is not recomputed
+when the second path reaches it. Any other order would give other hashes, so
+it must be kept.
+
 The knobs age is saved in the project file, together with a per-node cache
 ID, so that the disk caches still match after the project is reopened. After a
 load, the first change replaces the age with a random 64-bit value

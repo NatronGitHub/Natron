@@ -26,7 +26,10 @@
 #include "ParallelRenderArgs.h"
 
 #include <cassert>
+#include <set>
 #include <stdexcept>
+#include <utility>
+#include <vector>
 
 #include "Engine/AbortableRenderInfo.h"
 #include "Engine/AppManager.h"
@@ -635,8 +638,9 @@ typedef std::map<NodePtr,FindDependenciesNode> FindDependenciesMap;
 
 
 /**
- * @brief Builds a list with all nodes upstream of the given node (including this node) and all its dependencies through expressions as well (which
- * also may be recursive)
+ * @brief Adds node, reached through the inputs for the first time, to finalNodes, marked as recursed, and all its
+ * dependencies through expressions (which also may be recursive). getAllUpstreamNodesWithDependencies() then visits its
+ * inputs.
  *
  * The nodes that only the expressions depend on get render args, so that during the render their parameters are read at
  * the time and view of the render, but they are not marked as recursed: their inputs are not visited (an expression reads
@@ -644,22 +648,9 @@ typedef std::map<NodePtr,FindDependenciesNode> FindDependenciesMap;
  * through the inputs.
  **/
 static void
-getAllUpstreamNodesRecursiveWithDependencies_internal(const NodePtr& node,
-                                                      FindDependenciesMap& finalNodes)
+addUpstreamNodeWithDependencies(const NodePtr& node,
+                                FindDependenciesMap& finalNodes)
 {
-    if ( !node || !node->isNodeCreated() ) {
-        return;
-    }
-
-    {
-        FindDependenciesMap::iterator found = finalNodes.find(node);
-        if ( (found != finalNodes.end()) && found->second.recursed ) {
-            ++found->second.visitCounter;
-            //We already called getAllUpstreamNodesRecursiveWithDependencies on its inputs
-            return;
-        }
-    }
-
     {
         //Add this node to the set, or mark it as recursed if it was only added as an expression dependency
         FindDependenciesNode& n = finalNodes[node];
@@ -691,15 +682,46 @@ getAllUpstreamNodesRecursiveWithDependencies_internal(const NodePtr& node,
             finalNodes.insert( std::make_pair(dep, n) );
         }
     }
+} // addUpstreamNodeWithDependencies
 
-    int maxInputs = node->getNInputs();
-    for (int i = 0; i < maxInputs; ++i) {
-        NodePtr inputNode = node->getInput(i);
-        if (inputNode) {
-            getAllUpstreamNodesRecursiveWithDependencies_internal(inputNode, finalNodes);
+/**
+ * @brief Builds a list with all nodes upstream of treeRoot (including it) and all their dependencies through expressions
+ * (see addUpstreamNodeWithDependencies()). The visits count of a node is the number of connections through which it is
+ * reached, plus one for treeRoot.
+ *
+ * Not a recursion, which overflowed the stack on deep graphs before GraphDepthGuard is reached (#1611). toVisit holds
+ * one entry per connection still to follow, the inputs in reverse order, so that the nodes are visited in the order of
+ * the former recursion.
+ **/
+static void
+getAllUpstreamNodesWithDependencies(const NodePtr& treeRoot,
+                                    FindDependenciesMap& finalNodes)
+{
+    std::vector<NodePtr> toVisit(1, treeRoot);
+
+    while ( !toVisit.empty() ) {
+        const NodePtr node = std::move( toVisit.back() );
+        toVisit.pop_back();
+        if ( !node || !node->isNodeCreated() ) {
+            continue;
+        }
+
+        FindDependenciesMap::iterator found = finalNodes.find(node);
+        if ( (found != finalNodes.end()) && found->second.recursed ) {
+            // its inputs are already visited
+            ++found->second.visitCounter;
+            continue;
+        }
+        addUpstreamNodeWithDependencies(node, finalNodes);
+
+        for (int i = node->getNInputs() - 1; i >= 0; --i) {
+            NodePtr inputNode = node->getInput(i);
+            if (inputNode) {
+                toVisit.push_back( std::move(inputNode) );
+            }
         }
     }
-} // getAllUpstreamNodesRecursiveWithDependencies_internal
+} // getAllUpstreamNodesWithDependencies
 
 
 ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
@@ -733,7 +755,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
     bool doNanHandling = appPTR->getCurrentSettings()->isNaNHandlingEnabled();
 
     FindDependenciesMap dependenciesMap;
-    getAllUpstreamNodesRecursiveWithDependencies_internal(treeRoot, dependenciesMap);
+    getAllUpstreamNodesWithDependencies(treeRoot, dependenciesMap);
 
 
     for (FindDependenciesMap::iterator it = dependenciesMap.begin(); it != dependenciesMap.end(); ++it) {
