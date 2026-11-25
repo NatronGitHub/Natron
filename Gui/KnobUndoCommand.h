@@ -359,7 +359,8 @@ public:
 
     /**
      * @brief Make a new command
-     * @param createNew If true this command will not merge with a previous same command
+     * @param createNew If true, this command is the first change of an edit block: it merges with the previous command
+     * only if that one changed the same parameter, or both are edits of the same overlay drag (see mergeWith())
      * @param setKeyFrame if true, the command will use setValueAtTime instead of setValue in the redo() command.
      **/
     MultipleKnobEditsUndoCommand(const KnobGuiPtr& knob,

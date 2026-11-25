@@ -1101,8 +1101,8 @@ Knob<T>::setValue(const T & v,
     // command would undo nothing. Issue #1443: when the user drags the center of a rectangle interact, the plug-in sets
     // the position, then the size, unchanged, outside an edit block; the size made a second undo command, which
     // MultipleKnobEditsUndoCommand::mergeWith() merged into the first one or not depending on heap addresses (its subset
-    // check walks maps ordered by std::owner_less, i.e. by control block, compares the stored pointers, and stops when the
-    // previous command runs out of knobs), so that the first Undo of the drag sometimes did nothing.
+    // check walked maps ordered by std::owner_less, i.e. by control block, compared the stored pointers, and stopped when
+    // the previous command ran out of knobs, #1445), so that the first Undo of the drag sometimes did nothing.
     // The write still goes the normal path: in Knob<T>::setValues(), when an earlier dimension changed through the undo
     // path (whose redo runs with the value changes blocked), hasChanged is true here, and the evaluateValueChange() of this
     // write is the one knob changed notification (kOfxActionInstanceChanged) of the change, as when the last dimension
