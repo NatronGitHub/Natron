@@ -9,6 +9,8 @@
 # - freetype and fontconfig for the Text plug-ins (fonts by family name)
 # - zlib, bzip2 and xz for the compressed layers in ReadPSD
 # - libpng for the PNG-based formats
+# configure finds all of them but bzip2 only with pkg-config (pkgconf), and build()
+# checks that each one is enabled (#1864).
 # MSYS2's own imagemagick is a Q16, shared, modules build, which openfx-arena
 # can't link statically.
 
@@ -24,7 +26,9 @@ arch=('any')
 mingw_arch=('ucrt64' 'clangarm64')
 url="https://www.imagemagick.org/"
 license=("spdx:ImageMagick")
-makedepends=("${MINGW_PACKAGE_PREFIX}-cc")
+makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
+             "${MINGW_PACKAGE_PREFIX}-pkgconf"
+            )
 depends=(
          "${MINGW_PACKAGE_PREFIX}-libpng"
          "${MINGW_PACKAGE_PREFIX}-bzip2"
@@ -101,6 +105,16 @@ build() {
     --without-zip \
     --without-zstd \
     CFLAGS="${CFLAGS}" CPPFLAGS="${CPPFLAGS}" LDFLAGS="${LDFLAGS}"
+
+  # configure silently leaves out a --with- delegate that it can't find (without
+  # pkg-config, all of them but bzip2: #1864), so check the ones openfx-arena needs.
+  local _delegate
+  for _delegate in BZLIB FONTCONFIG FREETYPE LCMS LZMA PNG ZLIB; do
+    if ! grep -q "^#define ${_delegate}_DELEGATE 1" config/config.h; then
+      echo "error: ImageMagick's configure did not enable the ${_delegate} delegate (see config.log)" >&2
+      return 1
+    fi
+  done
 
   make
 }
