@@ -35,6 +35,7 @@
 
 #include <QDebug>
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
 #include <QSettings>
 
@@ -42,7 +43,6 @@
 #include <QApplication> // qApp
 
 
-#include "Engine/CLArgs.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/Image.h"
 #include "Engine/Lut.h" // floatToInt, LutManager
@@ -122,39 +122,17 @@ Gui::openRecentFile()
 {
     QAction *action = qobject_cast<QAction *>( sender() );
 
-    if (action) {
-        QFileInfo f( action->data().toString() );
-        QString path = f.path() + QLatin1Char('/');
-        QString filename = path + f.fileName();
-        int openedProject = appPTR->isProjectAlreadyOpened( filename.toStdString() );
-        if (openedProject != -1) {
-            AppInstancePtr instance = appPTR->getAppInstance(openedProject);
-            if (instance) {
-                GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( instance.get() );
-                assert(guiApp);
-                if (guiApp) {
-                    if ( !GuiApplicationManager::isGuiTestNoFocus() ) {
-                        guiApp->getGui()->activateWindow();
-                    }
-
-                    return;
-                }
-            }
-        }
-
-        ///if the current graph has no value, just load the project in the same window
-        if ( getApp()->getProject()->isGraphWorthLess() ) {
-            getApp()->getProject()->loadProject( path, f.fileName() );
-        } else {
-            CLArgs cl;
-            // An empty instance: onProjectCreated runs only if the load fails, see Gui::openProjectInternal() (#1463)
-            AppInstancePtr newApp = appPTR->newAppInstance(cl, true);
-            // newAppInstance() returns NULL, after showing an error dialog, if the new window could not be loaded
-            if ( newApp && !newApp->getProject()->loadProject( path, f.fileName() ) ) {
-                newApp->execOnProjectCreatedCallback();
-            }
-        }
+    if (!action) {
+        return;
     }
+    const QString filename = action->data().toString();
+    if ( !QFile::exists(filename) ) {
+        Dialogs::errorDialog( tr("Open Recent").toStdString(), tr("%1: no such file.").arg(filename).toStdString() );
+
+        return;
+    }
+    AppInstancePtr app = openProject( filename.toStdString() );
+    Q_UNUSED(app);
 }
 
 void

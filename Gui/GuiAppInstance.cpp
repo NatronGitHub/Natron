@@ -498,21 +498,9 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
             if ( !getProject()->loadProject(savesDir.path() + QLatin1Char('/'), autoSaveFileName, true) ) {
                 return false;
             }
-        } else {
-            CLArgs cl;
-            // An empty instance: onProjectCreated runs only if the load fails, see Gui::openProjectInternal() (#1463)
-            AppInstancePtr newApp = appPTR->newAppInstance(cl, true);
-            // newAppInstance() returns NULL, after showing an error dialog, if the new window could not be loaded
-            if (!newApp) {
-                // this window already restored the first auto-save: it must not also create a new project
-                return true;
-            }
-            if ( !newApp->getProject()->loadProject(savesDir.path() + QLatin1Char('/'), autoSaveFileName, true) ) {
-                newApp->execOnProjectCreatedCallback();
-
-                // this window already restored the first auto-save: it must not also create a new project
-                return true;
-            }
+        } else if ( !loadProjectInNewWindow(savesDir.path() + QLatin1Char('/'), autoSaveFileName, true, true) ) {
+            // this window already restored the first auto-save: it must not also create a new project
+            return true;
         }
     }
 
@@ -638,6 +626,29 @@ GuiAppInstance::saveImageFileDialog()
     }
 
     return ret;
+}
+
+AppInstancePtr
+GuiAppInstance::loadProjectInNewWindow(const QString& path,
+                                       const QString& name,
+                                       bool isUntitledAutosave,
+                                       bool attemptToLoadAutosave)
+{
+    CLArgs cl;
+    AppInstancePtr newApp = appPTR->newAppInstance(cl, true);
+
+    // newAppInstance() returns NULL, after showing an error dialog, if the new window could not be loaded:
+    // this crashed, e.g. when app.loadProject() was called after a stale traceback (#1436)
+    if (!newApp) {
+        return AppInstancePtr();
+    }
+    if ( !newApp->getProject()->loadProject(path, name, isUntitledAutosave, attemptToLoadAutosave) ) {
+        newApp->execOnProjectCreatedCallback();
+
+        return AppInstancePtr();
+    }
+
+    return newApp;
 }
 
 Gui*
