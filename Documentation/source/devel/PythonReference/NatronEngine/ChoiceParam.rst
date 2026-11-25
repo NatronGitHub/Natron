@@ -178,7 +178,12 @@ Set a new keyframe on the parameter with the value *x* at the given *frame*.
     :param label: :class:`str`
 
 Set the value of this parameter given a *label*. The *label* must match an existing option.
-Strings will be compared without case sensitivity. If not found, nothing happens.
+Strings will be compared without case sensitivity. If not found, nothing happens, except while a
+PyPlug or a Python project file creates its nodes: the option is then selected when it appears, e.g.
+a layer of an input that is connected later, as when an *.ntp* project is loaded.
+
+.. versionchanged:: 2.6
+   An option that doesn't exist yet is kept while a PyPlug or a Python project creates its nodes.
 
 
 .. method:: ChoiceParam.setDefaultValue(value)

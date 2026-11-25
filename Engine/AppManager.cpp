@@ -2210,6 +2210,11 @@ AppManager::loadPythonGroups()
         }
 
 
+        // A project saved as a Python script, e.g. next to the PyPlugs it uses, is not a PyPlug
+        if ( Project::isPythonProjectFile(plugin) ) {
+            continue;
+        }
+
         {
             // Open the file and check for a line that imports NatronGui, if so do not attempt to load the script.
             QFile file(plugin);

@@ -454,13 +454,15 @@ enum ImageBitDepthEnum
     eImageBitDepthFloat
 };
 
-// The format of a project file. Both use the .ntp extension: the format is detected from the
-// first bytes of the file (see Project::detectFileFormat()).
+// The format of a project file. Text and binary use the .ntp extension: the format is detected from the
+// first bytes of the file (see Project::detectFileFormat()). A Python project is a .py file with a header
+// (see Project::isPythonProjectFile()).
 enum ProjectFileFormatEnum
 {
     eProjectFileFormatNone = -1, // no format yet (a new project, never saved), or not a project file
     eProjectFileFormatText = 0, // XML text: readable, diffable, and compatible with Natron 2.5 and earlier
     eProjectFileFormatBinary = 1, // portable binary (see PortableBinaryArchive.h): faster and smaller, Natron 2.6 and later
+    eProjectFileFormatPython = 2, // a Python script that rebuilds the project (see Project::exportToPython()), Natron 2.6 and later
 };
 
 enum SequentialPreferenceEnum

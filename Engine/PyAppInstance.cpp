@@ -468,6 +468,17 @@ App::saveProjectAs(const QString& filename,
     return getInternalApp()->saveAs(outFile, format);
 }
 
+bool
+App::saveProjectAsPython(const QString& filename)
+{
+    std::string outFile = filename.toStdString();
+    std::map<std::string, std::string> env;
+    getInternalApp()->getProject()->getEnvironmentVariables(env);
+    Project::expandVariable(env, outFile);
+
+    return getInternalApp()->saveTemp(outFile, eProjectFileFormatPython);
+}
+
 ProjectFileFormatEnum
 App::getProjectFormat() const
 {

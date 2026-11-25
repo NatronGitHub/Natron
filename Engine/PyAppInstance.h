@@ -349,6 +349,10 @@ public:
     // Same as saveProjectCopy(), kept for compatibility (Natron 2.5 Python API).
     bool saveTempProject(const QString& filename, Natron::ProjectFileFormatEnum format = Natron::ProjectFileFormatEnum::eProjectFileFormatNone);
 
+    // saveProjectCopy(filename, eProjectFileFormatPython): a copy of the project as a Python script, which
+    // loadProject() loads (see Project::exportToPython()). It doesn't change the project.
+    bool saveProjectAsPython(const QString& filename);
+
     // The format of the project file: the format of the file it was loaded from or last saved to,
     // eProjectFileFormatNone for a project that was never saved.
     Natron::ProjectFileFormatEnum getProjectFormat() const;

@@ -699,6 +699,24 @@ Roto::createLayer()
     return 0;
 }
 
+// A new shape is selected, and the parameters of a selected shape follow the ones of the Roto node
+// (RotoContext::select()): setting its own parameters has no effect. While a PyPlug or a Python project
+// file creates its nodes (see Project::exportToPython()), which then sets them, it is deselected.
+static BezierCurve*
+newShape(const RotoContextPtr& ctx,
+         const BezierPtr& shape)
+{
+    if (!shape) {
+        return 0;
+    }
+    NodePtr node = ctx->getNode();
+    if ( node && node->getApp() && node->getApp()->isCreatingPythonGroup() ) {
+        ctx->deselect(shape, RotoItem::eSelectionReasonOther);
+    }
+
+    return new BezierCurve(shape);
+}
+
 // A shape needs internal nodes (RotoDrawableItem::createNodes()), whose creation throws if it fails: a C++
 // exception must not go through the Python interpreter, which it leaves broken ("SystemError: unknown opcode",
 // then a hang or a crash, #1828). Print the error and return null (None), as App.createNode() does (a Python
@@ -729,13 +747,7 @@ Roto::createBezier(double x,
                    double y,
                    double time)
 {
-    BezierPtr ret = makeShape(_ctx, [&] { return _ctx->makeBezier(x, y, kRotoBezierBaseName, time, false); });
-
-    if (ret) {
-        return new BezierCurve(ret);
-    }
-
-    return 0;
+    return newShape( _ctx, makeShape(_ctx, [&] { return _ctx->makeBezier(x, y, kRotoBezierBaseName, time, false); }) );
 }
 
 BezierCurve*
@@ -745,13 +757,7 @@ Roto::createEllipse(double x,
                     bool fromCenter,
                     double time)
 {
-    BezierPtr ret = makeShape(_ctx, [&] { return _ctx->makeEllipse(x, y, diameter, fromCenter, time); });
-
-    if (ret) {
-        return new BezierCurve(ret);
-    }
-
-    return 0;
+    return newShape( _ctx, makeShape(_ctx, [&] { return _ctx->makeEllipse(x, y, diameter, fromCenter, time); }) );
 }
 
 BezierCurve*
@@ -760,13 +766,7 @@ Roto::createRectangle(double x,
                       double size,
                       double time)
 {
-    BezierPtr ret = makeShape(_ctx, [&] { return _ctx->makeSquare(x, y, size, time); });
-
-    if (ret) {
-        return new BezierCurve(ret);
-    }
-
-    return 0;
+    return newShape( _ctx, makeShape(_ctx, [&] { return _ctx->makeSquare(x, y, size, time); }) );
 }
 
 NATRON_PYTHON_NAMESPACE_EXIT
