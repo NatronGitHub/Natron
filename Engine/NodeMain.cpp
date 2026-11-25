@@ -920,6 +920,11 @@ Node::destroyNode(bool blockingDestroy, bool autoReconnect)
         return;
     }
 
+    // A deferred destruction is already pending (e.g. a second Effect.destroy())
+    if (_imp->renderWatcher) {
+        return;
+    }
+
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>( _imp->effect.get() );
     NodesList nodesToWatch;
     nodesToWatch.push_back( shared_from_this() );
