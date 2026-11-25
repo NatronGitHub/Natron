@@ -225,6 +225,22 @@ Node::createRotoContextConditionnally()
         _imp->effect->endChanges(true);
         _imp->rotoContext->createBaseLayer();
     }
+    if ( isRotoPaintingNode() ) {
+        // The shapes of the Roto and RotoPaint nodes are rendered by internal nodes of openfx-misc (see
+        // RotoDrawableItem::createNodes()): without them, no shape can be created. Fail here, as the Tracker
+        // node does without its internal nodes, so that createNode() returns null (#1828). After the context
+        // is created: the destruction of a Roto or RotoPaint node needs it.
+        const char* const requiredIDs[] = { PLUGINID_OFX_ROTO, PLUGINID_OFX_MERGE };
+        for (const char* id : requiredIDs) {
+            try {
+                appPTR->getPluginBinary(QString::fromUtf8(id), -1, -1, false);
+            } catch (const std::exception&) {
+                throw std::runtime_error( tr("The %1 node requires the %2 plug-in of openfx-misc (Misc.ofx.bundle) to be installed")
+                                          .arg( _imp->plugin->getPluginLabel() )
+                                          .arg( QString::fromUtf8(id) ).toStdString() );
+            }
+        }
+    }
 }
 
 void

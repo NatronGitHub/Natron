@@ -28,6 +28,7 @@
 #include <cassert>
 #include <stdexcept>
 
+#include "Engine/AppInstance.h"
 #include "Engine/Bezier.h"
 #include "Engine/BezierCP.h"
 #include "Engine/EffectInstance.h"
@@ -648,12 +649,29 @@ Roto::createLayer()
     return 0;
 }
 
+// A shape needs internal nodes (RotoDrawableItem::createNodes()), whose creation throws if it fails: a C++
+// exception must not go through the Python interpreter, which it leaves broken ("SystemError: unknown opcode",
+// then a hang or a crash, #1828). Print the error and return null (None), as App.createNode() does.
+template <typename MakeShape>
+static BezierPtr
+makeShape(const RotoContextPtr& context,
+          MakeShape make)
+{
+    try {
+        return make();
+    } catch (const std::exception& e) {
+        context->getNode()->getApp()->appendToScriptEditor( e.what() );
+    }
+
+    return BezierPtr();
+}
+
 BezierCurve*
 Roto::createBezier(double x,
                    double y,
                    double time)
 {
-    BezierPtr  ret = _ctx->makeBezier(x, y, kRotoBezierBaseName, time, false);
+    BezierPtr ret = makeShape(_ctx, [&] { return _ctx->makeBezier(x, y, kRotoBezierBaseName, time, false); });
 
     if (ret) {
         return new BezierCurve(ret);
@@ -669,7 +687,7 @@ Roto::createEllipse(double x,
                     bool fromCenter,
                     double time)
 {
-    BezierPtr  ret = _ctx->makeEllipse(x, y, diameter, fromCenter, time);
+    BezierPtr ret = makeShape(_ctx, [&] { return _ctx->makeEllipse(x, y, diameter, fromCenter, time); });
 
     if (ret) {
         return new BezierCurve(ret);
@@ -684,7 +702,7 @@ Roto::createRectangle(double x,
                       double size,
                       double time)
 {
-    BezierPtr  ret = _ctx->makeSquare(x, y, size, time);
+    BezierPtr ret = makeShape(_ctx, [&] { return _ctx->makeSquare(x, y, size, time); });
 
     if (ret) {
         return new BezierCurve(ret);

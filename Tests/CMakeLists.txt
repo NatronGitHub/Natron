@@ -416,6 +416,13 @@ add_test(NAME SequenceArgsHeadless
 set_tests_properties(SequenceArgsHeadless PROPERTIES TIMEOUT 120
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/sequence-args-headless-cache")
 
+# Without openfx-misc's Roto and Merge plug-ins, app.createNode() of a Roto or RotoPaint node returns None
+# (#1828), headless; skipped (77) when openfx-misc is installed
+add_test(NAME RotoWithoutMiscHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_roto_without_misc.py")
+set_tests_properties(RotoWithoutMiscHeadless PROPERTIES TIMEOUT 120 SKIP_RETURN_CODE 77
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/roto-without-misc-headless-cache")
+
 # A PyPlug is created after the script rebinds the global "app" (#1525)
 add_test(NAME PyPlugReboundAppHeadless
     COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_pyplug_rebound_app.py")
