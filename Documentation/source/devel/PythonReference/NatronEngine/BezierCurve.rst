@@ -29,6 +29,7 @@ Functions
 - def :meth:`getFeatherFallOffParam<NatronEngine.BezierCurve.getFeatherFallOffParam>` ()
 - def :meth:`getFeatherPointPosition<NatronEngine.BezierCurve.getControlPointPosition>` (index,time)
 - def :meth:`getIsActivated<NatronEngine.BezierCurve.getIsActivated>` (time)
+- def :meth:`getKeyframeInterpolation<NatronEngine.BezierCurve.getKeyframeInterpolation>` (time)
 - def :meth:`getKeyframes<NatronEngine.BezierCurve.getKeyframes>` ()
 - def :meth:`getNumControlPoints<NatronEngine.BezierCurve.getNumControlPoints>` ()
 - def :meth:`getOpacity<NatronEngine.BezierCurve.getOpacity>` (time)
@@ -47,6 +48,7 @@ Functions
 - def :meth:`setFeatherDistance<NatronEngine.BezierCurve.setFeatherDistance>` (dist, time)
 - def :meth:`setFeatherFallOff<NatronEngine.BezierCurve.setFeatherFallOff>` (falloff, time)
 - def :meth:`setFeatherPointAtIndex<NatronEngine.BezierCurve.setFeatherPointAtIndex>` (index, time, x, y, lx, ly, rx, ry)
+- def :meth:`setKeyframeInterpolation<NatronEngine.BezierCurve.setKeyframeInterpolation>` (time, interpolation)
 - def :meth:`setOpacity<NatronEngine.BezierCurve.setOpacity>` (opacity, time)
 - def :meth:`setOverlayColor<NatronEngine.BezierCurve.setOverlayColor>` (r, g, b)
 - def :meth:`setPointAtIndex<NatronEngine.BezierCurve.setPointAtIndex>` (index, time, x, y, lx, ly, rx, ry)
@@ -290,6 +292,31 @@ not activated the curve will not be rendered at all in the image.
 
 
 Returns a list of all keyframes set on the Bezier animation.
+
+
+.. method:: BezierCurve.getKeyframeInterpolation(time)
+
+    :param time: :class:`float`
+    :rtype: :class:`KeyframeTypeEnum<NatronEngine.Natron.KeyframeTypeEnum>`
+
+Returns the interpolation of the shape's keyframe at *time*: how its control points move
+between this keyframe and the next one. It returns *eKeyframeTypeNone* if there is no keyframe
+at *time*. The keyframes of a new shape are smooth (*eKeyframeTypeSmooth*); Natron 2.3.15 and
+earlier made them linear.
+
+.. versionadded:: 2.6
+
+
+.. method:: BezierCurve.setKeyframeInterpolation(time, interpolation)
+
+    :param time: :class:`float`
+    :param interpolation: :class:`KeyframeTypeEnum<NatronEngine.Natron.KeyframeTypeEnum>`
+    :rtype: :class:`bool`
+
+Sets the interpolation of the shape's keyframe at *time*, for all its control and feather points,
+as the Curve Editor does. It returns *False* if there is no keyframe at *time*.
+
+.. versionadded:: 2.6
 
 
 .. method:: BezierCurve.getNumControlPoints()
