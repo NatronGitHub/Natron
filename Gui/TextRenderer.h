@@ -28,6 +28,11 @@
 
 #include "Global/Macros.h"
 
+#include <cmath> // floor
+
+#include <QFont>
+#include <QFontMetrics>
+
 #include "Gui/GuiFwd.h"
 
 
@@ -70,6 +75,22 @@ public:
     /// characters (renderText() draws one character at a time, so without kerning, which
     /// QFontMetrics::horizontalAdvance(text) includes)
     static int textWidth(const QFontMetrics& fontMetrics, const QString &text);
+
+    /// A metric of the font that renderText() draws with (e.g. [](const QFontMetrics& m) { return m.height(); }),
+    /// in widget pixels: font is in screen pixels, and there are screenPixelRatio screen pixels per widget
+    /// pixel. Without that font yet (font NULL or the ratio not known), the metric of the widget's font.
+    template <typename Metric>
+    static int widgetFontMetric(const QFont* font,
+                                double screenPixelRatio,
+                                const QFontMetrics& widgetFontMetrics,
+                                Metric metric)
+    {
+        if ( !font || !(screenPixelRatio > 0.) ) {
+            return metric(widgetFontMetrics);
+        }
+
+        return (int)std::floor(metric( QFontMetrics(*font) ) / screenPixelRatio + 0.5);
+    }
 
 private:
     struct Implementation;
