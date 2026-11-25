@@ -66,7 +66,9 @@ public:
     mutable QMutex projectLock; //< protects the whole project
     QString lastAutoSaveFilePath; //< absolute file path of the last auto-save file
     std::set<QString> autoSavesWrittenBySession; //< the auto-save files this session wrote (protected by projectLock)
-    bool autoSaveDisabled = false; //< --no-dialogs kept an existing auto-save of this project: do not overwrite it
+    // --no-dialogs kept an existing auto-save of this project: do not overwrite it. Atomic: autoSave() reads it in the
+    // auto-save thread
+    std::atomic<bool> autoSaveDisabled{false};
     bool hasProjectBeenSavedByUser; //< has this project ever been saved by the user?
     ProjectFileFormatEnum fileFormat; //< see Project::getFileFormat(), protected by projectLock
     bool fileHasGuiData = false; //< see Project::fileHasGuiData(), protected by projectLock
