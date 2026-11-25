@@ -98,17 +98,14 @@ class CacheHolderID
 protected:
     virtual void TearDown() OVERRIDE
     {
-        // Also when an assertion failed: the next tests must not see these nodes or their entries
-        if (_destroyed) {
-            _destroyed->destroyNode(true, false);
-        }
+        // Also when an assertion failed: the next tests must not see this node or its entries
         if (_node) {
             _node->destroyNode(true, false);
         }
         appPTR->waitForCacheThreads();
     }
 
-    NodePtr _destroyed, _node;
+    NodePtr _node;
 };
 } // anonymous namespace
 
@@ -121,12 +118,12 @@ TEST_F(CacheHolderID, CleanupOfDestroyedNodeKeepsEntriesOfNewNodeWithSameName)
     // No request left by the previous tests
     appPTR->waitForCacheThreads();
 
-    _destroyed = createDot();
-    ASSERT_TRUE( bool(_destroyed) );
-    const std::string scriptName = _destroyed->getScriptName();
-    const std::string destroyedCacheID = _destroyed->getCacheID();
-    _destroyed->destroyNode(true, false);
-    _destroyed.reset();
+    NodePtr destroyed = createDot();
+    ASSERT_TRUE( bool(destroyed) );
+    const std::string scriptName = destroyed->getScriptName();
+    const std::string destroyedCacheID = destroyed->getCacheID();
+    destroyed->destroyNode(true, false);
+    destroyed.reset();
 
     _node = createDot();
     const NodePtr& node = _node;

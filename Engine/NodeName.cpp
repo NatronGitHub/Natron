@@ -414,9 +414,7 @@ Node::setNameInternal(const std::string& name,
         std::string baseName = fullySpecifiedName;
         std::string cacheID = fullySpecifiedName;
         int i = 1;
-        // A node out of the project (e.g. an internal node of a RotoPaint) has no group: it must not get the cache
-        // ID of a destroyed node either (#1848)
-        while ( collection ? collection->isCacheIDAlreadyTaken(cacheID) : appPTR->isCacheIDRetired(cacheID) ) {
+        while ( getGroup() && getGroup()->isCacheIDAlreadyTaken(cacheID) ) {
             std::stringstream ss;
             ss << baseName;
             ss << i;
