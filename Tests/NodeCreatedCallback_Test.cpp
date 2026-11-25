@@ -19,7 +19,7 @@
 // Regression tests for https://github.com/NatronGitHub/Natron/issues/488: the project's afterNodeCreated callback
 // (and beforeNodeRemoval) must be called once per node. On RB-2.6 before the fix, they were called twice for a node
 // at the top level of the project that is not a Group (CalledOnceForTopLevelNode, and the Read node of the issue in
-// BaseTest.NodeCreatedCallbackCalledOnceForReadNode). CalledOnceForNodeInGroup, where a Group's own callbacks are
+// CalledOnceForReadNode). CalledOnceForNodeInGroup, where a Group's own callbacks are
 // also called, passed before the fix: it checks that the fix keeps them.
 
 // ***** BEGIN PYTHON BLOCK *****
@@ -44,7 +44,7 @@
 #include "Engine/NodeGroup.h"
 #include "Engine/Project.h"
 
-#include "BaseTest.h"
+#include "TestUtils.h"
 
 NATRON_NAMESPACE_USING
 
@@ -128,28 +128,6 @@ public:
     ProjectCallbacks& operator=(const ProjectCallbacks&) = delete;
 };
 
-// Destroys the node when the test ends, also when it exits early, so that it doesn't stay in the project.
-class NodeDestroyer
-{
-    NodePtr _node;
-
-public:
-    explicit NodeDestroyer(const NodePtr& node)
-        : _node(node)
-    {
-    }
-
-    ~NodeDestroyer()
-    {
-        if (_node) {
-            _node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
-        }
-    }
-
-    NodeDestroyer(const NodeDestroyer&) = delete;
-    NodeDestroyer& operator=(const NodeDestroyer&) = delete;
-};
-
 NodePtr
 createNodeIn(const AppInstancePtr& app,
              const std::string& pluginID,
@@ -165,7 +143,7 @@ createNodeIn(const AppInstancePtr& app,
     return app->createNode(args);
 }
 
-// Deletes the node as the GUI does: deactivate() runs beforeNodeRemoval (NodeDestroyer then destroys it).
+// Deletes the node as the GUI does: deactivate() runs beforeNodeRemoval (the NodeScope then destroys it).
 void
 deleteNode(const NodePtr& node)
 {
@@ -179,10 +157,11 @@ TEST(NodeCreatedCallback, CalledOnceForTopLevelNode)
     AppInstancePtr app = appPTR->getTopLevelInstance();
     ASSERT_TRUE( bool(app) );
     ProjectCallbacks callbacks( app->getProject() );
+    NatronTest::NodeScope nodes; // destroyed before callbacks
 
     NodePtr dot = createNodeIn(app, PLUGINID_NATRON_DOT, app->getProject() );
     ASSERT_TRUE( bool(dot) );
-    NodeDestroyer destroyDot(dot);
+    nodes.add(dot);
     const std::string name = dot->getScriptName();
     EXPECT_EQ( 1, callCount("Created", name) );
 
@@ -202,10 +181,11 @@ TEST(NodeCreatedCallback, CalledOnceForNodeInGroup)
     AppInstancePtr app = appPTR->getTopLevelInstance();
     ASSERT_TRUE( bool(app) );
     ProjectCallbacks callbacks( app->getProject() );
+    NatronTest::NodeScope nodes; // destroyed before callbacks
 
     NodePtr groupNode = createNodeIn(app, PLUGINID_NATRON_GROUP, app->getProject() );
     ASSERT_TRUE( bool(groupNode) );
-    NodeDestroyer destroyGroup(groupNode);
+    nodes.add(groupNode);
     EXPECT_EQ( 1, callCount("Created", groupNode->getScriptName() ) );
     NodeGroupPtr group = std::dynamic_pointer_cast<NodeGroup>( groupNode->getEffectInstance() );
     ASSERT_TRUE( bool(group) );
@@ -214,7 +194,7 @@ TEST(NodeCreatedCallback, CalledOnceForNodeInGroup)
 
     NodePtr dot = createNodeIn(app, PLUGINID_NATRON_DOT, group);
     ASSERT_TRUE( bool(dot) );
-    NodeDestroyer destroyDot(dot);
+    nodes.add(dot);
     const std::string name = dot->getScriptName();
     EXPECT_EQ( 1, callCount("Created", name) );
     EXPECT_EQ( 1, callCount("GroupCreated", name) );
@@ -224,14 +204,19 @@ TEST(NodeCreatedCallback, CalledOnceForNodeInGroup)
     EXPECT_EQ( 1, callCount("GroupRemoved", name) );
 }
 
-// The Read node of the issue (it needs the ReadOIIO plug-in, as all the BaseTest tests).
-TEST_F(BaseTest, NodeCreatedCallbackCalledOnceForReadNode)
+// The Read node of the issue (its decoder is openfx-io's ReadOIIO)
+TEST(NodeCreatedCallback, CalledOnceForReadNode)
 {
-    ProjectCallbacks callbacks( getApp()->getProject() );
+    if ( !NatronTest::requirePlugins({ PLUGINID_OFX_READOIIO }, "openfx-io") ) {
+        return;
+    }
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectCallbacks callbacks( app->getProject() );
+    NatronTest::NodeScope nodes; // destroyed before callbacks
 
-    NodePtr reader = createNodeIn(getApp(), PLUGINID_NATRON_READ, getApp()->getProject() );
+    NodePtr reader = createNodeIn(app, PLUGINID_NATRON_READ, app->getProject() );
     ASSERT_TRUE( bool(reader) );
-    NodeDestroyer destroyReader(reader);
+    nodes.add(reader);
     const std::string name = reader->getScriptName();
     EXPECT_EQ( 1, callCount("Created", name) );
 
