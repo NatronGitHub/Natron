@@ -20,7 +20,7 @@ on:
         default: full
   # weekly (Sunday 03:17 UTC, after the plug-in repos' Saturday runs) Debug and Release builds of the
   # default branch. Never skipped, even if the branch didn't change: every job uses rolling toolchains
-  # (MSYS2 and pacman -Syu, apt on the ubuntu-24.04 image, the runner's Xcode, MacPorts upgrades on a
+  # (MSYS2 and pacman -Syu, apt on the ubuntu-26.04 image, the runner's Xcode, MacPorts upgrades on a
   # cache miss) and downloads openfx-io's natron_testing bundles, none of them pinned.
   schedule:
   - cron: '17 3 * * 0'
