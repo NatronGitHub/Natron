@@ -396,6 +396,13 @@ add_test(NAME ColorGetFrameHeadless
 set_tests_properties(ColorGetFrameHeadless PROPERTIES TIMEOUT 120
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/color-get-frame-headless-cache")
 
+# Effect.getOutputs() lists the nodes downstream of a node, Effect.getContainerGroup() returns its group (#1797):
+# NatronRenderer runs the script, which exits with natron.quit(status).
+add_test(NAME EffectOutputsHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_effect_outputs.py")
+set_tests_properties(EffectOutputsHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/effect-outputs-headless-cache")
+
 # Undo groups do nothing in background mode (App.undoGroup(), #1455): NatronRenderer runs the script,
 # which exits with natron.quit(status).
 add_test(NAME UndoGroupHeadless

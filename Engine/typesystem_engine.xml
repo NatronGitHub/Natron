@@ -983,6 +983,37 @@
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
+        <modify-function signature="getOutputs()const">
+            <inject-code class="target" position="beginning">
+                std::list&lt;Effect*&gt; effects = %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
+                PyObject* ret = PyList_New((int) effects.size());
+                int idx = 0;
+                for (std::list&lt;Effect*&gt;::iterator it = effects.begin(); it!=effects.end(); ++it,++idx) {
+                PyObject* item = %CONVERTTOPYTHON[Effect*](*it);
+                // Ownership transferences.
+                Shiboken::Object::getOwnership(item);
+                PyList_SET_ITEM(ret, idx, item);
+                }
+                return ret;
+            </inject-code>
+        </modify-function>
+        <modify-function signature="getContainerGroup()const">
+            <inject-code class="target" position="beginning">
+                // convert to the Python type of the group (Effect or App), not to a plain Group
+                Group* group = %CPPSELF.%FUNCTION_NAME();
+                if (Effect* effect = dynamic_cast&lt;Effect*&gt;(group)) {
+                    %PYARG_0 = %CONVERTTOPYTHON[Effect*](effect);
+                } else if (App* app = dynamic_cast&lt;App*&gt;(group)) {
+                    %PYARG_0 = %CONVERTTOPYTHON[App*](app);
+                } else {
+                    delete group;
+                    Py_RETURN_NONE;
+                }
+                // Ownership transferences.
+                Shiboken::Object::getOwnership(%PYARG_0);
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
         <modify-function signature="getParam(QString)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
