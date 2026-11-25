@@ -4,17 +4,13 @@ Each shape is drawn by an internal node of that plug-in (RotoDrawableItem::creat
 their color, Roto shapes are drawn into alpha, and a shape that extends beyond the project format is not clipped
 at its edge, whatever the defaults of the plug-in.
 
-Run by NatronRenderer -t (see Tests/CMakeLists.txt). Exits with 0 on success, 1 on failure, 77 (skipped)
-when openfx-misc's Roto, Merge and Transform, or openfx-io's WriteOIIO, are not installed, or without OCIO.
+Skipped when openfx-misc's Roto, Merge and Transform, or openfx-io's WriteOIIO, are not installed, or without OCIO.
 """
 import os
-import struct
 import tempfile
-import traceback
 
-from NatronEngine import natron
+from natronheadless import check, check_rendered, read_pfm_pixels, require_plugins, run
 
-SKIP = 77
 PLUGINS = ("net.sf.openfx.RotoPlugin", "net.sf.openfx.MergePlugin", "net.sf.openfx.TransformPlugin",
            "fr.inria.openfx.WriteOIIO")
 COLOR = (0.25, 0.5, 0.75)
@@ -27,33 +23,6 @@ OUTSIDE_FORMAT = (150, 200)  # was at x = -50
 EMPTY = (600, 600)
 
 
-class Skipped(Exception):
-    """The test cannot run here."""
-
-
-def check(condition, message=""):
-    """Like assert, but not removed by python -O."""
-    if not condition:
-        raise AssertionError(message)
-
-
-def read_pfm_pixels(path, points):
-    """Returns the pixels at points ((x, y), y = 0 at the bottom) of a PFM image, as tuples of floats."""
-    with open(path, "rb") as f:
-        magic = f.readline().strip()
-        check(magic in (b"PF", b"Pf"), "%s is not a PFM file" % path)
-        channels = 3 if magic == b"PF" else 1
-        width, height = (int(v) for v in f.readline().split())
-        endian = "<" if float(f.readline()) < 0 else ">"
-        start = f.tell()
-        pixels = []
-        for x, y in points:
-            check(0 <= x < width and 0 <= y < height, "%r is outside the %dx%d image %s" % ((x, y), width, height, path))
-            f.seek(start + (y * width + x) * channels * 4)
-            pixels.append(struct.unpack("%s%df" % (endian, channels), f.read(channels * 4)))
-        return pixels
-
-
 def render(app, source, path, components, points):
     """Renders source in the project format, as components ("RGB" or "Alpha"), and returns the pixels at points."""
     writer = app.createWriter(path)
@@ -62,10 +31,7 @@ def render(app, source, path, components, points):
     writer.getParam("outputComponents").set(components)
     writer.getParam("formatType").set("project")  # the pixel coordinates are the canonical coordinates
     app.render(writer, FRAME, FRAME)
-    if not os.path.isfile(path) and not os.path.isfile(os.environ.get("OCIO", "")):
-        # the writers of openfx-io fail without an OpenColorIO configuration
-        raise Skipped("nothing was rendered and there is no OpenColorIO configuration: set OCIO")
-    check(os.path.isfile(path), "nothing was rendered to " + path)
+    check_rendered(path)
     return read_pfm_pixels(path, points)
 
 
@@ -98,29 +64,14 @@ def check_shape(app, plugin_id, outdir, components):
                   "%s %s at %r%s is %r, expected %r" % (plugin_id, comps, xy, where, got, want))
 
 
-def main(outdir):
+def main(app):
     """Checks a RotoPaint shape (color and alpha) and a Roto shape (alpha)."""
-    app = natron.getInstance(0)
-    # RotoPaint draws R, G, B and A by default: the shape color, premultiplied by its alpha
-    check_shape(app, "fr.inria.built-in.RotoPaint", outdir, ("RGB", "Alpha"))
-    # Roto draws only A by default
-    check_shape(app, "fr.inria.built-in.Roto", outdir, ("Alpha",))
+    require_plugins(*PLUGINS)
+    with tempfile.TemporaryDirectory() as outdir:
+        # RotoPaint draws R, G, B and A by default: the shape color, premultiplied by its alpha
+        check_shape(app, "fr.inria.built-in.RotoPaint", outdir, ("RGB", "Alpha"))
+        # Roto draws only A by default
+        check_shape(app, "fr.inria.built-in.Roto", outdir, ("Alpha",))
 
 
-status = 1
-try:
-    ids = natron.getPluginIDs()
-    missing = [p for p in PLUGINS if p not in ids]
-    if missing:
-        print("missing plug-ins %s: skipped" % ", ".join(missing))
-        status = SKIP
-    else:
-        with tempfile.TemporaryDirectory() as tmp:
-            main(tmp)
-        status = 0
-except Skipped as e:
-    print("skipped: %s" % e)
-    status = SKIP
-except Exception:  # pylint: disable=broad-except
-    traceback.print_exc()
-natron.quit(status)
+run(main)

@@ -1,9 +1,12 @@
-# Effect.getOutputs() lists the nodes downstream of a node, and Effect.getContainerGroup() returns the group
-# that contains it (#1797). Run by NatronRenderer -t (see Tests/CMakeLists.txt).
-import traceback
+"""Effect.getOutputs() and Effect.getContainerGroup() (#1797).
+
+getOutputs() lists the nodes downstream of a node, getContainerGroup() returns the group that
+contains it.
+"""
 
 import NatronEngine
-from NatronEngine import natron
+
+import natronheadless
 
 
 def check_outputs(app):
@@ -44,16 +47,9 @@ def check_container_group(app, group):
     assert sibling is not None and sibling.getContainerGroup() == group
 
 
-def main():
-    status = 1
-    try:
-        app = natron.getInstance(0)
-        group = check_outputs(app)
-        check_container_group(app, group)
-        status = 0
-    except BaseException:
-        traceback.print_exc()
-    natron.quit(status)
+def main(app):
+    group = check_outputs(app)
+    check_container_group(app, group)
 
 
-main()
+natronheadless.run(main)

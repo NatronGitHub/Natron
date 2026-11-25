@@ -3,12 +3,12 @@
 ChoiceParam.setOptions() takes a list of (option, help) pairs. A pair that was
 neither a tuple nor a list (a str, or any other sequence) crashed Natron. A str
 or bytes is now rejected with TypeError: "de" is a mistake for ("de", "").
-Run by NatronRenderer -t (see Tests/CMakeLists.txt).
 """
 import sys
 
 import NatronEngine
-from NatronEngine import natron
+
+import natronheadless
 
 
 class Pair(object):
@@ -67,9 +67,7 @@ def expect_type_error(choice, options):
     raise AssertionError("setOptions(%r) did not raise TypeError" % (options,))
 
 
-status = 1
-try:
-    app = natron.getInstance(0)
+def main(app):
     group = app.createNode("fr.inria.built-in.Group")
     choice = group.createChoiceParam("choice", "Choice")
 
@@ -87,8 +85,6 @@ try:
     for options in ([(1, 2)], [("a", 2)], [("a",)], [("a", "b", "c")], [None], [Pair("a", 2)], [b"de"]):
         expect_type_error(choice, options)
     assert choice.getOptions() == ["a", "b", "c"], choice.getOptions()
-    status = 0
-except BaseException:
-    import traceback
-    traceback.print_exc()
-natron.quit(status)
+
+
+natronheadless.run(main)

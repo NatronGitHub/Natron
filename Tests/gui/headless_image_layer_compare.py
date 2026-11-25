@@ -1,14 +1,13 @@
-"""ImageLayer == and < compare the layers, not the Python objects (#1810).
+"""ImageLayer == and < compare the layers, not the Python objects (#1810)."""
 
-Run by NatronRenderer -t (see Tests/CMakeLists.txt).
-"""
 import NatronEngine
-from NatronEngine import natron
+
+import natronheadless
 
 ImageLayer = NatronEngine.ImageLayer
 
-status = 1
-try:
+
+def main(app):
     rgba = ImageLayer.getRGBAComponents()
     assert rgba == ImageLayer.getRGBAComponents()
     assert not rgba != ImageLayer.getRGBAComponents()
@@ -44,8 +43,6 @@ try:
     assert len(set(layers + [ImageLayer.getRGBAComponents(), ImageLayer("MyLayer", "XY", ["X", "Y"])])) == len(layers)
     assert {rgba: 1}.get(ImageLayer.getRGBAComponents()) == 1
     assert ImageLayer.getRGBAComponents() in layers
-    status = 0
-except BaseException:
-    import traceback
-    traceback.print_exc()
-natron.quit(status)
+
+
+natronheadless.run(main)
