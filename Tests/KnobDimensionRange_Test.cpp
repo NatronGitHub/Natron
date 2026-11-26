@@ -135,6 +135,4 @@ TEST(KnobDimensionRange, CheckedDimensionAndMessage)
         EXPECT_EQ( std::string("KnobHelper::deleteValuesAtTime(): Dimension out of range"),
                    invalidArgumentMessage([knobI] { knobI->deleteValuesAtTime(eCurveChangeReasonInternal, std::list<double>(1, 10.), ViewSpec::all(), 2, false); }) );
     }
-
-    node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
 }
