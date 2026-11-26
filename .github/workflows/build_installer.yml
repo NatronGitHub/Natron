@@ -110,7 +110,8 @@ jobs:
             exit 1
           fi
           # for the Setup.exe step, which runs after "Uninstall Natron dependencies"
-          echo "NATRON_SETUP_VERSION=$(pacman -Q ${MINGW_PACKAGE_PREFIX}-natron-setup | cut -d' ' -f2)" >> $GITHUB_ENV
+          SETUP_VERSION=$(pacman -Q ${MINGW_PACKAGE_PREFIX}-natron-setup | cut -d' ' -f2)
+          echo "NATRON_SETUP_VERSION=${SETUP_VERSION}" >> $GITHUB_ENV
 
       - name: Build
         id: build
@@ -324,7 +325,8 @@ jobs:
           check_installed() { # every file of each required Source: is installed
             local src missing
             while IFS= read -r src; do
-              if [ -f "${INSTALLER_DIR}/${src}" ]; then # a single file
+              # a single file (installed under the same path: DestDir "{app}\<its directory>")
+              if [ -f "${INSTALLER_DIR}/${src}" ]; then
                 if ! cmp -s "${INSTALLER_DIR}/${src}" "${APP}/${src}"; then echo "::error::${src} was not installed"; errors=1; fi
                 continue
               fi
