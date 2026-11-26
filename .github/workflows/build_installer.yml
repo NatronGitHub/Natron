@@ -447,7 +447,7 @@ jobs:
           sed -n -e 's/ : UNEXPECTED PASS$//p' "${RESULTS}" | while IFS= read -r t; do
             echo "::error::Natron-Tests: $t is a known failure that passed (UNEXPECTED PASS): remove it from Natron-Tests' known_failures/"
           done
-          ! grep -q '^UNEXPECTED PASS: [1-9]' "${SUMMARY}"
+          if grep -q '^UNEXPECTED PASS: [1-9]' "${SUMMARY}"; then exit 1; fi
 
   # pre-release tags only (v*-alpha*, -beta*, -rc*, -RC*, as linux_packages.yml and macos_x86_64.yml):
   # attach the portable zip (with Setup.exe) and the test results to the GitHub pre-release
