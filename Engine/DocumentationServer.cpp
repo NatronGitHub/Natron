@@ -88,6 +88,18 @@ resolveDocumentationFile(const QString& docDir,
     if ( page.isEmpty() || page.contains( QLatin1Char('\\') ) || page.contains( QLatin1Char(':') ) || page.contains( QChar() ) ) {
         return QString();
     }
+    // Windows device names (CON, NUL, COM1...), with any extension, in any directory: opening one may
+    // block (e.g. "_static/CON.txt" reads the console)
+    const QStringList segments = page.split( QLatin1Char('/') );
+    for (const QString& segment : segments) {
+        const QString base = segment.section( QLatin1Char('.'), 0, 0 ).trimmed().toUpper();
+        if ( ( base == QLatin1String("CON") ) || ( base == QLatin1String("PRN") ) || ( base == QLatin1String("AUX") ) ||
+             ( base == QLatin1String("NUL") ) || ( base == QLatin1String("CONIN$") ) || ( base == QLatin1String("CONOUT$") ) ||
+             ( ( base.size() == 4 ) && ( base.startsWith( QLatin1String("COM") ) || base.startsWith( QLatin1String("LPT") ) ) &&
+               ( base.at(3) >= QLatin1Char('0') ) && ( base.at(3) <= QLatin1Char('9') ) ) ) {
+            return QString();
+        }
+    }
     const QString root = QDir::cleanPath( QDir(docDir).absolutePath() );
     const QString file = QDir::cleanPath( root + QLatin1Char('/') + page );
     if ( !file.startsWith( root + QLatin1Char('/') ) ) {
