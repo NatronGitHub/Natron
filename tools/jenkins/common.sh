@@ -291,6 +291,8 @@ else
     REPO_URL=http://downloads.natron.fr
 fi
 
+# Natron mirror of the SDK source tarballs (on SourceForge): build-Linux-sdk.sh only uses it when
+# the master site of a package fails (see download() there)
 THIRD_PARTY_SRC_URL=https://sourceforge.net/projects/natron/files/Third_Party/Sources
 THIRD_PARTY_BIN_URL=https://natrongithub.github.io/files/bin
 

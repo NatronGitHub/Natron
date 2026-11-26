@@ -87,8 +87,8 @@ if [ "${DOWNLOAD:-}" = "1" ] && [ -z "${GEN_DOCKERFILE+x}" ]; then
 fi
 source common.sh
 
-newdists=()
-newdistsurls=()
+mirrordists=()
+mirrordistsurls=()
 
 scriptdir="$(dirname "$0")"
 
@@ -389,7 +389,7 @@ function fetch_checked() {
     local sha256=${3:-}
     local setcertdir=""
     if [ -d /etc/ssl/certs ]; then
-        # or wget fails on Ubuntu for sourceforge and all letsencrypt-certified sites
+        # or wget fails on some systems for letsencrypt-certified sites
         setcertdir="env SSL_CERT_DIR=/etc/ssl/certs"
     fi
     echo "*** downloading $url"
@@ -404,7 +404,10 @@ function fetch_checked() {
 }
 
 # $1: master site, $2: package (file name), $3: expected sha256 of the file (optional, but every
-# package should have one). The file is first fetched from the Natron mirror ($THIRD_PARTY_SRC_URL).
+# package should have one). The file is fetched from the master site (the project's own release
+# site, never SourceForge when the project has another one), and from the Natron mirror
+# ($THIRD_PARTY_SRC_URL, on SourceForge) only if that fails: a SourceForge outage, or a file
+# removed from SourceForge, must not break the SDK build.
 function download() {
     if dobuild || [ "${DOWNLOAD:-}" = "1" ]; then
         local master_site=$1
@@ -416,18 +419,18 @@ function download() {
         fi
         if [ ! -s "$SRC_PATH/$package" ]; then
             if [ "${DOWNLOAD:-}" = "1" ]; then
-                # print list of new dists, in case subsequent download hangs
-                if [ "${#newdists[*]}" -gt 0 ]; then
-                    echo "*** newdists = ${newdists[*]}"
+                # print the list of the files fetched from the mirror, in case a subsequent download hangs
+                if [ "${#mirrordists[*]}" -gt 0 ]; then
+                    echo "*** mirrordists = ${mirrordists[*]}"
                 fi
-                if [ "${#newdistsurls[*]}" -gt 0 ]; then
-                    echo "*** newdistsurls = ${newdistsurls[*]}"
+                if [ "${#mirrordistsurls[*]}" -gt 0 ]; then
+                    echo "*** mirrordistsurls = ${mirrordistsurls[*]}"
                 fi
             fi
-            if ! fetch_checked "$THIRD_PARTY_SRC_URL/$package" "$SRC_PATH/$package" "$sha256"; then
-                if fetch_checked "$master_site/$package" "$SRC_PATH/$package" "$sha256"; then
-                    newdists+=("$package")
-                    newdistsurls+=("$master_site/$package")
+            if ! fetch_checked "$master_site/$package" "$SRC_PATH/$package" "$sha256"; then
+                if fetch_checked "$THIRD_PARTY_SRC_URL/$package" "$SRC_PATH/$package" "$sha256"; then
+                    mirrordists+=("$package")
+                    mirrordistsurls+=("$master_site/$package")
                 fi
             fi
         fi
@@ -457,10 +460,10 @@ function download_github() {
             rm -f "$SRC_PATH/$package"
         fi
         if [ ! -s "$SRC_PATH/$package" ]; then
-            if ! fetch_checked "$THIRD_PARTY_SRC_URL/$package" "$SRC_PATH/$package" "$sha256"; then
-                if fetch_checked "$url" "$SRC_PATH/$package" "$sha256"; then
-                    newdists+=("$package")
-                    newdistsurls+=("$url")
+            if ! fetch_checked "$url" "$SRC_PATH/$package" "$sha256"; then
+                if fetch_checked "$THIRD_PARTY_SRC_URL/$package" "$SRC_PATH/$package" "$sha256"; then
+                    mirrordists+=("$package")
+                    mirrordistsurls+=("$url")
                 fi
             fi
         fi
@@ -887,15 +890,11 @@ EOF
 fi
 
 if [ -z "${GEN_DOCKERFILE+x}" ]; then
-    if [ "${#newdists[*]}" -gt 0 ]; then
-        echo "*** List of packages that were not available in $THIRD_PARTY_SRC_URL:"
-        echo "${newdists[*]}"
-    else
-        echo "*** Note: All packages were available from $THIRD_PARTY_SRC_URL"
-    fi
-    if [ "${#newdistsurls[*]}" -gt 0 ]; then
-        echo "*** URLs of packages that were not available in $THIRD_PARTY_SRC_URL:"
-        echo "${newdistsurls[*]}"
+    if [ "${#mirrordists[*]}" -gt 0 ]; then
+        echo "*** List of packages fetched from $THIRD_PARTY_SRC_URL (their master site failed):"
+        echo "${mirrordists[*]}"
+        echo "*** Master site URLs that failed:"
+        echo "${mirrordistsurls[*]}"
     fi
 fi
 exit 0
