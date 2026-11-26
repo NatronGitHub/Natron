@@ -239,7 +239,7 @@ jobs:
         df -h /
         archive=$(find "$work/builds" -name '*-no-installer.tar.xz' | head -1)
         [ -n "$archive" ] || { echo "Error: no portable archive in $work/builds"; exit 1; }
-        # no Python caches written by the packaging's own runs (Tests) under Plugins/ (#1923)
+        # no Python caches under Plugins/, as written by the Tests runs of the build and packaging (#1923)
         listing=$(tar tJf "$archive")
         caches=$(grep '/Plugins/.*__pycache__/' <<< "$listing" || true)
         [ -z "$caches" ] || { echo "Error: the portable archive has Python caches under Plugins/:"; echo "$caches" | head -20; exit 1; }
