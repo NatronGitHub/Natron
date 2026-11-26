@@ -764,8 +764,7 @@ build webp # (for OIIO)
 build openimageio
 build seexpr211
 build seexpr
-build eigen # (for ceres)
-build ceres # (Natron's tracker)
+#build eigen
 #build opencv
 
 checkpoint
