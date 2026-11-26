@@ -191,9 +191,15 @@ from ``Tests/gui`` at the published commit, so that they match the build::
     for f in natronheadless.py natrontest.py; do
         curl -fsSL -o "tests/$f" "https://raw.githubusercontent.com/NatronGitHub/Natron/$commit/Tests/gui/$f"
     done
+    # the bundled copy would be loaded instead of the one under test ("Prefer bundled plug-ins")
+    rm -rf natron/Plugins/OFX/Natron/MyPlugin.ofx.bundle
     export OFX_PLUGIN_PATH=$PWD/build/plugins
     natron/NatronRenderer -t tests/headless_myplugin.py
-    xvfb-run -a natron/Natron --test tests/test_myplugin.py
+    # in CI (CI set, as on GitHub Actions), Natron --test skips unless NATRON_GUI_TESTS=1
+    NATRON_GUI_TESTS=1 xvfb-run -a natron/Natron --test tests/test_myplugin.py
+
+Both commands exit with status 0 if the test passed, 77 if it was skipped (e.g. a plug-in it needs
+is missing, or no OpenGL context), and another status if it failed (see `Test mode`_).
 
 Test mode
 ~~~~~~~~~
