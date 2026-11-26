@@ -52,10 +52,12 @@ namespace {
 bool
 canRunTest(const char* pluginID)
 {
-    if ( !NatronTestPlugin::isAvailable(pluginID) || !NatronTestPlugin::isAvailable(kNatronTestPluginGenerator) ) {
-        NatronTestPlugin::reportMissing(pluginID);
+    for (const char* id : { pluginID, kNatronTestPluginGenerator }) {
+        if ( !NatronTestPlugin::isAvailable(id) ) {
+            NatronTestPlugin::reportMissing(id);
 
-        return false;
+            return false;
+        }
     }
 
     return NatronTest::requireOpenGLRendering();

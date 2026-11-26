@@ -65,10 +65,12 @@
 NATRON_NAMESPACE_USING
 
 namespace {
-// The chains of the tests that must render are shorter in unoptimized (-O0) builds, whose stack frames
-// are several times larger: there GraphDepthGuard, which stops a traversal before the stack overflows,
-// reports a chain of about 600 MultiPAR nodes as too deep on macOS arm64 (#1865). The shorter chains use
-// about as much stack as the long ones do in optimized builds.
+// The chains of the tests that must render (600 MultiPAR filters, 1000 Dots) are a third as long in
+// unoptimized (-O0) builds, whose stack frames are several times larger: there GraphDepthGuard, which stops
+// a traversal before the stack overflows, reports a chain of about 600 MultiPAR nodes as too deep on macOS
+// arm64 (#1865). The shorter chains use about as much stack as the long ones do in optimized builds. Any
+// optimization level defines __OPTIMIZE__, so the builds at -O1 (the fast CI builds, the sanitizer builds)
+// keep the long chains.
 #ifdef __OPTIMIZE__
 const int kStackFrameScale = 1;
 #else
