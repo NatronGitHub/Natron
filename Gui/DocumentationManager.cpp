@@ -45,8 +45,10 @@ GCC_ONLY_DIAG_ON(class-memaccess)
 #include "Engine/AppInstance.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/DocumentationGroups.h"
+#include "Engine/DocumentationServer.h"
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
+#include "Engine/Plugin.h"
 #include "Engine/Project.h"
 #include "Engine/ReadNode.h"
 #include "Engine/Settings.h"
@@ -54,6 +56,27 @@ GCC_ONLY_DIAG_ON(class-memaccess)
 
 
 NATRON_NAMESPACE_ENTER
+
+// The icons of the plug-ins: the only local files outside the documentation directory that the server
+// gives ("/LOCAL_FILE/<path>" URLs, see NodeDocumentation.cpp)
+static QStringList
+getPluginIconFiles()
+{
+    QStringList files;
+    const PluginsMap& plugins = appPTR->getPluginsList();
+
+    for (PluginsMap::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
+        for (PluginVersionsOrdered::const_iterator itVersion = it->second.begin(); itVersion != it->second.end(); ++itVersion) {
+            const QString& icon = (*itVersion)->getIconFilePath();
+            if ( !icon.isEmpty() ) {
+                files.push_back(icon);
+            }
+        }
+    }
+
+    return files;
+}
+
 DocumentationManager::DocumentationManager(QObject *parent)
     : QObject(parent)
     , server(NULL)
@@ -206,7 +229,8 @@ DocumentationManager::handler(QHttpRequest *req,
         }
     }
     if ( !staticPage.isEmpty() ) {
-        QFileInfo staticFileInfo(docDir + staticPage);
+        // staticPage starts with '/'
+        QFileInfo staticFileInfo( DocumentationServer::resolveDocumentationFile( docDir, staticPage.mid(1) ) );
         if ( ( isStatic && !staticFileInfo.exists() ) ||
              ( !isStatic && staticFileInfo.exists() ) ) {
             // must redirect
@@ -491,18 +515,20 @@ DocumentationManager::handler(QHttpRequest *req,
                              page.endsWith( QString::fromUtf8(".svg") ) ||
                              page.endsWith( QString::fromUtf8(".woff") ) ||
                              page.endsWith( QString::fromUtf8(".woff2") ) ) ) {
-        // get static file
-        QFileInfo staticFileInfo;
-
-        if ( page.startsWith( QString::fromUtf8("LOCAL_FILE/") ) ) {
-            staticFileInfo.setFile( page.replace( QString::fromUtf8("LOCAL_FILE/"), QString::fromUtf8("") ).replace( QString::fromUtf8("%2520"), QString::fromUtf8(" ") ).replace( QString::fromUtf8("%20"), QString::fromUtf8(" ") ) );
+        // get static file: only a file of the documentation directory, or a plug-in icon
+        // (any other file, e.g. "../../../../etc/hosts.txt" or "LOCAL_FILE//Users/me/notes.txt", was given too)
+        const QString localFilePrefix = QString::fromUtf8("LOCAL_FILE/");
+        QString staticFile;
+        if ( page.startsWith(localFilePrefix) ) {
+            staticFile = DocumentationServer::resolveLocalFile( page.mid( localFilePrefix.size() ), getPluginIconFiles() );
         } else {
-            staticFileInfo.setFile(docDir + page);
+            staticFile = DocumentationServer::resolveDocumentationFile(docDir, page);
         }
+        QFileInfo staticFileInfo(staticFile);
 #ifdef DEBUG
-        qDebug() << "www client requested page" << page << "->file" << staticFileInfo.absoluteFilePath();
+        qDebug() << "www client requested page" << page << "->file" << staticFile;
 #endif
-        if ( staticFileInfo.exists() ) {
+        if ( !staticFile.isEmpty() && staticFileInfo.isFile() ) {
             QFile staticFile( staticFileInfo.absoluteFilePath() );
             if ( staticFile.open(QIODevice::ReadOnly) ) {
                 if ( page.endsWith( QString::fromUtf8(".html") ) || page.endsWith( QString::fromUtf8(".htm") ) ) {
