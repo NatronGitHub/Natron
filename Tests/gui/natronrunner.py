@@ -198,7 +198,8 @@ GUI_TEST_NODES = {
     "Group1": [[420, 200], [104, 30], [0.5, 0.3, 0.7]],
     "Group1.Dot3": [[10, 20], [16, 16], [0.1, 0.9, 0.3]],
 }
-VIEWER_PLUGIN_TAG = b"<Plugin_id>fr.inria.built-in.Viewer</Plugin_id>"
+VIEWER_PLUGIN_ID = b"fr.inria.built-in.Viewer"
+VIEWER_PLUGIN_TAG = b"<Plugin_id>" + VIEWER_PLUGIN_ID + b"</Plugin_id>"
 BACKGROUND_TAG = b"<Background_project>1</Background_project>"
 GUI_TAG = b"<Background_project>0</Background_project>"  # saved by the GUI
 DOT_PLUGIN_TAG = b"<Plugin_id>fr.inria.built-in.Dot</Plugin_id>"

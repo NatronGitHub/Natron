@@ -76,10 +76,13 @@ _FORMATS = {
 }
 # The plug-in ID of the Viewer (PLUGINID_NATRON_VIEWER in
 # Engine/EffectInstance.h), with which a .ntp file (text or binary) saves its
-# Viewers and a Python project creates them (in lower case in Natron 1 files).
-# NatronRenderer does not create the Viewers, and no API lists those it keeps:
-# _has_viewers() looks for this ID in the project file.
-_VIEWER_PLUGIN_ID = re.compile(rb"fr\.inria\.built-in\.viewer", re.IGNORECASE)
+# Viewers and a Python project creates them: in lower case in Natron 1 files,
+# and "Viewer" in the text files of Natron 0.9 (the binary ones are not
+# recognised). NatronRenderer does not create the Viewers, and no API lists
+# those it keeps: _has_viewers() looks for this ID in the project file.
+_VIEWER_PLUGIN_ID = re.compile(
+    rb"fr\.inria\.built-in\.viewer|<Plugin_id>Viewer</Plugin_id>",
+    re.IGNORECASE)
 
 
 def convert(src: str, dst: str | None = None, to: str = "text",
@@ -112,8 +115,9 @@ def convert(src: str, dst: str | None = None, to: str = "text",
             stands for exists (a file or a directory).
         IsADirectoryError: dst is a directory.
         RuntimeError: Natron is not in background mode; the project could
-            not be loaded, or loaded with errors; it has GUI data and
-            discard_gui is False; or it could not be saved.
+            not be loaded, or loaded with errors; it has Viewers, src or dst
+            is a Python project, and discard_gui is False; or it could not
+            be saved.
     """
     if not natron.isBackground():
         raise RuntimeError('run the conversion in NatronRenderer; in Natron, '
@@ -184,7 +188,9 @@ def _has_viewers(app, src: str) -> bool:
     App.projectFileHasGuiData()). Otherwise, src has them if it has the
     plug-in ID of the Viewer (see _VIEWER_PLUGIN_ID). In a Python project
     written by hand, the ID may also be in a line that creates no Viewer
-    (e.g. a comment): discard_gui=True converts the project anyway.
+    (e.g. a comment): discard_gui=True converts the project anyway. A Viewer
+    whose ID is not in src (e.g. created by a module that the project
+    imports) is not found, and is lost without a warning.
     """
     if not app.projectFileHasGuiData():
         return False
@@ -208,8 +214,10 @@ def _check_and_save(app, src: str, dst: str, file_format,
         raise RuntimeError("there were errors while loading %s (see the "
                            "messages above; are all its plug-ins and PyPlugs "
                            "installed?): it is not converted" % src)
-    python = _FORMAT_ENUM.eProjectFileFormatPython
-    if ((app.getProjectFormat() == python or file_format == python) and
+    # the extension, not app.getProjectFormat(), which is also Python for
+    # the (binary) auto-save of a Python project
+    if ((_has_extension(src, _FORMATS["python"][1]) or
+            file_format == _FORMAT_ENUM.eProjectFileFormatPython) and
             _has_viewers(app, src)):
         if not discard_gui:
             raise RuntimeError(

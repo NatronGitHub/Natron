@@ -371,7 +371,7 @@ class ConvertProjectTest:
     def check_viewer(self, path, expected, what):
         """The project path must have a Viewer if expected, else none."""
         with open(path, "rb") as f:
-            has_viewer = b"fr.inria.built-in.Viewer" in f.read()
+            has_viewer = natronrunner.VIEWER_PLUGIN_ID in f.read()
         self.check(has_viewer == expected, "%s: %s %s a Viewer" % (
             what, path, "has no" if expected else "has"))
 
@@ -380,8 +380,8 @@ class ConvertProjectTest:
 
         If refused (src or dst is a Python project, and src has a Viewer),
         the conversion is refused without discard_gui, and converted with it,
-        with a warning. dst must have the GUI data of src, and a Viewer if
-        refused is False and src has one.
+        with a warning. dst must have the node positions, sizes and colours
+        of src (the callers check its Viewer, see check_viewer()).
 
         Returns:
             True if dst was converted.
