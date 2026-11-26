@@ -54,6 +54,8 @@ private Q_SLOTS:
     void updateWriteCount(qint64);
 
 private:
+    void rejectMalformedRequest();
+
     static int MessageBegin(http_parser *parser);
     static int Url(http_parser *parser, const char *at, size_t length);
     static int HeaderField(http_parser *parser, const char *at, size_t length);
@@ -75,6 +77,9 @@ private:
     HeaderHash m_currentHeaders;
     QString m_currentHeaderField;
     QString m_currentHeaderValue;
+
+    // Natron: whether the current request was given to the newRequest() handler (it then answers it)
+    bool m_currentRequestEmitted;
 
     // Keep track of transmit buffer status
     qint64 m_transmitLen;
