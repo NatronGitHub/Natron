@@ -60,8 +60,12 @@
 #include "Engine/ReadNode.h"
 #include "Engine/RotoContext.h"
 #include "Engine/RotoLayer.h"
+#include "Engine/RotoPoint.h"
+#include "Engine/RotoStrokeItem.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/TrackMarker.h"
+#include "Engine/TrackerContext.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/WriteNode.h"
@@ -2470,6 +2474,104 @@ exportBezierPointAtTime(int indentLevel,
                                              NUM_VALUE(ry) + QString::fromUtf8(")") );
 }
 
+// All the parameters of a shape or a stroke (also its lifetime, its transform, its motion blur...), after its points.
+// Finishing it (setCurveFinished(), StrokeItem.addStroke()) set its center to its center: always write the center
+// that it has.
+static void
+exportDrawableItemKnobs(int indentLevel,
+                        const RotoDrawableItemPtr& item,
+                        const QString& itemName,
+                        QTextStream& ts)
+{
+    const std::list<KnobIPtr>& knobs = item->getKnobs();
+    const KnobDoublePtr center = item->getCenterKnob();
+    const QString getParam = itemName + QString::fromUtf8(".getParam(");
+
+    for (std::list<KnobIPtr>::const_iterator k = knobs.begin(); k != knobs.end(); ++k) {
+        if ( !(*k)->getIsPersistent() ) {
+            continue;
+        }
+        if ( (*k == center) && !center->isAnimated(0) && !center->isAnimated(1) ) {
+            for (int i = 0; i < 2; ++i) {
+                WRITE_INDENT(indentLevel); WRITE_STRING( getParam + ESC( center->getName() ) + QString::fromUtf8(").setValue(") + NUM_VALUE( center->getValue(i) ) +
+                                                         QString::fromUtf8(", ") + NUM_INT(i) + QString::fromUtf8(")") );
+            }
+            continue;
+        }
+        exportKnobValues(indentLevel, *k, getParam + ESC( (*k)->getName() ) + QString::fromUtf8(")"), true, ts);
+    }
+}
+
+// The Python name of a brush type, e.g. "NatronEngine.Natron.RotoStrokeType.eRotoStrokeTypeSolid"
+static QString
+strokeTypeToPython(RotoStrokeType type)
+{
+    const char* name = "eRotoStrokeTypeSolid";
+    switch (type) {
+    case eRotoStrokeTypeSolid:
+        break;
+    case eRotoStrokeTypeEraser:
+        name = "eRotoStrokeTypeEraser";
+        break;
+    case eRotoStrokeTypeClone:
+        name = "eRotoStrokeTypeClone";
+        break;
+    case eRotoStrokeTypeReveal:
+        name = "eRotoStrokeTypeReveal";
+        break;
+    case eRotoStrokeTypeBlur:
+        name = "eRotoStrokeTypeBlur";
+        break;
+    case eRotoStrokeTypeSharpen:
+        name = "eRotoStrokeTypeSharpen";
+        break;
+    case eRotoStrokeTypeSmear:
+        name = "eRotoStrokeTypeSmear";
+        break;
+    case eRotoStrokeTypeDodge:
+        name = "eRotoStrokeTypeDodge";
+        break;
+    case eRotoStrokeTypeBurn:
+        name = "eRotoStrokeTypeBurn";
+        break;
+    }
+
+    return QString::fromUtf8(NATRON_ENGINE_PYTHON_MODULE_NAME ".Natron.RotoStrokeType.") + QString::fromUtf8(name);
+}
+
+// A paint stroke: its lines (the points of each), then its parameters
+static void
+exportStroke(int indentLevel,
+             const RotoStrokeItemPtr& stroke,
+             const QString& parentLayerName,
+             QTextStream& ts)
+{
+    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("stroke = roto.createStroke(") + strokeTypeToPython( stroke->getBrushType() ) + QString::fromUtf8(")") );
+    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("stroke.setScriptName(") + ESC( stroke->getScriptName() ) + QString::fromUtf8(")") );
+    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("stroke.setLabel(") + ESC( stroke->getLabel() ) + QString::fromUtf8(")") );
+    QString visibleStr = stroke->isGloballyActivated() ? QString::fromUtf8("True") : QString::fromUtf8("False");
+    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("stroke.setVisible(") + visibleStr + QString::fromUtf8(")") );
+    WRITE_INDENT(indentLevel); WRITE_STRING( parentLayerName + QString::fromUtf8(".addItem(stroke)") );
+
+    // the points (x, y, pressure, timestamp) of each line
+    const std::vector<std::vector<RotoPoint> > lines = stroke->getStrokesPoints();
+    for (std::vector<std::vector<RotoPoint> >::const_iterator line = lines.begin(); line != lines.end(); ++line) {
+        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("stroke.addStroke([");
+        for (std::vector<RotoPoint>::const_iterator p = line->begin(); p != line->end(); ++p) {
+            WRITE_INDENT(indentLevel + 1); WRITE_STRING( QString::fromUtf8("(") + NUM_VALUE( p->pos().x ) + QString::fromUtf8(", ") + NUM_VALUE( p->pos().y ) +
+                                                         QString::fromUtf8(", ") + NUM_VALUE( p->pressure() ) + QString::fromUtf8(", ") +
+                                                         NUM_TIME( p->timestamp() ) + QString::fromUtf8("),") );
+        }
+        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("])");
+    }
+    exportDrawableItemKnobs(indentLevel, stroke, QString::fromUtf8("stroke"), ts);
+    // Last, as for the shapes (see exportRotoLayer())
+    if ( stroke->getLocked() ) {
+        WRITE_INDENT(indentLevel); WRITE_STRING("stroke.setLocked(True)");
+    }
+    WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del stroke");
+}
+
 static void
 exportRotoLayer(int indentLevel,
                 const std::list<RotoItemPtr>& items,
@@ -2481,8 +2583,11 @@ exportRotoLayer(int indentLevel,
     for (std::list<RotoItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
         RotoLayerPtr isLayer = std::dynamic_pointer_cast<RotoLayer>(*it);
         BezierPtr isBezier = std::dynamic_pointer_cast<Bezier>(*it);
+        RotoStrokeItemPtr isStroke = std::dynamic_pointer_cast<RotoStrokeItem>(*it);
 
-        if (isBezier) {
+        if (isStroke) {
+            exportStroke(indentLevel, isStroke, parentLayerName, ts);
+        } else if (isBezier) {
             double time;
             const std::list<BezierCPPtr>& cps = isBezier->getControlPoints();
             const std::list<BezierCPPtr>& fps = isBezier->getFeatherPoints();
@@ -2539,24 +2644,7 @@ exportRotoLayer(int indentLevel,
             if ( isBezier->isCurveFinished() ) {
                 WRITE_INDENT(indentLevel); WRITE_STRING("bezier.setCurveFinished(True)");
             }
-            // All the parameters of the shape (also its lifetime, its transform, its motion blur...), after its
-            // points. setCurveFinished() set its center to the center of the shape: always write the center
-            // that it has.
-            const std::list<KnobIPtr>& shapeKnobs = isBezier->getKnobs();
-            const KnobDoublePtr center = isBezier->getCenterKnob();
-            for (std::list<KnobIPtr>::const_iterator k = shapeKnobs.begin(); k != shapeKnobs.end(); ++k) {
-                if ( !(*k)->getIsPersistent() ) {
-                    continue;
-                }
-                if ( (*k == center) && !center->isAnimated(0) && !center->isAnimated(1) ) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("bezier.getParam(") + ESC( center->getName() ) + QString::fromUtf8(").setValue(") + NUM_VALUE( center->getValue(0) ) +
-                                                             QString::fromUtf8(", 0)") );
-                    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("bezier.getParam(") + ESC( center->getName() ) + QString::fromUtf8(").setValue(") + NUM_VALUE( center->getValue(1) ) +
-                                                             QString::fromUtf8(", 1)") );
-                    continue;
-                }
-                exportKnobValues(indentLevel, *k, QString::fromUtf8("bezier.getParam(") + ESC( (*k)->getName() ) + QString::fromUtf8(")"), true, ts);
-            }
+            exportDrawableItemKnobs(indentLevel, isBezier, QString::fromUtf8("bezier"), ts);
             // Last: locking (or unlocking) a shape stops the changes of its parameters (RotoContext::onItemLockedChanged())
             if ( isBezier->getLocked() ) {
                 WRITE_INDENT(indentLevel); WRITE_STRING("bezier.setLocked(True)");
@@ -2564,7 +2652,6 @@ exportRotoLayer(int indentLevel,
 
             WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del bezier");
         } else if (isLayer) {
-            // (the paint strokes of a RotoPaint node are not exported, see Project::exportToPython())
             QString name =  QString::fromUtf8( isLayer->getScriptName().c_str() );
             QString layerName = name + QString::fromUtf8("_layer");
             WRITE_INDENT(indentLevel); WRITE_STRING( layerName + QString::fromUtf8(" = roto.createLayer()") );
@@ -2676,6 +2763,37 @@ exportAllNodeKnobs(int indentLevel,
             WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("del ") + baseLayerToken);
             WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("del roto") );
         }
+    }
+
+    // The tracks, after the parameters of the node: with no track, they don't compute the transform
+    // (TrackerContext::solveTransformParams())
+    TrackerContextPtr tracker = node->getTrackerContext();
+    std::vector<TrackMarkerPtr> markers;
+    if (tracker) {
+        tracker->getAllMarkers(&markers);
+    }
+    if ( !markers.empty() ) {
+        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# For the tracker node, create all tracks");
+        WRITE_INDENT(indentLevel); WRITE_STRING("tracker = lastNode.getTrackerContext()");
+        for (std::vector<TrackMarkerPtr>::const_iterator it = markers.begin(); it != markers.end(); ++it) {
+            // a track uses pattern matching or not, whatever the node's parameter now says (TrackerContext::load())
+            const bool isPM = dynamic_cast<const TrackMarkerPM*>( it->get() ) != 0;
+            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("track = tracker.createTrack(") + QString::fromUtf8(isPM ? "True" : "False") + QString::fromUtf8(")") );
+            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("track.setScriptName(") + ESC( (*it)->getScriptName_mt_safe() ) + QString::fromUtf8(")") );
+            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("track.setLabel(") + ESC( (*it)->getLabel() ) + QString::fromUtf8(")") );
+            // all its parameters, as TrackMarker::save()
+            const KnobsVec trackKnobs = (*it)->getKnobs_mt_safe();
+            for (KnobsVec::const_iterator k = trackKnobs.begin(); k != trackKnobs.end(); ++k) {
+                exportKnobValues(indentLevel, *k, QString::fromUtf8("track.getParam(") + ESC( (*k)->getName() ) + QString::fromUtf8(")"), true, ts);
+            }
+            std::set<int> userKeyframes;
+            (*it)->getUserKeyframes(&userKeyframes);
+            for (std::set<int>::const_iterator key = userKeyframes.begin(); key != userKeyframes.end(); ++key) {
+                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("track.setUserKeyframe(") + NUM_INT(*key) + QString::fromUtf8(")") );
+            }
+            WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del track");
+        }
+        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del tracker");
     }
 } // exportAllNodeKnobs
 

@@ -327,6 +327,7 @@
     <enum-type name="PlaybackModeEnum"/>
     <enum-type name="ProjectFileFormatEnum"/>
     <enum-type name="DisplayChannelsEnum"/>
+    <enum-type name="RotoStrokeType"/>
     </namespace-type>
     
    
@@ -1827,7 +1828,84 @@
         </modify-function>
 
     </object-type>
+    <object-type name="StrokeItem">
+        <modify-function signature="getPoints(int,std::list&lt;std::vector&lt;double&gt; &gt;*)const">
+            <modify-argument index="2">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="PyList"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                std::list&lt;std::vector&lt;double&gt; &gt; points;
+                %CPPSELF.%FUNCTION_NAME(%1, &amp;points);
+                PyObject* ret = PyList_New((int) points.size());
+                int idx = 0;
+                for (std::list&lt;std::vector&lt;double&gt; &gt;::const_iterator it = points.begin(); it != points.end(); ++it, ++idx) {
+                    PyObject* point = PyTuple_New((int) it->size());
+                    for (std::size_t j = 0; j &lt; it->size(); ++j) {
+                        PyTuple_SET_ITEM(point, j, %CONVERTTOPYTHON[double]((*it)[j]));
+                    }
+                    PyList_SET_ITEM(ret, idx, point);
+                }
+                return ret;
+            </inject-code>
+        </modify-function>
+        <!-- points: a sequence of (x, y, pressure, timestamp) sequences of numbers -->
+        <modify-function signature="addStroke(std::list&lt;std::vector&lt;double&gt; &gt;)">
+            <modify-argument index="1">
+                <replace-type modified-type="PySequence"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                Shiboken::AutoDecRef pyPoints( PySequence_Fast(%PYARG_1, "points must be a sequence of (x, y, pressure, timestamp) sequences.") );
+                if ( pyPoints.isNull() ) {
+                    return 0;
+                }
+                std::list&lt;std::vector&lt;double&gt; &gt; points;
+                const Py_ssize_t size = PySequence_Fast_GET_SIZE( pyPoints.object() );
+                for (Py_ssize_t i = 0; i &lt; size; ++i) {
+                    Shiboken::AutoDecRef pyPoint( PySequence_Fast(PySequence_Fast_GET_ITEM(pyPoints.object(), i), "a point must be a sequence (x, y, pressure, timestamp).") );
+                    if ( pyPoint.isNull() ) {
+                        return 0;
+                    }
+                    if (PySequence_Fast_GET_SIZE( pyPoint.object() ) != 4) {
+                        PyErr_SetString(PyExc_TypeError, "a point must have 4 items (x, y, pressure, timestamp).");
+                        return 0;
+                    }
+                    std::vector&lt;double&gt; point(4);
+                    for (Py_ssize_t j = 0; j &lt; 4; ++j) {
+                        // a TypeError if the item is not a number
+                        point[j] = PyFloat_AsDouble( PySequence_Fast_GET_ITEM(pyPoint.object(), j) );
+                        if ( (point[j] == -1.) &amp;&amp; PyErr_Occurred() ) {
+                            return 0;
+                        }
+                    }
+                    points.push_back(point);
+                }
+                bool cppResult = %CPPSELF.%FUNCTION_NAME(points);
+                %PYARG_0 = %CONVERTTOPYTHON[bool](cppResult);
+            </inject-code>
+        </modify-function>
+    </object-type>
     <object-type name="Track">
+        <modify-function signature="getUserKeyframes(std::list&lt;int&gt;*)const">
+            <modify-argument index="1">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="PyList"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                std::list&lt;int&gt; frames;
+                %CPPSELF.%FUNCTION_NAME(&amp;frames);
+                PyObject* ret = PyList_New((int) frames.size());
+                int idx = 0;
+                for (std::list&lt;int&gt;::const_iterator it = frames.begin(); it != frames.end(); ++it, ++idx) {
+                    PyList_SET_ITEM(ret, idx, %CONVERTTOPYTHON[int](*it));
+                }
+                return ret;
+            </inject-code>
+        </modify-function>
         <modify-function signature="getParam(QString)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
@@ -1856,6 +1934,11 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="createTrack()">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="createTrack(bool)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
@@ -1964,6 +2047,11 @@
                 %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1,%2,%3,%4);
                 %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
             </inject-code>
+        </modify-function>
+        <modify-function signature="createStroke(Natron::RotoStrokeType)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
         </modify-function>
     </object-type>
     

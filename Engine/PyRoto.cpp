@@ -39,6 +39,7 @@
 #include "Engine/Node.h"
 #include "Engine/RotoContext.h"
 #include "Engine/RotoLayer.h"
+#include "Engine/RotoPoint.h"
 #include "Engine/RotoStrokeItem.h"
 
 NATRON_NAMESPACE_ENTER
@@ -620,6 +621,65 @@ BezierCurve::getCompositingOperatorParam() const
     return 0;
 }
 
+StrokeItem::StrokeItem(const RotoItemPtr& item)
+    : ItemBase(item)
+    , _stroke( std::dynamic_pointer_cast<RotoStrokeItem>(item) )
+{
+}
+
+StrokeItem::~StrokeItem()
+{
+}
+
+RotoStrokeType
+StrokeItem::getBrushType() const
+{
+    return _stroke->getBrushType();
+}
+
+int
+StrokeItem::getNumStrokes() const
+{
+    return (int)_stroke->getStrokesPoints().size();
+}
+
+void
+StrokeItem::getPoints(int index,
+                      std::list<std::vector<double> >* points) const
+{
+    const std::vector<std::vector<RotoPoint> > strokes = _stroke->getStrokesPoints();
+
+    if ( (index < 0) || ( index >= (int)strokes.size() ) ) {
+        return;
+    }
+    for (std::vector<RotoPoint>::const_iterator it = strokes[index].begin(); it != strokes[index].end(); ++it) {
+        const double point[4] = { it->pos().x, it->pos().y, it->pressure(), it->timestamp() };
+        points->push_back( std::vector<double>(point, point + 4) );
+    }
+}
+
+bool
+StrokeItem::addStroke(const std::list<std::vector<double> >& points)
+{
+    std::vector<RotoPoint> rotoPoints;
+
+    for (std::list<std::vector<double> >::const_iterator it = points.begin(); it != points.end(); ++it) {
+        if (it->size() != 4) {
+            return false;
+        }
+        rotoPoints.push_back( RotoPoint( (*it)[0], (*it)[1], (*it)[2], (*it)[3] ) );
+    }
+    if ( rotoPoints.empty() ) {
+        return false;
+    }
+    _stroke->addStroke(rotoPoints);
+    // as when a stroke is loaded (RotoStrokeItem::load()) or painted
+    _stroke->setStrokeFinished();
+    _stroke->getContext()->evaluateChange();
+
+    return true;
+}
+
 Roto::Roto(const RotoContextPtr& ctx)
     : _ctx(ctx)
 {
@@ -641,7 +701,7 @@ Roto::getBaseLayer() const
     return 0;
 }
 
-// Returns a new wrapper of the type of item: Layer, BezierCurve, or ItemBase for strokes
+// Returns a new wrapper of the type of item: Layer, BezierCurve or StrokeItem
 static ItemBase*
 createItemWrapper(const RotoItemPtr& item)
 {
@@ -658,7 +718,7 @@ createItemWrapper(const RotoItemPtr& item)
     }
     RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>( item.get() );
     if (isStroke) {
-        return new ItemBase(item);
+        return new StrokeItem(item);
     }
 
     return 0;
@@ -699,12 +759,13 @@ Roto::createLayer()
     return 0;
 }
 
-// A new shape is selected, and the parameters of a selected shape follow the ones of the Roto node
+// A new shape or stroke is selected, and the parameters of a selected item follow the ones of the Roto node
 // (RotoContext::select()): setting its own parameters has no effect. While a PyPlug or a Python project
 // file creates its nodes (see Project::exportToPython()), which then sets them, it is deselected.
-static BezierCurve*
+template <typename Wrapper, typename ItemPtr>
+static Wrapper*
 newShape(const RotoContextPtr& ctx,
-         const BezierPtr& shape)
+         const ItemPtr& shape)
 {
     if (!shape) {
         return 0;
@@ -714,17 +775,17 @@ newShape(const RotoContextPtr& ctx,
         ctx->deselect(shape, RotoItem::eSelectionReasonOther);
     }
 
-    return new BezierCurve(shape);
+    return new Wrapper(shape);
 }
 
-// A shape needs internal nodes (RotoDrawableItem::createNodes()), whose creation throws if it fails: a C++
+// A shape or a stroke needs internal nodes (RotoDrawableItem::createNodes()), whose creation throws if it fails: a C++
 // exception must not go through the Python interpreter, which it leaves broken ("SystemError: unknown opcode",
 // then a hang or a crash, #1828). Print the error and return null (None), as App.createNode() does (a Python
 // exception set with PyErr_SetString() doesn't reach the script: the binding of these functions returns None).
 template <typename MakeShape>
-static BezierPtr
+static auto
 makeShape(const RotoContextPtr& context,
-          MakeShape make)
+          MakeShape make) -> decltype( make() )
 {
     std::string error;
     try {
@@ -739,7 +800,7 @@ makeShape(const RotoContextPtr& context,
         node->getApp()->appendPlainTextToScriptEditor(error);
     }
 
-    return BezierPtr();
+    return decltype( make() )();
 }
 
 BezierCurve*
@@ -747,7 +808,7 @@ Roto::createBezier(double x,
                    double y,
                    double time)
 {
-    return newShape( _ctx, makeShape(_ctx, [&] { return _ctx->makeBezier(x, y, kRotoBezierBaseName, time, false); }) );
+    return newShape<BezierCurve>( _ctx, makeShape(_ctx, [&] { return _ctx->makeBezier(x, y, kRotoBezierBaseName, time, false); }) );
 }
 
 BezierCurve*
@@ -757,7 +818,7 @@ Roto::createEllipse(double x,
                     bool fromCenter,
                     double time)
 {
-    return newShape( _ctx, makeShape(_ctx, [&] { return _ctx->makeEllipse(x, y, diameter, fromCenter, time); }) );
+    return newShape<BezierCurve>( _ctx, makeShape(_ctx, [&] { return _ctx->makeEllipse(x, y, diameter, fromCenter, time); }) );
 }
 
 BezierCurve*
@@ -766,7 +827,41 @@ Roto::createRectangle(double x,
                       double size,
                       double time)
 {
-    return newShape( _ctx, makeShape(_ctx, [&] { return _ctx->makeSquare(x, y, size, time); }) );
+    return newShape<BezierCurve>( _ctx, makeShape(_ctx, [&] { return _ctx->makeSquare(x, y, size, time); }) );
+}
+
+// The base of the script name of a new stroke of type, as in the viewer (RotoPaintInteract::makeStroke())
+static const char*
+strokeBaseName(RotoStrokeType type)
+{
+    switch (type) {
+    case eRotoStrokeTypeSolid:
+        break;
+    case eRotoStrokeTypeEraser:
+        return kRotoPaintEraserBaseName;
+    case eRotoStrokeTypeClone:
+        return kRotoPaintCloneBaseName;
+    case eRotoStrokeTypeReveal:
+        return kRotoPaintRevealBaseName;
+    case eRotoStrokeTypeBlur:
+        return kRotoPaintBlurBaseName;
+    case eRotoStrokeTypeSharpen:
+        return kRotoPaintSharpenBaseName;
+    case eRotoStrokeTypeSmear:
+        return kRotoPaintSmearBaseName;
+    case eRotoStrokeTypeDodge:
+        return kRotoPaintDodgeBaseName;
+    case eRotoStrokeTypeBurn:
+        return kRotoPaintBurnBaseName;
+    }
+
+    return kRotoPaintBrushBaseName;
+}
+
+StrokeItem*
+Roto::createStroke(RotoStrokeType type)
+{
+    return newShape<StrokeItem>( _ctx, makeShape(_ctx, [&] { return _ctx->makeStroke(type, strokeBaseName(type), true); }) );
 }
 
 NATRON_PYTHON_NAMESPACE_EXIT

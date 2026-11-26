@@ -513,7 +513,16 @@ RotoContext::makeStroke(RotoStrokeType type,
         indexInLayer = 0;
         parentLayer->insertItem(curve, 0);
     }
-    curve->createNodes();
+    // its nodes are connected to the ones of the items below it, in its layer
+    try {
+        curve->createNodes();
+    } catch (...) {
+        // a plug-in is missing: no stroke without its nodes (the caller gets the error, see Python's Roto.createStroke())
+        if (parentLayer) {
+            parentLayer->removeItem(curve);
+        }
+        throw;
+    }
 
     _imp->lastInsertedItem = curve;
 

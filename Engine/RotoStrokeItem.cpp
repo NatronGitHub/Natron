@@ -438,6 +438,49 @@ RotoStrokeItem::addStroke(const CurvePtr& xCurve,
     incrementNodesAge();
 }
 
+void
+RotoStrokeItem::addStroke(const std::vector<RotoPoint>& points)
+{
+    const CurvePtr curves[3] = { std::make_shared<Curve>(), std::make_shared<Curve>(), std::make_shared<Curve>() };
+
+    for (std::vector<RotoPoint>::const_iterator it = points.begin(); it != points.end(); ++it) {
+        const double values[3] = { it->pos().x, it->pos().y, it->pressure() };
+        for (int c = 0; c < 3; ++c) {
+            // as appendPoint(): the keyframe, then its interpolation, which also sets the derivatives of its neighbours
+            KeyFrame k;
+            k.setTime( it->timestamp() );
+            k.setValue(values[c]);
+            curves[c]->addKeyFrame(k);
+            curves[c]->setKeyFrameInterpolation( eKeyframeTypeCatmullRom, curves[c]->keyFrameIndex( it->timestamp() ) );
+        }
+    }
+    addStroke(curves[0], curves[1], curves[2]);
+}
+
+std::vector<std::vector<RotoPoint> >
+RotoStrokeItem::getStrokesPoints() const
+{
+    std::vector<std::vector<RotoPoint> > ret;
+    QMutexLocker k(&itemMutex);
+
+    for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin(); it != _imp->strokes.end(); ++it) {
+        const KeyFrameSet xKeys = it->xCurve->getKeyFrames_mt_safe();
+        const KeyFrameSet yKeys = it->yCurve->getKeyFrames_mt_safe();
+        const KeyFrameSet pKeys = it->pressureCurve->getKeyFrames_mt_safe();
+        // the three curves have the same keyframe times (appendPoint(), addStroke())
+        assert( xKeys.size() == yKeys.size() && xKeys.size() == pKeys.size() );
+        std::vector<RotoPoint> points;
+        KeyFrameSet::const_iterator y = yKeys.begin();
+        KeyFrameSet::const_iterator p = pKeys.begin();
+        for (KeyFrameSet::const_iterator x = xKeys.begin(); x != xKeys.end() && y != yKeys.end() && p != pKeys.end(); ++x, ++y, ++p) {
+            points.push_back( RotoPoint( x->getValue(), y->getValue(), p->getValue(), x->getTime() ) );
+        }
+        ret.push_back(points);
+    }
+
+    return ret;
+}
+
 bool
 RotoStrokeItem::removeLastStroke(CurvePtr* xCurve,
                                  CurvePtr* yCurve,

@@ -18,6 +18,7 @@ Functions
 - def :meth:`createEllipse<NatronEngine.Roto.createEllipse>` (x, y, diameter, fromCenter, time)
 - def :meth:`createLayer<NatronEngine.Roto.createLayer>` ()
 - def :meth:`createRectangle<NatronEngine.Roto.createRectangle>` (x, y, size, time)
+- def :meth:`createStroke<NatronEngine.Roto.createStroke>` (type)
 - def :meth:`getBaseLayer<NatronEngine.Roto.getBaseLayer>` ()
 - def :meth:`getItemByName<NatronEngine.Roto.getItemByName>` (name)
 - def :meth:`getSelectedItems<NatronEngine.Roto.getSelectedItems>` ()
@@ -117,6 +118,28 @@ rectangle of the given *size* on each of its sides. A new keyframe will be set a
 
 
 
+.. method:: Roto.createStroke(type)
+
+
+    :param type: :attr:`NatronEngine.Natron.RotoStrokeType`
+    :rtype: :class:`StrokeItem<NatronEngine.StrokeItem>`
+
+Creates a new paint stroke of a RotoPaint node, with the brush *type* (e.g.
+``NatronEngine.Natron.RotoStrokeType.eRotoStrokeTypeSolid``), at the top of the selected layer (or
+of the base layer). It has no line yet: add them with
+:meth:`StrokeItem.addStroke()<NatronEngine.StrokeItem.addStroke>`. As for
+:meth:`createBezier<NatronEngine.Roto.createBezier>`, the new stroke is selected, except while a
+PyPlug or a Python project file creates its nodes, and it returns None, and prints why, if a plug-in
+that renders the stroke is not installed. E.g.::
+
+    stroke = app1.RotoPaint1.getRotoContext().createStroke(NatronEngine.Natron.RotoStrokeType.eRotoStrokeTypeSolid)
+    stroke.addStroke([(100, 100, 1, 0), (150, 120, 0.8, 0.05), (200, 160, 0.5, 0.1)])
+    stroke.getParam("brushSize").setValue(10)
+
+.. versionadded:: 2.6
+
+
+
 .. method:: Roto.getBaseLayer()
 
 
@@ -134,7 +157,7 @@ to a :doc:`Layer`, the base layer being the top-level parent of all the hierarch
     :param name: :class:`str`
     :rtype: :class:`ItemBase<NatronEngine.ItemBase>`
 
-Returns an item by its *script-name*. See :ref:`this section<autoVar>` for the details of what is the
+Returns an item (a :doc:`Layer`, a :doc:`BezierCurve` or a :doc:`StrokeItem`) by its *script-name*. See :ref:`this section<autoVar>` for the details of what is the
 *script-name* of an item. E.g::
 
     app1.Roto1.roto.Layer1.Bezier1 = app1.Roto1.roto.getItemByName("Bezier1")
@@ -147,7 +170,7 @@ Returns an item by its *script-name*. See :ref:`this section<autoVar>` for the d
 
     :rtype: :class:`sequence`
 
-Returns the items (:doc:`layers<Layer>`, :doc:`Beziers<BezierCurve>` and strokes) that are
+Returns the items (:doc:`layers<Layer>`, :doc:`Beziers<BezierCurve>` and :doc:`strokes<StrokeItem>`) that are
 selected in the Roto panel or in the viewer. E.g::
 
     for item in app1.Roto1.getRotoContext().getSelectedItems():

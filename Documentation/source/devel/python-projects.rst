@@ -148,8 +148,6 @@ Limitations
 - The GUI data: the window layout, the viewer settings and the node graph zoom
   (see :meth:`App.projectFileHasGuiData()<NatronEngine.App.projectFileHasGuiData>`). A project saved
   by NatronRenderer has no node positions, as in a *.ntp* file.
-- The tracks of Tracker nodes and the paint strokes of RotoPaint nodes: a save in the Python format
-  warns about them.
 - The nodes added or removed from Python inside a PyPlug instance that was never edited: the instance
   is saved as a reference to its PyPlug, which must be installed, with its parameters and the
   parameters of its nodes (editing a PyPlug instance converts it to a Group, which is saved with its

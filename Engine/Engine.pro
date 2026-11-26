@@ -482,6 +482,7 @@ ENGINE_GENERATED_SOURCES = \
     stringnodecreationproperty_wrapper \
     stringparam_wrapper \
     stringparambase_wrapper \
+    strokeitem_wrapper \
     track_wrapper \
     tracker_wrapper \
     undogroup_wrapper \

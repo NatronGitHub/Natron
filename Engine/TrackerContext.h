@@ -149,7 +149,10 @@ public:
 
     bool isTrackerPMEnabled() const;
 
+    // A new track, which uses pattern matching if the node's parameter says so (isTrackerPMEnabled())
     TrackMarkerPtr createMarker();
+    // A new track, which uses pattern matching (TrackMarkerPM) or not (TrackMarker)
+    TrackMarkerPtr createMarker(bool usePatternMatching);
 
     int getMarkerIndex(const TrackMarkerPtr& marker) const;
 

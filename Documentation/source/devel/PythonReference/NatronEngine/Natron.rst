@@ -140,6 +140,23 @@ that are more complicated than a simple boolean value.
 
    .. versionadded:: 2.6
 
+.. attribute:: Natron.RotoStrokeType
+
+   The brush of a paint stroke (see :meth:`Roto.createStroke<NatronEngine.Roto.createStroke>`).
+   Can have the following values:
+
+   - eRotoStrokeTypeSolid = 0,
+   - eRotoStrokeTypeEraser,
+   - eRotoStrokeTypeClone,
+   - eRotoStrokeTypeReveal,
+   - eRotoStrokeTypeBlur,
+   - eRotoStrokeTypeSharpen,
+   - eRotoStrokeTypeSmear,
+   - eRotoStrokeTypeDodge,
+   - eRotoStrokeTypeBurn
+
+   .. versionadded:: 2.6
+
 .. attribute:: Natron.PixmapEnum
 
     See `here <https://github.com/NatronGitHub/Natron/blob/master/Global/Enums.h>`_ for
