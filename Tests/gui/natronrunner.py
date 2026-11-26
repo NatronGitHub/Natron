@@ -154,6 +154,10 @@ def run(cmd, env, timeout, stdin=None):
             if out is None:
                 out, _ = proc.communicate()
             status = None
+        except BaseException:  # e.g. KeyboardInterrupt: don't leave Natron running
+            _kill(proc, _descendants(proc.pid) if sys.platform != "win32" else [])
+            proc.wait()
+            raise
     return status, out.decode(errors="replace").replace("\r\n", "\n")
 
 

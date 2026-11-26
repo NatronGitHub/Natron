@@ -105,7 +105,9 @@ def run_prompt_quit(renderer, cmd_wrapper, out_dir):
     with open(stdin_path, "w") as f:
         f.write(PROMPT_STDIN)
     cmd = cmd_wrapper + [renderer, "--no-settings", "-t", setup]
-    status, out = natronrunner.run(cmd, natronrunner.natron_env(out_dir), TIMEOUT, stdin=stdin_path)
+    # FP traps on, as before (only the render part disabled them)
+    env = natronrunner.natron_env(out_dir, NATRON_NO_FP_TRAPS=os.environ.get("NATRON_NO_FP_TRAPS"))
+    status, out = natronrunner.run(cmd, env, TIMEOUT, stdin=stdin_path)
     sys.stdout.write(out)
     if status is None:
         print("FAILED: timeout (-t prompt)")
