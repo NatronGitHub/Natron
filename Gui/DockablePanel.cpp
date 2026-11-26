@@ -1022,7 +1022,7 @@ DockablePanel::showHelp()
     if (iseffect) {
         NodePtr node = iseffect->getNode();
         int serverPort = appPTR->getDocumentationServerPort();
-        QString localUrl = QString::fromUtf8("http://localhost:") + QString::number(serverPort) + QString::fromUtf8("/_plugin.html?id=") + _imp->_pluginID;
+        QString localUrl = QString::fromUtf8("http://127.0.0.1:") + QString::number(serverPort) + QString::fromUtf8("/_plugin.html?id=") + _imp->_pluginID;
 #ifdef NATRON_DOCUMENTATION_ONLINE
         QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE) + QString::fromUtf8("/plugins/") + _imp->_pluginID + QString::fromUtf8(".html");
         int docSource = appPTR->getCurrentSettings()->getDocumentationSource();

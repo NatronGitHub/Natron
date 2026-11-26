@@ -822,7 +822,7 @@ Gui::openHelpDocumentation()
 {
     int serverPort = appPTR->getDocumentationServerPort();
 
-    QString localUrl = QString::fromUtf8("http://localhost:") + QString::number(serverPort);
+    QString localUrl = QString::fromUtf8("http://127.0.0.1:") + QString::number(serverPort);
 #ifdef NATRON_DOCUMENTATION_ONLINE
     int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
     QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE);
