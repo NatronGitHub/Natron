@@ -86,6 +86,14 @@ public:
 
     /// Stop the server and listening for new connections.
     void close();
+
+    /// Natron: a connection without any data received or sent for this long is closed
+    /// (default 60000 ms; 0: never). Applies to the connections accepted afterwards.
+    void setIdleTimeout(int msecs);
+
+    /// Natron: at most this many connections at a time; more are closed at once (default 32;
+    /// 0: no limit). Closed connections count until the event loop deletes them.
+    void setMaxConnections(int maxConnections);
 Q_SIGNALS:
     /// Emitted when a client makes a new request to the server.
     /** The slot should use the given @c request and @c response
@@ -102,6 +110,9 @@ private Q_SLOTS:
 
 private:
     QTcpServer *m_tcpServer;
+    // Natron: so that a local program can't hold any number of idle connections (and file descriptors)
+    int m_idleTimeoutMs;
+    int m_maxConnections;
 };
 
 #endif
