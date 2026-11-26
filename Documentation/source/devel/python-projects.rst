@@ -70,6 +70,8 @@ Converting projects
     The ``natron_convert_project`` module converts projects to and from the Python format in
     NatronRenderer (see :ref:`natron-convert-project`), e.g.
     ``NatronRenderer -t -c "import natron_convert_project as c; c.convert_and_quit('in.ntp', 'in.py', 'python')"``.
+    It keeps the node positions, sizes and colours, but not the Viewers, which NatronRenderer doesn't
+    create (see the limitations below): it refuses to convert a project with Viewers unless asked to.
 
 The auto-saves of a Python project are binary, as for every project; a restored auto-save is saved
 as Python again.

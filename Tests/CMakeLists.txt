@@ -331,7 +331,6 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME ProjectGuiDataTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_project_gui_data_test.py $<TARGET_FILE:NatronRenderer>)
     set_tests_properties(ProjectGuiDataTest PROPERTIES TIMEOUT 360)
-    # the natron_convert_project module (tools/): text -> binary -> text with NatronRenderer -c, same nodes and values
     # the natron_convert_project module (tools/): text -> binary -> text and text -> python -> text with NatronRenderer -c, same nodes and values
     add_test(NAME ConvertProjectTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_convert_project_test.py $<TARGET_FILE:NatronRenderer>)

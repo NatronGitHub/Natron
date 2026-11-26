@@ -73,10 +73,11 @@ tab) gives the format of new projects.
 To convert projects without opening them, for example many of them in a
 script, use the ``natron_convert_project`` Python module, which is installed
 with Natron, in NatronRenderer (see :ref:`natron-convert-project`); it also
-converts to and from projects saved as Python scripts. It does not keep the
-GUI data of a project (node positions, viewer settings, window layout), so it
-only converts projects saved by NatronRenderer or ``Natron -b``; convert the
-others with *Save Project As..*.
+converts to and from projects saved as Python scripts. It keeps the GUI data
+of a project (node positions, Viewers, viewer settings, window layout), except
+its Viewers in a conversion to or from the Python format, so it doesn't convert
+a project with Viewers to or from that format; use *Save Project As..* for
+those.
 
 Edit menu
 ---------

@@ -506,12 +506,12 @@ converted, 1 otherwise, with the reason printed. In a script, ``convert()`` take
 arguments, raises an exception instead, and doesn't quit; end the script with
 ``natron.quit(status)``, with a non-zero status if a conversion failed: without
 ``natron.quit()``, the prompt starts and exits with status 0. The project is not
-converted if it loads with errors (see :meth:`App.projectLoadedWithErrors<NatronEngine.App.projectLoadedWithErrors>`), or if it
-has GUI data (see :meth:`App.projectFileHasGuiData<NatronEngine.App.projectFileHasGuiData>`),
-which NatronRenderer would drop, unless ``discard_gui=True``: convert those projects with
-*Save Project As..* in Natron. In a Python project, the GUI data are its Viewers and the node
-positions, sizes and colours, which the module finds in the file itself, as Natron writes them
-(``App.projectFileHasGuiData()`` is *False* for a Python project).
+converted if it loads with errors (see :meth:`App.projectLoadedWithErrors<NatronEngine.App.projectLoadedWithErrors>`).
+NatronRenderer keeps the GUI data of the project (see
+:meth:`App.projectFileHasGuiData<NatronEngine.App.projectFileHasGuiData>`), except its Viewer
+nodes in a conversion to or from the Python format: a project with Viewers is not converted to
+or from the Python format, unless ``discard_gui=True``; convert those projects with *Save Project
+As..* in Natron. The module finds the Viewers in the project file, by their plug-in ID.
 
 The Python format doesn't save everything (see the limitations in :ref:`pythonProjects`). A
 Python project is converted by running it, which builds the project, then saving that project:

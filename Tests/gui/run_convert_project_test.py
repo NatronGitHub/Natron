@@ -37,11 +37,15 @@ and parameter values (keyframes, expressions) as the original. A destination
 whose extension is not the one of the format is refused; extensions are
 case-insensitive; a Python project converted to Python without a destination
 is saved in place; without a destination, an existing file next to the
-project is not replaced. A copy with GUI data, of the .ntp project and of the
-Python one (a Viewer, a node position, size or colour), is converted only
-with discard_gui=True, and a copy with a node whose plug-in is missing (.ntp
-or .py) is not converted (exit status 1, no output file). The other load
-errors are tested by run_project_load_info_test.py.
+project is not replaced. The projects saved by the Natron GUI,
+Tests/data/ProjectGuiData.ntp and ProjectGuiData.py (node positions, sizes and
+colours, and a Viewer), keep their GUI data in text -> binary -> text, and
+keep the positions, sizes and colours of their nodes in conversions to and
+from the Python format; those, which lose the Viewer, are done only with
+discard_gui=True, and the Python project without a Viewer that the first one
+gives converts to text and back to Python without it. A copy with a node whose
+plug-in is missing (.ntp or .py) is not converted (exit status 1, no output
+file). The other load errors are tested by run_project_load_info_test.py.
 
 Exit status: 0 on success, 1 on failure, 2 on a usage error.
 --debugger runs NatronRenderer under natron-lldb.sh, or set
@@ -129,6 +133,42 @@ except Exception:  # anything: print it, and quit with status 1
 natron.quit(status)
 """
 
+# Loads NATRON_DUMP_INPUT and writes [projectFileHasGuiData(), {name:
+# [position, size, colour]}] for the names NODES (see GUI_TEST_NODES in
+# natronrunner.py) to NATRON_DUMP_OUTPUT (JSON).
+GUI_DUMP_SCRIPT = r"""
+import json
+import os
+import traceback
+
+from NatronEngine import natron
+
+NODES = %r
+
+status = 1
+try:
+    app = natron.getInstance(0)
+    loaded = app.loadProject(os.environ["NATRON_DUMP_INPUT"])
+    if loaded is None:
+        raise RuntimeError("load failed")
+    nodes = {}
+    for name in NODES:
+        names = name.split(".")
+        n = loaded.getNode(names[0])
+        for child in names[1:]:
+            n = n.getNode(child) if n is not None else None
+        nodes[name] = None if n is None else [
+            [round(v) for v in n.getPosition()],
+            [round(v) for v in n.getSize()],
+            [round(v, 2) for v in n.getColor()]]
+    with open(os.environ["NATRON_DUMP_OUTPUT"], "w") as f:
+        json.dump([loaded.projectFileHasGuiData(), nodes], f)
+    status = 0
+except Exception:  # anything: print it, and quit with status 1
+    traceback.print_exc()
+natron.quit(status)
+""" % (sorted(natronrunner.GUI_TEST_NODES),)
+
 
 class Runner:
     """Runs NatronRenderer with a private cache and environment."""
@@ -203,6 +243,9 @@ class ConvertProjectTest:
         self.dump_script = self.path("dump.py")
         with open(self.dump_script, "w") as f:
             f.write(DUMP_SCRIPT)
+        self.gui_dump_script = self.path("gui_dump.py")
+        with open(self.gui_dump_script, "w") as f:
+            f.write(GUI_DUMP_SCRIPT)
         self.src = self.path("original.ntp")
         shutil.copyfile(natronrunner.TEST_PROJECT, self.src)
         with open(self.src, "rb") as f:
@@ -242,11 +285,15 @@ class ConvertProjectTest:
         self.check(error in out, "%s: %r is not in the output" % (what, error))
         self.check(not os.path.exists(dst), "%s: %s was written" % (what, dst))
 
-    def dump(self, path):
-        """Returns the nodes and parameters of the project path (JSON)."""
+    def dump(self, path, script=None):
+        """Returns the nodes and parameters of the project path (JSON).
+
+        With script, what that dump script writes instead (see
+        GUI_DUMP_SCRIPT).
+        """
         out = path + ".json"
         status, _ = self.runner.run(
-            ["-t", self.dump_script],
+            ["-t", script or self.dump_script],
             {"NATRON_DUMP_INPUT": path, "NATRON_DUMP_OUTPUT": out})
         if not self.check(status == 0 and os.path.isfile(out),
                           "could not load %s" % path):
@@ -305,19 +352,94 @@ class ConvertProjectTest:
                                "%s extension" % (dst, to, ext),
                                "%s to %s" % (to, name))
 
+    def check_gui_data(self, path, what):
+        """The project path must have the GUI data of the GUI test projects.
+
+        Those that a conversion keeps: projectFileHasGuiData(), and the
+        positions, sizes and colours of the nodes.
+        """
+        dump = self.dump(path, self.gui_dump_script)
+        if dump is None:
+            return
+        has_gui_data, nodes = dump
+        self.check(has_gui_data, "%s: %s has no GUI data" % (what, path))
+        for name, expected in sorted(natronrunner.GUI_TEST_NODES.items()):
+            self.check(nodes.get(name) == expected,
+                       "%s: %s has [position, size, colour] %r, expected %r"
+                       % (what, name, nodes.get(name), expected))
+
+    def check_viewer(self, path, expected, what):
+        """The project path must have a Viewer if expected, else none."""
+        with open(path, "rb") as f:
+            has_viewer = b"fr.inria.built-in.Viewer" in f.read()
+        self.check(has_viewer == expected, "%s: %s %s a Viewer" % (
+            what, path, "has no" if expected else "has"))
+
+    def convert_gui_project(self, src, dst, to, what, refused=True):
+        """Converts src, which has GUI data, to dst; checks dst.
+
+        If refused (src or dst is a Python project, and src has a Viewer),
+        the conversion is refused without discard_gui, and converted with it,
+        with a warning. dst must have the GUI data of src, and a Viewer if
+        refused is False and src has one.
+
+        Returns:
+            True if dst was converted.
+        """
+        if refused:
+            self.check_refused(self.runner.convert(src, dst, to), dst,
+                               "RuntimeError: %s has Viewers" % src, what)
+            result = self.runner.convert(src, dst, to, discard_gui=True)
+            what += ", discard_gui=True"
+        else:
+            result = self.runner.convert(src, dst, to)
+        if not self.check_converted(result, dst, to, what):
+            return False
+        if refused:
+            self.check("the Viewers of %s are not converted" % src
+                       in result[1], "%s: no warning" % what)
+        self.check_gui_data(dst, what)
+        return True
+
     def test_gui_data(self):
-        """A project with GUI data is converted only with discard_gui."""
-        # saved by the Natron GUI
-        with_gui = self.path("withgui.ntp")
-        shutil.copyfile(natronrunner.GUI_TEST_PROJECT, with_gui)
-        dst = self.path("withgui.bin.ntp")
-        self.check_refused(self.runner.convert(with_gui, dst, "binary"), dst,
-                           "RuntimeError: %s has GUI data" % with_gui,
-                           "a project with GUI data")
-        result = self.runner.convert(with_gui, dst, "binary", discard_gui=True)
-        if self.check_converted(result, dst, "binary", "discard_gui=True"):
-            self.check("the GUI data of %s are not converted" % with_gui
-                       in result[1], "discard_gui=True: no warning")
+        """The projects saved by the GUI keep their GUI data.
+
+        All of them in .ntp files, their node positions, sizes and colours in
+        conversions to and from the Python format, which lose their Viewer:
+        those are done only with discard_gui=True.
+        """
+        ntp = self.path("gui.ntp")
+        shutil.copyfile(natronrunner.GUI_TEST_PROJECT, ntp)
+        binary = self.path("gui.bin.ntp")
+        text = self.path("gui.text.ntp")
+        if (self.convert_gui_project(ntp, binary, "binary", "GUI .ntp -> "
+                                     "binary", refused=False) and
+                self.convert_gui_project(binary, text, "text", "GUI binary "
+                                         "-> text", refused=False)):
+            self.check_viewer(text, True, "GUI binary -> text")
+        # the Viewer is also found in a binary project
+        dst = self.path("gui.bin.py")
+        self.check_refused(self.runner.convert(binary, dst, "python"), dst,
+                           "RuntimeError: %s has Viewers" % binary,
+                           "GUI binary -> python")
+        python = self.path("gui.py")
+        if self.convert_gui_project(ntp, python, "python",
+                                    "GUI .ntp -> python"):
+            self.check_viewer(python, False, "GUI .ntp -> python")
+            # without a Viewer, the Python project converts both ways
+            back = self.path("gui.py.ntp")
+            if self.convert_gui_project(python, back, "text", "GUI python "
+                                        "without a Viewer -> text",
+                                        refused=False):
+                self.convert_gui_project(back, self.path("gui2.py"), "python",
+                                         "GUI text without a Viewer -> "
+                                         "python", refused=False)
+        # saved as Python by the GUI, with its Viewer
+        python = self.path("guiviewer.py")
+        shutil.copyfile(natronrunner.GUI_TEST_PYTHON_PROJECT, python)
+        dst = self.path("guiviewer.py.ntp")
+        if self.convert_gui_project(python, dst, "text", "GUI python -> text"):
+            self.check_viewer(dst, False, "GUI python -> text")
 
     def python_project(self):
         """Returns the Python project written by test_chains(), or None."""
@@ -365,41 +487,6 @@ class ConvertProjectTest:
             self.check(f.read() == script_data,
                        "%s: %s was replaced" % (what, script))
 
-    def test_python_gui_data(self):
-        """The same, for Python projects with GUI data, as Natron writes them.
-
-        Needs the Python project of test_chains().
-        """
-        data = self.python_project()
-        if data is None:
-            return
-        # NatronRenderer writes none: add them before a line of a node
-        label = b"    lastNode.setLabel("
-        viewer = (b"    # Viewer Viewer1\n"
-                  b"    groupViewer1 = app.createNode("
-                  b"\"fr.inria.built-in.Viewer\", 1, group)\n"
-                  b"    if groupViewer1 is not None:\n"
-                  b"        groupViewer1.setScriptName(\"Viewer1\")\n")
-        variants = (("position", b"    lastNode.setPosition(10, 20)\n"),
-                    ("size", b"    lastNode.setSize(80, 30)\n"),
-                    ("colour", b"    lastNode.setColor(0.7, 0.7, 0.7)\n"),
-                    ("viewer", viewer))
-        for name, lines in variants:
-            with_gui = self.path("withgui-%s.py" % name)
-            write_variant(data, label, lines + label, with_gui)
-            dst = self.path("withgui-%s.py.ntp" % name)
-            self.check_refused(self.runner.convert(with_gui, dst, "text"),
-                               dst, "RuntimeError: %s has GUI data" % with_gui,
-                               "a Python project with a %s" % name)
-        with_gui = self.path("withgui-position.py")
-        dst = self.path("withgui-position.py.ntp")
-        result = self.runner.convert(with_gui, dst, "text", discard_gui=True)
-        if self.check_converted(result, dst, "text",
-                                "Python project, discard_gui=True"):
-            self.check("the GUI data of %s are not converted" % with_gui
-                       in result[1],
-                       "Python project, discard_gui=True: no warning")
-
     def test_python_load_error(self):
         """A Python project with a missing plug-in is not loaded.
 
@@ -441,7 +528,6 @@ def main(argv):
         test.test_extension_mismatch()
         test.test_gui_data()
         test.test_extension_rules()
-        test.test_python_gui_data()
         test.test_python_load_error()
         test.test_load_error()
         if test.failures:

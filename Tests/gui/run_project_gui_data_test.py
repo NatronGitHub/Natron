@@ -51,14 +51,8 @@ TIMEOUT = 300  # seconds
 
 # The nodes of the test projects, by fully qualified name: [position, size,
 # colour]
-EXPECTED_NODES = {
-    "Dot1": [[100, 200], [16, 16], [0.8, 0.2, 0.1]],
-    "Dot2": [[100, 320], [16, 16], [0.7, 0.7, 0.7]],
-    "Backdrop1": [[40, 150], [300, 260], [0.2, 0.4, 0.6]],
-    "Group1": [[420, 200], [104, 30], [0.5, 0.3, 0.7]],
-    "Group1.Dot3": [[10, 20], [16, 16], [0.1, 0.9, 0.3]],
-}
-VIEWER_PLUGIN_TAG = b"<Plugin_id>fr.inria.built-in.Viewer</Plugin_id>"
+EXPECTED_NODES = natronrunner.GUI_TEST_NODES
+VIEWER_PLUGIN_TAG = natronrunner.VIEWER_PLUGIN_TAG
 # in edited.ntp, only the Viewer has Renamed (Dot2) as input
 VIEWER_INPUT_TAG = b"<second>Renamed</second>"
 OLD_VIEWER_INPUT_TAG = b"<second>Dot2</second>"
