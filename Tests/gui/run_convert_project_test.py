@@ -30,12 +30,15 @@ c.convert_and_quit(...)", with commands on the standard input that must not
 run: convert_and_quit() must end the session, without starting the prompt.
 Tests/data/ProjectFileFormat-2.5.ntp (a text project saved by Natron 2.5.0,
 with a group, user parameters, animation and an expression) is converted
-text -> binary -> text. Each file must have the requested format, and load
-with the same nodes, links and parameter values (keyframes, expressions) as
-the original. A copy with GUI data is converted only with discard_gui=True,
-and a copy with a node whose plug-in is missing is not converted (exit status
-1, no output file). The other load errors are tested by
-run_project_load_info_test.py.
+text -> binary -> text, and text -> python -> text, then the Python project
+to binary with the default destination (its name with the .ntp extension).
+Each file must have the requested format, and load with the same nodes, links
+and parameter values (keyframes, expressions) as the original. A destination
+whose extension is not the one of the format is refused. A copy with GUI data,
+of the .ntp project and of the Python one (a node position), is converted
+only with discard_gui=True, and a copy with a node whose plug-in is missing is
+not converted (exit status 1, no output file). The other load errors are
+tested by run_project_load_info_test.py.
 
 Exit status: 0 on success, 1 on failure, 2 on a usage error.
 --debugger runs NatronRenderer under natron-lldb.sh, or set
@@ -51,6 +54,8 @@ import tempfile
 import natronrunner
 
 BINARY_MAGIC = b"\x01\x16serialization::archive"
+# The first or second line of a Python project (NATRON_PROJECT_PYTHON_MAGIC)
+PYTHON_MAGIC = b"# Natron Project"
 # Given to the -t prompt, which must not start after convert_and_quit()
 PROMPT_STDIN = 'import sys; sys.stdout.write("PROMPT STARTED\\n")\n'
 PROMPT_MARKER = "PROMPT STARTED"
@@ -164,13 +169,17 @@ class Runner:
 
 
 def file_format(path):
-    """Returns "binary", "text" or None, from the first bytes of path."""
+    """Returns "binary", "text", "python" or None, from the start of path."""
+    if not os.path.isfile(path):
+        return None
     with open(path, "rb") as f:
-        head = f.read(64)
+        head = f.read(256)
     if head.startswith(BINARY_MAGIC):
         return "binary"
     if head.lstrip(b"\xef\xbb\xbf \t\r\n").startswith(b"<?xml"):
         return "text"
+    if PYTHON_MAGIC in [line.strip() for line in head.splitlines()[:2]]:
+        return "python"
     return None
 
 
@@ -187,6 +196,7 @@ class ConvertProjectTest:
         self.runner = runner
         self.tmp_dir = tmp_dir
         self.failures = []
+        self.reference = None  # the dump of the original, see test_chains()
         self.dump_script = self.path("dump.py")
         with open(self.dump_script, "w") as f:
             f.write(DUMP_SCRIPT)
@@ -241,23 +251,56 @@ class ConvertProjectTest:
         with open(out) as f:
             return json.load(f)
 
-    def test_chain(self):
-        """text -> binary -> text, same nodes and values."""
-        reference = self.dump(self.src)
-        if not self.check(reference and "Group1" in reference["nodes"] and
-                          "Dot1" in reference["nodes"],
+    def test_chains(self):
+        """text -> binary -> text and text -> python -> text -> ... binary.
+
+        Each file has the nodes and values of the original. The last
+        conversion has no destination: it is the Python project with the
+        .ntp extension.
+        """
+        self.reference = self.dump(self.src)
+        if not self.check(self.reference and
+                          "Group1" in self.reference["nodes"] and
+                          "Dot1" in self.reference["nodes"],
                           "the reference project has no Group1 or Dot1"):
             return
-        prev = self.src
-        for to, name in (("binary", "1.bin.ntp"), ("text", "2.text.ntp")):
-            dst = self.path(name)
-            if not self.check_converted(self.runner.convert(prev, dst, to),
-                                        dst, to, "%s -> %s" % (prev, to)):
+        self.convert_chain((("binary", "1.bin.ntp"), ("text", "2.text.ntp")))
+        self.convert_chain((("python", "3.py"), ("text", "4.text.ntp")))
+        self.convert_chain((("binary", None),), self.path("3.py"),
+                           self.path("3.ntp"))
+
+    def convert_chain(self, steps, src=None, default_dst=None):
+        """Converts src (default: the original) with each (to, name) of steps.
+
+        Each conversion converts the file of the previous one. A name None
+        gives no destination: the file is then default_dst.
+        """
+        prev = src or self.src
+        for to, name in steps:
+            if name:
+                dst = self.path(name)
+                result = self.runner.convert(prev, dst, to)
+            else:
+                dst = default_dst
+                result = self.runner.convert(prev, to=to)
+            if not self.check_converted(result, dst, to,
+                                        "%s -> %s" % (prev, to)):
                 return
-            self.check(self.dump(dst) == reference,
+            self.check(self.dump(dst) == self.reference,
                        "%s does not have the nodes and values of the original"
                        % dst)
             prev = dst
+
+    def test_extension_mismatch(self):
+        """A destination without the extension of the format is refused."""
+        for to, name, ext in (("text", "mismatch.py", ".ntp"),
+                              ("binary", "mismatch.txt", ".ntp"),
+                              ("python", "mismatch.ntp", ".py")):
+            dst = self.path(name)
+            self.check_refused(self.runner.convert(self.src, dst, to), dst,
+                               "ValueError: %s: a %s project must have the "
+                               "%s extension" % (dst, to, ext),
+                               "%s to %s" % (to, name))
 
     def test_gui_data(self):
         """A project with GUI data is converted only with discard_gui."""
@@ -272,6 +315,30 @@ class ConvertProjectTest:
         if self.check_converted(result, dst, "binary", "discard_gui=True"):
             self.check("the GUI data of %s are not converted" % with_gui
                        in result[1], "discard_gui=True: no warning")
+
+    def test_python_gui_data(self):
+        """The same, for a Python project with a node position."""
+        python = self.path("3.py")
+        if not self.check(file_format(python) == "python",
+                          "%s was not written by test_chains" % python):
+            return
+        with open(python, "rb") as f:
+            data = f.read()
+        # NatronRenderer writes no positions: add one, as the GUI writes it
+        label = b"    lastNode.setLabel("
+        with_gui = self.path("withgui.py")
+        write_variant(data, label, b"    lastNode.setPosition(10, 20)\n" +
+                      label, with_gui)
+        dst = self.path("withgui.py.ntp")
+        self.check_refused(self.runner.convert(with_gui, dst, "text"), dst,
+                           "RuntimeError: %s has GUI data" % with_gui,
+                           "a Python project with GUI data")
+        result = self.runner.convert(with_gui, dst, "text", discard_gui=True)
+        if self.check_converted(result, dst, "text",
+                                "Python project, discard_gui=True"):
+            self.check("the GUI data of %s are not converted" % with_gui
+                       in result[1],
+                       "Python project, discard_gui=True: no warning")
 
     def test_load_error(self):
         """A project that loads with errors (a missing plug-in) is refused."""
@@ -294,8 +361,10 @@ def main(argv):
     try:
         runner = Runner(argv[1], cmd_wrapper, tmp_dir)
         test = ConvertProjectTest(runner, tmp_dir)
-        test.test_chain()
+        test.test_chains()
+        test.test_extension_mismatch()
         test.test_gui_data()
+        test.test_python_gui_data()
         test.test_load_error()
         if test.failures:
             print("%d failure(s)" % len(test.failures))

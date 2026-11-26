@@ -66,6 +66,11 @@ From Python
     :meth:`App.saveProjectAsPython()<NatronEngine.App.saveProjectAsPython>` saves a copy.
     :meth:`App.loadProject()<NatronEngine.App.loadProject>` opens a Python project as a project.
 
+Converting projects
+    The ``natron_convert_project`` module converts projects to and from the Python format in
+    NatronRenderer (see :ref:`natron-convert-project`), e.g.
+    ``NatronRenderer -t -c "import natron_convert_project as c; c.convert_and_quit('in.ntp', 'in.py', 'python')"``.
+
 The auto-saves of a Python project are binary, as for every project; a restored auto-save is saved
 as Python again.
 

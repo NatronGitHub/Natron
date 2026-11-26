@@ -16,7 +16,7 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-"""Converts Natron projects (.ntp) between the binary and text formats.
+"""Converts Natron projects between the binary, text and Python formats.
 
 Natron installs this module in its Plugins directory, which is on the Python
 path of Natron and NatronRenderer. Run it with NatronRenderer:
@@ -28,6 +28,11 @@ The exit status is 0 if the project was converted. Otherwise, the exception
 is printed and the exit status is 1. In a script, call convert(), which
 raises the same exceptions and does not quit.
 
+The formats are "binary" and "text" (.ntp files), and "python" (a .py file
+that rebuilds the project, see "Projects as Python scripts" in the Natron
+documentation). The name of the converted project must have the extension of
+its format.
+
 The project is loaded and saved, as with "File > Save As..." in Natron:
 nothing is rendered, and the file is the project that this version of Natron
 saves (a project saved by an older version is upgraded, and the parameters
@@ -36,26 +41,39 @@ installed: a project that loads with errors (e.g. a node that cannot be
 created, or a PyPlug that cannot be found or imported, whose node would be
 saved as a plain Group) is not converted. This includes the PyPlugs that
 cannot be imported in NatronRenderer, e.g. those that import NatronGui or
-PySide: convert those projects with "File > Save As..." in Natron.
+PySide: convert those projects with "File > Save As..." in Natron. The Python
+format does not save the tracks of the Tracker nodes or the paint strokes of
+the RotoPaint nodes: Natron prints a warning that lists them, and the project
+is converted without them.
 
 NatronRenderer does not read the GUI data of a project (node positions and
 colours, viewer settings, window layout...), and saves projects without them.
 A project saved by the Natron GUI has GUI data, so it is not converted, unless
-discard_gui is True. Convert such a project in Natron with "File > Save As...",
-which has a "File format" choice.
+discard_gui is True. In a Python project, the GUI data are the Viewers and
+the calls that set the position, size or colour of a node. Convert such a
+project in Natron with "File > Save As...", which has a "File format" choice.
 """
 
 import os
+import re
 import sys
 
 import NatronEngine
 from NatronEngine import natron
 
 _FORMAT_ENUM = NatronEngine.Natron.ProjectFileFormatEnum
+# The value and the file extension of each format
 _FORMATS = {
-    "text": _FORMAT_ENUM.eProjectFileFormatText,
-    "binary": _FORMAT_ENUM.eProjectFileFormatBinary,
+    "text": (_FORMAT_ENUM.eProjectFileFormatText, ".ntp"),
+    "binary": (_FORMAT_ENUM.eProjectFileFormatBinary, ".ntp"),
+    "python": (_FORMAT_ENUM.eProjectFileFormatPython, ".py"),
 }
+# The GUI data of a Python project (see Project::exportToPython()): a Viewer
+# (which only the GUI has), or a call that sets the position, size or colour
+# of a node, which NatronRenderer ignores
+_PYTHON_GUI_DATA = re.compile(
+    rb"^[ \t]*(?:# Viewer |[\w.]+\.set(?:Position|Size|Color)\()",
+    re.MULTILINE)
 
 
 def convert(src: str, dst: str | None = None, to: str = "text",
@@ -67,17 +85,22 @@ def convert(src: str, dst: str | None = None, to: str = "text",
 
     Args:
         src: Path of the project to convert. "~" is expanded.
-        dst: Path of the converted project. None (the default) replaces src;
-            the project is first written to a temporary file, as with every
-            save in Natron.
-        to: "text" (XML, readable by Natron 2.5 and earlier) or "binary".
+        dst: Path of the converted project, with the extension of the
+            format to (.ntp for "text" and "binary", .py for "python",
+            case-insensitively). None (the default) is src with that
+            extension: src itself if it has it (the project is first written
+            to a temporary file, as with every save in Natron), else a file
+            next to it, which is replaced if it exists.
+        to: "text" (XML, readable by Natron 2.5 and earlier), "binary", or
+            "python" (a Python script, readable by Natron 2.6 and later).
         discard_gui: If False (the default), a project that has GUI data
             is not converted, because the converted project would not have
             them. If True, it is converted without them, with a warning on
             sys.stderr.
 
     Raises:
-        ValueError: to is not "text" or "binary".
+        ValueError: to is not "text", "binary" or "python", or the extension
+            of dst is not the one of its format.
         FileNotFoundError: src is not a file.
         IsADirectoryError: dst is a directory.
         RuntimeError: Natron is not in background mode; the project could
@@ -88,11 +111,20 @@ def convert(src: str, dst: str | None = None, to: str = "text",
         raise RuntimeError('run the conversion in NatronRenderer; in Natron, '
                            'use "File > Save As..."')
     if to not in _FORMATS:
-        raise ValueError('to must be "text" or "binary", not %r' % (to,))
+        raise ValueError('to must be "text", "binary" or "python", not %r'
+                         % (to,))
+    file_format, ext = _FORMATS[to]
     src = os.path.abspath(os.path.expanduser(src))
     if not os.path.isfile(src):
         raise FileNotFoundError("%s: no such file" % src)
-    dst = src if dst is None else os.path.abspath(os.path.expanduser(dst))
+    if dst is None:
+        dst = _with_extension(src, ext)
+    else:
+        dst = os.path.abspath(os.path.expanduser(dst))
+        if not _has_extension(dst, ext):
+            # Natron would save the format to in a file of another type
+            raise ValueError("%s: a %s project must have the %s extension"
+                             % (dst, to, ext))
     if os.path.isdir(dst):
         # Natron would rename the directory as a backup, and save in its place
         raise IsADirectoryError("%s is a directory" % dst)
@@ -102,11 +134,40 @@ def convert(src: str, dst: str | None = None, to: str = "text",
         raise RuntimeError("%s could not be loaded (see the messages above; "
                            "are its plug-ins installed?)" % src)
     try:
-        _check_and_save(app, src, dst, _FORMATS[to], discard_gui)
+        _check_and_save(app, src, dst, file_format, discard_gui)
     except BaseException:
         # Close the project, which removes its lock file (src.lock)
         app.resetProject()
         raise
+
+
+def _has_extension(path, ext):
+    """Whether path ends with ext, case-insensitively (as in Natron)."""
+    return os.path.splitext(path)[1].lower() == ext
+
+
+def _with_extension(path, ext):
+    """Returns path if it ends with ext, else path with its extension ext."""
+    if _has_extension(path, ext):
+        return path
+    return os.path.splitext(path)[0] + ext
+
+
+def _python_project_has_gui_data(path):
+    """Whether the Python project path has GUI data (see _PYTHON_GUI_DATA)."""
+    with open(path, "rb") as f:
+        return _PYTHON_GUI_DATA.search(f.read()) is not None
+
+
+def _has_gui_data(app, src):
+    """Whether the project loaded from src has GUI data.
+
+    App.projectFileHasGuiData() is False for a Python project: its GUI data
+    are calls that NatronRenderer ignores, found in the file itself.
+    """
+    if app.getProjectFormat() == _FORMAT_ENUM.eProjectFileFormatPython:
+        return _python_project_has_gui_data(src)
+    return app.projectFileHasGuiData()
 
 
 def _check_and_save(app, src, dst, file_format, discard_gui):
@@ -120,7 +181,7 @@ def _check_and_save(app, src, dst, file_format, discard_gui):
         raise RuntimeError("there were errors while loading %s (see the "
                            "messages above; are all its plug-ins and PyPlugs "
                            "installed?): it is not converted" % src)
-    if app.projectFileHasGuiData():
+    if _has_gui_data(app, src):
         if not discard_gui:
             raise RuntimeError(
                 "%s has GUI data (node positions, viewer settings, window "

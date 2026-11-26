@@ -483,20 +483,24 @@ with the following changes to the script::
 
 .. _natron-convert-project:
 
-Example: converting a project between the binary and text formats
-------------------------------------------------------------------
+Example: converting a project between the binary, text and Python formats
+--------------------------------------------------------------------------
 
-Projects are saved in a binary format, or in a text (XML) format that Natron 2.5 and earlier
-can read (see :meth:`App.getProjectFormat<NatronEngine.App.getProjectFormat>`). The
+Projects are saved in a binary format, in a text (XML) format that Natron 2.5 and earlier
+can read (both are ``.ntp`` files, see :meth:`App.getProjectFormat<NatronEngine.App.getProjectFormat>`),
+or as a Python script (a ``.py`` file, see :ref:`pythonProjects`). The
 ``natron_convert_project`` Python module, installed in the ``Plugins`` directory of Natron
 (``Natron.app/Contents/Plugins`` on macOS, ``/usr/share/Natron/Plugins`` in a Linux
-distribution), which is on its Python path, converts a project from one format to the other
+distribution), which is on its Python path, converts a project from one format to another
 without rendering anything::
 
     NatronRenderer -t -c "import natron_convert_project as c; c.convert_and_quit('/path/to/in.ntp', '/path/to/out.ntp', 'text')"
 
 ``convert_and_quit(src, dst=None, to="text", discard_gui=False)`` saves ``src`` in the format
-``to`` (``"text"`` or ``"binary"``) as ``dst`` (``src`` itself without ``dst``), then quits: the
+``to`` (``"text"``, ``"binary"`` or ``"python"``) as ``dst``, then quits. ``dst`` must have the
+extension of the format (``.ntp`` for text and binary, ``.py`` for Python): a mismatch is
+refused. Without ``dst``, the project is saved as ``src`` with that extension: ``src`` itself if
+it has it, else a file next to it (``in.ntp`` converted to Python is saved as ``in.py``). The
 exit status is 0 if the project was converted, 1 otherwise, with the reason printed. In a
 script, ``convert()`` takes the same arguments, raises an exception instead, and doesn't quit;
 end the script with ``natron.quit(status)``, with a non-zero status if a conversion failed:
@@ -504,5 +508,8 @@ without ``natron.quit()``, the prompt starts and exits with status 0. The projec
 converted if it loads with errors (see :meth:`App.projectLoadedWithErrors<NatronEngine.App.projectLoadedWithErrors>`), or if it
 has GUI data (see :meth:`App.projectFileHasGuiData<NatronEngine.App.projectFileHasGuiData>`),
 which NatronRenderer would drop, unless ``discard_gui=True``: convert those projects with
-*Save Project As..* in Natron. See the docstring of ``tools/natron_convert_project.py`` for
+*Save Project As..* in Natron. In a Python project, the GUI data are its Viewers and the node
+positions, sizes and colours. The Python format doesn't save the tracks of Tracker nodes and the
+paint strokes of RotoPaint nodes (see :ref:`pythonProjects`): a conversion to it prints a warning
+that lists them, and the project is converted without them. See the docstring of ``tools/natron_convert_project.py`` for
 the details.
