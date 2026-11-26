@@ -34,6 +34,8 @@ INCLUDEPATH += googletest/googletest/include
 INCLUDEPATH += googletest/googletest
 INCLUDEPATH += googletest/googlemock/include
 INCLUDEPATH += googletest/googlemock
+# http_parser.h (QHttpServer_Test.cpp); static-gui gives the qhttpserver library and its src/ headers
+INCLUDEPATH += $$PWD/../libs/qhttpserver/http-parser
 
 
 # ofxPluginLog.txt: the debug log of the OpenFX Support library; ofxTestLog.txt: its name before openfx 47634333
@@ -141,6 +143,7 @@ SOURCES += \
     PyParamDefault_Test.cpp \
     PythonGILUnlocker_Test.cpp \
     PythonScript_Test.cpp \
+    QHttpServer_Test.cpp \
     ProjectFileFormat_Test.cpp \
     PythonExpressionScope_Test.cpp \
     ReadNodeInputs_Test.cpp \

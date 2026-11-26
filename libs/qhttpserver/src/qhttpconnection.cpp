@@ -32,6 +32,20 @@
 
 /// @cond nodoc
 
+// Natron: QHttpRequest::HttpMethod mirrors http-parser's enum http_method (HTTP_METHOD_MAP),
+// since HeadersComplete() casts one to the other.
+static_assert(static_cast<int>(QHttpRequest::HTTP_DELETE) == static_cast<int>(::HTTP_DELETE) &&
+              static_cast<int>(QHttpRequest::HTTP_GET) == static_cast<int>(::HTTP_GET) &&
+              static_cast<int>(QHttpRequest::HTTP_HEAD) == static_cast<int>(::HTTP_HEAD) &&
+              static_cast<int>(QHttpRequest::HTTP_UNLOCK) == static_cast<int>(::HTTP_UNLOCK) &&
+              static_cast<int>(QHttpRequest::HTTP_ACL) == static_cast<int>(::HTTP_ACL) &&
+              static_cast<int>(QHttpRequest::HTTP_REPORT) == static_cast<int>(::HTTP_REPORT) &&
+              static_cast<int>(QHttpRequest::HTTP_MSEARCH) == static_cast<int>(::HTTP_MSEARCH) &&
+              static_cast<int>(QHttpRequest::HTTP_PURGE) == static_cast<int>(::HTTP_PURGE) &&
+              static_cast<int>(QHttpRequest::HTTP_MKCALENDAR) == static_cast<int>(::HTTP_MKCALENDAR) &&
+              static_cast<int>(QHttpRequest::HTTP_SOURCE) == static_cast<int>(::HTTP_SOURCE),
+              "QHttpRequest::HttpMethod is out of sync with http_parser.h");
+
 QHttpConnection::QHttpConnection(QTcpSocket *socket, QObject *parent)
     : QObject(parent),
       m_socket(socket),
@@ -207,6 +221,7 @@ int QHttpConnection::HeadersComplete(http_parser *parser)
 
     /** get parsed url **/
     struct http_parser_url urlInfo;
+    http_parser_url_init(&urlInfo);
     int r = http_parser_parse_url(theConnection->m_currentUrl.constData(),
                                   theConnection->m_currentUrl.size(),
                                   parser->method == HTTP_CONNECT, &urlInfo);
