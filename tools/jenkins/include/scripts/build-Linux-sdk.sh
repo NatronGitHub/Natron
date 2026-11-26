@@ -370,7 +370,9 @@ function fetch_checked() {
     echo "*** downloading $url"
     # wget is the system one: don't let it load the SDK's libraries (on Rocky Linux 9, the
     # system gnutls failed with the older nettle the SDK used to build)
-    if $setcertdir env -u LD_LIBRARY_PATH wget -q "$url" -O "$dest" && [ -s "$dest" ] && sha256_ok "$dest" "$sha256"; then
+    # --timeout/--tries: a hanging site must not stall the build (wget's defaults are a 900 s
+    # read timeout and 20 tries) before the next source is tried
+    if $setcertdir env -u LD_LIBRARY_PATH wget -q --timeout=60 --tries=3 "$url" -O "$dest" && [ -s "$dest" ] && sha256_ok "$dest" "$sha256"; then
         return 0
     fi
     echo "*** downloading $url failed!"

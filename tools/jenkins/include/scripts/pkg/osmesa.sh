@@ -17,6 +17,9 @@ OSMESA_DEMOS_SITE="https://archive.mesa3d.org/demos/${OSMESA_DEMOS_VERSION}"
 OSMESA_LLVM_VERSION=6.0.1
 OSMESA_LLVM_TAR="llvm-${OSMESA_LLVM_VERSION}.src.tar.xz"
 OSMESA_LLVM_SHA256=b6d6c324f9c71494c0ccaf3dac1f16236d970002b42bb24a6c9e1634f7d0f4e2
+# osmesa-install.sh, the script that builds LLVM and Mesa: a fixed commit, as the tarballs
+OSMESA_INSTALL_GIT=https://github.com/devernay/osmesa-install
+OSMESA_INSTALL_COMMIT=26c97553387d61502d07a43bb2e02c561f911e67
 OSMESA_LLVM_SITE="https://releases.llvm.org/${OSMESA_LLVM_VERSION}"
 if download_step; then
     download "$OSMESA_SITE" "$OSMESA_TAR" "$OSMESA_SHA256"
@@ -36,7 +39,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/osmesa/lib/pkgconfig/gl.pc
         LLVM_BUILD=1
         mkdir -p "${SDK_HOME}/llvm" || true
     fi
-    git clone --depth 1 https://github.com/devernay/osmesa-install
+    git_clone_commit "$OSMESA_INSTALL_GIT" "$OSMESA_INSTALL_COMMIT"
     pushd osmesa-install
     mkdir build
     pushd build

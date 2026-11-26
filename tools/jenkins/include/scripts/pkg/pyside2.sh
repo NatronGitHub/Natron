@@ -15,6 +15,7 @@ if [ -n "${ROCKY:-}" ] || [ "${ARCH:-x86_64}" != "x86_64" ]; then
     PYSIDE2_FROM_SOURCE=1
     # the latest open-source 5.15 release
     PYSIDE2_VERSION="5.15.19"
+    PYSIDE2_SHA256=c5640f5fc754522d4ac4b21af89d9922f7146fd32ab62d3494f58c7c7055d4c5
 else
     PYSIDE2_FROM_SOURCE=0
     PYSIDE2_VERSION="5.15.2.1"
@@ -28,7 +29,6 @@ else
 fi
 PYSIDE2_VERSION_SHORT="5.15" # ${PYSIDE2_VERSION%.*}
 PYSIDE2_TAR="pyside-setup-opensource-src-${PYSIDE2_VERSION}.tar.xz"
-PYSIDE2_SHA256=c5640f5fc754522d4ac4b21af89d9922f7146fd32ab62d3494f58c7c7055d4c5
 PYSIDE2_SITE="https://download.qt.io/official_releases/QtForPython/pyside2/PySide2-${PYSIDE2_VERSION}-src"
 
 if [ "$PYSIDE2_FROM_SOURCE" = 1 ] && download_step; then

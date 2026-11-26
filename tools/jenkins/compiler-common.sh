@@ -73,7 +73,9 @@ if [ "$PKGOS" = "OSX" ]; then
                     rm -rf "$system_clang_test"
                     export NATRON_OMP_PROBE_STD=$CXXSTD NATRON_OMP_PROBE_OK
                 fi
-                use_system_clang=$NATRON_OMP_PROBE_OK
+                # (the result is kept for the whole build: rerun from a new shell after
+                # changing Xcode or libomp)
+                use_system_clang=${NATRON_OMP_PROBE_OK:-0}
             fi
             ;;
         macports) ;;
@@ -98,7 +100,7 @@ if [ "$PKGOS" = "OSX" ]; then
         exit 1
     fi
     if [ "$use_system_clang" = 0 ] && [ "$clang_mp_found" = 0 ] && compgen -c clang-mp- >/dev/null 2>&1; then
-        echo "Warning: only MacPorts clang-mp-N newer than clang-mp-$clang_max found:" \
+        echo "Warning: no usable MacPorts clang-mp-N (9 <= N <= $clang_max) found:" \
              "building with Apple clang, without OpenMP. Install clang-$clang_max (see INSTALL_MACOS.md)." >&2
     fi
     if [ "$clang_mp_found" = 1 ]; then

@@ -1,11 +1,12 @@
 #!/bin/bash
 
 # install librevenge
-# see https://sourceforge.net/projects/libwpd/files/librevenge/
+# see https://sourceforge.net/p/libwpd/wiki/librevenge/ (LibreOffice hosts the release tarballs
+# of the libraries it uses, librevenge included: the same file as on SourceForge)
 REVENGE_VERSION=0.0.5
-REVENGE_TAR="librevenge-${REVENGE_VERSION}.tar.xz"
-REVENGE_SHA256=106d0c44bb6408b1348b9e0465666fa83b816177665a22cd017e886c1aaeeb34
-REVENGE_SITE="https://sourceforge.net/projects/libwpd/files/librevenge/librevenge-${REVENGE_VERSION}"
+REVENGE_TAR="librevenge-${REVENGE_VERSION}.tar.bz2"
+REVENGE_SHA256=5892ca6796f7a2a93d580832e907e849b19d980b40d326a283b18877ab6de0c5
+REVENGE_SITE="https://dev-www.libreoffice.org/src"
 if download_step; then
     download "$REVENGE_SITE" "$REVENGE_TAR" "$REVENGE_SHA256"
 fi

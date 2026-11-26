@@ -420,12 +420,14 @@ step_compiler() {
     $PORT install libomp
     sudo port setrequested libomp
     local probe=$NATRON/tools/jenkins/omp-probe.cpp
-    /usr/bin/clang++ -Xpreprocessor -fopenmp -I/opt/local/include/libomp "$probe" -o /tmp/t -L/opt/local/lib/libomp -lomp
+    /usr/bin/clang++ -std=c++17 -DREQUIRED_CPLUSPLUS=201703L -Xpreprocessor -fopenmp -I/opt/local/include/libomp "$probe" -o /tmp/t -L/opt/local/lib/libomp -lomp
+    /tmp/t
     otool -L /tmp/t
     sudo port select clang none || true
     $PORT install clang-${clang_version}
     sudo port setrequested clang-${clang_version}
-    clang++-mp-${clang_version} -stdlib=libc++ -fopenmp "$probe" -o /tmp/t
+    clang++-mp-${clang_version} -stdlib=libc++ -std=c++17 -DREQUIRED_CPLUSPLUS=201703L -fopenmp "$probe" -o /tmp/t
+    /tmp/t
     otool -L /tmp/t
 }
 
