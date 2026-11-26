@@ -136,25 +136,26 @@ def run(cmd, env, timeout, stdin=None):
         proc = subprocess.Popen(cmd, env=env, stdin=stdin_file, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                 start_new_session=(sys.platform != "win32"))
         try:
-            out, _ = proc.communicate(timeout=timeout)
-            status = proc.returncode
-        except subprocess.TimeoutExpired:
-            print("timeout after %g s: killing the process and its wrapper" % timeout)
-            out = None
-            pids = []
-            if sys.platform != "win32":  # on Windows, terminate() kills proc at once: taskkill could not find its tree
-                pids = _descendants(proc.pid)
-                # a wrapper such as natron-lldb.sh kills its inferior and prints its log: keep reading it
-                proc.terminate()
-                try:
-                    out, _ = proc.communicate(timeout=10)
-                except subprocess.TimeoutExpired:
-                    pass
-            _kill(proc, pids)  # also the descendants that the wrapper left behind
-            if out is None:
-                out, _ = proc.communicate()
-            status = None
-        except BaseException:  # e.g. KeyboardInterrupt: don't leave Natron running
+            try:
+                out, _ = proc.communicate(timeout=timeout)
+                status = proc.returncode
+            except subprocess.TimeoutExpired:
+                print("timeout after %g s: killing the process and its wrapper" % timeout)
+                out = None
+                pids = []
+                if sys.platform != "win32":  # on Windows, terminate() kills proc at once: taskkill needs its tree
+                    pids = _descendants(proc.pid)
+                    # a wrapper such as natron-lldb.sh kills its inferior and prints its log: keep reading it
+                    proc.terminate()
+                    try:
+                        out, _ = proc.communicate(timeout=10)
+                    except subprocess.TimeoutExpired:
+                        pass
+                _kill(proc, pids)  # also the descendants that the wrapper left behind
+                if out is None:
+                    out, _ = proc.communicate()
+                status = None
+        except BaseException:  # e.g. KeyboardInterrupt, also during the kill: don't leave Natron running
             _kill(proc, _descendants(proc.pid) if sys.platform != "win32" else [])
             proc.wait()
             raise
