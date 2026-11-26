@@ -1,0 +1,32 @@
+--- include/ceres/jet.h.orig	2026-11-26 09:52:24
++++ include/ceres/jet.h	2026-11-26 09:52:37
+@@ -875,17 +875,29 @@
+ // Ceres itself is built).
+ inline double BesselJ0(double x) {
+   CERES_DISABLE_DEPRECATED_WARNING
++#if defined(_WIN32) && defined(__STRICT_ANSI__)
++  return _j0(x);  // Natron: MinGW declares j0() only without __STRICT_ANSI__
++#else
+   return j0(x);
++#endif
+   CERES_RESTORE_DEPRECATED_WARNING
+ }
+ inline double BesselJ1(double x) {
+   CERES_DISABLE_DEPRECATED_WARNING
++#if defined(_WIN32) && defined(__STRICT_ANSI__)
++  return _j1(x);  // Natron: MinGW declares j1() only without __STRICT_ANSI__
++#else
+   return j1(x);
++#endif
+   CERES_RESTORE_DEPRECATED_WARNING
+ }
+ inline double BesselJn(int n, double x) {
+   CERES_DISABLE_DEPRECATED_WARNING
++#if defined(_WIN32) && defined(__STRICT_ANSI__)
++  return _jn(n, x);  // Natron: MinGW declares jn() only without __STRICT_ANSI__
++#else
+   return jn(n, x);
++#endif
+   CERES_RESTORE_DEPRECATED_WARNING
+ }
+ 

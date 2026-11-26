@@ -1,0 +1,12 @@
+--- internal/ceres/miniglog/glog/logging.h.orig	2026-11-26 09:52:24
++++ internal/ceres/miniglog/glog/logging.h	2026-11-26 09:52:25
+@@ -97,6 +97,9 @@
+ #endif  // ANDROID
+ 
+ #include <algorithm>
++// Natron: glog/logging.h includes <cstdint>, and Ceres relies on it (int64_t
++// in file.cc, array_utils.cc, ...): GCC 16 no longer gets it indirectly.
++#include <cstdint>
+ #include <ctime>
+ #include <fstream>
+ #include <iostream>

@@ -97,6 +97,9 @@
 #endif  // ANDROID
 
 #include <algorithm>
+// Natron: glog/logging.h includes <cstdint>, and Ceres relies on it (int64_t
+// in file.cc, array_utils.cc, ...): GCC 16 no longer gets it indirectly.
+#include <cstdint>
 #include <ctime>
 #include <fstream>
 #include <iostream>
