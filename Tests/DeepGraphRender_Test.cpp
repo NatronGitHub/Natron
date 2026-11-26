@@ -1099,3 +1099,211 @@ TEST(DeepGraphRender, VeryDeepDotChainRenderArgsAndHash)
         printStep("render on a render thread");
     }
 }
+
+namespace {
+// The nodes created by a test, destroyed in the reverse order at the end, even if an ASSERT fails
+struct TestNodes
+{
+    std::vector<NodePtr> nodes;
+
+    ~TestNodes()
+    {
+        for (std::vector<NodePtr>::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+            (*it)->destroyNode(true, false);
+        }
+    }
+
+    NodePtr add(const char* pluginID)
+    {
+        NodePtr node = createChainNode(pluginID);
+
+        if (node) {
+            nodes.push_back(node);
+        }
+
+        return node;
+    }
+};
+
+// The number of diamonds of NodesOnPathsUpstreamOfDiamonds: a walk that visits each node once per path to it makes
+// about 2^kDiamondsCount visits, and never finishes.
+const int kDiamondsCount = 40;
+
+// The diamonds of the reference walks, which make about 2^kReferenceDiamondsCount visits
+const int kReferenceDiamondsCount = 10;
+
+// The former isRotoPaintNodeInputRecursive() (ViewerInstance.cpp) and isBranchConnectedToRotoNodeRecursive()
+// (RotoPaintInteract.cpp): whether target is node or upstream of it. Counts its calls.
+bool
+referenceLeadsTo(const NodePtr& node,
+                 const Node* target,
+                 int* calls)
+{
+    ++*calls;
+    if (node.get() == target) {
+        return true;
+    }
+    for (int i = 0; i < node->getNInputs(); ++i) {
+        NodePtr input = node->getInput(i);
+        if ( input && referenceLeadsTo(input, target, calls) ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// The former updateLastStrokeDataRecursively() (ViewerInstance.cpp), which appends the nodes it updates to updated
+void
+referenceUpdateRecursively(const NodePtr& node,
+                           const Node* target,
+                           NodesList* updated,
+                           int* calls)
+{
+    if ( !referenceLeadsTo(node, target, calls) ) {
+        return;
+    }
+    updated->push_back(node);
+    if (node.get() == target) {
+        return;
+    }
+    for (int i = 0; i < node->getNInputs(); ++i) {
+        NodePtr input = node->getInput(i);
+        if (input) {
+            referenceUpdateRecursively(input, target, updated, calls);
+        }
+    }
+}
+
+// The nodes, each once, in the order in which they first appear
+NodesList
+firstOccurrences(const NodesList& nodes)
+{
+    NodesList first;
+
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if ( std::find(first.begin(), first.end(), *it) == first.end() ) {
+            first.push_back(*it);
+        }
+    }
+
+    return first;
+}
+
+std::string
+scriptNames(const NodesList& nodes)
+{
+    std::string names;
+
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        names += (*it)->getScriptName() + ' ';
+    }
+
+    return names;
+}
+} // anon namespace
+
+// The walks of a RotoPaint stroke (#1628) visit each node once: Node::getNodesOnPathsUpstreamTo(), which updates the
+// paint stroke data of the nodes between the Viewer and the RotoPaint node during a stroke, and tells whether the
+// Viewer's inputs lead to the RotoPaint node, on a chain of diamonds where the former recursions never finished. It
+// gives the nodes in the order of the first visits of the former recursion.
+//
+//  Generator --> Dot A1 --> MultiPAR M1 (inputs A1, B1) --> Dot A2 --> M2 ... --> Mk --> MultiPAR Top (inputs Mk, C)
+//            \-> Dot B1 -/                              \-> Dot B2 -/                 Generator X --> Dot C -/
+TEST(DeepGraphRender, NodesOnPathsUpstreamOfDiamonds)
+{
+    if ( !canRunTest() ) {
+        return;
+    }
+    SmallProject smallProject;
+    TestNodes nodes;
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+    std::vector<NodePtr> a(1), b(1), m; // a[i], b[i] and m[i] for i >= 1; m[0] is the generator
+    NodePtr x, c, top;
+    {
+        CreatingNodeTreeFlag_RAII creatingNodeTree(app);
+        m.push_back( nodes.add(kNatronTestPluginGenerator) );
+        ASSERT_TRUE( bool( m.back() ) );
+        for (int i = 1; i <= kDiamondsCount; ++i) {
+            a.push_back( nodes.add(PLUGINID_NATRON_DOT) );
+            b.push_back( nodes.add(PLUGINID_NATRON_DOT) );
+            m.push_back( nodes.add(kNatronTestPluginMultiPAR) );
+            ASSERT_TRUE( a[i] && b[i] && m[i] );
+            ASSERT_LE( 2, m[i]->getNInputs() );
+            ASSERT_TRUE( project->connectNodes(0, m[i - 1], a[i]) );
+            ASSERT_TRUE( project->connectNodes(0, m[i - 1], b[i]) );
+            ASSERT_TRUE( project->connectNodes(0, a[i], m[i]) );
+            ASSERT_TRUE( project->connectNodes(1, b[i], m[i]) );
+        }
+        x = nodes.add(kNatronTestPluginGenerator);
+        c = nodes.add(PLUGINID_NATRON_DOT);
+        top = nodes.add(kNatronTestPluginMultiPAR);
+        ASSERT_TRUE( x && c && top );
+        ASSERT_TRUE( project->connectNodes(0, x, c) );
+        ASSERT_TRUE( project->connectNodes(0, m.back(), top) );
+        ASSERT_TRUE( project->connectNodes(1, c, top) );
+    }
+    project->forceComputeInputDependentDataOnAllTrees();
+    const NodePtr& generator = m[0];
+
+    const std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+    const NodesList toGenerator = top->getNodesOnPathsUpstreamTo( generator.get() );
+    const int middle = kDiamondsCount / 2;
+    const NodesList toMiddle = top->getNodesOnPathsUpstreamTo( m[middle].get() );
+    const NodesList toX = top->getNodesOnPathsUpstreamTo( x.get() );
+    const NodesList fromMToX = m.back()->getNodesOnPathsUpstreamTo( x.get() );
+    const NodesList toTop = top->getNodesOnPathsUpstreamTo( top.get() );
+    const NodesList fromGeneratorToTop = generator->getNodesOnPathsUpstreamTo( top.get() );
+    const long long elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count();
+    EXPECT_LT(elapsedMs, 1000);
+
+    // the order of the former recursion: down the A branches, then the B branches on the way back
+    NodesList expected;
+    expected.push_back(top);
+    for (int i = kDiamondsCount; i >= 1; --i) {
+        expected.push_back(m[i]);
+        expected.push_back(a[i]);
+    }
+    expected.push_back(generator);
+    for (int i = 1; i <= kDiamondsCount; ++i) {
+        expected.push_back(b[i]);
+    }
+    EXPECT_EQ( scriptNames(expected), scriptNames(toGenerator) );
+
+    expected.clear();
+    expected.push_back(top);
+    for (int i = kDiamondsCount; i > middle; --i) {
+        expected.push_back(m[i]);
+        expected.push_back(a[i]);
+    }
+    expected.push_back(m[middle]);
+    for (int i = middle + 1; i <= kDiamondsCount; ++i) {
+        expected.push_back(b[i]);
+    }
+    EXPECT_EQ( scriptNames(expected), scriptNames(toMiddle) );
+
+    expected.clear();
+    expected.push_back(top);
+    expected.push_back(c);
+    expected.push_back(x);
+    EXPECT_EQ( scriptNames(expected), scriptNames(toX) );
+    EXPECT_TRUE( fromMToX.empty() ) << scriptNames(fromMToX);
+    EXPECT_EQ( scriptNames( NodesList(1, top) ), scriptNames(toTop) );
+    EXPECT_TRUE( fromGeneratorToTop.empty() ) << scriptNames(fromGeneratorToTop);
+
+    // the same nodes, in the same order, as the former recursion, on a part of the chain where it finishes
+    const NodePtr& root = m[kReferenceDiamondsCount];
+    const NodePtr targets[] = { generator, m[kReferenceDiamondsCount / 2], m[kReferenceDiamondsCount], x };
+    for (std::size_t i = 0; i < sizeof(targets) / sizeof(targets[0]); ++i) {
+        NodesList updated;
+        int calls = 0;
+        referenceUpdateRecursively(root, targets[i].get(), &updated, &calls);
+        EXPECT_EQ( scriptNames( firstOccurrences(updated) ), scriptNames( root->getNodesOnPathsUpstreamTo( targets[i].get() ) ) )
+            << "to " << targets[i]->getScriptName();
+        if (targets[i] == generator) {
+            // the former recursion is exponential on this graph
+            EXPECT_LE(1 << kReferenceDiamondsCount, calls);
+        }
+    }
+}
