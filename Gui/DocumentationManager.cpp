@@ -100,13 +100,20 @@ DocumentationManager::startServer()
 {
     server = new QHttpServer(this);
     connect( server, SIGNAL(newRequest(QHttpRequest*,QHttpResponse*)), this, SLOT(handler(QHttpRequest*,QHttpResponse*)) );
-    server->listen( QHostAddress::LocalHost, appPTR->getCurrentSettings()->getServerPort() );
+    // loopback only: the pages are only for the user's browser, opened by Natron.
+    // If this fails (e.g. the port is in use), serverPort() is 0 and the documentation is read online.
+    const int port = appPTR->getCurrentSettings()->getServerPort();
+    if ( !server->listen( QHostAddress::LocalHost, static_cast<quint16>( (port > 0 && port <= 65535) ? port : 0 ) ) ) {
+        std::cerr << "Documentation server: cannot listen on 127.0.0.1 port " << port << std::endl;
+    }
 }
 
 void
 DocumentationManager::stopServer()
 {
-    server->close();
+    if (server) {
+        server->close();
+    }
 }
 
 void
@@ -642,7 +649,7 @@ DocumentationManager::parser(QString html,
 int
 DocumentationManager::serverPort()
 {
-    return server->serverPort();
+    return server ? server->serverPort() : 0;
 }
 
 NATRON_NAMESPACE_EXIT
