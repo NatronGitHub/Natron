@@ -124,13 +124,15 @@ bool QHttpServer::listen(const QHostAddress &address, quint16 port)
 
 bool QHttpServer::listen(quint16 port)
 {
-    return listen(QHostAddress::Any, port);
+    // Natron: loopback only (upstream: QHostAddress::Any)
+    return listen(QHostAddress::LocalHost, port);
 }
 
 int QHttpServer::serverPort()
 {
-    Q_ASSERT(m_tcpServer);
-    return m_tcpServer->serverPort();
+    // Natron: m_tcpServer is NULL if listen() failed (e.g. the port is in use): that was a null
+    // dereference in release builds
+    return m_tcpServer ? m_tcpServer->serverPort() : 0;
 }
 
 void QHttpServer::close()

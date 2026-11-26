@@ -37,6 +37,7 @@
 #include <QtCore/QString>
 #include <QtCore/QTimer>
 #include <QtNetwork/QHostAddress>
+#include <QtNetwork/QTcpServer>
 #include <QtNetwork/QTcpSocket>
 
 #include "http_parser.h"
@@ -325,4 +326,31 @@ TEST(QHttpServer, RefusesResponseHeaderWithNewline)
     const QByteArray reply = server.exchange("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
     EXPECT_TRUE( isStatus(reply, 200) ) << reply.constData();
     EXPECT_FALSE( reply.contains("X-Injected") ) << reply.constData();
+}
+
+// The convenience overloads listen on the loopback interface only (upstream: all interfaces).
+TEST(QHttpServer, ListensOnLoopbackByDefault)
+{
+    QHttpServer server;
+    ASSERT_TRUE( server.listen(0) );
+    const QList<QTcpServer*> tcpServers = server.findChildren<QTcpServer*>();
+    ASSERT_EQ( 1, tcpServers.size() );
+    EXPECT_EQ( QHostAddress(QHostAddress::LocalHost), tcpServers.first()->serverAddress() );
+}
+
+// serverPort() dereferenced a null QTcpServer when listen() had failed (DocumentationManager calls it
+// to build the documentation URLs, and falls back to the online documentation when it is 0).
+TEST(QHttpServer, ServerPortIsZeroWhenNotListening)
+{
+    QHttpServer first;
+    ASSERT_TRUE( first.listen(QHostAddress::LocalHost, 0) );
+    const int port = first.serverPort();
+    EXPECT_NE( 0, port );
+
+    QHttpServer notStarted;
+    EXPECT_EQ( 0, notStarted.serverPort() );
+
+    QHttpServer second; // the port is in use
+    EXPECT_FALSE( second.listen( QHostAddress::LocalHost, static_cast<quint16>(port) ) );
+    EXPECT_EQ( 0, second.serverPort() );
 }
