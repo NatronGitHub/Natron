@@ -175,14 +175,17 @@ void QHttpResponse::write(const QByteArray &data)
     m_connection->write(data);
 }
 
+// Natron: m_connection may be deleted once the response is finished (see connectionClosed())
 void QHttpResponse::flush()
 {
-    m_connection->flush();
+    if (!m_finished)
+        m_connection->flush();
 }
 
 void QHttpResponse::waitForBytesWritten()
 {
-    m_connection->waitForBytesWritten();
+    if (!m_finished)
+        m_connection->waitForBytesWritten();
 }
 
 void QHttpResponse::end(const QByteArray &data)

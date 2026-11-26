@@ -113,7 +113,9 @@ void
 DocumentationManager::handler(QHttpRequest *req,
                               QHttpResponse *resp)
 {
-    Q_UNUSED(req)
+    // the request belongs to the handler (see QHttpServer::newRequest()): delete it once it is received
+    // (it is not deleted with its connection, so every request leaked)
+    connect( req, SIGNAL(end()), req, SLOT(deleteLater()) );
 
     QString docDir = appPTR->getApplicationBinaryPath() + QString::fromUtf8("/../Resources/docs/html/");
     QString page = req->url().toString();

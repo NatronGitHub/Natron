@@ -51,6 +51,7 @@ private Q_SLOTS:
     void responseDone();
     void socketDisconnected();
     void invalidateRequest();
+    void requestDestroyed(QObject *request);
     void updateWriteCount(qint64);
 
 private:

@@ -31,6 +31,8 @@
 #include <gtest/gtest.h>
 
 #include <QtCore/QByteArray>
+#include <QtCore/QCoreApplication>
+#include <QtCore/QEvent>
 #include <QtCore/QEventLoop>
 #include <QtCore/QString>
 #include <QtCore/QTimer>
@@ -47,8 +49,8 @@
 
 namespace {
 
-// A QHttpServer on 127.0.0.1 (any free port) that answers every request with "200 OK", body "ok",
-// and closes the connection.
+// A QHttpServer on 127.0.0.1 (any free port) that answers every complete request with "200 OK" and
+// body "ok", and closes the connection unless the request has "Connection: keep-alive".
 class LoopbackHttpServer
 {
 public:
@@ -58,12 +60,19 @@ public:
         QObject::connect( &_server, &QHttpServer::newRequest, [this](QHttpRequest* req, QHttpResponse* resp) {
             ++_requests;
             _lastHeaders = req->headers();
-            // the request belongs to the handler (see QHttpServer::newRequest())
-            QObject::connect( req, &QHttpRequest::end, req, &QObject::deleteLater );
-            resp->setHeader( QString::fromUtf8("Content-Length"), QString::fromUtf8("2") );
-            resp->setHeader( QString::fromUtf8("Connection"), QString::fromUtf8("close") );
-            resp->writeHead(200);
-            resp->end("ok");
+            _lastBody.clear();
+            QObject::connect( req, &QHttpRequest::data, [this](const QByteArray& data) { _lastBody += data; } );
+            QObject::connect( req, &QHttpRequest::end, [req, resp]() {
+                if ( req->successful() ) {
+                    const bool keepAlive = req->header( QString::fromUtf8("connection") ) == QString::fromUtf8("keep-alive");
+                    resp->setHeader( QString::fromUtf8("Content-Length"), QString::fromUtf8("2") );
+                    resp->setHeader( QString::fromUtf8("Connection"), QString::fromUtf8(keepAlive ? "keep-alive" : "close") );
+                    resp->writeHead(200);
+                    resp->end("ok");
+                }
+                // the request belongs to the handler (see QHttpServer::newRequest())
+                req->deleteLater();
+            } );
         } );
         _listening = _server.listen(QHostAddress::LocalHost, 0);
     }
@@ -74,16 +83,25 @@ public:
 
     const HeaderHash& lastHeaders() const { return _lastHeaders; }
 
-    // Sends request from a new connection and returns what the server sent back until it closed the
-    // connection (or until timeoutMs).
-    QByteArray exchange(const QByteArray& request, int timeoutMs = 10000)
+    const QByteArray& lastBody() const { return _lastBody; }
+
+    // The sockets of the connections that the server still has
+    int sockets() const { return _server.findChildren<QTcpSocket*>().size(); }
+
+    // Sends first, then (after 200 ms, so that the server handles events in between) second, from a new
+    // connection, and returns what the server sent back until it closed the connection (or until
+    // timeoutMs).
+    QByteArray exchange(const QByteArray& first, const QByteArray& second = QByteArray(), int timeoutMs = 10000)
     {
         QTcpSocket socket;
         socket.connectToHost( QHostAddress::LocalHost, static_cast<quint16>( _server.serverPort() ) );
         if ( !socket.waitForConnected(timeoutMs) ) {
             return QByteArray();
         }
-        socket.write(request);
+        socket.write(first);
+        if ( !second.isEmpty() ) {
+            QTimer::singleShot( 200, &socket, [&socket, &second]() { socket.write(second); } );
+        }
 
         QByteArray reply;
         QEventLoop loop;
@@ -97,6 +115,8 @@ public:
             loop.exec();
         }
         reply += socket.readAll();
+        // let the server delete what it scheduled for deletion (deleteLater())
+        QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
 
         return reply;
     }
@@ -106,6 +126,7 @@ private:
     bool _listening;
     int _requests;
     HeaderHash _lastHeaders;
+    QByteArray _lastBody;
 };
 
 bool
@@ -222,4 +243,31 @@ TEST(QHttpServer, RejectsUrlThatCannotBeSplit)
     const QByteArray reply = server.exchange("CONNECT /x HTTP/1.1\r\nHost: localhost\r\n\r\n");
     EXPECT_TRUE( isStatus(reply, 400) ) << reply.constData();
     EXPECT_EQ( 0, server.requests() );
+}
+
+// The sockets of closed connections belonged to the QTcpServer and were only deleted with the server.
+TEST(QHttpServer, DeletesClosedConnections)
+{
+    LoopbackHttpServer server;
+    ASSERT_TRUE( server.listening() );
+
+    for (int i = 0; i < 3; ++i) {
+        EXPECT_TRUE( isStatus(server.exchange("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n"), 200) );
+    }
+    EXPECT_EQ( 0, server.sockets() );
+}
+
+// Pipelined requests: deleting the first request (the handler owns it) after the second one began
+// "invalidated" the second one, whose body then crashed the server (null QHttpRequest).
+TEST(QHttpServer, PipelinedRequestOutlivesDeletedRequest)
+{
+    LoopbackHttpServer server;
+    ASSERT_TRUE( server.listening() );
+
+    const QByteArray reply = server.exchange("GET /1 HTTP/1.1\r\nConnection: keep-alive\r\nHost: localhost\r\n\r\n"
+                                             "POST /2 HTTP/1.1\r\nHost: localhost\r\nContent-Length: 4\r\n\r\nab",
+                                             "cd");
+    EXPECT_EQ( 2, reply.count("HTTP/1.1 200 OK") ) << reply.constData();
+    EXPECT_EQ( 2, server.requests() );
+    EXPECT_EQ( QByteArray("abcd"), server.lastBody() );
 }
