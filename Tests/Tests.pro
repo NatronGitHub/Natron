@@ -26,14 +26,16 @@ CONFIG += static-gui static-engine static-host-support static-breakpadclient sta
 QT += gui core opengl network widgets concurrent
 equals(QT_MAJOR_VERSION, 6): QT += openglwidgets
 
-CONFIG += openmvg-flags glad-flags
+CONFIG += openmvg-flags libmv-flags glad-flags
 
 CONFIG += expat
 
-INCLUDEPATH += google-test/include
-INCLUDEPATH += google-test
-INCLUDEPATH += google-mock/include
-INCLUDEPATH += google-mock
+INCLUDEPATH += googletest/googletest/include
+INCLUDEPATH += googletest/googletest
+INCLUDEPATH += googletest/googlemock/include
+INCLUDEPATH += googletest/googlemock
+# http_parser.h (QHttpServer_Test.cpp); static-gui gives the qhttpserver library and its src/ headers
+INCLUDEPATH += $$PWD/../libs/qhttpserver/http-parser
 
 
 # ofxPluginLog.txt: the debug log of the OpenFX Support library; ofxTestLog.txt: its name before openfx 47634333
@@ -49,8 +51,8 @@ DEFINES += NATRON_MAIN_THREAD_STACK_SIZE=$$NATRON_MAIN_THREAD_STACK_SIZE
 
 # bundled third-party code: see warnings.pri
 NATRON_THIRD_PARTY_SOURCES += \
-    google-test/src/gtest-all.cc \
-    google-mock/src/gmock-all.cc
+    googletest/googletest/src/gtest-all.cc \
+    googletest/googlemock/src/gmock-all.cc
 
 # NaNGuards_FastMath.cpp is compiled with -ffast-math by the CMake build only (qmake can't set
 # per-file flags); here it runs the same tests without -ffast-math.
@@ -61,6 +63,7 @@ SOURCES += \
     Curve_Test.cpp \
     DeepGraphRender_Test.cpp \
     DiskCache_Test.cpp \
+    DocumentationServer_Test.cpp \
     ExpressionDepsRenderArgs_Test.cpp \
     ExpressionSetError_Test.cpp \
     ExprUtils_Test.cpp \
@@ -93,7 +96,9 @@ SOURCES += \
     NodePresets_Test.cpp \
     NodePreview_Test.cpp \
     NoDialogs_Test.cpp \
+    OfxBundlePyPlugs_Test.cpp \
     OfxBytesParam_Test.cpp \
+    OfxChoiceOrder_Test.cpp \
     OfxContexts_Test.cpp \
     OfxCPURenderSupport_Test.cpp \
     OfxClipComponentsView_Test.cpp \
@@ -122,6 +127,7 @@ SOURCES += \
     OfxRenderClone_Test.cpp \
     OfxSequenceRenderArgs_Test.cpp \
     OfxSingleInstance_Test.cpp \
+    OfxStrChoiceParam_Test.cpp \
     OfxSuiteStatus_Test.cpp \
     OfxSyncPrivateData_Test.cpp \
     OfxTestPlugin_Test.cpp \
@@ -138,6 +144,7 @@ SOURCES += \
     PyParamDefault_Test.cpp \
     PythonGILUnlocker_Test.cpp \
     PythonScript_Test.cpp \
+    QHttpServer_Test.cpp \
     ProjectFileFormat_Test.cpp \
     PythonExpressionScope_Test.cpp \
     ReadNodeInputs_Test.cpp \
@@ -150,6 +157,7 @@ SOURCES += \
     Settings_Test.cpp \
     ShuffleAutoConnect_Test.cpp \
     StrUtilsFormat_Test.cpp \
+    LibMVTrackRegion_Test.cpp \
     Tracker_Test.cpp \
     TrackerHeadless_Test.cpp \
     ViewerCache_Test.cpp \
@@ -160,7 +168,8 @@ SOURCES += \
 HEADERS += \
     BaseTest.h \
     NaNGuards_FastMath.h \
-    OfxTestPlugin.h
+    OfxTestPlugin.h \
+    TestUtils.h
 
 # the OFX test plug-in (OfxTestPlugin/OfxTestPlugin.pro), loaded through OFX_PLUGIN_PATH by wmain.cpp
 include(OfxTestPlugin/OfxTestPlugin.pri)

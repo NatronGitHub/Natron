@@ -1,12 +1,11 @@
 # Color selector: H, S and V are those of the linear RGB values, also when the color is set through the
-# hex field, which sets the sRGB triangle (#1248).
+# hex field, which sets the sRGB triangle (#1248). A grey has no hue: it keeps the H shown, whether it is
+# set through the triangle, the RGB fields or the parameter (the selector shows the parameter when it opens).
+import NatronEngine
 import NatronGuiTest
 from natrontest import *
 
-try:
-    from PySide2 import QtWidgets
-except ImportError:
-    from PySide6 import QtWidgets
+QtCore, QtGui, QtWidgets = qt_modules()
 
 PARAMS = "net.natron.test.Params"  # has RGB and RGBA parameters (Tests/OfxTestPlugin)
 require_plugin(PARAMS)
@@ -30,6 +29,19 @@ def child(widget, name):
     return found
 
 
+def type_value(selector, name, value):
+    field = child(selector, name)
+    field.setText("%g" % value)
+    field.returnPressed.emit()
+
+
+def set_color_params_grey(grey):
+    for param in node.getParams():
+        if isinstance(param, NatronEngine.ColorParam):
+            for dim in range(param.getNumDimensions()):
+                param.setValue(1.0 if dim == 3 else grey, dim)
+
+
 hexes = [w for w in QtWidgets.QApplication.allWidgets() if w.objectName() == "ColorSelectorHex"]
 check(len(hexes) > 0, "no color selector for %s" % node.getScriptName())
 for hex_field in hexes:
@@ -51,3 +63,30 @@ for hex_field in hexes:
     check_close(hue, 0.0360, 2e-3, "H of #ff8000 (of the linear values)")
     check_close(sat, 1.0, 1e-3, "S of #ff8000")
     check_close(val, 1.0, 1e-3, "V of #ff8000")
+
+    # a grey typed in the RGB fields keeps the hue: (0.5, 0.5, 0) is yellow (H = 1/6), then B = 0.5
+    type_value(selector, "ColorSelectorRed", 0.5)
+    type_value(selector, "ColorSelectorGreen", 0.5)
+    check_close(float(child(selector, "ColorSelectorHue").text()), 1. / 6, 2e-3, "H of (0.5, 0.5, 0)")
+    type_value(selector, "ColorSelectorBlue", 0.5)
+    check_close(float(child(selector, "ColorSelectorSat").text()), 0.0, 1e-3, "S of a grey")
+    check_close(float(child(selector, "ColorSelectorHue").text()), 1. / 6, 2e-3, "H of a grey typed in RGB")
+
+    # a grey parameter shown when the selector opens keeps the hue: #00ff00 is green (H = 1/3)
+    hex_field.setText("#00ff00")
+    hex_field.returnPressed.emit()
+    check_close(float(child(selector, "ColorSelectorHue").text()), 1. / 3, 2e-3, "H of #00ff00")
+    set_color_params_grey(0.5)
+    widget = selector
+    while widget is not None and not widget.metaObject().className().endswith("ColorSelectorWidget"):
+        widget = widget.parentWidget()
+    check(widget is not None, "no ColorSelectorWidget around the hex field")
+    QtWidgets.QApplication.sendEvent(widget, QtCore.QEvent(QtCore.QEvent.Show))  # as when its menu opens
+    check_close(float(child(selector, "ColorSelectorRed").text()), 0.5, 1e-3, "R of the grey parameter")
+    check_close(float(child(selector, "ColorSelectorHue").text()), 1. / 3, 2e-3, "H of a grey parameter")
+
+    # a grey typed in the hex field keeps the hue too (the triangle path)
+    hex_field.setText("#808080")
+    hex_field.returnPressed.emit()
+    check_close(float(child(selector, "ColorSelectorSat").text()), 0.0, 1e-3, "S of #808080")
+    check_close(float(child(selector, "ColorSelectorHue").text()), 1. / 3, 2e-3, "H of #808080")

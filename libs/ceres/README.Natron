@@ -1,8 +1,38 @@
 Project: Ceres Solver
 URL: http://ceres-solver.org/
-Upstream version 1.11 (aef9c9563b08d5f39eee1576af133a84749d1b48)
-Local modifications: ceres-Natron.patch
+License: New BSD (LICENSE); include/ceres/internal/fixed_array.h and
+include/ceres/internal/memory.h come from Abseil and are under the
+Apache License 2.0 (also in LICENSE).
+Upstream version: 2.2.0 (https://github.com/ceres-solver/ceres-solver/archive/refs/tags/2.2.0.tar.gz)
 
-Extracted from Blender git repository under the extern/ folder.
-Git URL=https://git.blender.org/blender.git
-Git HEAD version=bf1e9bc613377a4a4d5dcf9f50e757a4feb0928f (2016-11-01)
+Natron builds it as upstream's CMake build would with
+  -DMINIGLOG=ON -DSCHUR_SPECIALIZATIONS=OFF -DLAPACK=OFF -DSUITESPARSE=OFF
+  -DEIGENSPARSE=OFF -DACCELERATESPARSE=OFF -DUSE_CUDA=OFF
+that is, as the Ceres 1.11 that Natron bundled before: dense linear algebra
+only, with Eigen (libs/Eigen3). Ceres' miniglog provides glog/logging.h, so
+neither glog nor gflags is needed.
+
+Local modifications (patches/, apply with patch -p0 from libs/ceres):
+- 0001-miniglog-cstdint.patch: miniglog includes <cstdint>, as glog's
+  logging.h does; Ceres uses int64_t without including it (file.cc,
+  array_utils.cc, ...), which fails with GCC 16 (MSYS2 UCRT64).
+- 0002-jet-bessel-mingw-strict-ansi.patch: with MinGW and __STRICT_ANSI__
+  (-std=c++17, as qmake uses), call _j0/_j1/_jn, since j0/j1/jn are not
+  declared (adapted from MSYS2's mingw-w64-ceres-solver
+  003-fix-deprecated-bessel.patch).
+
+Files:
+- include/ceres: the public headers, except manifold_test_utils.h (gtest).
+- config/ceres/internal/config.h and export.h: written by hand, they replace
+  the headers that upstream's CMake build generates (see their comments).
+- internal/ceres: the library sources of upstream's
+  internal/ceres/CMakeLists.txt (CERES_EXPORTED_SRCS, ceres_internal, the
+  generated/*_d_d_d.cc Schur specializations, miniglog/glog/logging.cc), and
+  the private headers they include.
+- MAX_LOG_LEVEL=0 (CMakeLists.txt, libs.pri): miniglog prints LOG(INFO) and
+  above to stderr, not VLOG(1) and above, as the glog Natron bundled before.
+
+To update: unpack the new release, copy the files listed above (the header
+list can be made with "c++ -MM" on the sources), compare cmake/config.h.in
+with config/ceres/internal/config.h, and update the file lists in
+CMakeLists.txt and ceres.pro.

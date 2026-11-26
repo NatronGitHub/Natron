@@ -13,8 +13,8 @@ The overlay no longer has a libomp `Portfile`, so MacPorts uses the upstream por
 `Portfile~20261115` (MacPorts ignores it) together with its patchfiles
 (`files/patch-libomp11-*.diff`, `files/reviews.llvm.org_D88252.diff`). To restore the pin:
 rename it back to `Portfile`, copy the upstream Portfile to `Portfile.orig` and regenerate
-`Portfile.patch` (`diff -u Portfile.orig Portfile`), add `libomp` back to `PINNED_PORTS`
-in `tools/tart/provision.sh`, and on an existing install force the downgrade
+`Portfile.patch` (`diff -u Portfile.orig Portfile`), add a `PINNED` file next to it
+(`tools/tart/provision.sh` installs the pinned ports first), and on an existing install force the downgrade
 (`sudo port -f uninstall libomp && sudo port install libomp`): MacPorts never downgrades.
 
 ## Findings

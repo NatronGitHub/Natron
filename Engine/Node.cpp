@@ -32,6 +32,8 @@
 #include <cassert>
 #include <stdexcept>
 #include <sstream> // stringstream
+#include <unordered_set>
+#include <vector>
 
 #include "Global/Macros.h"
 
@@ -880,6 +882,50 @@ Node::getCacheID() const
     return _imp->cacheID;
 }
 
+/**
+ * @brief Visits the nodes in the order of the recursion
+ *     void visit(node) { if (node is in visited) return; add node to visited; for (n : visitNode(node)) visit(n); }
+ * without its stack frame per node, which overflowed the stack on deep graphs (#1611). visitNode(node) does the work on
+ * node and returns the nodes to visit next, in order. visited may be shared by several searches.
+ **/
+template <typename NodeT, typename VisitNode>
+static void
+visitNodesDepthFirst(NodeT* root,
+                     std::unordered_set<const Node*>& visited,
+                     VisitNode visitNode)
+{
+    std::vector<NodePtr> toVisit;
+    const auto visit = [&visited, &visitNode, &toVisit](NodeT* node) {
+        if ( visited.insert(node).second ) {
+            const NodesList next = visitNode(node);
+            toVisit.insert( toVisit.end(), next.rbegin(), next.rend() );
+        }
+    };
+
+    visit(root);
+    while ( !toVisit.empty() ) {
+        const NodePtr node = std::move( toVisit.back() );
+        toVisit.pop_back();
+        visit( node.get() );
+    }
+}
+
+// The nodes of nodes that still exist, in order
+static NodesList
+lockNodes(const NodesWList& nodes)
+{
+    NodesList locked;
+
+    for (NodesWList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        NodePtr node = it->lock();
+        if (node) {
+            locked.push_back( std::move(node) );
+        }
+    }
+
+    return locked;
+}
+
 bool
 Node::computeHashInternal()
 {
@@ -978,21 +1024,16 @@ Node::computeHashInternal()
     return hashChanged;
 } // Node::computeHashInternal
 
-void
-Node::computeHashRecursive(std::list<Node*>& marked)
+NodesList
+Node::computeHashOfThisNode()
 {
-    if ( std::find(marked.begin(), marked.end(), this) != marked.end() ) {
-        return;
-    }
-
     bool hasChanged = computeHashInternal();
-    marked.push_back(this);
     if (!hasChanged) {
         //Nothing changed, no need to recurse on outputs
-        return;
+        return NodesList();
     }
 
-
+    NodesList nodesToVisit;
     bool isRotoPaint = _imp->effect->isRotoPaintNode();
 
     ///call it on all the outputs
@@ -1006,7 +1047,7 @@ Node::computeHashRecursive(std::list<Node*>& marked)
         if ( isRotoPaint && attachedStroke && (attachedStroke->getContext()->getNode().get() == this) ) {
             continue;
         }
-        (*it)->computeHashRecursive(marked);
+        nodesToVisit.push_back(*it);
     }
 
 
@@ -1014,11 +1055,20 @@ Node::computeHashRecursive(std::list<Node*>& marked)
     if (_imp->rotoContext) {
         NodesList allItems;
         _imp->rotoContext->getRotoPaintTreeNodes(&allItems);
-        for (NodesList::iterator it = allItems.begin(); it != allItems.end(); ++it) {
-            (*it)->computeHashRecursive(marked);
-        }
+        nodesToVisit.splice(nodesToVisit.end(), allItems);
     }
-}
+
+    return nodesToVisit;
+} // Node::computeHashOfThisNode
+
+void
+Node::computeHashDownstream(std::unordered_set<const Node*>& marked)
+{
+    // The order of the visits changes the hashes, which are cache keys: keep it (see maintainers/cache.rst).
+    visitNodesDepthFirst( this, marked, [](Node* node) {
+        return node->computeHashOfThisNode();
+    } );
+} // Node::computeHashDownstream
 
 void
 Node::removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey)
@@ -1075,8 +1125,8 @@ Node::computeHash()
 
         return;
     }
-    std::list<Node*> marked;
-    computeHashRecursive(marked);
+    std::unordered_set<const Node*> marked;
+    computeHashDownstream(marked);
 } // computeHash
 
 
@@ -1247,7 +1297,11 @@ Node::loadKnob(const KnobIPtr & knob,
         const bool keepSecret = _imp->effect->isWriter() && (knob->getName() == kWriteOIIOParamViewsSelector);
         const bool wasSecret = knob->getIsSecret();
 
-        knob->cloneDefaultValues( serializedKnob.get() );
+        // The default of a StrChoice param is an option index: the options may have changed since the project
+        // was saved, so it stays the plug-in's default.
+        if ( !isChoice || (isChoice->getOptionRestoration() != KnobChoice::eOptionRestorationExactIDOrDefault) ) {
+            knob->cloneDefaultValues( serializedKnob.get() );
+        }
 
         if (isChoice) {
             const TypeExtraData* extraData = (*it)->getExtraData();
@@ -4085,22 +4139,24 @@ Node::getPersistentMessage(QString* message,
 }
 
 void
-Node::clearPersistentMessageRecursive(std::list<Node*>& markedNodes)
+Node::clearPersistentMessageUpstream()
 {
-    if ( std::find(markedNodes.begin(), markedNodes.end(), this) != markedNodes.end() ) {
-        return;
-    }
-    markedNodes.push_back(this);
-    clearPersistentMessageInternal();
+    std::unordered_set<const Node*> visited;
 
-    int nInputs = getNInputs();
-    ///No need to lock, guiInputs is only written to by the main-thread
-    for (int i = 0; i < nInputs; ++i) {
-        NodePtr input = getInput(i);
-        if (input) {
-            input->clearPersistentMessageRecursive(markedNodes);
+    visitNodesDepthFirst( this, visited, [](Node* node) {
+        node->clearPersistentMessageInternal();
+        NodesList inputs;
+        int nInputs = node->getNInputs();
+        ///No need to lock, guiInputs is only written to by the main-thread
+        for (int i = 0; i < nInputs; ++i) {
+            NodePtr input = node->getInput(i);
+            if (input) {
+                inputs.push_back( std::move(input) );
+            }
         }
-    }
+
+        return inputs;
+    } );
 }
 
 void
@@ -4140,8 +4196,7 @@ Node::clearPersistentMessage(bool recurse)
         return;
     }
     if (recurse) {
-        std::list<Node*> markedNodes;
-        clearPersistentMessageRecursive(markedNodes);
+        clearPersistentMessageUpstream();
     } else {
         clearPersistentMessageInternal();
     }
@@ -4291,72 +4346,28 @@ Node::getRenderInstancesSharedMutex()
     return _imp->renderInstancesSharedMutex;
 }
 
-static void
-refreshPreviewsRecursivelyUpstreamInternal(double time,
-                                           Node* node,
-                                           std::list<Node*>& marked)
-{
-    if ( std::find(marked.begin(), marked.end(), node) != marked.end() ) {
-        return;
-    }
-
-    if ( node->isPreviewEnabled() ) {
-        node->refreshPreviewImage( time );
-    }
-
-    marked.push_back(node);
-
-    std::vector<NodeWPtr> inputs = node->getInputs_copy();
-
-    for (std::size_t i = 0; i < inputs.size(); ++i) {
-        NodePtr input = inputs[i].lock();
-        if (input) {
-            input->refreshPreviewsRecursivelyUpstream(time);
-        }
-    }
-}
-
-void
-Node::refreshPreviewsRecursivelyUpstream(double time)
-{
-    std::list<Node*> marked;
-
-    refreshPreviewsRecursivelyUpstreamInternal(time, this, marked);
-}
-
-static void
-refreshPreviewsRecursivelyDownstreamInternal(double time,
-                                             Node* node,
-                                             std::list<Node*>& marked)
-{
-    if ( std::find(marked.begin(), marked.end(), node) != marked.end() ) {
-        return;
-    }
-
-    if ( node->isPreviewEnabled() ) {
-        node->refreshPreviewImage( time );
-    }
-
-    marked.push_back(node);
-
-    NodesWList outputs;
-    node->getOutputs_mt_safe(outputs);
-    for (NodesWList::iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        NodePtr output = it->lock();
-        if (output) {
-            output->refreshPreviewsRecursivelyDownstream(time);
-        }
-    }
-}
-
 void
 Node::refreshPreviewsRecursivelyDownstream(double time)
 {
     if ( !getNodeGui() ) {
         return;
     }
-    std::list<Node*> marked;
-    refreshPreviewsRecursivelyDownstreamInternal(time, this, marked);
+    // Each node is refreshed once (before #1611, once per path to it). The nodes without a GUI stop the walk.
+    std::unordered_set<const Node*> visited;
+
+    visitNodesDepthFirst( this, visited, [time](Node* node) {
+        if ( node->isPreviewEnabled() ) {
+            node->refreshPreviewImage( time );
+        }
+        NodesWList outputs;
+        node->getOutputs_mt_safe(outputs);
+        NodesList next = lockNodes(outputs);
+        next.remove_if( [](const NodePtr& output) {
+            return !output->getNodeGui();
+        } );
+
+        return next;
+    } );
 }
 
 void
@@ -5090,11 +5101,11 @@ Node::onEffectKnobValueChanged(KnobI* what,
             ///When a group is disabled we have to force a hash change of all nodes inside otherwise the image will stay cached
 
             NodesList nodes = isGroup->getNodes();
-            std::list<Node*> markedNodes;
+            std::unordered_set<const Node*> markedNodes;
             for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
                 //This will not trigger a hash recomputation
                 (*it)->incrementKnobsAge_internal();
-                (*it)->computeHashRecursive(markedNodes);
+                (*it)->computeHashDownstream(markedNodes);
             }
         }
     } else if ( what == _imp->nodeLabelKnob.lock().get() ) {
@@ -5961,21 +5972,17 @@ Node::dequeueActions()
     }
 } // Node::dequeueActions
 
-static void
-addIdentityNodesRecursively(const Node* caller,
-                            const Node* node,
-                            double time,
-                            ViewIdx view,
-                            std::list<const Node*>* outputs,
-                            std::list<const Node*>* markedNodes)
+/**
+ * @brief Visits node for addIdentityNodesDownstream(): if it is not an identity at time and view, adds it to outputs
+ * and returns nothing, else returns the nodes to visit next, in order (its outputs).
+ **/
+static NodesWList
+addIdentityNode(const Node* caller,
+                const Node* node,
+                double time,
+                ViewIdx view,
+                std::list<const Node*>* outputs)
 {
-    if ( std::find(markedNodes->begin(), markedNodes->end(), node) != markedNodes->end() ) {
-        return;
-    }
-
-    markedNodes->push_back(node);
-
-
     if (caller != node) {
         ParallelRenderArgsPtr inputFrameArgs = node->getEffectInstance()->getParallelRenderArgsTLS();
         const FrameViewRequest* request = 0;
@@ -6007,7 +6014,7 @@ addIdentityNodesRecursively(const Node* caller,
         if (!isIdentity) {
             outputs->push_back(node);
 
-            return;
+            return NodesWList();
         }
     }
 
@@ -6048,13 +6055,26 @@ addIdentityNodesRecursively(const Node* caller,
 
     }
     nodeOutputs.insert( nodeOutputs.end(), outputsToAdd.begin(), outputsToAdd.end() );
-    for (NodesWList::iterator it = nodeOutputs.begin(); it != nodeOutputs.end(); ++it) {
-        NodePtr node = it->lock();
-        if (node) {
-            addIdentityNodesRecursively(caller, node.get(), time, view, outputs, markedNodes);
-        }
-    }
-} // addIdentityNodesRecursively
+
+    return nodeOutputs;
+} // addIdentityNode
+
+/**
+ * @brief Adds to outputs the first nodes downstream of caller that are not identities at time and view (the identity
+ * nodes are skipped, and the nodes downstream of them are added instead).
+ **/
+static void
+addIdentityNodesDownstream(const Node* caller,
+                           double time,
+                           ViewIdx view,
+                           std::list<const Node*>* outputs)
+{
+    std::unordered_set<const Node*> visited;
+
+    visitNodesDepthFirst( caller, visited, [caller, time, view, outputs](const Node* node) {
+        return lockNodes( addIdentityNode(caller, node, time, view, outputs) );
+    } );
+} // addIdentityNodesDownstream
 
 bool
 Node::shouldCacheOutput(bool isFrameVaryingOrAnimated,
@@ -6078,10 +6098,7 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated,
      */
 
     std::list<const Node*> outputs;
-    {
-        std::list<const Node*> markedNodes;
-        addIdentityNodesRecursively(this, this, time, view, &outputs, &markedNodes);
-    }
+    addIdentityNodesDownstream(this, time, view, &outputs);
     std::size_t sz = outputs.size();
 
     if (sz > 1) {

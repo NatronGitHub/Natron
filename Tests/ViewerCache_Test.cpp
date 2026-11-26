@@ -50,20 +50,9 @@
 #include "Engine/TextureRect.h"
 #include "Engine/ViewIdx.h"
 
+#include "TestUtils.h"
+
 NATRON_NAMESPACE_USING
-
-namespace {
-NodePtr
-createDot()
-{
-    AppInstancePtr app = appPTR->getTopLevelInstance();
-    CreateNodeArgs args(PLUGINID_NATRON_DOT, app->getProject());
-    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-
-    return app->createNode(args);
-}
-} // anonymous namespace
 
 // #1119: the viewer cache is tiled, so its entries are always in its disk portion: "Clear Playback Cache"
 // (AppManager::clearPlaybackCache()) must remove them, not only clear the (always empty) memory portion.
@@ -71,7 +60,7 @@ TEST(ViewerCache, ClearPlaybackCacheRemovesTextures)
 {
     // The previous tests may destroy nodes, whose textures the cleaner thread of the cache removes later (#1848)
     appPTR->waitForCacheThreads();
-    NodePtr holder = createDot();
+    NodePtr holder = NatronTest::createNode(PLUGINID_NATRON_DOT);
     ASSERT_TRUE( bool(holder) );
 
     const RectI bounds(0, 0, 16, 16);
@@ -105,7 +94,7 @@ TEST(ViewerCache, RemoveTexturesOfOneFrame)
 {
     // The previous test destroys its node, whose textures the cleaner thread of the cache removes later (#1848)
     appPTR->waitForCacheThreads();
-    NodePtr holder = createDot();
+    NodePtr holder = NatronTest::createNode(PLUGINID_NATRON_DOT);
     ASSERT_TRUE( bool(holder) );
 
     const RectI bounds(0, 0, 16, 16);
@@ -139,7 +128,7 @@ TEST(ViewerCache, ProjectLutChangeChangesNodeHash)
 {
     AppInstancePtr app = appPTR->getTopLevelInstance();
     ASSERT_TRUE( bool(app) );
-    NodePtr node = createDot();
+    NodePtr node = NatronTest::createNode(PLUGINID_NATRON_DOT);
     ASSERT_TRUE( bool(node) );
 
     const char* lutKnobs[] = { "defaultColorSpace8u", "defaultColorSpace16u", "defaultColorSpace32f" };

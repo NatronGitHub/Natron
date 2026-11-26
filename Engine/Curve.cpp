@@ -38,7 +38,6 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Smooth1D.h"
-#include "Global/MathUtils.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -847,10 +846,9 @@ Curve::getKeyFrameWithTime(double time,
     return true;
 }
 
-/// compute interpolation parameters from keyframes and an iterator
-/// to the next keyframe (the first with time > t)
-// xMax - xMin, the period of a periodic curve. The default range is unbounded ([lowest(), max()]): its period
-// is +infinity, without the overflow, which debug builds trap (SIGFPE when a keyframe is set).
+// xMax - xMin, the period of a periodic curve, or 0 if a curve with this range is not periodic: an empty range,
+// or the default one, which is unbounded ([lowest(), max()]); its difference overflows, which debug builds trap
+// (SIGFPE when a keyframe is set).
 static double
 periodOfRange(double xMin,
               double xMax)
@@ -860,7 +858,7 @@ periodOfRange(double xMin,
     }
     // the half-difference never overflows
     if ( (xMax * 0.5 - xMin * 0.5) > (std::numeric_limits<double>::max() * 0.5) ) {
-        return std::numeric_limits<double>::infinity();
+        return 0.;
     }
     // volatile: the optimizer must not compute the difference before the test above (clang -O2 did)
     const volatile double max = xMax;
@@ -868,6 +866,8 @@ periodOfRange(double xMin,
     return max - xMin;
 }
 
+/// compute interpolation parameters from keyframes and an iterator
+/// to the next keyframe (the first with time > t)
 static void
 interParams(const KeyFrameSet &keyFrames,
             bool isPeriodic,
@@ -887,10 +887,8 @@ interParams(const KeyFrameSet &keyFrames,
 
     assert(keyFrames.size() >= 1);
     assert( itup == keyFrames.end() || *t < itup->getTime() );
-    double period = periodOfRange(xMin, xMax);
-    // the default range is unbounded, and its period (DBL_MAX - lowest()) is infinite:
-    // such a curve is not periodic
-    if ( !(period > 0.) || !MathUtils::isFinite(period) ) {
+    const double period = periodOfRange(xMin, xMax);
+    if (period == 0.) {
         isPeriodic = false;
     }
     if (isPeriodic) {
@@ -1734,9 +1732,8 @@ Curve::refreshDerivatives(Curve::CurveChangedReasonEnum reason,
     double tprev, vprev, tnext, vnext, vprevDerivRight, vnextDerivLeft;
     KeyframeTypeEnum prevType, nextType;
 
-    double period = periodOfRange(_imp->xMin, _imp->xMax);
-    // periodic, with a positive finite period (the default range is unbounded, and its period is infinite)
-    const bool effectivelyPeriodic = _imp->isPeriodic && (period > 0.) && MathUtils::isFinite(period);
+    const double period = periodOfRange(_imp->xMin, _imp->xMax);
+    const bool effectivelyPeriodic = _imp->isPeriodic && (period != 0.);
     assert( key != _imp->keyFrames.end() );
     if ( key == _imp->keyFrames.begin() ) {
         if (effectivelyPeriodic && _imp->keyFrames.size() > 1) {

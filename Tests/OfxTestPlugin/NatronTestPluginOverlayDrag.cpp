@@ -19,13 +19,15 @@
 // net.natron.test.OverlayDrag (Tests/gui/test_overlay_drag_undo.py): a filter whose overlay interact captures
 // every drag and, at each pen motion, sets its double parameters "y" then "x" in one edit block, as the Transform
 // overlay sets all its parameters: y is the number of pen motions of the drag divided by 2, so that it changes only
-// at every other motion, and x is the pen x. It is an identity: it never renders.
+// at every other motion, and x is the pen x. The keys E and T add 1 to x and to y, each in its own edit block, outside
+// any drag (Tests/gui/test_overlay_key_undo.py). It is an identity: it never renders.
 
 #include <cstring>
 
 #include <ofxCore.h>
 #include <ofxImageEffect.h>
 #include <ofxInteract.h>
+#include <ofxKeySyms.h>
 #include <ofxParam.h>
 #include <ofxProperty.h>
 
@@ -66,6 +68,29 @@ setParams(OfxPropertySetHandle inArgs)
     return kOfxStatOK;
 }
 
+// adds 1 to the parameter in its own edit block
+OfxStatus
+incrementParam(OfxPropertySetHandle inArgs,
+               const char* name)
+{
+    OfxImageEffectHandle effect = 0;
+    OfxParamSetHandle paramSet = 0;
+    OfxParamHandle param = 0;
+    double value = 0.;
+
+    if ( (gPropSuite->propGetPointer(inArgs, kOfxPropEffectInstance, 0, (void**)&effect) != kOfxStatOK) || !effect ||
+         (gEffectSuite->getParamSet(effect, &paramSet) != kOfxStatOK) ||
+         (gParamSuite->paramGetHandle(paramSet, name, &param, 0) != kOfxStatOK) ||
+         (gParamSuite->paramGetValue(param, &value) != kOfxStatOK) ) {
+        return kOfxStatFailed;
+    }
+    gParamSuite->paramEditBegin(paramSet, name);
+    gParamSuite->paramSetValue(param, value + 1.);
+    gParamSuite->paramEditEnd(paramSet);
+
+    return kOfxStatOK;
+}
+
 OfxStatus
 overlayMain(const char* action,
             const void* /*handle*/,
@@ -94,6 +119,20 @@ overlayMain(const char* action,
         gDragging = false;
 
         return kOfxStatOK;
+    }
+    if (std::strcmp(action, kOfxInteractActionKeyDown) == 0) {
+        int key = 0;
+        if (gPropSuite->propGetInt(inArgs, kOfxPropKeySym, 0, &key) != kOfxStatOK) {
+            return kOfxStatFailed;
+        }
+        if ( (key == kOfxKey_e) || (key == kOfxKey_E) ) {
+            return incrementParam(inArgs, "x");
+        }
+        if ( (key == kOfxKey_t) || (key == kOfxKey_T) ) {
+            return incrementParam(inArgs, "y");
+        }
+
+        return kOfxStatReplyDefault;
     }
 
     return kOfxStatReplyDefault;

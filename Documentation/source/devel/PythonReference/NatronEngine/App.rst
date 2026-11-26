@@ -379,6 +379,9 @@ according to the settings in the Preferences of Natron.
 If however you need a specific decoder to decode the file format, you can use
 the :func:`getSettings()<NatronEngine.App.createNode>` function with the exact plug-in ID.
 
+If *filename* uses the ``[Project]`` path while the project has never been saved (``[Project]``
+has no value), no node is created and :class:`ValueError` is raised: save the project first.
+
 
 .. method:: App.createWriter(filename[, group=None] [, properties=None])
 
@@ -396,6 +399,9 @@ write .pfm files, internally Natron picks the "best" OpenFX plug-in to encode th
 according to the settings in the Preferences of Natron.
 If however you need a specific decoder to encode the file format, you can use
 the :func:`getSettings()<NatronEngine.App.createNode>` function with the exact plug-in ID.
+
+If *filename* uses the ``[Project]`` path while the project has never been saved (``[Project]``
+has no value), no node is created and :class:`ValueError` is raised: save the project first.
 
 .. method:: App.getAppID()
 
@@ -610,7 +616,7 @@ inform the user of various information, warnings or errors.
     Same as :meth:`saveProjectCopy<NatronEngine.App.saveProjectCopy>`, kept for compatibility.
 
     .. versionchanged:: 2.6
-       The *format* parameter.
+       The *format* parameter. Project variables in *filename*, such as ``[Project]``, are expanded.
 
 .. method:: App.saveProjectCopy(filename[, format=NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatNone])
 
@@ -622,6 +628,8 @@ inform the user of various information, warnings or errors.
     such as the project path, last save time etc...
     *format* is the format of the copy: with *eProjectFileFormatNone*, the file name gives it, as in
     :meth:`saveProject<NatronEngine.App.saveProject>`. It doesn't change the format of the project.
+    Project variables in *filename*, such as ``[Project]``, are expanded, as in
+    :meth:`saveProject<NatronEngine.App.saveProject>`.
     This function returns *True* if it saved successfully, *False* otherwise.
 
     .. versionadded:: 2.6

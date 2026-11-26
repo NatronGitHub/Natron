@@ -95,6 +95,11 @@ Name: "sgl"; Description: "OpenGL Software Renderer (FOR LEGACY HARDWARE ONLY)"
 ; that choosing an existing folder (e.g. D:\Tools) never deletes its bin\.
 [InstallDelete]
 Type: files; Name: "{app}\bin\*.dll"; Check: IsNatronInstall
+; PIKColor and EdgeBlur came with Natron up to 2.6.0-rc: they come with openfx-misc (Misc.ofx.bundle and
+; CImg.ofx.bundle) since, and an old copy in Plugins\PyPlugs would hide them (the PyPlugs of the OFX bundles are
+; searched last, #1854)
+Type: files; Name: "{app}\Plugins\PyPlugs\PIKColor.*"; Check: IsNatronInstall
+Type: files; Name: "{app}\Plugins\PyPlugs\EdgeBlur.*"; Check: IsNatronInstall
 Type: filesandordirs; Name: "{app}\bin\audio"; Check: IsNatronInstall
 Type: filesandordirs; Name: "{app}\bin\bearer"; Check: IsNatronInstall
 Type: filesandordirs; Name: "{app}\bin\generic"; Check: IsNatronInstall
@@ -136,6 +141,26 @@ Type: filesandordirs; Name: "{app}\Plugins\PySide6"; Check: IsNatronInstall
 Type: filesandordirs; Name: "{app}\Plugins\shiboken6"; Check: IsNatronInstall
 Type: files; Name: "{app}\lib\python*.zip"; Check: IsNatronInstall
 
+; Uninstalling: also remove what Natron and natron-python write into the installation when they
+; run: the Python bytecode caches (__pycache__) of the modules they import from Plugins\ (the
+; PyPlugs, natron_convert_project.py, PySide/Shiboken, and the PyPlugs of the OFX bundles in their
+; Contents\Resources\), which would otherwise keep the folder. The directories that [InstallDelete]
+; replaces as a whole go as a whole; of Plugins\ and Plugins\PyPlugs, only the caches.
+[UninstallDelete]
+Type: filesandordirs; Name: "{app}\Plugins\__pycache__"
+Type: filesandordirs; Name: "{app}\Plugins\PyPlugs\__pycache__"
+Type: filesandordirs; Name: "{app}\Plugins\OFX\Natron\Arena.ofx.bundle"
+Type: filesandordirs; Name: "{app}\Plugins\OFX\Natron\CImg.ofx.bundle"
+Type: filesandordirs; Name: "{app}\Plugins\OFX\Natron\GMIC.ofx.bundle"
+Type: filesandordirs; Name: "{app}\Plugins\OFX\Natron\IO.ofx.bundle"
+Type: filesandordirs; Name: "{app}\Plugins\OFX\Natron\Misc.ofx.bundle"
+Type: filesandordirs; Name: "{app}\Plugins\OFX\Natron\Shadertoy.ofx.bundle"
+Type: filesandordirs; Name: "{app}\Plugins\PySide"
+Type: filesandordirs; Name: "{app}\Plugins\PySide2"
+Type: filesandordirs; Name: "{app}\Plugins\shiboken2"
+Type: filesandordirs; Name: "{app}\Plugins\PySide6"
+Type: filesandordirs; Name: "{app}\Plugins\shiboken6"
+
 [Files]
 Source: "{src}\bin\*"; DestDir: "{app}\bin\"; Components: natron; Flags: ignoreversion recursesubdirs createallsubdirs external
 Source: "{src}\docs\*"; DestDir: "{app}\docs\"; Components: natron; Flags: ignoreversion recursesubdirs createallsubdirs external
@@ -146,6 +171,7 @@ Source: "{src}\Plugins\PySide2\*"; DestDir: "{app}\Plugins\PySide2\"; Components
 Source: "{src}\Plugins\shiboken2\*"; DestDir: "{app}\Plugins\shiboken2\"; Components: natron; Flags: ignoreversion recursesubdirs createallsubdirs external skipifsourcedoesntexist
 Source: "{src}\Plugins\PySide6\*"; DestDir: "{app}\Plugins\PySide6\"; Components: natron; Flags: ignoreversion recursesubdirs createallsubdirs external skipifsourcedoesntexist
 Source: "{src}\Plugins\shiboken6\*"; DestDir: "{app}\Plugins\shiboken6\"; Components: natron; Flags: ignoreversion recursesubdirs createallsubdirs external skipifsourcedoesntexist
+Source: "{src}\Plugins\natron_convert_project.py"; DestDir: "{app}\Plugins\"; Components: natron; Flags: ignoreversion external
 Source: "{src}\Plugins\PyPlugs\*"; DestDir: "{app}\Plugins\PyPlugs\"; Components: pyplugs; Flags: ignoreversion recursesubdirs createallsubdirs external
 Source: "{src}\Plugins\OFX\Natron\Arena.ofx.bundle\*"; DestDir: "{app}\Plugins\OFX\Natron\Arena.ofx.bundle\"; Components: arena; Flags: ignoreversion recursesubdirs createallsubdirs external
 Source: "{src}\Plugins\OFX\Natron\CImg.ofx.bundle\*"; DestDir: "{app}\Plugins\OFX\Natron\CImg.ofx.bundle\"; Components: cimg; Flags: ignoreversion recursesubdirs createallsubdirs external
@@ -363,11 +389,13 @@ begin
       Result := WizardForm.PrevAppDir <> '';
 end;
 
-// The folder page refuses the folder of an older Natron
+// The folder page refuses the folder of an older Natron. Not in a silent install, which also goes
+// through NextButtonClick: there, returning False aborts Setup with exit code 1, without a
+// message; PrepareToInstall refuses the folder instead, with exit code 7 and a line in the log.
 function NextButtonClick(CurPageID: Integer): Boolean;
 begin
   Result := True;
-  if (CurPageID = wpSelectDir) and IsOldNatronDir(WizardDirValue) then begin
+  if (CurPageID = wpSelectDir) and not WizardSilent and IsOldNatronDir(WizardDirValue) then begin
     SuppressibleMsgBox(OldNatronDirMessage(WizardDirValue), mbError, MB_OK, IDOK);
     Result := False;
   end;

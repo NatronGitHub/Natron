@@ -913,39 +913,35 @@ ViewerTab::keyReleaseEvent(QKeyEvent* e)
     }
 }
 
+// The channels of the items of the channels combo box, in their order: the order of the actions added in
+// ViewerTab's constructor, and of the indices of the channel shortcuts in keyPressEvent()
+static const DisplayChannelsEnum channelsComboItems[] = {
+    eDisplayChannelsY, eDisplayChannelsRGB, eDisplayChannelsR, eDisplayChannelsG, eDisplayChannelsB, eDisplayChannelsA,
+    eDisplayChannelsMatte
+};
+
+DisplayChannelsEnum
+ViewerTabPrivate::channelsForComboIndex(int index)
+{
+    if ( (index < 0) || ( index >= channelsComboItemCount() ) ) {
+        return eDisplayChannelsRGB;
+    }
+
+    return channelsComboItems[index];
+}
+
+int
+ViewerTabPrivate::channelsComboItemCount()
+{
+    return (int)( sizeof(channelsComboItems) / sizeof(channelsComboItems[0]) );
+}
+
 void
 ViewerTab::setDisplayChannels(int i,
                               bool setBothInputs)
 {
     _imp->viewerChannelsAutoswitchedToAlpha = false;
-    DisplayChannelsEnum channels;
-
-    switch (i) {
-    case 0:
-        channels = eDisplayChannelsY;
-        break;
-    case 1:
-        channels = eDisplayChannelsRGB;
-        break;
-    case 2:
-        channels = eDisplayChannelsR;
-        break;
-    case 3:
-        channels = eDisplayChannelsG;
-        break;
-    case 4:
-        channels = eDisplayChannelsB;
-        break;
-    case 5:
-        channels = eDisplayChannelsA;
-        break;
-    case 6:
-        channels = eDisplayChannelsMatte;
-        break;
-    default:
-        channels = eDisplayChannelsRGB;
-        break;
-    }
+    const DisplayChannelsEnum channels = ViewerTabPrivate::channelsForComboIndex(i);
     _imp->viewerNode->setDisplayChannels(channels, setBothInputs);
 }
 

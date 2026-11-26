@@ -126,14 +126,12 @@ bool solve_translations_problem_l2_chordal(
   Solver::Options options;
 #ifdef OPENMVG_USE_OPENMP
   options.num_threads = omp_get_max_threads();
-  options.num_linear_solver_threads = omp_get_max_threads();
 #endif // OPENMVG_USE_OPENMP
   //options.minimizer_progress_to_stdout = true;
   options.max_num_iterations = max_iterations;
   options.function_tolerance = function_tolerance;
   options.parameter_tolerance = parameter_tolerance;
   if (ceres::IsSparseLinearAlgebraLibraryTypeAvailable(ceres::SUITE_SPARSE) ||
-      ceres::IsSparseLinearAlgebraLibraryTypeAvailable(ceres::CX_SPARSE) ||
       ceres::IsSparseLinearAlgebraLibraryTypeAvailable(ceres::EIGEN_SPARSE))
   {
     options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;

@@ -55,7 +55,7 @@ createGenerator(double par)
 TEST(OfxMultiplePAR, EachInputGetsItsOwnPAR)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginMultiPAR) || !NatronTestPlugin::isAvailable(kNatronTestPluginGenerator) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginMultiPAR);
+        NatronTestPlugin::reportMissing(kNatronTestPluginMultiPAR);
 
         return;
     }

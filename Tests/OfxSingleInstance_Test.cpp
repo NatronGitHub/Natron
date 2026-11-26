@@ -91,12 +91,24 @@ destroy(NodePtr& node)
         node.reset();
     }
 }
-}
 
-TEST(OfxSingleInstance, OnlyOneInstance)
+// The tests count the live instances of the plug-in: when an ASSERT fails, the nodes that the test did
+// not destroy must not stay in the project of the next tests.
+class OfxSingleInstance
+    : public testing::Test
+{
+protected:
+    virtual void TearDown() OVERRIDE FINAL
+    {
+        appPTR->getTopLevelInstance()->getProject()->resetProject();
+    }
+};
+} // anonymous namespace
+
+TEST_F(OfxSingleInstance, OnlyOneInstance)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginSingleInstance) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginSingleInstance);
+        NatronTestPlugin::reportMissing(kNatronTestPluginSingleInstance);
 
         return;
     }
@@ -124,10 +136,10 @@ TEST(OfxSingleInstance, OnlyOneInstance)
 }
 
 // A temporary node out of the project (DocumentationManager, to show the plug-in's help) is allowed.
-TEST(OfxSingleInstance, OutOfProjectNode)
+TEST_F(OfxSingleInstance, OutOfProjectNode)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginSingleInstance) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginSingleInstance);
+        NatronTestPlugin::reportMissing(kNatronTestPluginSingleInstance);
 
         return;
     }
@@ -150,10 +162,10 @@ TEST(OfxSingleInstance, OutOfProjectNode)
 }
 
 // A deleted node stays alive, deactivated, in the undo history: it doesn't count.
-TEST(OfxSingleInstance, DeactivatedNodeDoesNotCount)
+TEST_F(OfxSingleInstance, DeactivatedNodeDoesNotCount)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginSingleInstance) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginSingleInstance);
+        NatronTestPlugin::reportMissing(kNatronTestPluginSingleInstance);
 
         return;
     }
@@ -176,10 +188,10 @@ TEST(OfxSingleInstance, DeactivatedNodeDoesNotCount)
 // #1402: delete a node (deactivate it, as the GUI does, keeping it for undo), create a new one,
 // then undo both and redo them: there is never more than one plug-in instance, and the deleted node
 // gets a new plug-in instance when it is activated again.
-TEST(OfxSingleInstance, UndoDeleteRecreatesTheInstance)
+TEST_F(OfxSingleInstance, UndoDeleteRecreatesTheInstance)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginSingleInstance) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginSingleInstance);
+        NatronTestPlugin::reportMissing(kNatronTestPluginSingleInstance);
 
         return;
     }
@@ -233,10 +245,10 @@ TEST(OfxSingleInstance, UndoDeleteRecreatesTheInstance)
 
 // Undoing a deletion can't be refused: if another node of the plug-in is active (e.g. created in
 // another node graph, which has its own undo history), the node is activated with a warning.
-TEST(OfxSingleInstance, ActivateWithAnotherActiveInstance)
+TEST_F(OfxSingleInstance, ActivateWithAnotherActiveInstance)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginSingleInstance) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginSingleInstance);
+        NatronTestPlugin::reportMissing(kNatronTestPluginSingleInstance);
 
         return;
     }
@@ -261,10 +273,10 @@ TEST(OfxSingleInstance, ActivateWithAnotherActiveInstance)
 
 // A project that already contains two instances (saved by an older Natron) loads both, with a
 // warning in the log, instead of losing one.
-TEST(OfxSingleInstance, LoadProjectWithTwoInstances)
+TEST_F(OfxSingleInstance, LoadProjectWithTwoInstances)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginSingleInstance) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginSingleInstance);
+        NatronTestPlugin::reportMissing(kNatronTestPluginSingleInstance);
 
         return;
     }
@@ -304,10 +316,10 @@ TEST(OfxSingleInstance, LoadProjectWithTwoInstances)
 // GroupFromSelectionCommand and InlineGroupCommand are Gui classes, which the Tests binary doesn't
 // link: this test replays their order of deactivations and activations by hand, so a change of that
 // order in Gui/NodeGraphUndoRedo.cpp would not be caught here.
-TEST(OfxSingleInstance, GroupDeactivationSuspendsItsNodes)
+TEST_F(OfxSingleInstance, GroupDeactivationSuspendsItsNodes)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginSingleInstance) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginSingleInstance);
+        NatronTestPlugin::reportMissing(kNatronTestPluginSingleInstance);
 
         return;
     }
@@ -365,10 +377,10 @@ TEST(OfxSingleInstance, GroupDeactivationSuspendsItsNodes)
 
 // A node deleted while it renders keeps its plug-in instance until the render is done (the
 // suspension is retried): meanwhile it still counts, and a new node is refused.
-TEST(OfxSingleInstance, DeleteWhileRendering)
+TEST_F(OfxSingleInstance, DeleteWhileRendering)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginSingleInstance) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginSingleInstance);
+        NatronTestPlugin::reportMissing(kNatronTestPluginSingleInstance);
 
         return;
     }
@@ -404,10 +416,10 @@ TEST(OfxSingleInstance, DeleteWhileRendering)
 // A thread that is inside an action of the plug-in without the node's rendering counter (as the
 // preview's region of definition, or the tracker): deleting the node keeps the plug-in instance until
 // the action returns.
-TEST(OfxSingleInstance, DeleteWhileAnotherThreadIsInAnAction)
+TEST_F(OfxSingleInstance, DeleteWhileAnotherThreadIsInAnAction)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginSingleInstance) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginSingleInstance);
+        NatronTestPlugin::reportMissing(kNatronTestPluginSingleInstance);
 
         return;
     }

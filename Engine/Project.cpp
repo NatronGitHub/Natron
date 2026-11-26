@@ -290,6 +290,24 @@ Project::isPythonProjectFile(const QString& filePath)
     return false;
 }
 
+bool
+Project::hasPythonFileExtension(const QString& filePath)
+{
+    return QFileInfo(filePath).suffix().compare(QString::fromUtf8(NATRON_PYTHON_FILE_EXT), Qt::CaseInsensitive) == 0;
+}
+
+bool
+Project::hasProjectFileExtension(const QString& filePath)
+{
+    return QFileInfo(filePath).suffix().compare(QString::fromUtf8(NATRON_PROJECT_FILE_EXT), Qt::CaseInsensitive) == 0;
+}
+
+bool
+Project::isProjectFile(const QString& filePath)
+{
+    return hasProjectFileExtension(filePath) || ( hasPythonFileExtension(filePath) && isPythonProjectFile(filePath) );
+}
+
 // The suffix of the auto-saves, after ".ntp". Binary auto-saves don't use the ".autosave" suffix of
 // Natron 2.5 and earlier, which would offer to restore them and fail to load them (see findAutoSaveSuffix()).
 #define kAutoSaveSuffixText ".autosave"
@@ -301,7 +319,7 @@ Project::findAutoSaveSuffix(const QString& fileName,
                             int* projectNameSize)
 {
     // a Python project (eProjectFileFormatPython) is a .py file, and only has binary auto-saves
-    const QString pyExt = QString::fromUtf8(".py");
+    const QString pyExt = QString::fromUtf8("." NATRON_PYTHON_FILE_EXT);
     const QString ntpExt = QLatin1Char('.') + QString::fromUtf8(NATRON_PROJECT_FILE_EXT);
     const std::pair<QString, const char*> patterns[] = {
         { ntpExt, kAutoSaveSuffixBinary }, { ntpExt, kAutoSaveSuffixText }, { pyExt, kAutoSaveSuffixBinary }
@@ -366,11 +384,10 @@ Project::getFileFormatForSave(const QString& fileName,
     if (format != eProjectFileFormatNone) {
         return format;
     }
-    const QString suffix = QFileInfo(fileName).suffix();
-    if ( suffix.compare(QString::fromUtf8("py"), Qt::CaseInsensitive) == 0 ) {
+    if ( hasPythonFileExtension(fileName) ) {
         return eProjectFileFormatPython;
     }
-    if ( suffix.compare(QString::fromUtf8(NATRON_PROJECT_FILE_EXT), Qt::CaseInsensitive) == 0 ) {
+    if ( hasProjectFileExtension(fileName) ) {
         const ProjectFileFormatEnum current = getFileFormat();
         if ( (current == eProjectFileFormatText) || (current == eProjectFileFormatBinary) ) {
             return current;
@@ -502,7 +519,7 @@ Project::loadProjectImpl(const QString & path,
         if ( isPythonProjectFile(realPath + realName) ) {
             // a project saved in eProjectFileFormatPython (its auto-saves are binary)
             loadPythonProjectInternal(realPath, realName);
-        } else if ( realName.endsWith( QString::fromUtf8(".py"), Qt::CaseInsensitive ) ) {
+        } else if ( hasPythonFileExtension(realName) ) {
             // e.g. a script chosen in File > Open, which offers the Python projects
             throw std::invalid_argument( tr("%1 is not a %2 project file: it doesn't start with the \"%3\" header.")
                                          .arg( realPath + realName, QString::fromUtf8(NATRON_APPLICATION_NAME), QString::fromUtf8(NATRON_PROJECT_PYTHON_MAGIC) ).toStdString() );
@@ -728,12 +745,16 @@ Project::loadProjectInternal(const QString & path,
         Q_EMIT projectNameChanged( path + name, !isSaveUpToDate() );
     }
 
-    ///Try to take the project lock by creating a lock file
-    if (!isAutoSave) {
-        QString lockFilePath = getLockAbsoluteFilePath();
-        if ( !QFile::exists(lockFilePath) ) {
-            createLockFile();
-        }
+    finishLoad(isAutoSave);
+
+    return ret;
+} // Project::loadProjectInternal
+
+void
+Project::finishLoad(bool isAutoSave)
+{
+    if ( !isAutoSave && !QFile::exists( getLockAbsoluteFilePath() ) ) {
+        createLockFile();
     }
 
     _imp->runOnProjectLoadCallback();
@@ -746,9 +767,7 @@ Project::loadProjectInternal(const QString & path,
 #endif
         QCoreApplication::processEvents();
     }
-
-    return ret;
-} // Project::loadProjectInternal
+}
 
 void
 Project::loadPythonProjectInternal(const QString & path,
@@ -800,18 +819,7 @@ Project::loadPythonProjectInternal(const QString & path,
     Q_EMIT formatChanged(f);
     Q_EMIT projectNameChanged(filePath, false);
 
-    if ( !QFile::exists( getLockAbsoluteFilePath() ) ) {
-        createLockFile();
-    }
-
-    _imp->runOnProjectLoadCallback();
-
-    {
-#ifdef DEBUG
-        boost_adaptbx::floating_point::exception_trapping trap(0);
-#endif
-        QCoreApplication::processEvents();
-    }
+    finishLoad(false);
 } // Project::loadPythonProjectInternal
 
 bool
@@ -1403,9 +1411,7 @@ Project::saveProjectInternal(const QString & path,
                         *warnings += notSaved;
                     }
                 }
-                QString script;
-                exportToPython(script);
-                const QByteArray utf8 = script.toUtf8();
+                const QByteArray utf8 = exportToPython().toUtf8();
                 ofile.write( utf8.constData(), utf8.size() );
             } else if (fileFormat == eProjectFileFormatText) {
                 boost::archive::xml_oarchive oArchive(ofile);
@@ -1775,7 +1781,7 @@ Project::initializeKnobs()
     _imp->frameRange->setDimensionName(0, "first");
     _imp->frameRange->setDimensionName(1, "last");
     _imp->frameRange->setEvaluateOnChange(false);
-    _imp->frameRange->setName("frameRange");
+    _imp->frameRange->setName(kProjectParamFrameRange);
     _imp->frameRange->setHintToolTip( tr("The frame range of the project as seen by plug-ins. New viewers are created automatically "
                                          "with this frame-range. By default when the first Read node is created, this range "
                                          "will be set to the "
@@ -1931,7 +1937,7 @@ Project::initializeKnobs()
     infoPage->addKnob(_imp->projectPath);
 
     _imp->natronVersion = AppManager::createKnob<KnobString>( this, tr("Saved With") );
-    _imp->natronVersion->setName("softwareVersion");
+    _imp->natronVersion->setName(kProjectParamSoftwareVersion);
     _imp->natronVersion->setHintToolTip( tr("The version of %1 that saved this project for the last time.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     // _imp->natronVersion->setAsLabel();
     _imp->natronVersion->setDefaultEnabled(0, false);
@@ -1953,7 +1959,7 @@ Project::initializeKnobs()
     infoPage->addKnob(_imp->originalAuthorName);
 
     _imp->lastAuthorName = AppManager::createKnob<KnobString>( this, tr("Last Author") );
-    _imp->lastAuthorName->setName("lastAuthor");
+    _imp->lastAuthorName->setName(kProjectParamLastAuthor);
     _imp->lastAuthorName->setHintToolTip( tr("The user name and host name of the last author of the project.") );
     // _imp->lastAuthorName->setAsLabel();
     _imp->lastAuthorName->setDefaultEnabled(0, false);
@@ -1974,7 +1980,7 @@ Project::initializeKnobs()
     infoPage->addKnob(_imp->projectCreationDate);
 
     _imp->saveDate = AppManager::createKnob<KnobString>( this, tr("Last Saved On") );
-    _imp->saveDate->setName("lastSaveDate");
+    _imp->saveDate->setName(kProjectParamLastSaveDate);
     _imp->saveDate->setHintToolTip( tr("The date this project was last saved.") );
     //_imp->saveDate->setAsLabel();
     _imp->saveDate->setDefaultEnabled(0, false);
@@ -3750,6 +3756,34 @@ Project::makeRelativeToProject(std::string& str)
     }
 }
 
+bool
+Project::usesUnsetProjectPath(const std::string& filePath) const
+{
+    std::map<std::string, std::string> envvar;
+
+    getEnvironmentVariables(envvar);
+    std::map<std::string, std::string>::iterator found = envvar.find(NATRON_PROJECT_ENV_VAR_NAME);
+    if ( found != envvar.end() ) {
+        if ( !found->second.empty() ) {
+            return false;
+        }
+        envvar.erase(found);
+    }
+    // Expand the other project paths first: one of them may start with [Project]
+    std::string path = filePath;
+    expandVariable(envvar, path);
+
+    return expandVariable(NATRON_PROJECT_ENV_VAR_NAME, std::string(), path);
+}
+
+QString
+Project::unsetProjectPathMessage(const std::string& filePath)
+{
+    return tr("The file path \"%1\" uses the [%2] path, the folder of the project file, which has no value until "
+              "the project is saved. Save the project first, then set the file path again.")
+           .arg( QString::fromUtf8( filePath.c_str() ), QString::fromUtf8(NATRON_PROJECT_ENV_VAR_NAME) );
+}
+
 void
 Project::onOCIOConfigPathChanged(const std::string& path,
                                  bool block)
@@ -3871,9 +3905,16 @@ Project::unionFrameRangeWith(int first,
     curLast = _imp->frameRange->getValue(1);
     curFirst = !mustSet ? std::min(first, curFirst) : first;
     curLast = !mustSet ? std::max(last, curLast) : last;
+    setFrameRange(curFirst, curLast);
+}
+
+void
+Project::setFrameRange(int first,
+                       int last)
+{
     beginChanges();
-    _imp->frameRange->setValue(curFirst, ViewSpec::all(), 0);
-    _imp->frameRange->setValue(curLast, ViewSpec::all(), 1);
+    _imp->frameRange->setValue(first, ViewSpec::all(), 0);
+    _imp->frameRange->setValue(last, ViewSpec::all(), 1);
     endChanges();
 }
 

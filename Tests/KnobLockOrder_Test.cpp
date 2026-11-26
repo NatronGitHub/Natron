@@ -129,7 +129,7 @@ TEST(KnobLockOrder, CurveChangeWhileDequeuingKeyframes)
                     [&] {
         for (int i = 0; i < kIterations; ++i) {
             curve->clone(source);
-            (void)knob->getValueAtTime(1 + i % 8, 0);
+            ignore_result( knob->getValueAtTime(1 + i % 8, 0) );
         }
     });
 

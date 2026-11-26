@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -36,15 +36,11 @@
 #include <vector>
 
 #include "Eigen/Dense"
-#include "ceres/internal/port.h"
-#include "ceres/stringprintf.h"
+#include "ceres/function_sample.h"
+#include "ceres/internal/export.h"
 #include "glog/logging.h"
 
-namespace ceres {
-namespace internal {
-
-using std::string;
-using std::vector;
+namespace ceres::internal {
 
 namespace {
 
@@ -53,7 +49,7 @@ namespace {
 // In: Numerische Mathematik, Volume 13, Number 4 (1969), 293-304,
 // Springer Berlin / Heidelberg. DOI: 10.1007/BF02165404
 void BalanceCompanionMatrix(Matrix* companion_matrix_ptr) {
-  CHECK_NOTNULL(companion_matrix_ptr);
+  CHECK(companion_matrix_ptr != nullptr);
   Matrix& companion_matrix = *companion_matrix_ptr;
   Matrix companion_matrix_offdiagonal = companion_matrix;
   companion_matrix_offdiagonal.diagonal().setZero();
@@ -105,7 +101,7 @@ void BalanceCompanionMatrix(Matrix* companion_matrix_ptr) {
 
 void BuildCompanionMatrix(const Vector& polynomial,
                           Matrix* companion_matrix_ptr) {
-  CHECK_NOTNULL(companion_matrix_ptr);
+  CHECK(companion_matrix_ptr != nullptr);
   Matrix& companion_matrix = *companion_matrix_ptr;
 
   const int degree = polynomial.size() - 1;
@@ -129,12 +125,12 @@ void FindLinearPolynomialRoots(const Vector& polynomial,
                                Vector* real,
                                Vector* imaginary) {
   CHECK_EQ(polynomial.size(), 2);
-  if (real != NULL) {
+  if (real != nullptr) {
     real->resize(1);
     (*real)(0) = -polynomial(1) / polynomial(0);
   }
 
-  if (imaginary != NULL) {
+  if (imaginary != nullptr) {
     imaginary->setZero(1);
   }
 }
@@ -148,16 +144,16 @@ void FindQuadraticPolynomialRoots(const Vector& polynomial,
   const double c = polynomial(2);
   const double D = b * b - 4 * a * c;
   const double sqrt_D = sqrt(fabs(D));
-  if (real != NULL) {
+  if (real != nullptr) {
     real->setZero(2);
   }
-  if (imaginary != NULL) {
+  if (imaginary != nullptr) {
     imaginary->setZero(2);
   }
 
   // Real roots.
   if (D >= 0) {
-    if (real != NULL) {
+    if (real != nullptr) {
       // Stable quadratic roots according to BKP Horn.
       // http://people.csail.mit.edu/bkph/articles/Quadratics.pdf
       if (b >= 0) {
@@ -172,11 +168,11 @@ void FindQuadraticPolynomialRoots(const Vector& polynomial,
   }
 
   // Use the normal quadratic formula for the complex case.
-  if (real != NULL) {
+  if (real != nullptr) {
     (*real)(0) = -b / (2.0 * a);
     (*real)(1) = -b / (2.0 * a);
   }
-  if (imaginary != NULL) {
+  if (imaginary != nullptr) {
     (*imaginary)(0) = sqrt_D / (2.0 * a);
     (*imaginary)(1) = -sqrt_D / (2.0 * a);
   }
@@ -241,14 +237,14 @@ bool FindPolynomialRoots(const Vector& polynomial_in,
   }
 
   // Output roots
-  if (real != NULL) {
+  if (real != nullptr) {
     *real = solver.eigenvalues().real();
   } else {
-    LOG(WARNING) << "NULL pointer passed as real argument to "
+    LOG(WARNING) << "nullptr pointer passed as real argument to "
                  << "FindPolynomialRoots. Real parts of the roots will not "
                  << "be returned.";
   }
-  if (imaginary != NULL) {
+  if (imaginary != nullptr) {
     *imaginary = solver.eigenvalues().imag();
   }
   return true;
@@ -305,7 +301,7 @@ void MinimizePolynomial(const Vector& polynomial,
 
   const Vector derivative = DifferentiatePolynomial(polynomial);
   Vector roots_real;
-  if (!FindPolynomialRoots(derivative, &roots_real, NULL)) {
+  if (!FindPolynomialRoots(derivative, &roots_real, nullptr)) {
     LOG(WARNING) << "Unable to find the critical points of "
                  << "the interpolating polynomial.";
     return;
@@ -327,13 +323,7 @@ void MinimizePolynomial(const Vector& polynomial,
   }
 }
 
-string FunctionSample::ToDebugString() const {
-  return StringPrintf("[x: %.8e, value: %.8e, gradient: %.8e, "
-                      "value_is_valid: %d, gradient_is_valid: %d]",
-                      x, value, gradient, value_is_valid, gradient_is_valid);
-}
-
-Vector FindInterpolatingPolynomial(const vector<FunctionSample>& samples) {
+Vector FindInterpolatingPolynomial(const std::vector<FunctionSample>& samples) {
   const int num_samples = samples.size();
   int num_constraints = 0;
   for (int i = 0; i < num_samples; ++i) {
@@ -370,18 +360,20 @@ Vector FindInterpolatingPolynomial(const vector<FunctionSample>& samples) {
     }
   }
 
-  return lhs.fullPivLu().solve(rhs);
+  // TODO(sameeragarwal): This is a hack.
+  // https://github.com/ceres-solver/ceres-solver/issues/248
+  Eigen::FullPivLU<Matrix> lu(lhs);
+  return lu.setThreshold(0.0).solve(rhs);
 }
 
-void MinimizeInterpolatingPolynomial(const vector<FunctionSample>& samples,
+void MinimizeInterpolatingPolynomial(const std::vector<FunctionSample>& samples,
                                      double x_min,
                                      double x_max,
                                      double* optimal_x,
                                      double* optimal_value) {
   const Vector polynomial = FindInterpolatingPolynomial(samples);
   MinimizePolynomial(polynomial, x_min, x_max, optimal_x, optimal_value);
-  for (int i = 0; i < samples.size(); ++i) {
-    const FunctionSample& sample = samples[i];
+  for (const auto& sample : samples) {
     if ((sample.x < x_min) || (sample.x > x_max)) {
       continue;
     }
@@ -394,5 +386,4 @@ void MinimizeInterpolatingPolynomial(const vector<FunctionSample>& samples,
   }
 }
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal

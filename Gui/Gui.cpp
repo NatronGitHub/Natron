@@ -289,10 +289,7 @@ Gui::abortProject(bool quitApp,
     }
     _imp->saveGuiGeometry();
 
-    _imp->setUndoRedoActions(0, 0);
-    ///Reset current undo/reso actions
-    _imp->_currentUndoAction = 0;
-    _imp->_currentRedoAction = 0;
+    _imp->setUndoRedoActions(0, 0); // also resets the current undo/redo actions
     if (quitApp) {
         if (app) {
             // quits once the event loop is back: this window is still alive after this call
@@ -825,7 +822,7 @@ Gui::openHelpDocumentation()
 {
     int serverPort = appPTR->getDocumentationServerPort();
 
-    QString localUrl = QString::fromUtf8("http://localhost:") + QString::number(serverPort);
+    QString localUrl = QString::fromUtf8("http://127.0.0.1:") + QString::number(serverPort);
 #ifdef NATRON_DOCUMENTATION_ONLINE
     int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
     QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE);

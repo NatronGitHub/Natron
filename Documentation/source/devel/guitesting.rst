@@ -149,6 +149,11 @@ before the user's one (with CMake older than 3.22, before the ``OFX_PLUGIN_PATH`
 step); a test that needs another plug-in (e.g. openfx-misc's Transform) is skipped
 when that plug-in is not found.
 
+A test that needs no user interface is a headless test instead: ``Tests/gui/headless_<name>.py``,
+run by ``NatronRenderer -t`` and registered as ``headless.<name>`` with the ``headless`` label. It
+uses the helpers of ``natronheadless.py`` (which only import ``NatronEngine``), and runs in CI on
+every platform.
+
 Test mode
 ~~~~~~~~~
 

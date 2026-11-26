@@ -245,7 +245,8 @@ visible when the number of views in the project settings has been set to a value
 
 .. method:: PyViewer.fit()
 
-    Fits the image to the viewer, as the *F* key does.
+    Fits the image to the viewer, as the *F* key does. Raises :class:`RuntimeError` when not called from
+    the main thread.
 
 .. method:: PyViewer.getZoom()
 
@@ -258,7 +259,9 @@ visible when the number of views in the project settings has been set to a value
     :param zoom: :class:`float`
 
     Sets the zoom factor of the viewer (see :meth:`getZoom()<NatronGui.PyViewer.getZoom>`), keeping the
-    point at the centre of the viewport fixed, as the zoom menu of the viewer does.
+    point at the centre of the viewport fixed, as the zoom menu of the viewer does. Raises
+    :class:`ValueError` if *zoom* is not positive, and :class:`RuntimeError` when not called from the main
+    thread.
 
 .. method:: PyViewer.getCenter()
 
@@ -273,7 +276,8 @@ visible when the number of views in the project settings has been set to a value
     :param x: :class:`float`
     :param y: :class:`float`
 
-    Pans the viewer so that the canvas point (*x*, *y*) is at the centre of the viewport.
+    Pans the viewer so that the canvas point (*x*, *y*) is at the centre of the viewport. Raises
+    :class:`RuntimeError` when not called from the main thread.
 
 .. method:: PyViewer.canvasToWidget(x, y)
 

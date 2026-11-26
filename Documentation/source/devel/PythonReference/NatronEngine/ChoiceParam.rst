@@ -182,8 +182,13 @@ Strings will be compared without case sensitivity. If not found, nothing happens
 PyPlug or a Python project file creates its nodes: the option is then selected when it appears, e.g.
 a layer of an input that is connected later, as when an *.ntp* project is loaded.
 
+For the StrChoice parameters of OpenFX plug-ins (OFX 1.5), whose options are identified by a string
+(:func:`getOption()<NatronEngine.ChoiceParam.getOption>`), *label* must be that string exactly,
+case included; a label or a string that is not an option leaves the value unchanged.
+
 .. versionchanged:: 2.6
    An option that doesn't exist yet is kept while a PyPlug or a Python project creates its nodes.
+   StrChoice parameters match their option strings exactly.
 
 
 .. method:: ChoiceParam.setDefaultValue(value)
@@ -203,6 +208,7 @@ Set the default *value* for this parameter.
 
 Set the default value from the *label* for this parameter. The *label* must match an existing option.
 Strings will be compared without case sensitivity. If not found, nothing happens.
+For StrChoice parameters, *label* must be an option string exactly (see :func:`set(label)<NatronEngine.ChoiceParam.set>`).
 
 
 
@@ -212,7 +218,9 @@ Strings will be compared without case sensitivity. If not found, nothing happens
     :param options: class::`sequence`
 
 Clears all existing entries in the menu and add all entries contained in *options*
-to the menu.
+to the menu. *options* is a sequence of ``(option, help)`` pairs of strings; each pair
+may be a tuple, a list or any other sequence of 2 items, but not a string. A string,
+or a pair of another length or type, raises :class:`TypeError`.
 
 
 

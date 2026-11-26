@@ -25,6 +25,7 @@
 #include <stdlib.h> // malloc, free
 #include <QTcpSocket>
 #include <QHostAddress>
+#include <QTimer>
 
 #include "http_parser.h"
 #include "qhttprequest.h"
@@ -32,12 +33,36 @@
 
 /// @cond nodoc
 
+// Natron: backpressure. Stop reading requests while more than this waits to be sent (a client that
+// sends requests but doesn't read the answers), and read at most this much ahead.
+static const qint64 kMaxBytesToWrite = 1024 * 1024;
+static const qint64 kReadBufferSize = 64 * 1024;
+
+// Natron: QHttpRequest::HttpMethod mirrors http-parser's enum http_method (HTTP_METHOD_MAP),
+// since HeadersComplete() casts one to the other.
+static_assert(static_cast<int>(QHttpRequest::HTTP_DELETE) == static_cast<int>(::HTTP_DELETE) &&
+              static_cast<int>(QHttpRequest::HTTP_GET) == static_cast<int>(::HTTP_GET) &&
+              static_cast<int>(QHttpRequest::HTTP_HEAD) == static_cast<int>(::HTTP_HEAD) &&
+              static_cast<int>(QHttpRequest::HTTP_UNLOCK) == static_cast<int>(::HTTP_UNLOCK) &&
+              static_cast<int>(QHttpRequest::HTTP_ACL) == static_cast<int>(::HTTP_ACL) &&
+              static_cast<int>(QHttpRequest::HTTP_REPORT) == static_cast<int>(::HTTP_REPORT) &&
+              static_cast<int>(QHttpRequest::HTTP_MSEARCH) == static_cast<int>(::HTTP_MSEARCH) &&
+              static_cast<int>(QHttpRequest::HTTP_PURGE) == static_cast<int>(::HTTP_PURGE) &&
+              static_cast<int>(QHttpRequest::HTTP_MKCALENDAR) == static_cast<int>(::HTTP_MKCALENDAR) &&
+              static_cast<int>(QHttpRequest::HTTP_SOURCE) == static_cast<int>(::HTTP_SOURCE),
+              "QHttpRequest::HttpMethod is out of sync with http_parser.h");
+
 QHttpConnection::QHttpConnection(QTcpSocket *socket, QObject *parent)
     : QObject(parent),
       m_socket(socket),
+      m_idleTimer(new QTimer(this)),
+      m_parsing(false),
+      m_disconnectedWhileParsing(false),
       m_parser(0),
       m_parserSettings(0),
       m_request(0),
+      m_currentHeaderValueSeen(false),
+      m_currentRequestEmitted(false),
       m_transmitLen(0),
       m_transmitPos(0)
 {
@@ -58,10 +83,20 @@ QHttpConnection::QHttpConnection(QTcpSocket *socket, QObject *parent)
     connect(socket, SIGNAL(readyRead()), this, SLOT(parseRequest()));
     connect(socket, SIGNAL(disconnected()), this, SLOT(socketDisconnected()));
     connect(socket, SIGNAL(bytesWritten(qint64)), this, SLOT(updateWriteCount(qint64)));
+
+    socket->setReadBufferSize(kReadBufferSize);
+
+    m_idleTimer->setSingleShot(true);
+    connect(m_idleTimer, SIGNAL(timeout()), this, SLOT(idleTimeout()));
 }
 
 QHttpConnection::~QHttpConnection()
 {
+    // Natron: a request that the handler never got belongs to the connection (see MessageBegin());
+    // delete it here, before ~QObject() deletes the children and the destroyed() slots run on this
+    // partially destroyed object
+    deleteUnemittedRequest();
+
     //delete m_socket;
     m_socket = 0;
 
@@ -74,12 +109,25 @@ QHttpConnection::~QHttpConnection()
 
 void QHttpConnection::socketDisconnected()
 {
-    deleteLater();
+    // Natron: not while http-parser and the handler run (this is then called from a nested event
+    // loop): parseRequest() calls this when they return
+    if (m_parsing) {
+        m_disconnectedWhileParsing = true;
+        return;
+    }
     invalidateRequest();
+    // Natron (from upstream qhttpserver 30ac571): the socket belongs to the QTcpServer, which kept
+    // every closed socket until the server was destroyed.
+    m_socket->deleteLater();
+    deleteLater();
 }
 
 void QHttpConnection::invalidateRequest()
 {
+    // Natron: a request that the handler never got (the client disconnected before the end of the
+    // headers) has nobody to receive end(): delete it (it leaked)
+    deleteUnemittedRequest();
+
     if (m_request && !m_request->successful()) {
         Q_EMIT m_request->end();
     }
@@ -87,8 +135,52 @@ void QHttpConnection::invalidateRequest()
     m_request = NULL;
 }
 
+// Natron: deletes the current request if the newRequest() handler didn't get it
+void QHttpConnection::deleteUnemittedRequest()
+{
+    if (m_request && !m_currentRequestEmitted) {
+        QHttpRequest *request = m_request;
+        m_request = NULL;
+        delete request;
+    }
+}
+
+// Natron: the handler owns the request and may delete it at any time, also after the next pipelined
+// request began (m_request is then that one): only forget the request that was destroyed, and don't
+// touch it (it is being destroyed).
+void QHttpConnection::requestDestroyed(QObject *request)
+{
+    if (m_request == request) {
+        m_request = NULL;
+    }
+}
+
+void QHttpConnection::setIdleTimeout(int msecs)
+{
+    if (msecs > 0) {
+        m_idleTimer->start(msecs);
+    } else {
+        m_idleTimer->stop();
+    }
+}
+
+// Natron: nothing received or sent for the idle timeout: drop the connection (abort(): what is still
+// unsent is for a client that doesn't read)
+void QHttpConnection::idleTimeout()
+{
+    // the handler is running (e.g. a modal dialog is open): not idle
+    if (m_parsing) {
+        m_idleTimer->start();
+        return;
+    }
+    m_socket->abort();
+}
+
 void QHttpConnection::updateWriteCount(qint64 count)
 {
+    if (m_idleTimer->isActive())
+        m_idleTimer->start(); // restart: data was sent
+
     Q_ASSERT(m_transmitPos + count <= m_transmitLen);
 
     m_transmitPos += count;
@@ -99,16 +191,77 @@ void QHttpConnection::updateWriteCount(qint64 count)
         m_transmitPos = 0;
         Q_EMIT allBytesWritten();
     }
+
+    // Natron: resume reading the requests that backpressure held back
+    if (!m_parsing &&
+        (HTTP_PARSER_ERRNO(m_parser) == HPE_OK || HTTP_PARSER_ERRNO(m_parser) == HPE_PAUSED) &&
+        (!m_pendingInput.isEmpty() || m_socket->bytesAvailable()) &&
+        m_socket->bytesToWrite() <= kMaxBytesToWrite)
+        parseRequest();
 }
 
 void QHttpConnection::parseRequest()
 {
     Q_ASSERT(m_parser);
 
-    while (m_socket->bytesAvailable()) {
-        QByteArray arr = m_socket->readAll();
-        http_parser_execute(m_parser, m_parserSettings, arr.constData(), arr.size());
+    // Natron: called again from a nested event loop of the handler: the outer call reads the new data
+    if (m_parsing)
+        return;
+
+    // Natron: received data only counts as activity if the client reads the answers
+    if (m_idleTimer->isActive() && m_socket->bytesToWrite() == 0)
+        m_idleTimer->start(); // restart
+
+    m_parsing = true;
+    // Natron: backpressure (see kMaxBytesToWrite): MessageComplete() pauses the parser after a request
+    // when too much waits to be sent; the rest of the data is kept in m_pendingInput, and
+    // updateWriteCount() resumes
+    while (!m_disconnectedWhileParsing && m_socket->bytesToWrite() <= kMaxBytesToWrite) {
+        QByteArray arr;
+        if (!m_pendingInput.isEmpty()) {
+            arr.swap(m_pendingInput);
+        } else if (m_socket->bytesAvailable()) {
+            arr = m_socket->readAll();
+        } else {
+            break;
+        }
+        if (HTTP_PARSER_ERRNO(m_parser) == HPE_PAUSED)
+            http_parser_pause(m_parser, 0);
+        const size_t parsed = http_parser_execute(m_parser, m_parserSettings, arr.constData(), arr.size());
+        if (HTTP_PARSER_ERRNO(m_parser) == HPE_PAUSED) {
+            m_pendingInput = arr.mid(static_cast<int>(parsed));
+            continue;
+        }
+        // Natron: after a malformed request, http-parser stays in its error state and ignores any
+        // further data, which left the connection open forever and the client waiting.
+        if (HTTP_PARSER_ERRNO(m_parser) != HPE_OK)
+            break;
     }
+    m_parsing = false;
+
+    if (m_disconnectedWhileParsing) {
+        m_disconnectedWhileParsing = false;
+        socketDisconnected();
+        return;
+    }
+    if (HTTP_PARSER_ERRNO(m_parser) != HPE_OK && HTTP_PARSER_ERRNO(m_parser) != HPE_PAUSED)
+        rejectMalformedRequest();
+}
+
+// Natron: answers "400 Bad Request" (unless the newRequest() handler already got the request and
+// answered it) and closes the connection once the pending data is written.
+void QHttpConnection::rejectMalformedRequest()
+{
+    disconnect(m_socket, SIGNAL(readyRead()), this, SLOT(parseRequest()));
+    if (!m_currentRequestEmitted) {
+        // nobody else knows about this request
+        deleteUnemittedRequest();
+        write("HTTP/1.1 400 Bad Request\r\n"
+              "Connection: close\r\n"
+              "Content-Length: 0\r\n"
+              "\r\n");
+    }
+    m_socket->disconnectFromHost();
 }
 
 void QHttpConnection::write(const QByteArray &data)
@@ -130,7 +283,9 @@ void QHttpConnection::waitForBytesWritten()
 void QHttpConnection::responseDone()
 {
     QHttpResponse *response = qobject_cast<QHttpResponse *>(QObject::sender());
-    if (response->m_last)
+    // Natron: defensive; QHttpResponse::connectionClosed() no longer emits done() from
+    // ~QHttpConnection() (m_socket is NULL then)
+    if (m_socket && response->m_last)
         m_socket->disconnectFromHost();
 }
 
@@ -179,16 +334,23 @@ int QHttpConnection::MessageBegin(http_parser *parser)
 {
     QHttpConnection *theConnection = static_cast<QHttpConnection *>(parser->data);
     theConnection->m_currentHeaders.clear();
+    // Natron: the last header of the previous request was added to the next one
+    theConnection->m_currentHeaderField.clear();
+    theConnection->m_currentHeaderValue.clear();
+    theConnection->m_currentHeaderValueSeen = false;
     theConnection->m_currentUrl.clear();
     theConnection->m_currentUrl.reserve(128);
+    theConnection->m_currentRequestEmitted = false;
 
     // The QHttpRequest should not be parented to this, since it's memory
     // management is the responsibility of the user of the library.
-    theConnection->m_request = new QHttpRequest(theConnection);
+    // Natron: parented to the connection until HeadersComplete() gives it to the handler, so that it
+    // can't leak before
+    theConnection->m_request = new QHttpRequest(theConnection, theConnection);
 
     // Invalidate the request when it is deleted to prevent keep-alive requests
     // from calling a signal on a deleted object.
-    connect(theConnection->m_request, SIGNAL(destroyed(QObject*)), theConnection, SLOT(invalidateRequest()));
+    connect(theConnection->m_request, SIGNAL(destroyed(QObject*)), theConnection, SLOT(requestDestroyed(QObject*)));
 
     return 0;
 }
@@ -207,17 +369,20 @@ int QHttpConnection::HeadersComplete(http_parser *parser)
 
     /** get parsed url **/
     struct http_parser_url urlInfo;
+    http_parser_url_init(&urlInfo);
     int r = http_parser_parse_url(theConnection->m_currentUrl.constData(),
                                   theConnection->m_currentUrl.size(),
                                   parser->method == HTTP_CONNECT, &urlInfo);
-    Q_ASSERT(r == 0);
-    Q_UNUSED(r);
+    if (r != 0) {
+        // Natron: a URL that http-parser accepted while parsing but can't split (e.g. CONNECT
+        // without host:port); urlInfo is not valid: fail with HPE_CB_headers_complete (400).
+        return -1;
+    }
 
     theConnection->m_request->setUrl(createUrl(theConnection->m_currentUrl.constData(), urlInfo));
 
     // Insert last remaining header
-    theConnection->m_currentHeaders[theConnection->m_currentHeaderField.toLower()] =
-        theConnection->m_currentHeaderValue;
+    theConnection->insertCurrentHeader();
     theConnection->m_request->setHeaders(theConnection->m_currentHeaders);
 
     /** set client information **/
@@ -232,6 +397,8 @@ int QHttpConnection::HeadersComplete(http_parser *parser)
     connect(response, SIGNAL(done()), theConnection, SLOT(responseDone()));
 
     // we are good to go!
+    theConnection->m_currentRequestEmitted = true;
+    theConnection->m_request->setParent(NULL); // the handler's from now on
     Q_EMIT theConnection->newRequest(theConnection->m_request, response);
     return 0;
 }
@@ -240,10 +407,18 @@ int QHttpConnection::MessageComplete(http_parser *parser)
 {
     // TODO: do cleanup and prepare for next request
     QHttpConnection *theConnection = static_cast<QHttpConnection *>(parser->data);
-    Q_ASSERT(theConnection->m_request);
-
-    theConnection->m_request->setSuccessful(true);
-    Q_EMIT theConnection->m_request->end();
+    // Natron: the handler may have deleted the request before its end
+    if (theConnection->m_request) {
+        theConnection->m_request->setSuccessful(true);
+        Q_EMIT theConnection->m_request->end();
+    }
+    // Natron: the request is complete and the handler's: forget it (deleteUnemittedRequest() must not
+    // delete it, e.g. on a parse error before the next request)
+    theConnection->m_request = NULL;
+    theConnection->m_currentRequestEmitted = false;
+    // Natron: backpressure, per request (a single read may hold many pipelined requests)
+    if (theConnection->m_socket->bytesToWrite() > kMaxBytesToWrite)
+        http_parser_pause(parser, 1);
     return 0;
 }
 
@@ -263,16 +438,10 @@ int QHttpConnection::HeaderField(http_parser *parser, const char *at, size_t len
 
     // insert the header we parsed previously
     // into the header map
-    if (!theConnection->m_currentHeaderField.isEmpty() &&
-        !theConnection->m_currentHeaderValue.isEmpty()) {
-        // header names are always lower-cased
-        theConnection->m_currentHeaders[theConnection->m_currentHeaderField.toLower()] =
-            theConnection->m_currentHeaderValue;
-        // clear header value. this sets up a nice
-        // feedback loop where the next time
-        // HeaderValue is called, it can simply append
-        theConnection->m_currentHeaderField = QString();
-        theConnection->m_currentHeaderValue = QString();
+    // Natron: also if its value is empty: the next field name was appended to its name
+    // ("X-Empty:\r\nHost: localhost" gave "x-emptyhost: localhost" and no Host header)
+    if (theConnection->m_currentHeaderValueSeen) {
+        theConnection->insertCurrentHeader();
     }
 
     QString fieldSuffix = QString::fromLatin1(at, length);
@@ -287,13 +456,35 @@ int QHttpConnection::HeaderValue(http_parser *parser, const char *at, size_t len
 
     QString valueSuffix = QString::fromLatin1(at, length);
     theConnection->m_currentHeaderValue += valueSuffix;
+    theConnection->m_currentHeaderValueSeen = true;
     return 0;
+}
+
+// Natron: adds the header being parsed to m_currentHeaders (header names are always lower-cased) and
+// clears it. A repeated header is combined into one comma-separated value, as RFC 7230 section 3.2.2
+// says, instead of keeping only the last value.
+void QHttpConnection::insertCurrentHeader()
+{
+    if (!m_currentHeaderField.isEmpty()) {
+        const QString field = m_currentHeaderField.toLower();
+        HeaderHash::iterator found = m_currentHeaders.find(field);
+        if (found == m_currentHeaders.end()) {
+            m_currentHeaders.insert(field, m_currentHeaderValue);
+        } else {
+            found.value() += QString::fromUtf8(", ") + m_currentHeaderValue;
+        }
+    }
+    m_currentHeaderField.clear();
+    m_currentHeaderValue.clear();
+    m_currentHeaderValueSeen = false;
 }
 
 int QHttpConnection::Body(http_parser *parser, const char *at, size_t length)
 {
     QHttpConnection *theConnection = static_cast<QHttpConnection *>(parser->data);
-    Q_ASSERT(theConnection->m_request);
+    // Natron: the handler may have deleted the request before its end: drop the rest of its body
+    if (!theConnection->m_request)
+        return 0;
 
     Q_EMIT theConnection->m_request->data(QByteArray(at, length));
     return 0;

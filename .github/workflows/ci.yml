@@ -7,7 +7,7 @@ name: Tests
 #   Windows use ccache; its cache is saved only by pushes to master and RB-*
 #   (and by workflow_dispatch runs), so that pull requests restore the base
 #   branch's cache but never evict it with their own.
-# - Debug (-O0 -g; -O1 -g on Windows, see CMakeLists.txt) and Release
+# - Debug (-O0 -g) and Release
 #   (-O3 -DNDEBUG): weekly, on tags, and on workflow_dispatch unless
 #   "fast" is chosen. No compiler cache.
 on:
@@ -21,7 +21,7 @@ on:
   # weekly (Sunday 03:17 UTC, after the plug-in repos' Saturday runs) Debug and Release builds of the
   # default branch. Never skipped, even if the branch didn't change: every job uses rolling toolchains
   # (MSYS2 and pacman -Syu, apt on the ubuntu-26.04 image, the runner's Xcode, MacPorts upgrades on a
-  # cache miss) and downloads openfx-io's natron_testing bundles, none of them pinned.
+  # cache miss) and downloads openfx-io's and openfx-misc's natron_testing bundles, none of them pinned.
   schedule:
   - cron: '17 3 * * 0'
   # one run per change: push only on the main and release branches and on tags,
@@ -149,12 +149,15 @@ jobs:
           mv OpenColorIO-Configs-Natron-v${OCIO_CONFIG_VERSION} OpenColorIO-Configs
 
       - name: Download Plugins
-        # The ubuntu_24 testing bundle carries Ubuntu 24.04's libraries but not the
-        # system ones (glibc 2.39 or later): it also runs on Ubuntu 26.04.
+        # The ubuntu_24 testing bundles carry Ubuntu 24.04's libraries but not the
+        # system ones (glibc 2.39 or later): they also run on Ubuntu 26.04.
         run: |
           mkdir Plugins && cd Plugins
           wget https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-ubuntu_24-testing.zip
           unzip openfx-io-build-ubuntu_24-testing.zip
+          # Misc, CImg and Shadertoy (the RotoPaint, Tracker, Shuffle, Merge... tests need them)
+          wget https://github.com/NatronGitHub/openfx-misc/releases/download/natron_testing/openfx-misc-build-ubuntu_24-testing.zip
+          unzip openfx-misc-build-ubuntu_24-testing.zip
           cd ..
 
       - name: Restore ccache
@@ -226,10 +229,9 @@ jobs:
     # Disabled on RB-2.7 until it builds with Qt6 (maintainer, 2026-11-20); re-enable it by removing
     # the next line and uncommenting the draft condition below it (RB-2.6 runs this job except on drafts).
     if: false
-    # Draft pull requests run no CI (maintainer, 2026-11-25): a draft is rebased on the latest base before it is
-    # marked ready, so its earlier runs would have to be redone anyway. Marking it ready (ready_for_review) runs CI.
-    # if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     timeout-minutes: 240
+    # no CI on draft pull requests (see unix_test)
+    # if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     name: Test ${{ matrix.os }} UCRT64 Python ${{ matrix.python-version }} ${{ matrix.config }}
     runs-on: ${{ matrix.os }}
     defaults:
@@ -360,6 +362,9 @@ jobs:
           mkdir -p ofx-plugins && cd ofx-plugins
           wget https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-windows_ucrt64-testing.zip
           unzip -q openfx-io-build-windows_ucrt64-testing.zip
+          # Misc, CImg and Shadertoy (the RotoPaint, Tracker, Shuffle, Merge... tests need them)
+          wget https://github.com/NatronGitHub/openfx-misc/releases/download/natron_testing/openfx-misc-build-windows_ucrt64-testing.zip
+          unzip -q openfx-misc-build-windows_ucrt64-testing.zip
           cd ..
 
           # MSYS2's Python (>= 3.11) loads extension modules with
@@ -388,16 +393,13 @@ jobs:
     # resulting /opt/local is cached, keyed on the MacPorts version, the
     # overlay (tools/MacPorts) and MACPORTS_CACHE_VERSION (bump it when the
     # port list below changes).
-    # macOS arm64 runners are scarce: run only once Linux and Windows have passed, and not on draft
-    # pull requests (no job runs on drafts; CI runs when the PR is marked ready). Merging only
-    # requires Linux and Windows; this job is informative. Weekly, it always runs, whatever the
-    # Linux and Windows results.
+    # macOS arm64 runners are scarce: run only once Linux and Windows have passed (so not on draft
+    # pull requests, where they don't run). Merging only requires Linux and Windows; this job is
+    # informative. Weekly, it always runs, whatever the Linux and Windows results.
     needs: [unix_test, win-test]
     if: >-
-      false && !cancelled() && (
-      github.event_name == 'schedule' ||
-      (github.event_name != 'schedule' && needs.unix_test.result == 'success' && needs.win-test.result == 'success' &&
-       (github.event_name != 'pull_request' || !github.event.pull_request.draft)))
+      false && !cancelled() && (github.event_name == 'schedule' ||
+      (needs.unix_test.result == 'success' && needs.win-test.result == 'success'))
     name: Test macos-15 arm64 MacPorts Python 3.11 ${{ matrix.config }}
     runs-on: macos-15
     strategy:
@@ -565,9 +567,9 @@ jobs:
         id: run-macos-tests
         continue-on-error: true
         run: |
-          # There is no prebuilt openfx-io for macOS (the Linux and Windows
-          # jobs download one), so the tests that need the IO plug-ins
-          # (BaseTest.*) are skipped.
+          # There are no prebuilt openfx-io and openfx-misc bundles for macOS
+          # (the Linux and Windows jobs download them), so the tests that need
+          # them (BaseTest.*, and those that skip without openfx-misc) don't run.
           cd build
           GTEST_FILTER='-BaseTest.*' OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V --no-tests=error
 

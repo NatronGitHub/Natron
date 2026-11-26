@@ -56,6 +56,7 @@
 #include "Engine/Transform.h"
 #include "Gui/ZoomContext.h"
 #include "NaNGuards_FastMath.h"
+#include "TestUtils.h"
 
 NATRON_NAMESPACE_USING
 
@@ -577,7 +578,7 @@ TEST(NaNGuards, CurveLoadCommaLocale)
     }
     if (!found) {
         std::setlocale( LC_NUMERIC, saved.c_str() );
-        std::cout << "note: no locale with a comma decimal separator, skipping" << std::endl;
+        NatronTest::skip("no locale with a comma decimal separator");
 
         return;
     }

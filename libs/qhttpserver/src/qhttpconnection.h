@@ -26,7 +26,10 @@
 #include "qhttpserverapi.h"
 #include "qhttpserverfwd.h"
 
+#include <QByteArray>
 #include <QObject>
+
+class QTimer;
 
 /// @cond nodoc
 
@@ -42,6 +45,9 @@ public:
     void flush();
     void waitForBytesWritten();
 
+    // Natron: closes the connection after msecs without data received or sent (0: never)
+    void setIdleTimeout(int msecs);
+
 Q_SIGNALS:
     void newRequest(QHttpRequest *, QHttpResponse *);
     void allBytesWritten();
@@ -51,9 +57,15 @@ private Q_SLOTS:
     void responseDone();
     void socketDisconnected();
     void invalidateRequest();
+    void requestDestroyed(QObject *request);
     void updateWriteCount(qint64);
+    void idleTimeout();
 
 private:
+    void rejectMalformedRequest();
+    void deleteUnemittedRequest();
+    void insertCurrentHeader();
+
     static int MessageBegin(http_parser *parser);
     static int Url(http_parser *parser, const char *at, size_t length);
     static int HeaderField(http_parser *parser, const char *at, size_t length);
@@ -64,6 +76,15 @@ private:
 
 private:
     QTcpSocket *m_socket;
+    // Natron: restarted when data is sent, or received while nothing waits to be sent (a child of
+    // the connection)
+    QTimer *m_idleTimer;
+    // Natron: whether parseRequest() is running http-parser, and the handler with it (which may run a
+    // nested event loop, e.g. a modal dialog): the connection must not be deleted meanwhile
+    bool m_parsing;
+    bool m_disconnectedWhileParsing;
+    // Natron: the data received after the request at which the parser was paused (backpressure)
+    QByteArray m_pendingInput;
     http_parser *m_parser;
     http_parser_settings *m_parserSettings;
 
@@ -75,6 +96,11 @@ private:
     HeaderHash m_currentHeaders;
     QString m_currentHeaderField;
     QString m_currentHeaderValue;
+    // Natron: whether http-parser gave (a part of) m_currentHeaderField's value, which may be empty
+    bool m_currentHeaderValueSeen;
+
+    // Natron: whether the current request was given to the newRequest() handler (it then answers it)
+    bool m_currentRequestEmitted;
 
     // Keep track of transmit buffer status
     qint64 m_transmitLen;

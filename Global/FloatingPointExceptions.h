@@ -34,7 +34,11 @@ namespace boost_adaptbx { namespace floating_point {
       [2] GCC documentation
   */
 
-  inline void trap_exceptions(bool division_by_zero, bool invalid, bool overflow) {
+  // Natron change: [[maybe_unused]], because the fallback branch (no trapping, e.g. Windows or
+  // Apple Silicon) uses none of the parameters.
+  inline void trap_exceptions([[maybe_unused]] bool division_by_zero,
+                              [[maybe_unused]] bool invalid,
+                              [[maybe_unused]] bool overflow) {
     #ifdef __linux
       int enabled = 0;
       int disabled = 0;

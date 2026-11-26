@@ -11,10 +11,7 @@ import tempfile
 import NatronGuiTest
 from natrontest import *
 
-try:
-    from PySide2 import QtCore, QtGui, QtWidgets
-except ImportError:
-    from PySide6 import QtCore, QtGui, QtWidgets
+QtCore, QtGui, QtWidgets = qt_modules()
 
 require_plugin(GENERATOR)  # fills R, G, B and A with 0.5
 

@@ -12,13 +12,9 @@ import time
 import NatronGuiTest
 from natrontest import *
 
-if not os.environ.get("OCIO"):
-    # the Write node fails without an OCIO config ("Invalid OCIO config")
-    NatronGuiTest.skip("OCIO is not set to an OpenColorIO config")
+require_ocio()
 require_plugin(GENERATOR)
-ids = natron.getPluginIDs()
-if not any(i.startswith("fr.inria.openfx.WritePNG") for i in ids):
-    NatronGuiTest.skip("plug-in fr.inria.openfx.WritePNG not found (OFX_PLUGIN_PATH=%s)" % os.environ.get("OFX_PLUGIN_PATH", ""))
+require_plugin("fr.inria.openfx.WritePNG")
 
 NFRAMES = 100
 calls = []
@@ -50,9 +46,7 @@ def start_render(prefix):
     del calls[:]
     app.render(write, 1, NFRAMES)  # returns at once in the GUI
     # wait (without the GIL: time.sleep() releases it) until the render thread is in the callback
-    t0 = time.time()
-    while not calls and time.time() - t0 < 60:
-        time.sleep(0.01)
+    wait_until(lambda: calls, 60, step=lambda: time.sleep(0.01))
     check(calls, "%s: the render did not call afterFrameRender in 60 s" % prefix)
 
 
@@ -67,9 +61,9 @@ try:
 
     start_render("reset")
     faulthandler.dump_traceback_later(TIMEOUT, exit=True, file=sys.__stderr__)
-    t0 = time.time()
+    t0 = time.monotonic()
     r = app.resetProject()
-    dt = time.time() - t0
+    dt = time.monotonic() - t0
     faulthandler.cancel_dump_traceback_later()
     print("resetProject() -> %r in %.2f s, frames written %d, dialogs %r" % (r, dt, frames_written("reset"), NatronGuiTest.getDialogLog()))
     check(r, "resetProject() returned %r" % r)
@@ -82,9 +76,9 @@ try:
     # test ends, and the exit status of the test is that of the script)
     start_render("close")
     faulthandler.dump_traceback_later(TIMEOUT, exit=True, file=sys.__stderr__)
-    t0 = time.time()
+    t0 = time.monotonic()
     r = app.closeProject()
-    dt = time.time() - t0
+    dt = time.monotonic() - t0
     faulthandler.cancel_dump_traceback_later()
     print("closeProject() -> %r in %.2f s, dialogs %r" % (r, dt, NatronGuiTest.getDialogLog()))
     check(r, "closeProject() returned %r" % r)

@@ -59,7 +59,7 @@ canRunTest()
 
     for (const char* id : ids) {
         if ( !NatronTestPlugin::isAvailable(id) ) {
-            NatronTestPlugin::reportSkipped(id);
+            NatronTestPlugin::reportMissing(id);
 
             return false;
         }
@@ -70,26 +70,9 @@ canRunTest()
 
 // The nodes of a test, destroyed with it
 class Nodes
+    : public NatronTest::NodeScope
 {
 public:
-    ~Nodes()
-    {
-        for (std::vector<NodePtr>::reverse_iterator it = _nodes.rbegin(); it != _nodes.rend(); ++it) {
-            (*it)->destroyNode(true, false);
-        }
-    }
-
-    NodePtr create(const char* pluginID)
-    {
-        NodePtr node = NatronTestPlugin::createNode(pluginID);
-
-        if (node) {
-            _nodes.push_back(node);
-        }
-
-        return node;
-    }
-
     // a net.natron.test.Generator, whose RoD and render fail if fail is true
     NodePtr generator(bool fail)
     {
@@ -105,9 +88,6 @@ public:
 
         return node;
     }
-
-private:
-    std::vector<NodePtr> _nodes;
 };
 
 bool

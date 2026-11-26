@@ -12,6 +12,9 @@ Synopsis
 
 This parameter is used to specify an output file 
 
+A path that uses ``[Project]`` is refused (:class:`ValueError`) while the project has never been saved: see
+:ref:`StringParamBase<stringBaseProjectPath>`.
+
 Functions
 ^^^^^^^^^
 

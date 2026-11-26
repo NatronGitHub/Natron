@@ -21,10 +21,11 @@ on:
       state:
         type: string
         default: ''
-      # the number of stages of the caller: the last one fails if the SDK isn't finished
+      # the number of stages of the caller (the sdk-N jobs of macos_x86_64.yml): the last one fails
+      # if the SDK isn't finished
       last_stage:
         type: number
-        default: 10
+        default: 4
     outputs:
       sdk:
         description: 'name of the finished SDK artifact (empty if not finished)'
@@ -57,10 +58,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: SDK key
+      # (the same step in the sdk job: *sdk_key)
+      - &sdk_key
+        name: SDK key
         env:
           # everything that defines the SDK: a change makes the next run update the SDK
-          SDK_KEY: ${{ hashFiles('tools/MacPorts/*/*/**', 'tools/MacPorts/sync.sh', 'tools/tart/provision.sh', 'tools/tart/check-minos.sh', 'tools/jenkins/macos-release.sh', '.github/workflows/macos_x86_64_sdk.sh') }}
+          SDK_KEY: ${{ hashFiles('tools/MacPorts/*/*/**', 'tools/MacPorts/sync.sh', 'tools/MacPorts/macports-env.sh', 'tools/tart/provision.sh', 'tools/tart/check-minos.sh', 'tools/jenkins/macos-release.sh', '.github/workflows/macos_x86_64_sdk.sh') }}
         run: echo "SDK_KEY_SHORT=${SDK_KEY:0:16}" >> "$GITHUB_ENV"
 
       - name: Find an SDK to start from
@@ -99,11 +102,7 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - name: SDK key
-        env:
-          # everything that defines the SDK: a change makes the next run update the SDK
-          SDK_KEY: ${{ hashFiles('tools/MacPorts/*/*/**', 'tools/MacPorts/sync.sh', 'tools/tart/provision.sh', 'tools/tart/check-minos.sh', 'tools/jenkins/macos-release.sh', '.github/workflows/macos_x86_64_sdk.sh') }}
-        run: echo "SDK_KEY_SHORT=${SDK_KEY:0:16}" >> "$GITHUB_ENV"
+      - *sdk_key
 
       - name: Download the SDK to update
         if: needs.find.outputs.what == 'update'
@@ -129,15 +128,17 @@ jobs:
           # provision.sh's layout (tools/tart/tart-common.sh)
           mkdir -p ~/Documents/third_party
           ln -sfn "$GITHUB_WORKSPACE" ~/Documents/third_party/Natron
-          [ -d ~/Documents/third_party/osmesa-install ] ||
-            /usr/bin/git clone -q --depth 1 https://github.com/devernay/osmesa-install.git ~/Documents/third_party/osmesa-install
+          if [ ! -d ~/Documents/third_party/osmesa-install ]; then
+            . tools/jenkins/macos-release.sh
+            /usr/bin/git clone -q https://github.com/devernay/osmesa-install.git ~/Documents/third_party/osmesa-install
+            /usr/bin/git -C ~/Documents/third_party/osmesa-install checkout -q "$NATRON_OSMESA_INSTALL_COMMIT"
+          fi
           /usr/bin/git -C ~/Documents/third_party/osmesa-install log -1 --format='osmesa-install %h %cs %s'
 
       - name: Provision (stage ${{ inputs.stage }})
         id: provision
         run: |
-          export PATH=/opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
-          for v in $(env | sed -n 's/^\(HOMEBREW_[A-Za-z_]*\)=.*/\1/p'); do unset "$v"; done
+          . tools/MacPorts/macports-env.sh
           steps=$("$SDK_TOOL" steps)
           # an SDK of an earlier run: update it, then run the steps that are not done (new ones)
           [ "${{ needs.find.outputs.what }}" != update ] || steps="update $steps"

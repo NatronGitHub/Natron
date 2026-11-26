@@ -66,23 +66,34 @@ public:
 
     /// Start the server by bounding to the given @c address and @c port.
     /** @note This function returns immediately, it does not block.
-        @param address Address on which to listen to. Default is to listen on
-        all interfaces which means the server can be accessed from anywhere.
+        @param address Address on which to listen to. Natron: the default is the
+        loopback interface (127.0.0.1), so that the server can only be accessed
+        from this computer (upstream: all interfaces).
         @param port Port number on which the server should run.
         @return True if the server was started successfully, false otherwise.
         @sa listen(quint16) */
-    bool listen(const QHostAddress &address = QHostAddress::Any, quint16 port = 80);
+    bool listen(const QHostAddress &address = QHostAddress::LocalHost, quint16 port = 80);
 
-    /// Starts the server on @c port listening on all interfaces.
-    /** @param port Port number on which the server should run.
+    /// Starts the server on @c port listening on the loopback interface (127.0.0.1).
+    /** (Natron; upstream: all interfaces)
+        @param port Port number on which the server should run.
         @return True if the server was started successfully, false otherwise.
         @sa listen(const QHostAddress&, quint16) */
     bool listen(quint16 port);
 
+    /// The port the server listens on, or 0 if it is not listening (Natron).
     int serverPort();
 
     /// Stop the server and listening for new connections.
     void close();
+
+    /// Natron: a connection without any data received or sent for this long is closed
+    /// (default 60000 ms; 0: never). Applies to the connections accepted afterwards.
+    void setIdleTimeout(int msecs);
+
+    /// Natron: at most this many connections at a time; more are closed at once (default 32;
+    /// 0: no limit). Closed connections count until the event loop deletes them.
+    void setMaxConnections(int maxConnections);
 Q_SIGNALS:
     /// Emitted when a client makes a new request to the server.
     /** The slot should use the given @c request and @c response
@@ -99,6 +110,9 @@ private Q_SLOTS:
 
 private:
     QTcpServer *m_tcpServer;
+    // Natron: so that a local program can't hold any number of idle connections (and file descriptors)
+    int m_idleTimeoutMs;
+    int m_maxConnections;
 };
 
 #endif

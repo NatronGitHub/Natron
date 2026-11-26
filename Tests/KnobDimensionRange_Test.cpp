@@ -25,6 +25,8 @@
 
 #include "Global/Macros.h"
 
+#include <functional>
+#include <list>
 #include <stdexcept>
 #include <string>
 
@@ -32,12 +34,13 @@
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
-#include "Engine/CreateNodeArgs.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/ViewIdx.h"
+
+#include "TestUtils.h"
 
 NATRON_NAMESPACE_USING
 
@@ -47,12 +50,9 @@ NATRON_NAMESPACE_USING
 // They throw std::invalid_argument for it, as for a negative dimension.
 TEST(KnobDimensionRange, DerivativeAndIntegral)
 {
-    AppInstancePtr app = appPTR->getTopLevelInstance();
-    ASSERT_TRUE( bool(app) );
     // Dot is a built-in node: no OpenFX plug-in is needed.
-    CreateNodeArgs args( PLUGINID_NATRON_DOT, app->getProject() );
-    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-    NodePtr node = app->createNode(args);
+    NatronTest::NodeScope nodes;
+    NodePtr node = nodes.create(PLUGINID_NATRON_DOT);
     ASSERT_TRUE( bool(node) );
 
     {
@@ -62,19 +62,17 @@ TEST(KnobDimensionRange, DerivativeAndIntegral)
         knob->setValueAtTime(10., 10., ViewSpec::all(), 1);
 
         // the last dimension is in range
-        EXPECT_NO_THROW( static_cast<void>( knob->getDerivativeAtTime( 5., ViewSpec::current(), 1 ) ) );
-        EXPECT_NO_THROW( static_cast<void>( knob->getIntegrateFromTimeToTime( 0., 10., ViewSpec::current(), 1 ) ) );
-        EXPECT_THROW( static_cast<void>( knob->getDerivativeAtTime( 5., ViewSpec::current(), 2 ) ), std::invalid_argument );
-        EXPECT_THROW( static_cast<void>( knob->getIntegrateFromTimeToTime( 0., 10., ViewSpec::current(), 2 ) ), std::invalid_argument );
-        EXPECT_THROW( static_cast<void>( knob->getDerivativeAtTime( 5., ViewSpec::current(), -1 ) ), std::invalid_argument );
-        EXPECT_THROW( static_cast<void>( knob->getIntegrateFromTimeToTime( 0., 10., ViewSpec::current(), -1 ) ), std::invalid_argument );
+        EXPECT_NO_THROW( ignore_result( knob->getDerivativeAtTime( 5., ViewSpec::current(), 1 ) ) );
+        EXPECT_NO_THROW( ignore_result( knob->getIntegrateFromTimeToTime( 0., 10., ViewSpec::current(), 1 ) ) );
+        EXPECT_THROW( ignore_result( knob->getDerivativeAtTime( 5., ViewSpec::current(), 2 ) ), std::invalid_argument );
+        EXPECT_THROW( ignore_result( knob->getIntegrateFromTimeToTime( 0., 10., ViewSpec::current(), 2 ) ), std::invalid_argument );
+        EXPECT_THROW( ignore_result( knob->getDerivativeAtTime( 5., ViewSpec::current(), -1 ) ), std::invalid_argument );
+        EXPECT_THROW( ignore_result( knob->getIntegrateFromTimeToTime( 0., 10., ViewSpec::current(), -1 ) ), std::invalid_argument );
         // the same off-by-one in the keyframe edits
         // (KnobHelper's override is private: call it through KnobI, as KnobSlave_Test.cpp does)
         EXPECT_THROW( static_cast<KnobI*>( knob.get() )->deleteValueAtTime( eCurveChangeReasonInternal, 10., ViewSpec::all(), 2, false ), std::invalid_argument );
         EXPECT_EQ( 2, knob->getKeyFramesCount( ViewIdx(0), 1 ) );
     }
-
-    node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
 }
 
 // From Python, a dimension out of range gives 0, as getValue(dimension) does (a C++ exception
@@ -98,4 +96,43 @@ TEST(KnobDimensionRange, PythonDerivativeAndIntegral)
         "del values\n";
     std::string error, output;
     EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, &output) ) << error << output;
+}
+
+// The message of an std::invalid_argument thrown by f, empty if it doesn't throw
+static std::string
+invalidArgumentMessage(const std::function<void()>& f)
+{
+    try {
+        f();
+    } catch (const std::invalid_argument& e) {
+        return std::string( e.what() );
+    }
+
+    return std::string();
+}
+
+// All the dimension checks are KnobHelper::checkDimension(): getAnimationLevel() read the master of the
+// dimension before checking it, and the messages named other functions.
+TEST(KnobDimensionRange, CheckedDimensionAndMessage)
+{
+    NatronTest::NodeScope nodes;
+    NodePtr node = nodes.create(PLUGINID_NATRON_DOT);
+    ASSERT_TRUE( bool(node) );
+
+    {
+        KnobDoublePtr knob = AppManager::createKnob<KnobDouble>(node->getEffectInstance().get(), std::string("size"), 2);
+        knob->setName("size");
+        KnobI* knobI = knob.get();
+
+        // the lambdas return the WARN_UNUSED_RETURN results, which std::function<void()> discards
+        EXPECT_EQ( std::string(), invalidArgumentMessage([knobI] { return knobI->getAnimationLevel(1); }) );
+        EXPECT_EQ( std::string("KnobHelper::getAnimationLevel(): Dimension out of range"),
+                   invalidArgumentMessage([knobI] { return knobI->getAnimationLevel(2); }) );
+        EXPECT_EQ( std::string("KnobHelper::getAnimationLevel(): Dimension out of range"),
+                   invalidArgumentMessage([knobI] { return knobI->getAnimationLevel(-1); }) );
+        EXPECT_EQ( std::string("KnobHelper::moveDerivativeAtTime(): Dimension out of range"),
+                   invalidArgumentMessage([knobI] { return knobI->moveDerivativeAtTime(eCurveChangeReasonInternal, ViewSpec::all(), 2, 10., 1., true); }) );
+        EXPECT_EQ( std::string("KnobHelper::deleteValuesAtTime(): Dimension out of range"),
+                   invalidArgumentMessage([knobI] { knobI->deleteValuesAtTime(eCurveChangeReasonInternal, std::list<double>(1, 10.), ViewSpec::all(), 2, false); }) );
+    }
 }

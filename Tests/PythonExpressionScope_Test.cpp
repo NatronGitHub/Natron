@@ -57,6 +57,7 @@ class PythonExpressionScopeTest
 {
 protected:
     NodePtr _node;
+    bool _variablesSet = false;
 
     virtual void SetUp() OVERRIDE
     {
@@ -68,8 +69,8 @@ protected:
         args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
         _node = app->createNode(args);
 
-        // the variables of a user script
-        std::string script;
+        // the variables of a user script; the names of __main__ before them, for TearDown
+        std::string script = "natronTestGlobalsBefore = set( globals() )\n";
         for (std::size_t i = 0; i < sizeof(kUserVariables) / sizeof(kUserVariables[0]); ++i) {
             script += std::string(kUserVariables[i]) + " = 'user " + kUserVariables[i] + "'\n";
         }
@@ -80,31 +81,47 @@ protected:
         script += "def natronTestTwice(x):\n    return 2 * x\n";
         script += "natronTestAppId = id(app)\n";
         std::string error;
-        EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, 0) ) << error;
+        _variablesSet = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, 0);
+        EXPECT_TRUE(_variablesSet) << error;
     }
 
     virtual void TearDown() OVERRIDE
     {
+        // the name of the node, which SetUp declared in __main__ too
+        const std::string nodeName = _node ? _node->getScriptName_mt_safe() : std::string();
+
         if (_node) {
             _node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
             _node.reset();
         }
-        std::string script;
+        if (!_variablesSet) {
+            return;
+        }
+        // remove the variables of SetUp, so that they don't stay in __main__ for the next tests
+        std::string names;
         for (std::size_t i = 0; i < sizeof(kUserVariables) / sizeof(kUserVariables[0]); ++i) {
-            script += std::string("del ") + kUserVariables[i] + "\n";
+            names += std::string("'") + kUserVariables[i] + "', ";
         }
-        if (_node) {
-            script += "del " + _node->getScriptName_mt_safe() + "\n";
+        if ( !nodeName.empty() ) {
+            names += "'" + nodeName + "', ";
         }
-        script += "del natronTestTwice\ndel natronTestAppId\n";
+        names += "'natronTestTwice', 'natronTestAppId'";
+        const std::string script =
+            "for natronTestName in (" + names + "):\n"
+            "    globals().pop(natronTestName, None)\n"
+            "natronTestLeft = set( globals() ) - natronTestGlobalsBefore - {'natronTestGlobalsBefore', 'natronTestName'}\n"
+            "del natronTestGlobalsBefore, natronTestName\n"
+            "if natronTestLeft:\n"
+            "    raise AssertionError( 'variables of the test left in __main__: %s' % sorted(natronTestLeft) )\n"
+            "del natronTestLeft\n";
         std::string error;
-        NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, 0);
+        EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, 0) ) << error;
     }
 
     bool skipped()
     {
         if (!_node) {
-            NatronTestPlugin::reportSkipped(kNatronTestPluginParams);
+            NatronTestPlugin::reportMissing(kNatronTestPluginParams);
 
             return true;
         }

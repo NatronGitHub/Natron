@@ -180,11 +180,30 @@ App::createNode(const QString& pluginID,
     }
 }
 
+// App.createReader() and App.createWriter() refuse a file name that uses [Project] before the project is saved, as
+// FileParam.setValue() does (#1539): ValueError, and no node is created.
+static bool
+checkProjectPathIsSet(const AppInstancePtr& app,
+                      const QString& filename)
+{
+    const std::string path = filename.toStdString();
+
+    if ( app->isCreatingPythonGroup() || app->getProject()->isLoadingProject() || !app->getProject()->usesUnsetProjectPath(path) ) {
+        return true;
+    }
+    PyErr_SetString( PyExc_ValueError, Project::unsetProjectPathMessage(path).toStdString().c_str() );
+
+    return false;
+}
+
 Effect*
 App::createReader(const QString& filename,
                   Group* group,
                   const NodeCreationPropertyMap& props) const
 {
+    if ( !checkProjectPathIsSet(getInternalApp(), filename) ) {
+        return NULL;
+    }
     NodeCollectionPtr collection = getCollectionFromGroup(group);
 
     assert(collection);
@@ -207,6 +226,9 @@ App::createWriter(const QString& filename,
                   Group* group,
                   const NodeCreationPropertyMap& props) const
 {
+    if ( !checkProjectPathIsSet(getInternalApp(), filename) ) {
+        return NULL;
+    }
     NodeCollectionPtr collection = getCollectionFromGroup(group);
 
     assert(collection);
@@ -430,11 +452,24 @@ App::addFormat(const QString& formatSpec)
     }
 }
 
+// filename with its project variables, such as [Project], expanded: all the save functions do it
+std::string
+App::expandedFileName(const QString& filename) const
+{
+    std::string outFile = filename.toStdString();
+    std::map<std::string, std::string> env;
+
+    getInternalApp()->getProject()->getEnvironmentVariables(env);
+    Project::expandVariable(env, outFile);
+
+    return outFile;
+}
+
 bool
 App::saveProjectCopy(const QString& filename,
                      ProjectFileFormatEnum format)
 {
-    return getInternalApp()->saveTemp(filename.toStdString(), format);
+    return getInternalApp()->saveTemp(expandedFileName(filename), format);
 }
 
 bool
@@ -448,35 +483,20 @@ bool
 App::saveProject(const QString& filename,
                  ProjectFileFormatEnum format)
 {
-    std::string outFile = filename.toStdString();
-    std::map<std::string, std::string> env;
-    getInternalApp()->getProject()->getEnvironmentVariables(env);
-    Project::expandVariable(env, outFile);
-
-    return getInternalApp()->save(outFile, format);
+    return getInternalApp()->save(expandedFileName(filename), format);
 }
 
 bool
 App::saveProjectAs(const QString& filename,
                    ProjectFileFormatEnum format)
 {
-    std::string outFile = filename.toStdString();
-    std::map<std::string, std::string> env;
-    getInternalApp()->getProject()->getEnvironmentVariables(env);
-    Project::expandVariable(env, outFile);
-
-    return getInternalApp()->saveAs(outFile, format);
+    return getInternalApp()->saveAs(expandedFileName(filename), format);
 }
 
 bool
 App::saveProjectAsPython(const QString& filename)
 {
-    std::string outFile = filename.toStdString();
-    std::map<std::string, std::string> env;
-    getInternalApp()->getProject()->getEnvironmentVariables(env);
-    Project::expandVariable(env, outFile);
-
-    return getInternalApp()->saveTemp(outFile, eProjectFileFormatPython);
+    return saveProjectCopy(filename, eProjectFileFormatPython);
 }
 
 ProjectFileFormatEnum
@@ -556,34 +576,38 @@ checkMainThread(const char* function)
     return true;
 }
 
+// App.undo() and App.redo(): only on the main thread, outside an undo group (the group would record the state
+// of what the undo or redo changes, and its step would undo it)
+static bool
+checkUndoRedoAllowed(const AppInstancePtr& app,
+                     const char* function)
+{
+    if ( !checkMainThread(function) ) {
+        return false;
+    }
+    if (app->getUndoGroupDepth() > 0) {
+        PyErr_Format(PyExc_RuntimeError, "%s cannot be called in an open undo group", function);
+
+        return false;
+    }
+
+    return true;
+}
+
 void
 App::undo()
 {
-    if ( !checkMainThread("App.undo()") ) {
-        return;
+    if ( checkUndoRedoAllowed(getInternalApp(), "App.undo()") ) {
+        getInternalApp()->undo();
     }
-    if (getInternalApp()->getUndoGroupDepth() > 0) {
-        // the group would record the state of what the undo changes, and its step would undo it
-        PyErr_SetString(PyExc_RuntimeError, "App.undo() cannot be called in an open undo group");
-
-        return;
-    }
-    getInternalApp()->undo();
 }
 
 void
 App::redo()
 {
-    if ( !checkMainThread("App.redo()") ) {
-        return;
+    if ( checkUndoRedoAllowed(getInternalApp(), "App.redo()") ) {
+        getInternalApp()->redo();
     }
-    if (getInternalApp()->getUndoGroupDepth() > 0) {
-        // the group would record the state of what the undo changes, and its step would undo it
-        PyErr_SetString(PyExc_RuntimeError, "App.redo() cannot be called in an open undo group");
-
-        return;
-    }
-    getInternalApp()->redo();
 }
 
 bool

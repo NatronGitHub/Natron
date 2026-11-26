@@ -14,9 +14,7 @@ xf.connectInput(0, gen)
 viewer.connectInput(0, xf)
 
 # the overlay of a node is shown while its settings panel is open: select it and press Return
-app.clearSelection()
-app.selectNode(xf, True)
-NatronGuiTest.sendKey("NodeGraph", "Return")
+open_settings_panel(xf)
 fit_viewer()
 
 translate = xf.getParam("translate")

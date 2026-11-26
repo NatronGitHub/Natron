@@ -51,6 +51,12 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/EngineFwd.h"
 
 
+// Script names of project parameters that the code refers to by name
+#define kProjectParamFrameRange "frameRange"
+#define kProjectParamSoftwareVersion "softwareVersion"
+#define kProjectParamLastAuthor "lastAuthor"
+#define kProjectParamLastSaveDate "lastSaveDate"
+
 NATRON_NAMESPACE_ENTER
 
 struct ProjectPrivate;
@@ -230,11 +236,22 @@ public:
     static bool isPythonProjectFile(const QString& filePath) WARN_UNUSED_RETURN;
 
     /**
+     * @brief Whether filePath, chosen by the user (command line, macOS file-open event, drop), is opened as a project:
+     * a .ntp file, or a .py file that isPythonProjectFile(). Suffixes are compared case-insensitively, as on
+     * the file systems of macOS and Windows; other .py files are Python scripts (hasPythonFileExtension()).
+     **/
+    static bool isProjectFile(const QString& filePath) WARN_UNUSED_RETURN;
+
+    // Whether the suffix of filePath is NATRON_PYTHON_FILE_EXT (resp. NATRON_PROJECT_FILE_EXT), case-insensitively
+    static bool hasPythonFileExtension(const QString& filePath) WARN_UNUSED_RETURN;
+    static bool hasProjectFileExtension(const QString& filePath) WARN_UNUSED_RETURN;
+
+    /**
      * @brief The file written by a save in eProjectFileFormatPython: the project settings, then the nodes
      * (with the Viewers), written by the PyPlug exporter (NodeCollection::exportGroupToPython()).
      * It is defined in NodeGroup.cpp, with that exporter.
      **/
-    void exportToPython(QString& output);
+    QString exportToPython() WARN_UNUSED_RETURN;
 
     /**
      * @brief If fileName is the name of an auto-save, ending with .ntp.autosave (text, by Natron 2.5 and earlier)
@@ -429,6 +446,15 @@ public:
      **/
     void makeRelativeToProject(std::string& str);
 
+    /**
+     * @brief Returns true if filePath starts with the [Project] path, directly or through another project path
+     * (e.g. [Shots] = [Project]/shots), while [Project] has no value, which is the case until the project is
+     * saved: the path would then be in the root folder of the file system. File parameters refuse such a path
+     * (#1539); unsetProjectPathMessage() is the message to show.
+     **/
+    bool usesUnsetProjectPath(const std::string& filePath) const WARN_UNUSED_RETURN;
+    static QString unsetProjectPathMessage(const std::string& filePath) WARN_UNUSED_RETURN;
+
     bool fixFilePath(const std::string& projectPathName, const std::string& newProjectPath,
                      std::string& filePath);
 
@@ -453,6 +479,7 @@ public:
     bool isFrameRangeLocked() const;
 
     void getFrameRange(double* first, double* last) const;
+    void setFrameRange(int first, int last);
 
     void unionFrameRangeWith(int first, int last);
 
@@ -561,6 +588,10 @@ private:
 
     // Loads a project saved in eProjectFileFormatPython (see loadProjectImpl())
     void loadPythonProjectInternal(const QString & path, const QString & name);
+
+    // The end of both loads: takes the project lock (a lock file), unless an auto-save was loaded, runs the
+    // afterProjectLoad callback and processes the pending events
+    void finishLoad(bool isAutoSave);
 
     QString saveProjectInternal(const QString & path, const QString & name, bool autosave, bool updateProjectProperties, QStringList* warnings,
                                 ProjectFileFormatEnum format);

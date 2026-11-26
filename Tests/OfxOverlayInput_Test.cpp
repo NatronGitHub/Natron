@@ -163,7 +163,7 @@ TEST(OfxOverlayInput, KeyStringFromText)
 TEST(OfxOverlayInput, ViewerOverlay)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginOverlayInput) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginOverlayInput);
+        NatronTestPlugin::reportMissing(kNatronTestPluginOverlayInput);
 
         return;
     }
@@ -240,7 +240,7 @@ TEST(OfxOverlayInput, KeySuperAsMeta)
 TEST(OfxOverlayInput, MetaKeyModifier)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginOverlayInput) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginOverlayInput);
+        NatronTestPlugin::reportMissing(kNatronTestPluginOverlayInput);
 
         return;
     }

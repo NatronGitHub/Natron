@@ -8,25 +8,20 @@ import os
 import shutil
 import tempfile
 
-import NatronGuiTest
 from natrontest import *
 
-from run_gui_smoke_test import writePNG
+import natronrunner
 
-if not os.environ.get("OCIO"):
-    # the Write node fails without an OCIO config ("Invalid OCIO config")
-    NatronGuiTest.skip("OCIO is not set to an OpenColorIO config")
-ids = natron.getPluginIDs()
-for pluginID in ("fr.inria.openfx.ReadPNG", "fr.inria.openfx.WritePNG"):
-    if not any(i.startswith(pluginID) for i in ids):
-        NatronGuiTest.skip("plug-in %s not found (OFX_PLUGIN_PATH=%s)" % (pluginID, os.environ.get("OFX_PLUGIN_PATH", "")))
+require_ocio()
+require_plugin("fr.inria.openfx.ReadPNG")
+require_plugin("fr.inria.openfx.WritePNG")
 
 FRAMES = (1, 2)
 
 outDir = tempfile.mkdtemp(prefix="natron-render-one-write-")
 try:
     app.getProjectParam("frameRange").set(FRAMES[0], FRAMES[-1])
-    writePNG(os.path.join(outDir, "input.png"), 64, 48)
+    natronrunner.write_png(os.path.join(outDir, "input.png"), 64, 48)
     read = app.createNode("fr.inria.built-in.Read")
     read.getParam("filename").set(os.path.join(outDir, "input.png"))
     first = app.createNode("fr.inria.built-in.Write")

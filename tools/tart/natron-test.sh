@@ -12,11 +12,11 @@
 #
 # TEST=TestFoo or TESTCUSTOM=TestBar in the environment run a single test (see runTests.sh); the
 # results are then named <dmg name>-partial-<test>-*, not as release assets.
-# runTests.sh reports the known failures (Natron-Tests' known_failures/common.txt and macos.txt) as
-# "KNOWN FAIL" and the known failures that passed as "UNEXPECTED PASS" (the lists must then be
+# runTests.sh reports the known failures (Natron-Tests' known_failures/common.txt, macos.txt, arm64.txt
+# or x86_64.txt) as "KNOWN FAIL" and those that passed as "UNEXPECTED PASS" (the lists must then be
 # updated, through a Natron-Tests pull request); natron-test.sh needs a Natron-Tests with these lists.
-# Exit status: 0 if every test passed or is a known failure, 1 otherwise (or if the suite did
-# not run): a release gate. Unexpected passes are reported, and don't fail the run.
+# Exit status: 0 if every test passed or is a known failure, 1 otherwise: a test failed that isn't
+# a known failure, a known failure passed (UNEXPECTED PASS), or the suite did not run. A release gate.
 # Results, as in the Natron release assets (tools/jenkins/runUnitTests.sh):
 #   <dmg name>-tests.txt                  runTests.sh's result.txt (one "Test : PASS", "FAIL",
 #                                         "KNOWN FAIL" or "UNEXPECTED PASS" line per test)
@@ -77,7 +77,7 @@ trap tart_unlock EXIT   # replaced by cleanup once the clone exists
 VM=natron-test-$(date +%Y%m%d-%H%M%S)-$$
 cleanup() {
     # the tart guest agent (used by vm_stop) ran from /opt/homebrew: shut down through ssh, if
-    # the VM got an address (vm_addr would otherwise search for one for 15 minutes)
+    # the VM got an address (vm_addr would otherwise search for one for up to 25 minutes)
     if vm_running "$VM" && [ -s "$(vm_addr_cache "$VM")" ]; then
         vm_ssh "$VM" 'sudo /sbin/shutdown -h now' > /dev/null 2>&1 || true
         for _ in $(seq 30); do vm_running "$VM" || break; sleep 5; done
@@ -112,8 +112,9 @@ vm_rsync "$VM" "$NATRON_TESTS_SRC/" Natron-Tests/ --exclude .git --exclude /resu
 
 log "running Natron-Tests in $VM (TEST=${TEST:-all})"
 status=0
-vm_ssh "$VM" "rm -rf results && env ALL_PROXY=$GUEST_PROXY TEST_TIMEOUT=$TEST_TIMEOUT ${TEST:+TEST=\"$TEST\"} ${TESTCUSTOM:+TESTCUSTOM=\"$TESTCUSTOM\"} \
-    /bin/bash run-natron-tests.sh natron.dmg Natron-Tests results '$NAME'" || status=$?
+# (printf %q: the remote shell parses the command line again)
+vm_ssh "$VM" "rm -rf results && env ALL_PROXY=$GUEST_PROXY TEST_TIMEOUT=$TEST_TIMEOUT ${TEST:+TEST=$(printf %q "$TEST")} ${TESTCUSTOM:+TESTCUSTOM=$(printf %q "$TESTCUSTOM")} \
+    /bin/bash run-natron-tests.sh natron.dmg Natron-Tests results $(printf %q "$NAME")" || status=$?
 
 log "copying the results to $OUT"
 vm_rsync_back "$VM" results/ "$OUT/" || { log "Error: no results"; status=1; }

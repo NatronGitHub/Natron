@@ -1,17 +1,19 @@
-# Default node names (#1565): each new node gets the smallest free number, and naming thousands of nodes
-# is fast (it was cubic: building a 5000-node chain took minutes). Run by NatronRenderer -t (see
-# Tests/CMakeLists.txt); the run time of the loop is printed.
+"""Default node names (#1565): each new node gets the smallest free number.
+
+Naming thousands of nodes is fast (it was cubic: building a 5000-node chain took minutes); the run
+time of the loop is printed.
+"""
+
 import time
 
-from NatronEngine import natron
+import natronheadless
 
-status = 1
-try:
-    app = natron.getInstance(0)
+
+def main(app):
     count = 2000
-    start = time.time()
+    start = time.monotonic()
     nodes = [app.createNode("fr.inria.built-in.Dot") for _ in range(count)]
-    print("created %d Dot nodes in %.1f s" % (count, time.time() - start))
+    print("created %d Dot nodes in %.1f s" % (count, time.monotonic() - start))
     names = [n.getScriptName() for n in nodes]
     assert names == ["Dot%d" % (i + 1) for i in range(count)], names[:10]
 
@@ -26,8 +28,6 @@ try:
     renamed = nodes[0].setScriptName("Dot2")
     assert not renamed
     assert nodes[0].getScriptName() == "Dot1"
-    status = 0
-except BaseException:
-    import traceback
-    traceback.print_exc()
-natron.quit(status)
+
+
+natronheadless.run(main)

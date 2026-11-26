@@ -49,90 +49,18 @@
 NATRON_NAMESPACE_USING
 
 namespace {
-// Enable OpenGL rendering (Preferences/GPU Rendering) for the lifetime of the object.
-// Changing that setting deletes the OpenFX plug-in load cache (Settings::onKnobValueChanged() calls
-// AppManager::clearPluginsLoadedCache()). The cache files are saved first and written back afterwards:
-// the TestsOfxCache test (Tests/CMakeLists.txt) runs on the cache written by the full Tests run.
-class OpenGLRenderingEnabler
-{
-    KnobChoice* _knob;
-    int _savedValue;
-    std::map<QString, QByteArray> _ofxCacheFiles;
-
-    static QString ofxCacheDirPath()
-    {
-        return appPTR->getDiskCacheLocation() + QString::fromUtf8("/OFXLoadCache");
-    }
-
-public:
-    OpenGLRenderingEnabler()
-        : _knob( dynamic_cast<KnobChoice*>( appPTR->getCurrentSettings()->getKnobByName("enableOpenGLRendering").get() ) )
-        , _savedValue(0)
-        , _ofxCacheFiles()
-    {
-        if (_knob) {
-            const QDir dir( ofxCacheDirPath() );
-            const QStringList files = dir.entryList(QDir::Files);
-            for (int i = 0; i < files.size(); ++i) {
-                QFile f( dir.absoluteFilePath(files[i]) );
-                if ( f.open(QIODevice::ReadOnly) ) {
-                    _ofxCacheFiles[files[i]] = f.readAll();
-                }
-            }
-            _savedValue = _knob->getValue();
-            _knob->setValue( (int)Settings::eEnableOpenGLEnabled );
-        }
-    }
-
-    ~OpenGLRenderingEnabler()
-    {
-        if (_knob) {
-            _knob->setValue(_savedValue);
-            if ( !_ofxCacheFiles.empty() ) {
-                const QDir dir( ofxCacheDirPath() );
-                dir.mkpath( QString::fromUtf8(".") );
-                for (std::map<QString, QByteArray>::const_iterator it = _ofxCacheFiles.begin(); it != _ofxCacheFiles.end(); ++it) {
-                    QFile f( dir.absoluteFilePath(it->first) );
-                    if ( f.open(QIODevice::WriteOnly | QIODevice::Truncate) ) {
-                        f.write(it->second);
-                    }
-                }
-            }
-        }
-    }
-
-    bool isEnabled() const
-    {
-        return appPTR->getCurrentSettings()->isOpenGLRenderingEnabled();
-    }
-};
-
 bool
 canRunTest(const char* pluginID)
 {
-    if ( !NatronTestPlugin::isAvailable(pluginID) || !NatronTestPlugin::isAvailable(kNatronTestPluginGenerator) ) {
-        NatronTestPlugin::reportSkipped(pluginID);
+    for (const char* id : { pluginID, kNatronTestPluginGenerator }) {
+        if ( !NatronTestPlugin::isAvailable(id) ) {
+            NatronTestPlugin::reportMissing(id);
 
-        return false;
-    }
-    if ( !appPTR->isOpenGLLoaded() ) {
-        // TODO: Convert to GTEST_SKIP() when gtest updated.
-        std::cerr << "[  SKIPPED ] " << pluginID << ": OpenGL could not be loaded" << std::endl;
-
-        return false;
-    }
-    if ( !appPTR->hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering) || appPTR->getOpenGLRenderers().empty() ) {
-        // OpenGL rendering can't be enabled in the preferences (the setting is hidden and
-        // Settings::isOpenGLRenderingEnabled() is false) when no renderer qualifies. On Linux, the
-        // renderers that GLX_MESA_query_renderer reports as not accelerated are skipped, e.g. the
-        // software Mesa llvmpipe of the Xvfb CI (OSGLContext_x11::getGPUInfos).
-        // TODO: Convert to GTEST_SKIP() when gtest updated.
-        std::cerr << "[  SKIPPED ] " << pluginID << ": no OpenGL renderer can be used for OpenGL rendering" << std::endl;
-
-        return false;
+            return false;
+        }
     }
 
-    return true;
+    return NatronTest::requireOpenGLRendering();
 }
 }
 
@@ -141,7 +69,7 @@ TEST(OpenGLRenderFailed, RetriedOnTheCPU)
     if ( !canRunTest(kNatronTestPluginGPURenderFailed) ) {
         return;
     }
-    OpenGLRenderingEnabler enabler;
+    NatronTest::ScopedOpenGLRendering enabler;
     ASSERT_TRUE( enabler.isEnabled() );
     NodePtr source = NatronTestPlugin::createNode(kNatronTestPluginGenerator);
     NodePtr node = NatronTestPlugin::createNode(kNatronTestPluginGPURenderFailed);
@@ -170,7 +98,7 @@ TEST(OpenGLRenderFailed, NoCPURenderIsAnError)
     if ( !canRunTest(kNatronTestPluginGPUOnlyRenderFailed) ) {
         return;
     }
-    OpenGLRenderingEnabler enabler;
+    NatronTest::ScopedOpenGLRendering enabler;
     ASSERT_TRUE( enabler.isEnabled() );
     NodePtr source = NatronTestPlugin::createNode(kNatronTestPluginGenerator);
     NodePtr node = NatronTestPlugin::createNode(kNatronTestPluginGPUOnlyRenderFailed);

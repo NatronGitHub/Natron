@@ -27,6 +27,7 @@
 #include "qhttpserverfwd.h"
 
 #include <QObject>
+#include <QPointer>
 
 /// The QHttpResponse class handles sending data back to the client as a response to a request.
 /** The steps to respond correctly are
@@ -142,7 +143,9 @@ Q_SIGNALS:
     /// Emitted when the response is finished.
     /** You should <b>not</b> interact with this object
         after done() has been emitted as the object
-        has already been scheduled for deletion. */
+        has already been scheduled for deletion.
+        (Natron: not emitted if the connection is deleted before end(); the
+        response is then scheduled for deletion too.) */
     void done();
 
 private:
@@ -151,7 +154,8 @@ private:
     void writeHeaders();
     void writeHeader(const char *field, const QString &value);
 
-    QHttpConnection *m_connection;
+    // Natron: QPointer, NULL once the connection is deleted (flush(), waitForBytesWritten())
+    QPointer<QHttpConnection> m_connection;
 
     HeaderHash m_headers;
 

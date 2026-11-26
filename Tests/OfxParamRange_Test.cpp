@@ -51,41 +51,9 @@ NATRON_NAMESPACE_USING
 
 namespace {
 class OfxParamRangeTest
-    : public ::testing::Test
+    : public NatronTestPlugin::ParamsNodeTest
 {
 protected:
-    NodePtr _node;
-
-    virtual void SetUp() OVERRIDE
-    {
-        if ( !NatronTestPlugin::isAvailable(kNatronTestPluginParams) ) {
-            return;
-        }
-        AppInstancePtr app = appPTR->getTopLevelInstance();
-        CreateNodeArgs args( kNatronTestPluginParams, app->getProject() );
-        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-        _node = app->createNode(args);
-    }
-
-    virtual void TearDown() OVERRIDE
-    {
-        if (_node) {
-            _node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
-            _node.reset();
-        }
-    }
-
-    bool skipped()
-    {
-        if (!_node) {
-            NatronTestPlugin::reportSkipped(kNatronTestPluginParams);
-
-            return true;
-        }
-
-        return false;
-    }
-
     template <typename KNOB>
     std::shared_ptr<KNOB> knob(const std::string& name) const
     {

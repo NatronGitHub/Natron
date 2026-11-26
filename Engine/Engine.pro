@@ -80,6 +80,7 @@ SOURCES += \
     DefaultShaders.cpp \
     DiskCacheNode.cpp \
     DocumentationGroups.cpp \
+    DocumentationServer.cpp \
     Dot.cpp \
     EffectInstance.cpp \
     EffectInstancePrivate.cpp \
@@ -238,6 +239,7 @@ HEADERS += \
     DefaultShaders.h \
     DiskCacheNode.h \
     DocumentationGroups.h \
+    DocumentationServer.h \
     DockablePanelI.h \
     Dot.h \
     EffectInstance.h \

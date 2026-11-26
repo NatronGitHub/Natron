@@ -3,7 +3,6 @@
 The Tracker's buttons did nothing when no viewer showed the Tracker (TrackerNode::knobChanged() returned
 at once). The test also checks that the transform solve that follows the tracking ends.
 """
-import time
 
 from natrontest import *
 
@@ -44,14 +43,8 @@ def solved():
     return abs(c.x - 256) < 1e-6 and abs(c.y - 256) < 1e-6
 
 
-deadline = time.time() + 30
-done = False
-while time.time() < deadline:
-    app.waitForRenders(1)
-    if (center.getKeyIndex(2, 0) >= 0 and solved()
-            and motionType.getIsEnabled()):
-        done = True
-        break
+done = wait_until(lambda: center.getKeyIndex(2, 0) >= 0 and solved() and motionType.getIsEnabled(), 30,
+                  step=lambda: app.waitForRenders(1))
 check(center.getKeyIndex(2, 0) >= 0, "Track Next did not track a Tracker that no viewer shows")
 check(solved(), "the transform was not solved after the tracking")
 check(motionType.getIsEnabled(), "the solver parameters stayed disabled after the tracking")

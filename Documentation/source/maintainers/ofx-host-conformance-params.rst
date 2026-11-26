@@ -83,13 +83,13 @@ Table 1: ofxParam.h, host properties
    * - H9
      - `ofxParam.h:684-692 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L684-L692>`__ SupportsStrChoiceAnimation (1.5)
      - DEFAULT
-     - hIE.cpp:4692 default 0, not overridden by Natron
+     - OfxHost.cpp sets it to 0: StrChoice params don't animate (their keyframes would hold option indices, which change when the plug-in reorders its options); kOfxParamPropAnimates = 1 is ignored with a warning (OIEI.cpp ``warnIfAnimates``)
      - OK
    * - H10
      - `ofxParam.h:694-702 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L694-L702>`__ SupportsStrChoice (1.5)
      - DEFAULT
-     - hIE.cpp:4694 default 0, not set by OfxHost.cpp, so the host correctly says "unsupported" (issue `#1101 <https://github.com/NatronGitHub/Natron/issues/1101>`__)
-     - OK (feature N/A)
+     - OfxHost.cpp sets it to 1 (``OfxStrChoiceInstance``, issue `#1101 <https://github.com/NatronGitHub/Natron/issues/1101>`__)
+     - OK
    * - H11
      - `ofxParametricParam.h:88-96 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParametricParam.h#L88-L96>`__ SupportsParametricAnimation
      - DEFAULT
@@ -112,13 +112,13 @@ Table 2: ofxParam.h, parameter types
    * - T1
      - `ofxParam.h:41-74 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L41-L74>`__ the 17 types + Parametric; `ofxParameter.rst:79-97 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxParameter.rst?plain=1#L79-L97>`__
      - MUST (paramDefine)
-     - hP.cpp:218-237 type map; OIEI.cpp:538-693 ``newParam`` builds a knob for every type except StrChoice and Bytes
+     - hP.cpp:218-237 type map; OIEI.cpp ``newParam`` builds a knob for every type (StrChoice since `#1101 <https://github.com/NatronGitHub/Natron/issues/1101>`__, Bytes since `#1102 <https://github.com/NatronGitHub/Natron/issues/1102>`__)
      - OK
    * - T2
      - `ofxParam.h:49 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L49>`__ StrChoice (1.5)
      - MAY
-     - hP.cpp:2252-2260: paramDefine returns kOfxStatErrUnsupported because Natron leaves SupportsStrChoice=0. OIEI ``newParam`` would throw "unknown OFX type" (OIEI.cpp:698-700), but that point is never reached. Issue `#1101 <https://github.com/NatronGitHub/Natron/issues/1101>`__
-     - N/A (not advertised)
+     - SupportsStrChoice=1, so paramDefine accepts them; OIEI ``newParam`` makes an ``OfxStrChoiceInstance``: a ``KnobChoice`` whose entry IDs are the enums and labels the options (ChoiceParam in Python). paramGetValue/paramSetValue pass the enum (kOfxStatErrValue for another string; per-thread storage for the returned string), the default is the plug-in's enum or the first option. Issue `#1101 <https://github.com/NatronGitHub/Natron/issues/1101>`__
+     - OK (fixed by `#1101 <https://github.com/NatronGitHub/Natron/issues/1101>`__)
    * - T3
      - `ofxParam.h:67-85 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L67-L85>`__ Bytes + OfxBytes
      - MAY
@@ -152,15 +152,13 @@ Table 2: ofxParam.h, parameter types
    * - T9
      - `ofxParameter.rst:197-261 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxParameter.rst?plain=1#L197-L261>`__, `ofxParam.h:630-666 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L630-L666>`__ ChoiceOrder (1.5): "If the host supports this property, it should sort the options... display in increasing order"; "To query whether a host supports this, a plugin should attempt to set the property and check the return status"
      - SHOULD
-     - HostSupport declares the property on Choice and StrChoice descriptors (hP.cpp:334,342), so setting it **succeeds**, but nothing in Engine/Gui reads it (``git grep ChoiceOrder`` in Engine/Gui finds nothing). The host signals "supported" and then ignores it. Project storage is safe because Natron restores by option string (T8); only the UI order is wrong. Issues `#1137 <https://github.com/NatronGitHub/Natron/issues/1137>`__, `#1106 <https://github.com/NatronGitHub/Natron/issues/1106>`__
-     - PARTIAL
-
-       Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
+     - HostSupport declares the property on Choice and StrChoice descriptors (hP.cpp:334,342), so setting it **succeeds**. Natron sorts the options by it (stable sort; no order, or not one value per option: the natural order) into ``KnobChoice``'s display order (``OfxChoiceInstance``, ``KnobChoice::getDisplayOrder_mt_safe()``), which the menus (cascading ones included: they show their items in the order they are added), the tooltip and the generated documentation use (Gui/KnobGuiChoice.cpp); changes on an instance are followed (notify hook). Options with negative values are shown ("some hosts may choose to hide" them). The value stays the option index, and projects restore by option string (T8). Issues `#1137 <https://github.com/NatronGitHub/Natron/issues/1137>`__, `#1106 <https://github.com/NatronGitHub/Natron/issues/1106>`__
+     - OK (fixed by `#1137 <https://github.com/NatronGitHub/Natron/issues/1137>`__)
    * - T10
      - `ofxParameter.rst:264-309 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxParameter.rst?plain=1#L264-L309>`__ StrChoice behaviour (store the enum, restore by enum, unknown enum → default)
      - SHOULD
-     - Not supported (T2)
-     - N/A
+     - The project saves the enum (the option string of the ``KnobChoice``, T8) and restores it by exact match (``KnobChoice::eOptionRestorationExactIDOrDefault``); an enum that is not found gives the default, which is the plug-in's (not the option index saved in the project). Options and enums changed on an instance keep the selected enum. ChoiceOrder: T9
+     - OK (fixed by `#1101 <https://github.com/NatronGitHub/Natron/issues/1101>`__)
    * - T11
      - `ofxParameter.rst:311-331 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxParameter.rst?plain=1#L311-L331>`__, `ofxParameter.rst:798-847 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxParameter.rst?plain=1#L798-L847>`__ String modes: SingleLine/MultiLine/FilePath/DirectoryPath/Label/RichText
      - DEFAULT
@@ -376,14 +374,12 @@ Table 3: ofxParam.h, parameter properties
      - `ofxParam.h:630-666 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L630-L666>`__ ChoiceOrder
      - SHOULD
      - See T9
-     - PARTIAL
-
-       Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
+     - OK (fixed by `#1137 <https://github.com/NatronGitHub/Natron/issues/1137>`__)
    * - P26
      - `ofxParam.h:668-682 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L668-L682>`__ ChoiceEnum (StrChoice)
      - MAY
-     - Declared for StrChoice (hP.cpp:339). Natron also accepts it on plain Choice as a Natron extension (hP.cpp:328, OPI.cpp:1447-1451)
-     - N/A
+     - Declared for StrChoice (hP.cpp:339): the IDs of the ``KnobChoice`` entries (T2). Natron also accepts it on plain Choice as a Natron extension (hP.cpp:328, ``choiceOptionFromProperties`` in OPI.cpp)
+     - OK
    * - P27
      - `ofxParam.h:704-742 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L704-L742>`__ Min/Max/DisplayMin/DisplayMax defaults INT_MIN/MAX, ±DBL_MAX; inst rw; "Setting [Min] will also reset kOfxParamPropDisplayMin" (same for Max)
      - DEFAULT/MUST
@@ -756,7 +752,7 @@ Spec-only / UI / return codes
 
 **Problem 13. kOfxPropParamSetNeedsSyncing can't be set by the plug-in (PARTIAL).** Spec `ofxParam.h:271-295 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L271-L295>`__. Not declared on instance properties, so propSet returns ErrUnknown (hPS.cpp:860-864); hIE.cpp:1327 never finds it, so the host always calls SyncPrivateData (allowed by the "not set" branch). *Second check:* ``git grep`` in HostSupport and Engine. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
-**Problem 14. kOfxParamPropChoiceOrder is accepted but ignored (PARTIAL).** Spec `ofxParam.h:630-666 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L630-L666>`__, `ofxParameter.rst:197-261 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxParameter.rst?plain=1#L197-L261>`__ (plug-ins detect support by setting the property). HostSupport declares it (hP.cpp:334,342), so the set succeeds, but Natron never reads it. No project risk (Natron restores choices by option string, Node.cpp:1176-1192); the menu order is wrong. *Issues:* `#1137 <https://github.com/NatronGitHub/Natron/issues/1137>`__, `#1106 <https://github.com/NatronGitHub/Natron/issues/1106>`__. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__, `#1137 <https://github.com/NatronGitHub/Natron/issues/1137>`__, `#1106 <https://github.com/NatronGitHub/Natron/issues/1106>`__.
+**Problem 14. kOfxParamPropChoiceOrder was accepted but ignored (fixed).** Spec `ofxParam.h:630-666 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L630-L666>`__, `ofxParameter.rst:197-261 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxParameter.rst?plain=1#L197-L261>`__ (plug-ins detect support by setting the property). HostSupport declares it (hP.cpp:334,342), so the set succeeds; Natron ignored it, so the menu order was wrong (no project risk: Natron restores choices by option string, Node.cpp:1176-1192). Fixed by `#1137 <https://github.com/NatronGitHub/Natron/issues/1137>`__: the menus show the options in that order (T9). *Issues:* `#1137 <https://github.com/NatronGitHub/Natron/issues/1137>`__, `#1106 <https://github.com/NatronGitHub/Natron/issues/1106>`__, `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
 **Problem 15. Custom params are always hidden and disabled, so their InteractV1 is never shown (PARTIAL).** Spec `ofxParameter.rst:381-394 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxParameter.rst?plain=1#L381-L394>`__. OIEI.cpp:618-619 forces it; OPI.cpp custom setSecret/setEnabled are no-ops. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
@@ -775,6 +771,6 @@ NEXT items seen (out of scope): kOfxParamInterpType (HostSupport hP.cpp:629-635,
 Counts
 ------
 
-Table rows (105): OK 76, PARTIAL 15, WRONG 8, N/A 4, NEXT 2. Some bugs appear in more than one row: paramCopy in S15 and R13, custom interpolation in T15 and P32, ChoiceOrder in T9 and P25.
+Table rows (105): OK 81, PARTIAL 13, WRONG 8, N/A 1, NEXT 2. Some bugs appear in more than one row: paramCopy in S15 and R13, custom interpolation in T15 and P32, ChoiceOrder in T9 and P25.
 
-Distinct problems (1-20): 9 WRONG (1, 2, 3, 4, 5, 7, 9, 10, 11), 11 PARTIAL (6, 8, 12-20).
+Distinct problems (1-20): 9 WRONG (1, 2, 3, 4, 5, 7, 9, 10, 11), 10 PARTIAL (6, 8, 12, 13, 15-20); 14 is fixed.

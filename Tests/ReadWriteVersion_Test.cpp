@@ -66,15 +66,26 @@ versionsAvailable()
         try {
             Plugin* oldPlugin = appPTR->getPluginBinary(QString::fromUtf8(ids[i]), kOldMajor, 0, false);
             Plugin* newestPlugin = appPTR->getPluginBinary(QString::fromUtf8(ids[i]), -1, -1, false);
-            if ( !oldPlugin || !newestPlugin || (oldPlugin->getMajorVersion() != kOldMajor) ||
-                 (newestPlugin->getMajorVersion() != kNewestMajor) ) {
-                // e.g. a real plug-in with that ID and a major of 91 or more is installed
-                NatronTestPlugin::reportSkipped(ids[i]);
+            if ( !oldPlugin || !newestPlugin ) {
+                NatronTestPlugin::reportMissing(ids[i]);
+
+                return false;
+            }
+            if (newestPlugin->getMajorVersion() > kNewestMajor) {
+                // a real plug-in with that ID and a higher major is installed
+                NatronTest::skip(std::string("the newest ") + ids[i] + " is version " +
+                                 std::to_string( newestPlugin->getMajorVersion() ) + ", not the test plug-in");
+
+                return false;
+            }
+            if ( (oldPlugin->getMajorVersion() != kOldMajor) || (newestPlugin->getMajorVersion() != kNewestMajor) ) {
+                // getPluginBinary() found another version (e.g. openfx-io's): the test plug-ins were not loaded
+                NatronTestPlugin::reportMissing(ids[i]);
 
                 return false;
             }
         } catch (...) {
-            NatronTestPlugin::reportSkipped(ids[i]);
+            NatronTestPlugin::reportMissing(ids[i]);
 
             return false;
         }
@@ -170,16 +181,6 @@ pluginIDKnobValue(const NodePtr& node,
 
     return knob ? knob->getValue() : "<no knob>";
 }
-
-// Resets the shared app's project when the test ends, also when an ASSERT fails, so that the next
-// tests get an untitled empty project, not one in a removed directory.
-struct ResetProjectOnExit
-{
-    ~ResetProjectOnExit()
-    {
-        appPTR->getTopLevelInstance()->getProject()->resetProject();
-    }
-};
 } // anonymous namespace
 
 TEST(ReadWriteVersion, ProjectLoadsSavedVersion)
@@ -189,7 +190,7 @@ TEST(ReadWriteVersion, ProjectLoadsSavedVersion)
     }
     QTemporaryDir tmpDir;
     ASSERT_TRUE( tmpDir.isValid() );
-    const ResetProjectOnExit resetProject; // destroyed before tmpDir
+    const NatronTest::ProjectResetScope resetProject; // destroyed before tmpDir
     ProjectPtr project = appPTR->getTopLevelInstance()->getProject();
     const QString dir = tmpDir.path() + QLatin1Char('/');
     const std::string filename = dir.toStdString() + "image.natrontestversion";
@@ -253,7 +254,7 @@ TEST(ReadWriteVersion, ProjectWithoutVersionLoadsLowestMajor)
     ASSERT_TRUE( (0 <= writeLowest) && (writeLowest <= kOldMajor) );
     QTemporaryDir tmpDir;
     ASSERT_TRUE( tmpDir.isValid() );
-    const ResetProjectOnExit resetProject; // destroyed before tmpDir
+    const NatronTest::ProjectResetScope resetProject; // destroyed before tmpDir
     ProjectPtr project = appPTR->getTopLevelInstance()->getProject();
     const QString dir = tmpDir.path() + QLatin1Char('/');
     const std::string filename = dir.toStdString() + "image.natrontestversion";
@@ -300,14 +301,14 @@ TEST(ReadWriteVersion, MissingPluginKeepsVersion)
     const char* const defaultIDs[] = { PLUGINID_OFX_READOIIO, PLUGINID_OFX_WRITEOIIO };
     for (const char* id : defaultIDs) {
         if (lowestMajor(id) < 0) {
-            NatronTestPlugin::reportSkipped(id);
+            NatronTest::skip(std::string("plug-in ") + id + " not found (needs openfx-io in OFX_PLUGIN_PATH)");
 
             return;
         }
     }
     QTemporaryDir tmpDir;
     ASSERT_TRUE( tmpDir.isValid() );
-    const ResetProjectOnExit resetProject; // destroyed before tmpDir
+    const NatronTest::ProjectResetScope resetProject; // destroyed before tmpDir
     ProjectPtr project = appPTR->getTopLevelInstance()->getProject();
     const QString dir = tmpDir.path() + QLatin1Char('/');
     const QString projectName = QString::fromUtf8("ReadWriteMissing.ntp");

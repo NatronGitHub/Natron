@@ -28,7 +28,7 @@ bindings, qmake has an untested Qt 6 path without bindings, and
 shims. What remains: validate the PySide6 bindings and the GUI at run time
 (including the enum/flag issue
 `#854 <https://github.com/NatronGitHub/Natron/issues/854>`_), build Qt 6 in CI
-(weekly or on demand). Qt 6 builds use C++20 (#1469, #1148). Qt 6 work that keeps
+on Windows and macOS (Linux: RB-2.7's Linux job). Qt 6 builds use C++20 (#1469, #1148). Qt 6 work that keeps
 Qt 5 unchanged goes to RB-2.6; RB-2.7 is the Qt 6 branch. Tracks
 `#1011 <https://github.com/NatronGitHub/Natron/issues/1011>`_ and
 `#827 <https://github.com/NatronGitHub/Natron/issues/827>`_.

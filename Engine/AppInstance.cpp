@@ -659,12 +659,12 @@ AppInstance::loadInternal(const CLArgs& cl,
         std::list<AppInstance::RenderWork> writersWork;
 
 
-        if ( ( info.suffix() == QString::fromUtf8(NATRON_PROJECT_FILE_EXT) ) || Project::isPythonProjectFile( info.absoluteFilePath() ) ) {
+        if ( Project::isProjectFile( info.absoluteFilePath() ) ) {
             ///Load the project (a .ntp file, or a project saved as a Python script)
             if ( !_imp->_currentProject->loadProject( info.path(), info.fileName() ) ) {
                 throw std::invalid_argument( tr("Project file loading failed.").toStdString() );
             }
-        } else if ( info.suffix() == QString::fromUtf8("py") ) {
+        } else if ( Project::hasPythonFileExtension( info.fileName() ) ) {
             ///Load the python script
             // A Python error stops the run, so that the exit status is not 0 (#1276)
             if ( !loadPythonScript(info) ) {
@@ -733,12 +733,12 @@ AppInstance::loadInternal(const CLArgs& cl,
         appPTR->registerCloseProjectsAtPythonExit();
         QFileInfo info( cl.getScriptFilename() );
         if ( info.exists() ) {
-            if ( ( info.suffix() == QString::fromUtf8("py") ) && !Project::isPythonProjectFile( info.absoluteFilePath() ) ) {
-                loadPythonScript(info);
-            } else if ( ( info.suffix() == QString::fromUtf8(NATRON_PROJECT_FILE_EXT) ) || ( info.suffix() == QString::fromUtf8("py") ) ) {
+            if ( Project::isProjectFile( info.absoluteFilePath() ) ) {
                 if ( !_imp->_currentProject->loadProject( info.path(), info.fileName() ) ) {
                     throw std::invalid_argument( tr("Project file loading failed.").toStdString() );
                 }
+            } else if ( Project::hasPythonFileExtension( info.fileName() ) ) {
+                loadPythonScript(info);
             }
         }
 
@@ -916,9 +916,9 @@ AppInstance::runPythonProjectScript(const QString& filePath,
         // (kOfxChangePluginEdited, as after loading an .ntp file, see OfxEffectInstance.cpp): not a user edit,
         // after which the plug-in would set the parameters (colorspace...) from the file. Reading it extends the project frame range
         // (Node::onFileNameParameterChanged()), which the .ntp loader doesn't: keep the one the script set.
-        const KnobIntPtr projectRange = std::dynamic_pointer_cast<KnobInt>( getProject()->getKnobByName("frameRange") );
-        const int savedFirst = projectRange ? projectRange->getValue(0) : 0;
-        const int savedLast = projectRange ? projectRange->getValue(1) : 0;
+        double savedFirst = 0.;
+        double savedLast = 0.;
+        getProject()->getFrameRange(&savedFirst, &savedLast);
         NodesList nodes;
         getProject()->getNodes_recursive(nodes, true);
         for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -948,12 +948,7 @@ AppInstance::runPythonProjectScript(const QString& filePath,
                 }
             }
         }
-        if (projectRange) {
-            getProject()->beginChanges();
-            projectRange->setValue(savedFirst, ViewSpec::all(), 0);
-            projectRange->setValue(savedLast, ViewSpec::all(), 1);
-            getProject()->endChanges();
-        }
+        getProject()->setFrameRange( static_cast<int>(savedFirst), static_cast<int>(savedLast) );
         getProject()->forceComputeInputDependentDataOnAllTrees();
     }
     if ( !output.empty() ) {
@@ -2583,12 +2578,7 @@ AppInstance::execOnProjectCreatedCallback()
         return;
     }
     std::string appID = getAppIDString();
-    std::string script;
-    // In background mode, "app" stays app1, also for a Precomp's instance (see getAppIDString()).
-    if ( (appID != "app") && !appPTR->isBackground() ) {
-        script = script + "app = " + appID;
-    }
-    script = script + "\n" + cb + "(" + appID + ")\n";
+    const std::string script = getAppVariableAssignment() + cb + "(" + appID + ")\n";
     std::string err;
     std::string output;
     if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, &output) ) {
@@ -2599,6 +2589,12 @@ AppInstance::execOnProjectCreatedCallback()
         }
     }
 } // AppInstance::execOnProjectCreatedCallback
+
+std::string
+AppInstance::getAppVariableAssignment() const
+{
+    return appPTR->isBackground() ? std::string() : "app = " + getAppIDString() + '\n';
+}
 
 std::string
 AppInstance::getAppIDString() const

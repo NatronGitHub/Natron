@@ -1399,7 +1399,7 @@ SequenceFileDialog::openSelectedFiles()
         if ( !isDirectory(typedPath) ) {
             if (_dialogMode == eFileDialogModeOpen) {
                 std::string pattern = selectedFiles();
-                if ( !pattern.empty() ) {
+                if ( !pattern.empty() && !refuseUnsetProjectPath(pattern) ) {
                     teardownPreview();
                     QDialog::accept();
                 }
@@ -1421,6 +1421,9 @@ SequenceFileDialog::openSelectedFiles()
                 // Check the file that filesToSave() returns, i.e. what the caller writes, with the
                 // project variables (e.g. [Project]) expanded (#825)
                 std::string toSave = filesToSave();
+                if ( refuseUnsetProjectPath(toSave) ) {
+                    return;
+                }
                 {
                     std::map<std::string, std::string> envVars;
                     _gui->getApp()->getProject()->getEnvironmentVariables(envVars);
@@ -1466,6 +1469,24 @@ SequenceFileDialog::openSelectedFiles()
         }
     }
 } // openSelectedFiles
+
+bool
+SequenceFileDialog::refuseUnsetProjectPath(const std::string& path)
+{
+    if ( !_relativePathsAllowed || !_gui->getApp()->getProject()->usesUnsetProjectPath(path) ) {
+        return false;
+    }
+    QString message = Project::unsetProjectPathMessage(path);
+    std::string varName, varValue;
+    // the hint helps only if the path chosen in "Relative to" is [Project] or goes through it
+    if ( getRelativeChoiceProjectPath(varName, varValue) &&
+         _gui->getApp()->getProject()->usesUnsetProjectPath('[' + varName + "]/x") ) {
+        message += QLatin1Char(' ') + tr("Or choose \"Absolute\" in \"Relative to\".");
+    }
+    Dialogs::errorDialog( tr("File Path").toStdString(), message.toStdString() );
+
+    return true;
+}
 
 void
 SequenceFileDialog::enterTypedDirectory(const QString& directory)
@@ -1779,6 +1800,12 @@ SequenceFileDialog::pathInCurrentDirectory(const QString& filePath) const
     QStringList varNames;
     for (std::map<std::string, std::string>::const_iterator it = envVars.begin(); it != envVars.end(); ++it) {
         varNames.push_back( QString::fromUtf8( it->first.c_str() ) );
+    }
+    // A new project has no [Project] row until it is saved: [Project]/out.exr is still a [Project] path, which
+    // refuseUnsetProjectPath() refuses, not a folder named "[Project]" in the directory shown (#1539)
+    const QString projectVarName = QString::fromUtf8(NATRON_PROJECT_ENV_VAR_NAME);
+    if ( !varNames.contains(projectVarName) ) {
+        varNames.push_back(projectVarName);
     }
     // At the "Computer" level (Windows drive list), there is no directory: use the home directory
     const QString directory = _requestedDir.isEmpty() ? QDir::homePath() : _requestedDir;

@@ -1737,6 +1737,13 @@ keyframeTypeToPython(KeyframeTypeEnum type)
     return QString::fromUtf8(NATRON_ENGINE_PYTHON_MODULE_NAME ".Natron.KeyframeTypeEnum.") + QString::fromUtf8(name);
 }
 
+// A free or broken keyframe keeps its derivatives (Curve::evaluateCurveChanged() doesn't compute them)
+static bool
+keepsOwnDerivatives(KeyframeTypeEnum type)
+{
+    return (type == eKeyframeTypeFree) || (type == eKeyframeTypeBroken);
+}
+
 // The keyframes of curve with the derivatives that Natron computes for them (Curve::evaluateCurveChanged()),
 // which a script that only sets the keyframes gets: a keyframe whose derivatives differ (free or broken, or computed
 // by an older Natron) must get its own.
@@ -1748,8 +1755,8 @@ keyFramesWithComputedDerivatives(const Curve& curve)
 
     computed.clearKeyFrames();
     for (KeyFrameSet::const_iterator k = keys.begin(); k != keys.end(); ++k) {
-        // a free or broken keyframe keeps its derivatives, which its neighbours' depend on
-        const bool keepsDerivatives = (k->getInterpolation() == eKeyframeTypeFree) || (k->getInterpolation() == eKeyframeTypeBroken);
+        // its neighbours' derivatives depend on them
+        const bool keepsDerivatives = keepsOwnDerivatives( k->getInterpolation() );
         computed.addKeyFrame( KeyFrame( k->getTime(), k->getValue(), keepsDerivatives ? k->getLeftDerivative() : 0.,
                                         keepsDerivatives ? k->getRightDerivative() : 0., k->getInterpolation() ) );
     }
@@ -1761,7 +1768,7 @@ static bool
 hasOwnDerivatives(const KeyFrame& key,
                   const KeyFrame& computed)
 {
-    return (key.getInterpolation() == eKeyframeTypeFree) || (key.getInterpolation() == eKeyframeTypeBroken) ||
+    return keepsOwnDerivatives( key.getInterpolation() ) ||
            ( key.getLeftDerivative() != computed.getLeftDerivative() ) || ( key.getRightDerivative() != computed.getRightDerivative() );
 }
 
@@ -3179,8 +3186,8 @@ exportProjectSettings(int indentLevel,
         // What each save stamps (the loader sets the version, as for an .ntp file): no difference between two saves
         // of the same project
         const std::string& name = (*it)->getName();
-        if ( !(*it)->getIsPersistent() || (name == "softwareVersion") || (name == "lastSaveDate") || (name == "lastAuthor") ||
-             (name == "frameRange") ) { // written after the nodes (see Project::exportToPython())
+        if ( !(*it)->getIsPersistent() || (name == kProjectParamSoftwareVersion) || (name == kProjectParamLastSaveDate) ||
+             (name == kProjectParamLastAuthor) || (name == kProjectParamFrameRange) ) { // the frame range: after the nodes (see exportToPython())
             continue;
         }
         if (*it == envVars) {
@@ -3208,9 +3215,10 @@ exportProjectSettings(int indentLevel,
 } // exportProjectSettings
 
 // Project's member, defined here to use the PyPlug exporter above. Main thread only (gExportedBytes).
-void
-Project::exportToPython(QString& output)
+QString
+Project::exportToPython()
 {
+    QString output;
     QTextStream ts(&output);
 
     gExportedBytes = 0;
@@ -3231,7 +3239,7 @@ Project::exportToPython(QString& output)
     exportGroupInternal(1, this, NodePtr(), QString(), true, ts);
     // After the nodes, which extend it when they read their file (Node::onFileNameParameterChanged()); the .ntp
     // loader restores it as saved
-    const KnobIPtr frameRange = getKnobByName("frameRange");
+    const KnobIPtr frameRange = getKnobByName(kProjectParamFrameRange);
     if (frameRange) {
         WRITE_INDENT(1); WRITE_STATIC_LINE("# Project frame range");
         exportKnobValues(1, frameRange, QString::fromUtf8("app.getProjectParam(") + ESC( frameRange->getName() ) + QString::fromUtf8(")"), true, ts, eExportedValuesAll);
@@ -3241,6 +3249,9 @@ Project::exportToPython(QString& output)
     // the loader runs the file with "app" set to the project's app (see AppInstance::runPythonProjectScript())
     WRITE_STATIC_LINE("if __name__ == \"__main__\":");
     WRITE_INDENT(1); WRITE_STATIC_LINE("createProject(app)");
+    ts.flush();
+
+    return output;
 } // Project::exportToPython
 
 NATRON_NAMESPACE_EXIT

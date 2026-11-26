@@ -21,7 +21,20 @@
 #ifndef LIBMV_LOGGING_LOGGING_H
 #define LIBMV_LOGGING_LOGGING_H
 
+// glog/logging.h is Ceres' miniglog with the bundled Ceres (libs/ceres), or
+// the glog of an installed Ceres (NATRON_SYSTEM_LIBS).
+#if defined(_WIN32) && defined(ERROR)
+// wingdi.h (from windows.h) defines ERROR as 0, and miniglog declares a global
+// constant named ERROR: hide the macro while miniglog is read. After it, ERROR
+// is 0 again, so LOG(ERROR) would mean LOG(INFO) with miniglog (and wouldn't
+// compile with glog): libmv code read after windows.h must not use LOG(ERROR).
+#pragma push_macro("ERROR")
+#undef ERROR
 #include <glog/logging.h>
+#pragma pop_macro("ERROR")
+#else
+#include <glog/logging.h>
+#endif
 
 #ifdef DEBUG
 //#define TRACE_LIB_MV 1
@@ -30,10 +43,13 @@
 #ifdef TRACE_LIB_MV
 #define LIBMV_LOG(severity) DLOG(severity)
 #else
-#define LIBMV_LOG(severity) \
-true ? (void) 0 : google::LogMessageVoidify() & LOG(severity)
+// Compiled out: LOG_IF exists in glog and in Ceres' miniglog (which does not
+// have google::LogMessageVoidify).
+#define LIBMV_LOG(severity) LOG_IF(severity, false)
 #endif
 
+// miniglog defines its own LG.
+#undef LG
 #define LG LIBMV_LOG(INFO)
 
 // V0, V1 and V2 used to be defined here as aliases for LG. Nothing in libmv or

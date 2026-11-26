@@ -37,6 +37,9 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
+
+import natronrunner
 
 TIMEOUT = 120  # seconds, for a run that takes a few seconds
 MAX_OUTPUT = 1 << 20  # bytes: the failure printed megabytes of tracebacks per second
@@ -53,31 +56,34 @@ sys.stdout.write("SCRIPT_DONE\\n"); sys.stdout.flush()
 """
 
 
-def run(renderer, script, outPath, stdin, stdinData=None):
+def run(renderer, script, out_path, stdin, stdin_data=None):
     """Runs NatronRenderer -t script with the given stdin, returns (status, output).
 
     The output goes to a file, not a pipe, and the process is killed when the file grows past
     MAX_OUTPUT or after TIMEOUT: status is then None.
     """
-    import time
-    with open(outPath, "wb") as out:
-        p = subprocess.Popen([renderer, "-t", script], stdin=stdin, stdout=out, stderr=subprocess.STDOUT)
-        if stdinData is not None:
-            p.stdin.write(stdinData)
+    with open(out_path, "wb") as out:
+        # FP traps on, as before (the other drivers disable them, as Natron --test does)
+        env = natronrunner.natron_env(os.path.dirname(out_path),
+                                      NATRON_NO_FP_TRAPS=os.environ.get("NATRON_NO_FP_TRAPS"))
+        p = subprocess.Popen([renderer, "--no-settings", "-t", script], env=env,
+                             stdin=stdin, stdout=out, stderr=subprocess.STDOUT)
+        if stdin_data is not None:
+            p.stdin.write(stdin_data)
             p.stdin.close()
-        start = time.time()
+        start = time.monotonic()
         killed = None
         while p.poll() is None:
             time.sleep(0.2)
-            if os.path.getsize(outPath) > MAX_OUTPUT:
+            if os.path.getsize(out_path) > MAX_OUTPUT:
                 killed = "its output grew past %d bytes" % MAX_OUTPUT
-            elif time.time() - start > TIMEOUT:
+            elif time.monotonic() - start > TIMEOUT:
                 killed = "it was still running after %d s" % TIMEOUT
             if killed:
                 p.kill()
                 p.wait()
                 break
-    with open(outPath, "rb") as f:
+    with open(out_path, "rb") as f:
         output = f.read(MAX_OUTPUT).decode("utf-8", "replace")
     if killed:
         sys.stdout.write("FAIL: NatronRenderer -t did not exit: %s\n" % killed)
@@ -89,7 +95,7 @@ def run(renderer, script, outPath, stdin, stdinData=None):
 def main():
     if len(sys.argv) != 2:
         sys.stderr.write(__doc__)
-        return 1
+        return 2
     renderer = sys.argv[1]
     failed = False
     with tempfile.TemporaryDirectory() as tmp:
@@ -112,7 +118,7 @@ def main():
             failed = True
 
     if not failed:
-        sys.stdout.write("OK\n")
+        sys.stdout.write("interpreter stdin EOF test passed\n")
     return 1 if failed else 0
 
 

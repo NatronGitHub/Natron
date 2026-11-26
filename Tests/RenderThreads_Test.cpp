@@ -131,7 +131,7 @@ protected:
     bool skipped()
     {
         if (!_source) {
-            NatronTestPlugin::reportSkipped(kNatronTestPluginParams);
+            NatronTestPlugin::reportMissing(kNatronTestPluginParams);
 
             return true;
         }

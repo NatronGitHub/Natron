@@ -3,10 +3,7 @@
 import NatronGuiTest
 from natrontest import *
 
-try:
-    from PySide2 import QtCore, QtGui, QtWidgets
-except ImportError:
-    from PySide6 import QtCore, QtGui, QtWidgets
+QtCore, QtGui, QtWidgets = qt_modules()
 
 PARAMS = "net.natron.test.Params"  # has RGB and RGBA parameters (Tests/OfxTestPlugin)
 ROTOPAINT = "fr.inria.built-in.RotoPaint"
@@ -23,9 +20,7 @@ roto.connectInput(0, gen)
 viewer.connectInput(0, roto)
 
 # the overlay of a node is shown while its settings panel is open: select it and press Return
-app.clearSelection()
-app.selectNode(roto, True)
-NatronGuiTest.sendKey("NodeGraph", "Return")
+open_settings_panel(roto)
 fit_viewer()
 
 # created as the user does (in the node graph menu), so that its settings panel, with the picker of
@@ -56,9 +51,11 @@ def strokes():
 check(strokes() == 0, "RotoPaint has %d items before the test" % strokes())
 
 # arm the picker of the rgbFrom parameter: click the color swatch next to its fields
-pickers = [w for w in QtWidgets.QApplication.allWidgets()
-           if w.metaObject().className().endswith("ColorPickerLabel") and w.parentWidget() is not None
-           and w.parentWidget().property("paramName") == "rgbFrom"]
+# (found through allWidgets(), not parentWidget(), whose temporary wrapper invalidates its children's in PySide2)
+widgets = QtWidgets.QApplication.allWidgets()
+holders = [w for w in widgets if w.property("paramName") == "rgbFrom"]
+pickers = [w for w in widgets if w.metaObject().className().endswith("ColorPickerLabel")
+           and any(h.isAncestorOf(w) for h in holders)]
 check(len(pickers) == 1, "%d color pickers for the rgbFrom parameter" % len(pickers))
 picker = pickers[0]
 center = QtCore.QPointF(picker.width() / 2.0, picker.height() / 2.0)

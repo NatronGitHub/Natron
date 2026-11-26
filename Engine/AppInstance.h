@@ -442,6 +442,10 @@ public:
     virtual void closeLoadProjectSplashScreen() {}
 
     std::string getAppIDString() const;
+
+    // "app = <getAppIDString()>\n", the line that makes "app" this instance in the project callbacks, or nothing in
+    // background mode, where "app" stays app1, also for a Precomp's instance (see getAppIDString())
+    std::string getAppVariableAssignment() const;
     const std::list<NodePtr>& getNodesBeingCreated() const;
     virtual bool isDraftRenderEnabled() const { return false; }
 

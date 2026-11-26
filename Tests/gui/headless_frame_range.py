@@ -1,19 +1,18 @@
 """Effect.getFrameRange() and Effect.getAvailableLayers(inputNb, time, view) (#1799).
 
-Run by NatronRenderer -t (see Tests/CMakeLists.txt). Uses only built-in nodes: the DiskCache node
-has a frame range of its own.
+Uses only built-in nodes: the DiskCache node has a frame range of its own.
 """
-import traceback
 
 import NatronEngine
-from NatronEngine import natron
+
+import natronheadless
 
 INT_MIN = -2 ** 31
 INT_MAX = 2 ** 31 - 1
 
 
 def layer_names(layers):
-    """Returns the names of the ImageLayers (ImageLayer == compares identities)."""
+    """Returns the (layer name, components name) of the ImageLayers, readable in a failure message."""
     assert isinstance(layers, list), layers
     assert all(isinstance(layer, NatronEngine.ImageLayer) for layer in layers), layers
     return [(layer.getLayerName(), layer.getComponentsPrettyName()) for layer in layers]
@@ -48,23 +47,16 @@ def check_disk_cache(app, dot):
     assert layer_names(dot.getAvailableLayers(0, 7., 0))[0] == check_layers(cache)[0] == ("Color", "RGBA")
 
 
-def main():
-    status = 1
-    try:
-        app = natron.getInstance(0)
-        dot = app.createNode("fr.inria.built-in.Dot")
-        assert dot is not None, "createNode(Dot) failed"
-        # no frame range and no input: infinite
-        frame_range = dot.getFrameRange()
-        assert isinstance(frame_range, tuple), frame_range
-        assert frame_range == (INT_MIN, INT_MAX), frame_range
-        check_layers(dot)
-        assert dot.getAvailableLayers(0, 1., 0) == []  # no input
-        check_disk_cache(app, dot)
-        status = 0
-    except BaseException:
-        traceback.print_exc()
-    natron.quit(status)
+def main(app):
+    dot = app.createNode("fr.inria.built-in.Dot")
+    assert dot is not None, "createNode(Dot) failed"
+    # no frame range and no input: infinite
+    frame_range = dot.getFrameRange()
+    assert isinstance(frame_range, tuple), frame_range
+    assert frame_range == (INT_MIN, INT_MAX), frame_range
+    check_layers(dot)
+    assert dot.getAvailableLayers(0, 1., 0) == []  # no input
+    check_disk_cache(app, dot)
 
 
-main()
+natronheadless.run(main)

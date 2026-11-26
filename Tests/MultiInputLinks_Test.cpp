@@ -46,21 +46,11 @@
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
 
+#include "TestUtils.h"
+
 NATRON_NAMESPACE_USING
 
 namespace {
-bool
-isPluginAvailable(const char* pluginID)
-{
-    try {
-        Plugin* p = appPTR->getPluginBinary(QString::fromUtf8(pluginID), -1, -1, false);
-
-        return p && p->getLibraryBinary();
-    } catch (...) {
-        return false;
-    }
-}
-
 class MultiInputLinksTest
     : public testing::Test
 {
@@ -70,14 +60,8 @@ protected:
     {
         _app = appPTR->getTopLevelInstance();
         // A node with several inputs: Merge (B, A, Mask), from openfx-misc
-        _havePlugins = isPluginAvailable(PLUGINID_OFX_MERGE);
+        _havePlugins = NatronTest::requirePlugins({ PLUGINID_OFX_MERGE }, "openfx-misc");
         if (!_havePlugins) {
-            // The bundled google-test predates GTEST_SKIP(): say clearly that the test did not run.
-            // TODO: Convert to GTEST_SKIP() when gtest updated.
-            const testing::TestInfo* info = testing::UnitTest::GetInstance()->current_test_info();
-            std::cerr << "[  SKIPPED ] " << info->test_case_name() << '.' << info->name()
-                      << ": plug-in " PLUGINID_OFX_MERGE " not found (needs openfx-misc in OFX_PLUGIN_PATH)" << std::endl;
-
             return;
         }
         _source = createNode(PLUGINID_NATRON_DOT);

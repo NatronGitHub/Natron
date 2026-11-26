@@ -411,7 +411,7 @@ PyObject* initializePython3(const std::vector<wchar_t*>& commandLineArgsWide,
 #define DUMP_SYS(NAME) \
             do { \
                 obj = PySys_GetObject(#NAME); \
-                PySys_FormatStderr("  sys.%s = ", #NAME); \
+                PySys_FormatStdout("  sys.%s = ", #NAME); \
                 if (obj != NULL) { \
                     PySys_FormatStdout("%A", obj); \
                 } \
@@ -449,10 +449,13 @@ PyObject* initializePython3(const std::vector<wchar_t*>& commandLineArgsWide,
         PyErr_Clear();
 
         ///This is faster than PyRun_SimpleString since is doesn't call PyImport_AddModule("__main__")
-        std::string script("from distutils.sysconfig import get_python_lib; print('Python library is in ' + get_python_lib())");
+        // distutils, deprecated since Python 3.10, is removed in 3.12: sysconfig gives the same site-packages
+        std::string script("import sysconfig; print('Python library is in ' + sysconfig.get_path('purelib'))");
         PyObject* v = PyRun_String(script.c_str(), Py_file_input, dict, 0);
         if (v) {
             Py_DECREF(v);
+        } else {
+            PyErr_Print(); // and clear it: a pending error would make the next Python call fail
         }
     }
 #endif

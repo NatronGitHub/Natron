@@ -157,6 +157,11 @@ if [ "$FAIL" = "0" ]; then
         printStatusMessage "Moving test results to $BUILD_ARCHIVE_DIRECTORY/${INSTALLER_BASENAME}-tests.txt"
         mv result.txt "$BUILD_ARCHIVE_DIRECTORY/${INSTALLER_BASENAME}-tests.txt"
     fi
+    # the counts and RESULT: PASS or FAIL (Natron-Tests with known_failures/)
+    if [ -f "summary.txt" ]; then
+        cat summary.txt
+        mv summary.txt "$BUILD_ARCHIVE_DIRECTORY/${INSTALLER_BASENAME}-tests-summary.txt"
+    fi
 
     # Archive test failures next to the build as
     # ${INSTALLER_BASENAME}-unit_tests_failures.zip. Uses zip so it is portable

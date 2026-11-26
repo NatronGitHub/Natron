@@ -45,8 +45,10 @@ GCC_ONLY_DIAG_ON(class-memaccess)
 #include "Engine/AppInstance.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/DocumentationGroups.h"
+#include "Engine/DocumentationServer.h"
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
+#include "Engine/Plugin.h"
 #include "Engine/Project.h"
 #include "Engine/ReadNode.h"
 #include "Engine/Settings.h"
@@ -54,6 +56,27 @@ GCC_ONLY_DIAG_ON(class-memaccess)
 
 
 NATRON_NAMESPACE_ENTER
+
+// The icons of the plug-ins: the only local files outside the documentation directory that the server
+// gives ("/LOCAL_FILE/<path>" URLs, see NodeDocumentation.cpp)
+static QStringList
+getPluginIconFiles()
+{
+    QStringList files;
+    const PluginsMap& plugins = appPTR->getPluginsList();
+
+    for (PluginsMap::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
+        for (PluginVersionsOrdered::const_iterator itVersion = it->second.begin(); itVersion != it->second.end(); ++itVersion) {
+            const QString& icon = (*itVersion)->getIconFilePath();
+            if ( !icon.isEmpty() ) {
+                files.push_back(icon);
+            }
+        }
+    }
+
+    return files;
+}
+
 DocumentationManager::DocumentationManager(QObject *parent)
     : QObject(parent)
     , server(NULL)
@@ -100,20 +123,53 @@ DocumentationManager::startServer()
 {
     server = new QHttpServer(this);
     connect( server, SIGNAL(newRequest(QHttpRequest*,QHttpResponse*)), this, SLOT(handler(QHttpRequest*,QHttpResponse*)) );
-    server->listen( QHostAddress::LocalHost, appPTR->getCurrentSettings()->getServerPort() );
+    // loopback only: the pages are only for the user's browser, opened by Natron.
+    // If this fails (e.g. the port is in use), serverPort() is 0 and the documentation is read online.
+    const int port = appPTR->getCurrentSettings()->getServerPort();
+    if ( !server->listen( QHostAddress::LocalHost, static_cast<quint16>( (port > 0 && port <= 65535) ? port : 0 ) ) ) {
+        std::cerr << "Documentation server: cannot listen on 127.0.0.1 port " << port << std::endl;
+    }
 }
 
 void
 DocumentationManager::stopServer()
 {
-    server->close();
+    if (server) {
+        server->close();
+    }
 }
 
 void
 DocumentationManager::handler(QHttpRequest *req,
                               QHttpResponse *resp)
 {
-    Q_UNUSED(req)
+    // the request belongs to the handler (see QHttpServer::newRequest()): delete it once it is received
+    // (it is not deleted with its connection, so every request leaked)
+    connect( req, SIGNAL(end()), req, SLOT(deleteLater()) );
+
+    // Only answer the user's browser, opened by Natron, and the documentation pages themselves:
+    // - a Host header other than localhost:port means a web page whose host name resolves to 127.0.0.1
+    //   (DNS rebinding), which could then read the answers;
+    // - a request from another site (Fetch Metadata) can't read the answers, but would still create
+    //   the node of a "_plugin.html?id=" page;
+    // - nothing here accepts data (no POST, PUT, ...).
+    const bool isHead = req->method() == QHttpRequest::HTTP_HEAD;
+    int refusedStatus = 0;
+    if ( !DocumentationServer::isLoopbackHost( req->header( QString::fromUtf8("host") ), server->serverPort() ) ||
+         DocumentationServer::isCrossSiteRequest( req->header( QString::fromUtf8("sec-fetch-site") ) ) ) {
+        refusedStatus = 403; // Forbidden
+    } else if ( (req->method() != QHttpRequest::HTTP_GET) && !isHead ) {
+        refusedStatus = 405; // Method Not Allowed
+        resp->setHeader( QString::fromUtf8("Allow"), QString::fromUtf8("GET, HEAD") );
+    }
+    if (refusedStatus != 0) {
+        resp->setHeader( QString::fromUtf8("Content-Length"), QString::fromUtf8("0") );
+        resp->setHeader( QString::fromUtf8("Connection"), QString::fromUtf8("close") );
+        resp->writeHead(refusedStatus);
+        resp->end();
+
+        return;
+    }
 
     QString docDir = appPTR->getApplicationBinaryPath() + QString::fromUtf8("/../Resources/docs/html/");
     QString page = req->url().toString();
@@ -197,7 +253,8 @@ DocumentationManager::handler(QHttpRequest *req,
         }
     }
     if ( !staticPage.isEmpty() ) {
-        QFileInfo staticFileInfo(docDir + staticPage);
+        // staticPage starts with '/'
+        QFileInfo staticFileInfo( DocumentationServer::resolveDocumentationFile( docDir, staticPage.mid(1) ) );
         if ( ( isStatic && !staticFileInfo.exists() ) ||
              ( !isStatic && staticFileInfo.exists() ) ) {
             // must redirect
@@ -212,12 +269,17 @@ DocumentationManager::handler(QHttpRequest *req,
             resp->setHeader(QString::fromUtf8("Connection"), QString::fromUtf8("keep-alive"));
             resp->setHeader(QString::fromUtf8("Content-Type"), QString::fromUtf8("text/html; charset=utf-8"));
             resp->writeHead(301); // Moved permanently
+            if (isHead) {
+                resp->end();
+
+                return;
+            }
             resp->end( QString::fromUtf8("<HTML><HEAD><meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">\n"
                                          "<TITLE>301 Moved</TITLE></HEAD><BODY>\n"
                                          "<H1>301 Moved</H1>\n"
                                          "The document has moved\n"
                                          "<A HREF=\"%1/\">here</A>.\r\n"
-                                         "</BODY></HTML>").arg(page).toUtf8() );
+                                         "</BODY></HTML>").arg( page.toHtmlEscaped() ).toUtf8() );
             return;
         }
     }
@@ -482,18 +544,20 @@ DocumentationManager::handler(QHttpRequest *req,
                              page.endsWith( QString::fromUtf8(".svg") ) ||
                              page.endsWith( QString::fromUtf8(".woff") ) ||
                              page.endsWith( QString::fromUtf8(".woff2") ) ) ) {
-        // get static file
-        QFileInfo staticFileInfo;
-
-        if ( page.startsWith( QString::fromUtf8("LOCAL_FILE/") ) ) {
-            staticFileInfo.setFile( page.replace( QString::fromUtf8("LOCAL_FILE/"), QString::fromUtf8("") ).replace( QString::fromUtf8("%2520"), QString::fromUtf8(" ") ).replace( QString::fromUtf8("%20"), QString::fromUtf8(" ") ) );
+        // get static file: only a file of the documentation directory, or a plug-in icon
+        // (any other file, e.g. "../../../../etc/hosts.txt" or "LOCAL_FILE//Users/me/notes.txt", was given too)
+        const QString localFilePrefix = QString::fromUtf8("LOCAL_FILE/");
+        QString staticFile;
+        if ( page.startsWith(localFilePrefix) ) {
+            staticFile = DocumentationServer::resolveLocalFile( page.mid( localFilePrefix.size() ), getPluginIconFiles() );
         } else {
-            staticFileInfo.setFile(docDir + page);
+            staticFile = DocumentationServer::resolveDocumentationFile(docDir, page);
         }
+        QFileInfo staticFileInfo(staticFile);
 #ifdef DEBUG
-        qDebug() << "www client requested page" << page << "->file" << staticFileInfo.absoluteFilePath();
+        qDebug() << "www client requested page" << page << "->file" << staticFile;
 #endif
-        if ( staticFileInfo.exists() ) {
+        if ( !staticFile.isEmpty() && staticFileInfo.isFile() ) {
             QFile staticFile( staticFileInfo.absoluteFilePath() );
             if ( staticFile.open(QIODevice::ReadOnly) ) {
                 if ( page.endsWith( QString::fromUtf8(".html") ) || page.endsWith( QString::fromUtf8(".htm") ) ) {
@@ -531,23 +595,38 @@ DocumentationManager::handler(QHttpRequest *req,
 
     // set header(s)
     resp->setHeader( QString::fromUtf8("Content-Length"), QString::number( body.size() ) );
-    if ( page.endsWith( QString::fromUtf8(".png") ) ) {
-        resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8("image/png") );
-    } else if ( page.endsWith( QString::fromUtf8(".jpg") ) ) {
-        resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8("image/jpeg") );
-    } else if ( page.endsWith( QString::fromUtf8(".html") ) || page.endsWith( QString::fromUtf8(".htm") ) ) {
-        resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8("text/html; charset=utf-8") );
-    } else if ( page.endsWith( QString::fromUtf8(".css") ) ) {
-        resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8("text/css; charset=utf-8") );
-    } else if ( page.endsWith( QString::fromUtf8(".js") ) ) {
-        resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8("application/javascript; charset=utf-8") );
-    } else if ( page.endsWith( QString::fromUtf8(".txt") ) ) {
-        resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8("text/plain; charset=utf-8") );
+    // the "Page not found" page is HTML, whatever the extension; the browser must not guess other types
+    // (e.g. HTML in a .txt file)
+    const char* contentType = "text/html; charset=utf-8";
+    if (status != 404) {
+        if ( page.endsWith( QString::fromUtf8(".png") ) ) {
+            contentType = "image/png";
+        } else if ( page.endsWith( QString::fromUtf8(".jpg") ) ) {
+            contentType = "image/jpeg";
+        } else if ( page.endsWith( QString::fromUtf8(".svg") ) ) {
+            contentType = "image/svg+xml";
+        } else if ( page.endsWith( QString::fromUtf8(".css") ) ) {
+            contentType = "text/css; charset=utf-8";
+        } else if ( page.endsWith( QString::fromUtf8(".js") ) ) {
+            contentType = "application/javascript; charset=utf-8";
+        } else if ( page.endsWith( QString::fromUtf8(".txt") ) ) {
+            contentType = "text/plain; charset=utf-8";
+        } else if ( page.endsWith( QString::fromUtf8(".ttf") ) ) {
+            contentType = "font/ttf";
+        } else if ( page.endsWith( QString::fromUtf8(".woff") ) ) {
+            contentType = "font/woff";
+        } else if ( page.endsWith( QString::fromUtf8(".woff2") ) ) {
+            contentType = "font/woff2";
+        } else if ( page.endsWith( QString::fromUtf8(".eot") ) ) {
+            contentType = "application/vnd.ms-fontobject";
+        }
     }
+    resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8(contentType) );
+    resp->setHeader( QString::fromUtf8("X-Content-Type-Options"), QString::fromUtf8("nosniff") );
 
-    // return result
+    // return result (a HEAD request gets the headers only, Content-Length included)
     resp->writeHead(status);
-    resp->end(body);
+    resp->end( isHead ? QByteArray() : body );
 }                                             // DocumentationManager::handler
 
 QString
@@ -640,7 +719,7 @@ DocumentationManager::parser(QString html,
 int
 DocumentationManager::serverPort()
 {
-    return server->serverPort();
+    return server ? server->serverPort() : 0;
 }
 
 NATRON_NAMESPACE_EXIT

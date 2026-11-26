@@ -35,9 +35,6 @@
 
 #include <gtest/gtest.h>
 
-#include <QtCore/QFile>
-#include <QtCore/QTemporaryDir>
-
 #include <QtCore/QDir>
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>

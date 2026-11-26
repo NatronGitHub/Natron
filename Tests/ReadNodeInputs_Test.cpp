@@ -73,21 +73,6 @@ createProjectNode(const char* pluginID,
 
     return app->createNode(args);
 }
-
-// Destroys the nodes when the test ends, also when an ASSERT fails
-struct DestroyNodesOnExit
-{
-    std::list<NodePtr> nodes;
-
-    ~DestroyNodesOnExit()
-    {
-        for (std::list<NodePtr>::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            if (*it) {
-                (*it)->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
-            }
-        }
-    }
-};
 } // anonymous namespace
 
 TEST(ReadNodeInputs, DecoderWithoutSourceClip)
@@ -99,27 +84,30 @@ TEST(ReadNodeInputs, DecoderWithoutSourceClip)
         plugin = 0;
     }
     if (!plugin) {
-        NatronTestPlugin::reportSkipped(PLUGINID_OFX_READPDF);
+        NatronTestPlugin::reportMissing(PLUGINID_OFX_READPDF);
+
+        return;
+    }
+    if (plugin->getMajorVersion() > kNoSourceMajor) {
+        // a real ReadPDF with a higher major is installed
+        NatronTest::skip("the newest " PLUGINID_OFX_READPDF " is version " + std::to_string( plugin->getMajorVersion() ) +
+                         ", not the test reader");
 
         return;
     }
     if (plugin->getMajorVersion() != kNoSourceMajor) {
-        // a real ReadPDF with a major of 91 or more is installed
-        const testing::TestInfo* info = testing::UnitTest::GetInstance()->current_test_info();
-        std::cerr << "[  SKIPPED ] " << info->test_case_name() << '.' << info->name() << ": the newest "
-                  << PLUGINID_OFX_READPDF << " is version " << plugin->getMajorVersion() << ", not the test reader"
-                  << std::endl;
+        // the newest is a real ReadPDF (e.g. openfx-arena's): the test reader was not loaded
+        NatronTestPlugin::reportMissing(PLUGINID_OFX_READPDF);
 
         return;
     }
     QTemporaryDir tmpDir;
     ASSERT_TRUE( tmpDir.isValid() );
     const std::string filename = tmpDir.path().toStdString() + "/image.natrontestnosource";
-    DestroyNodesOnExit destroyNodes;
+    NatronTest::NodeScope nodes;
 
     // creating the node computes the components accepted by the Read node's input
-    NodePtr readNode = createProjectNode(PLUGINID_OFX_READPDF, filename);
-    destroyNodes.nodes.push_back(readNode);
+    NodePtr readNode = nodes.add( createProjectNode(PLUGINID_OFX_READPDF, filename) );
     ASSERT_TRUE( bool(readNode) );
     ReadNode* read = dynamic_cast<ReadNode*>( readNode->getEffectInstance().get() );
     ASSERT_TRUE(read);
@@ -141,8 +129,7 @@ TEST(ReadNodeInputs, DecoderWithoutSourceClip)
     EXPECT_FALSE( comps.empty() );
 
     // connecting and disconnecting the input calls the Read node's onInputChanged()
-    NodePtr dot = createProjectNode(PLUGINID_NATRON_DOT);
-    destroyNodes.nodes.push_back(dot);
+    NodePtr dot = nodes.create(PLUGINID_NATRON_DOT);
     ASSERT_TRUE( bool(dot) );
     EXPECT_TRUE( readNode->connectInput(dot, 0) );
     EXPECT_EQ( 0, readNode->disconnectInput(0) );
