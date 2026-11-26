@@ -75,8 +75,13 @@ private:
 
 private:
     QTcpSocket *m_socket;
-    // Natron: restarted by every data received or sent (a child of the connection)
+    // Natron: restarted when data is sent, or received while nothing waits to be sent (a child of
+    // the connection)
     QTimer *m_idleTimer;
+    // Natron: whether parseRequest() is running http-parser, and the handler with it (which may run a
+    // nested event loop, e.g. a modal dialog): the connection must not be deleted meanwhile
+    bool m_parsing;
+    bool m_disconnectedWhileParsing;
     http_parser *m_parser;
     http_parser_settings *m_parserSettings;
 

@@ -91,7 +91,8 @@ public:
     /// (default 60000 ms; 0: never). Applies to the connections accepted afterwards.
     void setIdleTimeout(int msecs);
 
-    /// Natron: at most this many connections at a time; more are closed at once (default 32).
+    /// Natron: at most this many connections at a time; more are closed at once (default 32;
+    /// 0: no limit). Closed connections count until the event loop deletes them.
     void setMaxConnections(int maxConnections);
 Q_SIGNALS:
     /// Emitted when a client makes a new request to the server.

@@ -33,6 +33,11 @@
 
 /// @cond nodoc
 
+// Natron: backpressure. Stop reading requests while more than this waits to be sent (a client that
+// sends requests but doesn't read the answers), and read at most this much ahead.
+static const qint64 kMaxBytesToWrite = 1024 * 1024;
+static const qint64 kReadBufferSize = 64 * 1024;
+
 // Natron: QHttpRequest::HttpMethod mirrors http-parser's enum http_method (HTTP_METHOD_MAP),
 // since HeadersComplete() casts one to the other.
 static_assert(static_cast<int>(QHttpRequest::HTTP_DELETE) == static_cast<int>(::HTTP_DELETE) &&
@@ -51,6 +56,8 @@ QHttpConnection::QHttpConnection(QTcpSocket *socket, QObject *parent)
     : QObject(parent),
       m_socket(socket),
       m_idleTimer(new QTimer(this)),
+      m_parsing(false),
+      m_disconnectedWhileParsing(false),
       m_parser(0),
       m_parserSettings(0),
       m_request(0),
@@ -77,6 +84,8 @@ QHttpConnection::QHttpConnection(QTcpSocket *socket, QObject *parent)
     connect(socket, SIGNAL(disconnected()), this, SLOT(socketDisconnected()));
     connect(socket, SIGNAL(bytesWritten(qint64)), this, SLOT(updateWriteCount(qint64)));
 
+    socket->setReadBufferSize(kReadBufferSize);
+
     m_idleTimer->setSingleShot(true);
     connect(m_idleTimer, SIGNAL(timeout()), this, SLOT(idleTimeout()));
 }
@@ -100,6 +109,12 @@ QHttpConnection::~QHttpConnection()
 
 void QHttpConnection::socketDisconnected()
 {
+    // Natron: not while http-parser and the handler run (this is then called from a nested event
+    // loop): parseRequest() calls this when they return
+    if (m_parsing) {
+        m_disconnectedWhileParsing = true;
+        return;
+    }
     invalidateRequest();
     // Natron (from upstream qhttpserver 30ac571): the socket belongs to the QTcpServer, which kept
     // every closed socket until the server was destroyed.
@@ -153,13 +168,18 @@ void QHttpConnection::setIdleTimeout(int msecs)
 // unsent is for a client that doesn't read)
 void QHttpConnection::idleTimeout()
 {
+    // the handler is running (e.g. a modal dialog is open): not idle
+    if (m_parsing) {
+        m_idleTimer->start();
+        return;
+    }
     m_socket->abort();
 }
 
 void QHttpConnection::updateWriteCount(qint64 count)
 {
     if (m_idleTimer->isActive())
-        m_idleTimer->start(); // restart
+        m_idleTimer->start(); // restart: data was sent
 
     Q_ASSERT(m_transmitPos + count <= m_transmitLen);
 
@@ -171,25 +191,45 @@ void QHttpConnection::updateWriteCount(qint64 count)
         m_transmitPos = 0;
         Q_EMIT allBytesWritten();
     }
+
+    // Natron: resume reading the requests that backpressure held back
+    if (!m_parsing && HTTP_PARSER_ERRNO(m_parser) == HPE_OK && m_socket->bytesAvailable() &&
+        m_socket->bytesToWrite() <= kMaxBytesToWrite)
+        parseRequest();
 }
 
 void QHttpConnection::parseRequest()
 {
     Q_ASSERT(m_parser);
 
-    if (m_idleTimer->isActive())
+    // Natron: called again from a nested event loop of the handler: the outer call reads the new data
+    if (m_parsing)
+        return;
+
+    // Natron: received data only counts as activity if the client reads the answers
+    if (m_idleTimer->isActive() && m_socket->bytesToWrite() == 0)
         m_idleTimer->start(); // restart
 
-    while (m_socket->bytesAvailable()) {
+    m_parsing = true;
+    // Natron: backpressure (see kMaxBytesToWrite); updateWriteCount() resumes
+    while (m_socket->bytesAvailable() && m_socket->bytesToWrite() <= kMaxBytesToWrite &&
+           !m_disconnectedWhileParsing) {
         QByteArray arr = m_socket->readAll();
         http_parser_execute(m_parser, m_parserSettings, arr.constData(), arr.size());
         // Natron: after a malformed request, http-parser stays in its error state and ignores any
         // further data, which left the connection open forever and the client waiting.
-        if (HTTP_PARSER_ERRNO(m_parser) != HPE_OK) {
-            rejectMalformedRequest();
-            return;
-        }
+        if (HTTP_PARSER_ERRNO(m_parser) != HPE_OK)
+            break;
     }
+    m_parsing = false;
+
+    if (m_disconnectedWhileParsing) {
+        m_disconnectedWhileParsing = false;
+        socketDisconnected();
+        return;
+    }
+    if (HTTP_PARSER_ERRNO(m_parser) != HPE_OK)
+        rejectMalformedRequest();
 }
 
 // Natron: answers "400 Bad Request" (unless the newRequest() handler already got the request and

@@ -25,6 +25,7 @@
 
 #include "Global/Macros.h"
 
+#include <algorithm>
 #include <cstring>
 #include <string>
 
@@ -62,9 +63,17 @@ public:
     LoopbackHttpServer()
         : _requests(0)
         , _keepRequests(false)
+        , _bodySize(0)
+        , _handlerDelayMs(0)
     {
         QObject::connect( &_server, &QHttpServer::newRequest, [this](QHttpRequest* req, QHttpResponse* resp) {
             ++_requests;
+            if (_handlerDelayMs > 0) {
+                // a handler that runs a nested event loop (e.g. a modal dialog)
+                QEventLoop loop;
+                QTimer::singleShot( _handlerDelayMs, &loop, &QEventLoop::quit );
+                loop.exec();
+            }
             _lastHeaders = req->headers();
             _lastBody.clear();
             QObject::connect( req, &QHttpRequest::data, [this](const QByteArray& data) { _lastBody += data; } );
@@ -74,10 +83,11 @@ public:
                     if ( !_extraHeaderValue.isEmpty() ) {
                         resp->setHeader(QString::fromUtf8("X-Extra"), _extraHeaderValue);
                     }
-                    resp->setHeader( QString::fromUtf8("Content-Length"), QString::fromUtf8("2") );
+                    const QByteArray body = (_bodySize > 0) ? QByteArray(_bodySize, 'x') : QByteArray("ok");
+                    resp->setHeader( QString::fromUtf8("Content-Length"), QString::number( body.size() ) );
                     resp->setHeader( QString::fromUtf8("Connection"), QString::fromUtf8(keepAlive ? "keep-alive" : "close") );
                     resp->writeHead(200);
-                    resp->end("ok");
+                    resp->end(body);
                 }
                 // the request belongs to the handler (see QHttpServer::newRequest())
                 if (_keepRequests) {
@@ -96,6 +106,23 @@ public:
     void setExtraHeaderValue(const QString& value) { _extraHeaderValue = value; }
 
     void setIdleTimeout(int msecs) { _server.setIdleTimeout(msecs); }
+
+    // The size of the answers' body (0: "ok")
+    void setBodySize(int size) { _bodySize = size; }
+
+    // The handler runs a nested event loop for this long before answering
+    void setHandlerDelay(int msecs) { _handlerDelayMs = msecs; }
+
+    // The most data waiting to be sent on one of the server's sockets
+    qint64 maxBytesToWrite() const
+    {
+        qint64 result = 0;
+        for (QTcpSocket* socket : _server.findChildren<QTcpSocket*>()) {
+            result = std::max( result, socket->bytesToWrite() );
+        }
+
+        return result;
+    }
 
     void setMaxConnections(int maxConnections) { _server.setMaxConnections(maxConnections); }
 
@@ -167,6 +194,8 @@ private:
     QByteArray _lastBody;
     QString _extraHeaderValue;
     bool _keepRequests;
+    int _bodySize;
+    int _handlerDelayMs;
     QList<QPointer<QHttpRequest> > _keptRequests;
 };
 
@@ -468,6 +497,81 @@ TEST(QHttpServer, ClosesIdleConnections)
 
     // a request still gets its answer
     EXPECT_TRUE( isStatus(server.exchange("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n"), 200) );
+}
+
+// Data received restarts the idle timer: a slow request (one byte every 100 ms, about 3.5 s) with a
+// 300 ms idle timeout still gets its answer.
+TEST(QHttpServer, IdleTimeoutRestartsOnData)
+{
+    LoopbackHttpServer server;
+    ASSERT_TRUE( server.listening() );
+    server.setIdleTimeout(300);
+
+    QTcpSocket socket;
+    socket.connectToHost(QHostAddress::LocalHost, server.port());
+    ASSERT_TRUE( socket.waitForConnected(10000) );
+    QByteArray reply;
+    QObject::connect( &socket, &QTcpSocket::readyRead, [&reply, &socket]() { reply += socket.readAll(); } );
+    const QByteArray request("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    for (int i = 0; i < request.size() && socket.state() == QAbstractSocket::ConnectedState; ++i) {
+        socket.write( request.mid(i, 1) );
+        processEventsUntil([]() { return false; }, 100);
+    }
+    EXPECT_TRUE( processEventsUntil([&reply]() { return reply.endsWith("ok"); }) ) << reply.constData();
+    EXPECT_TRUE( isStatus(reply, 200) ) << reply.constData();
+}
+
+// A client that sends requests but never reads the answers: they piled up in the socket's write
+// buffer without limit, and every request restarted the idle timer.
+TEST(QHttpServer, DropsClientThatDoesNotRead)
+{
+    LoopbackHttpServer server;
+    ASSERT_TRUE( server.listening() );
+    server.setIdleTimeout(500);
+    server.setBodySize(256 * 1024);
+
+    QTcpSocket socket;
+    socket.setReadBufferSize(1024); // reads (almost) nothing
+    socket.connectToHost(QHostAddress::LocalHost, server.port());
+    ASSERT_TRUE( socket.waitForConnected(10000) );
+    const QByteArray request("GET / HTTP/1.1\r\nHost: localhost\r\nConnection: keep-alive\r\n\r\n");
+    qint64 maxBytesToWrite = 0;
+    QElapsedTimer timer;
+    timer.start();
+    while ( socket.state() == QAbstractSocket::ConnectedState && timer.elapsed() < 20000 ) {
+        socket.write(request);
+        processEventsUntil([]() { return false; }, 50);
+        maxBytesToWrite = std::max( maxBytesToWrite, server.maxBytesToWrite() );
+    }
+    EXPECT_NE( QAbstractSocket::ConnectedState, socket.state() ) << "not dropped after " << timer.elapsed() << " ms";
+    // at most 1 MB waits to be sent, plus one answer
+    EXPECT_LE( maxBytesToWrite, 1024 * 1024 + 256 * 1024 + 1024 );
+}
+
+// The handler may run a nested event loop (a modal dialog): an idle timeout or the client leaving
+// meanwhile deleted the connection under http-parser's feet.
+TEST(QHttpServer, SurvivesNestedEventLoopInHandler)
+{
+    LoopbackHttpServer server;
+    ASSERT_TRUE( server.listening() );
+    server.setIdleTimeout(100);
+    server.setHandlerDelay(500);
+
+    // the idle timeout expires while the handler runs: the answer still comes
+    EXPECT_TRUE( isStatus(server.exchange("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n"), 200) );
+
+    // the client leaves while the handler runs
+    {
+        QTcpSocket socket;
+        socket.connectToHost(QHostAddress::LocalHost, server.port());
+        ASSERT_TRUE( socket.waitForConnected(10000) );
+        socket.write("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        QTimer::singleShot( 100, &socket, [&socket]() { socket.abort(); } ); // inside the handler's loop
+        EXPECT_TRUE( processEventsUntil([&server, &socket]() {
+            return server.requests() == 2 && socket.state() == QAbstractSocket::UnconnectedState;
+        }) );
+    }
+    EXPECT_TRUE( processEventsUntil([&server]() { return server.sockets() == 0; }) );
 }
 
 TEST(QHttpServer, LimitsConnections)
