@@ -26,7 +26,7 @@ CONFIG += static-gui static-engine static-host-support static-breakpadclient sta
 QT += gui core opengl network widgets concurrent
 equals(QT_MAJOR_VERSION, 6): QT += openglwidgets
 
-CONFIG += openmvg-flags glad-flags
+CONFIG += openmvg-flags libmv-flags glad-flags
 
 CONFIG += expat
 
@@ -153,6 +153,7 @@ SOURCES += \
     Settings_Test.cpp \
     ShuffleAutoConnect_Test.cpp \
     StrUtilsFormat_Test.cpp \
+    LibMVTrackRegion_Test.cpp \
     Tracker_Test.cpp \
     TrackerHeadless_Test.cpp \
     ViewerCache_Test.cpp \

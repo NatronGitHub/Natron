@@ -119,6 +119,7 @@ set(Tests_SOURCES
     Settings_Test.cpp
     ShuffleAutoConnect_Test.cpp
     StrUtilsFormat_Test.cpp
+    LibMVTrackRegion_Test.cpp
     Tracker_Test.cpp
     TrackerHeadless_Test.cpp
     ViewerCache_Test.cpp
@@ -137,10 +138,11 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         COMPILE_OPTIONS "-ffast-math"
         COMPILE_DEFINITIONS NATRON_TESTS_FAST_MATH_TU)
 endif()
-# openMVG first, for the order of the SYSTEM include directories (see Engine/CMakeLists.txt)
+# openMVG and mv first, for the order of the SYSTEM include directories (see Engine/CMakeLists.txt)
 target_link_libraries(Tests
     PRIVATE
         openMVG
+        mv
         NatronEngine
         Qt::Core
         Python3::Python
