@@ -1,7 +1,8 @@
 Extracted from qhttpserver main repository
 Git URL=https://github.com/nikhilm/qhttpserver
 Git HEAD version=ca8f3277d37c90546870c72313d0cdae61bf5bac
-Patch applied=qhttpserver-Natron.patch
+Patch applied=qhttpserver-Natron.patch (diff -ur of qhttpserver.pro and src/ against
+that commit; the Natron changes in src/ are marked with "Natron" comments)
 
 http-parser (http-parser/): nodejs/http-parser v2.9.4, its last release
 (the repository is archived), unmodified:
