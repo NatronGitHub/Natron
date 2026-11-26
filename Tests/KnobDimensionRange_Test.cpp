@@ -34,12 +34,13 @@
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
-#include "Engine/CreateNodeArgs.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/ViewIdx.h"
+
+#include "TestUtils.h"
 
 NATRON_NAMESPACE_USING
 
@@ -49,12 +50,9 @@ NATRON_NAMESPACE_USING
 // They throw std::invalid_argument for it, as for a negative dimension.
 TEST(KnobDimensionRange, DerivativeAndIntegral)
 {
-    AppInstancePtr app = appPTR->getTopLevelInstance();
-    ASSERT_TRUE( bool(app) );
     // Dot is a built-in node: no OpenFX plug-in is needed.
-    CreateNodeArgs args( PLUGINID_NATRON_DOT, app->getProject() );
-    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-    NodePtr node = app->createNode(args);
+    NatronTest::NodeScope nodes;
+    NodePtr node = nodes.create(PLUGINID_NATRON_DOT);
     ASSERT_TRUE( bool(node) );
 
     {
@@ -75,8 +73,6 @@ TEST(KnobDimensionRange, DerivativeAndIntegral)
         EXPECT_THROW( static_cast<KnobI*>( knob.get() )->deleteValueAtTime( eCurveChangeReasonInternal, 10., ViewSpec::all(), 2, false ), std::invalid_argument );
         EXPECT_EQ( 2, knob->getKeyFramesCount( ViewIdx(0), 1 ) );
     }
-
-    node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
 }
 
 // From Python, a dimension out of range gives 0, as getValue(dimension) does (a C++ exception
@@ -119,11 +115,8 @@ invalidArgumentMessage(const std::function<void()>& f)
 // dimension before checking it, and the messages named other functions.
 TEST(KnobDimensionRange, CheckedDimensionAndMessage)
 {
-    AppInstancePtr app = appPTR->getTopLevelInstance();
-    ASSERT_TRUE( bool(app) );
-    CreateNodeArgs args( PLUGINID_NATRON_DOT, app->getProject() );
-    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-    NodePtr node = app->createNode(args);
+    NatronTest::NodeScope nodes;
+    NodePtr node = nodes.create(PLUGINID_NATRON_DOT);
     ASSERT_TRUE( bool(node) );
 
     {
