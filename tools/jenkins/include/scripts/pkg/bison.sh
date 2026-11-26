@@ -4,9 +4,10 @@
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/bison.html
 BISON_VERSION=3.8.2
 BISON_TAR="bison-${BISON_VERSION}.tar.gz"
-BISON_SITE="http://ftp.gnu.org/pub/gnu/bison"
+BISON_SHA256=06c9e13bdf7eb24d4ceb6b59205a4f67c2c7e7213119644430fe82fbd14a0abb
+BISON_SITE="https://ftp.gnu.org/gnu/bison"
 if download_step; then
-    download "$BISON_SITE" "$BISON_TAR"
+    download "$BISON_SITE" "$BISON_TAR" "$BISON_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/bison" ]; }; }; then
     start_build

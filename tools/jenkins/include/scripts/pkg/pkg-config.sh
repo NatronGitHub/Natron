@@ -4,9 +4,10 @@
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/pkg-config.html
 PKGCONFIG_VERSION=0.29.2
 PKGCONFIG_TAR="pkg-config-${PKGCONFIG_VERSION}.tar.gz"
+PKGCONFIG_SHA256=6fc69c01688c9458a57eb9a1664c9aba372ccda420a02bf4429fe610e7e7d591
 PKGCONFIG_SITE="https://pkg-config.freedesktop.org/releases"
 if download_step; then
-    download "$PKGCONFIG_SITE" "$PKGCONFIG_TAR"
+    download "$PKGCONFIG_SITE" "$PKGCONFIG_TAR" "$PKGCONFIG_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/pkg-config" ] || [ "$($SDK_HOME/bin/pkg-config --version)" != "$PKGCONFIG_VERSION" ]; }; }; then
     start_build

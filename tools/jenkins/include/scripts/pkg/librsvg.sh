@@ -9,9 +9,10 @@
 LIBRSVG_VERSION=2.58.5
 LIBRSVG_VERSION_SHORT=${LIBRSVG_VERSION%.*}
 LIBRSVG_TAR="librsvg-${LIBRSVG_VERSION}.tar.xz"
+LIBRSVG_SHA256=224233a0e347d38c415f15a49f0e0885313e3ecc18f3192055f9304dd2f3a27a
 LIBRSVG_SITE="https://download.gnome.org/sources/librsvg/${LIBRSVG_VERSION_SHORT}"
 if download_step; then
-    download "$LIBRSVG_SITE" "$LIBRSVG_TAR"
+    download "$LIBRSVG_SITE" "$LIBRSVG_TAR" "$LIBRSVG_SHA256"
 fi
 if build_step && { force_build || { [ "${REBUILD_SVG:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/include/librsvg* "$SDK_HOME"/lib/librsvg* "$SDK_HOME"/lib/pkgconfig/librsvg* || true

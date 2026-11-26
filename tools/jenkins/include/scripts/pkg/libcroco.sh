@@ -7,9 +7,10 @@
 LIBCROCO_VERSION=0.6.13
 LIBCROCO_VERSION_SHORT=${LIBCROCO_VERSION%.*}
 LIBCROCO_TAR="libcroco-${LIBCROCO_VERSION}.tar.xz"
-LIBCROCO_SITE="http://ftp.gnome.org/pub/gnome/sources/libcroco/${LIBCROCO_VERSION_SHORT}"
+LIBCROCO_SHA256=767ec234ae7aa684695b3a735548224888132e063f92db585759b422570621d4
+LIBCROCO_SITE="https://download.gnome.org/sources/libcroco/${LIBCROCO_VERSION_SHORT}"
 if download_step; then
-    download "$LIBCROCO_SITE" "$LIBCROCO_TAR"
+    download "$LIBCROCO_SITE" "$LIBCROCO_TAR" "$LIBCROCO_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libcroco-0.6.so" ]; }; }; then
     start_build
