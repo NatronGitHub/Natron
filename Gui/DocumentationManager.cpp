@@ -279,7 +279,7 @@ DocumentationManager::handler(QHttpRequest *req,
                                          "<H1>301 Moved</H1>\n"
                                          "The document has moved\n"
                                          "<A HREF=\"%1/\">here</A>.\r\n"
-                                         "</BODY></HTML>").arg(page).toUtf8() );
+                                         "</BODY></HTML>").arg( page.toHtmlEscaped() ).toUtf8() );
             return;
         }
     }
@@ -595,19 +595,34 @@ DocumentationManager::handler(QHttpRequest *req,
 
     // set header(s)
     resp->setHeader( QString::fromUtf8("Content-Length"), QString::number( body.size() ) );
-    if ( page.endsWith( QString::fromUtf8(".png") ) ) {
-        resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8("image/png") );
-    } else if ( page.endsWith( QString::fromUtf8(".jpg") ) ) {
-        resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8("image/jpeg") );
-    } else if ( page.endsWith( QString::fromUtf8(".html") ) || page.endsWith( QString::fromUtf8(".htm") ) ) {
-        resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8("text/html; charset=utf-8") );
-    } else if ( page.endsWith( QString::fromUtf8(".css") ) ) {
-        resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8("text/css; charset=utf-8") );
-    } else if ( page.endsWith( QString::fromUtf8(".js") ) ) {
-        resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8("application/javascript; charset=utf-8") );
-    } else if ( page.endsWith( QString::fromUtf8(".txt") ) ) {
-        resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8("text/plain; charset=utf-8") );
+    // the "Page not found" page is HTML, whatever the extension; the browser must not guess other types
+    // (e.g. HTML in a .txt file)
+    const char* contentType = "text/html; charset=utf-8";
+    if (status != 404) {
+        if ( page.endsWith( QString::fromUtf8(".png") ) ) {
+            contentType = "image/png";
+        } else if ( page.endsWith( QString::fromUtf8(".jpg") ) ) {
+            contentType = "image/jpeg";
+        } else if ( page.endsWith( QString::fromUtf8(".svg") ) ) {
+            contentType = "image/svg+xml";
+        } else if ( page.endsWith( QString::fromUtf8(".css") ) ) {
+            contentType = "text/css; charset=utf-8";
+        } else if ( page.endsWith( QString::fromUtf8(".js") ) ) {
+            contentType = "application/javascript; charset=utf-8";
+        } else if ( page.endsWith( QString::fromUtf8(".txt") ) ) {
+            contentType = "text/plain; charset=utf-8";
+        } else if ( page.endsWith( QString::fromUtf8(".ttf") ) ) {
+            contentType = "font/ttf";
+        } else if ( page.endsWith( QString::fromUtf8(".woff") ) ) {
+            contentType = "font/woff";
+        } else if ( page.endsWith( QString::fromUtf8(".woff2") ) ) {
+            contentType = "font/woff2";
+        } else if ( page.endsWith( QString::fromUtf8(".eot") ) ) {
+            contentType = "application/vnd.ms-fontobject";
+        }
     }
+    resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8(contentType) );
+    resp->setHeader( QString::fromUtf8("X-Content-Type-Options"), QString::fromUtf8("nosniff") );
 
     // return result (a HEAD request gets the headers only, Content-Length included)
     resp->writeHead(status);
