@@ -658,23 +658,101 @@ KnobGuiString::addHtmlTags(QString text) const
     return text;
 }
 
-// The position of the tag (kBoldStartTag or kItalicStartTag) that the editor adds: before the font tag, or at
-// the start of a label without one; -1 if there is none. A <b> or <i> in the text itself is not one.
+// Whether text starts with startTag and ends with the endTag that closes it: "<b>Note: <b>keep</b></b>" but
+// not "<b>Note</b>: <b>keep</b>"
+static bool
+isWrappedIn(const QString& text,
+            const QString& startTag,
+            const QString& endTag)
+{
+    if ( !text.startsWith(startTag) || !text.endsWith(endTag) || (text.size() < startTag.size() + endTag.size()) ) {
+        return false;
+    }
+    int depth = 0;
+    int pos = 0;
+    for (;;) {
+        const int start = text.indexOf(startTag, pos);
+        const int end = text.indexOf(endTag, pos);
+        if (end == -1) {
+            return false;
+        }
+        if ( (start != -1) && (start < end) ) {
+            ++depth;
+            pos = start + startTag.size();
+        } else {
+            --depth;
+            pos = end + endTag.size();
+            if (depth == 0) {
+                return pos == text.size();
+            }
+        }
+    }
+}
+
+// The position of the start tag (kBoldStartTag or kItalicStartTag) that the editor adds: before the font tag,
+// or, in a label without one, at the start with its end tag at the end; -1 if there is none. A <b> or <i> in
+// the text itself is not one.
 static int
 autoAddedTagPosition(const QString& text,
-                     const char* tag)
+                     const char* startTag,
+                     const char* endTag)
 {
-    const QString toFind = QString::fromUtf8(tag);
+    const QString toFind = QString::fromUtf8(startTag);
     const int fontTagStart = text.indexOf( QString::fromUtf8(kFontSizeTag) );
 
     if (fontTagStart == -1) {
-        return text.startsWith(toFind) ? 0 : -1;
+        return isWrappedIn( text, toFind, QString::fromUtf8(endTag) ) ? 0 : -1;
+    }
+    const int pos = text.lastIndexOf(toFind, fontTagStart);
+    if (pos == -1) {
+        return -1;
+    }
+    // its end tag is among the editor's end tags after the font end tag, as removeAutoAddedEndTag() expects:
+    // not "<b>Title</b><font ...>" or "<b>Title</b><font ...>x</font> <b>y</b>"
+    const QString fontEndTag = QString::fromUtf8(kFontEndTag);
+    const int fontEnd = text.lastIndexOf(fontEndTag);
+    if (fontEnd == -1) {
+        return -1;
+    }
+    QString tail = text.mid( fontEnd + fontEndTag.size() );
+    const QString boldEndTag = QString::fromUtf8(kBoldEndTag);
+    const QString italicEndTag = QString::fromUtf8(kItalicEndTag);
+    bool found = false;
+    while ( !tail.isEmpty() ) {
+        const QString next = tail.startsWith(boldEndTag) ? boldEndTag : tail.startsWith(italicEndTag) ? italicEndTag : QString();
+        if ( next.isEmpty() ) {
+            return -1; // text of the label after the font tag
+        }
+        found = found || ( next == QString::fromUtf8(endTag) );
+        tail.remove( 0, next.size() );
     }
 
-    return text.lastIndexOf(toFind, fontTagStart);
+    return found ? pos : -1;
 }
 
-// If text is startTag...endTag around the whole text (no other such tag inside), removes them and returns true
+// Removes the end tag (kBoldEndTag or kItalicEndTag) that the editor adds: after the font end tag, or at the
+// end of a label without one. A </b> or </i> in the text itself is not one.
+static void
+removeAutoAddedEndTag(QString& text,
+                      const char* tag)
+{
+    const QString toFind = QString::fromUtf8(tag);
+    const QString fontEndTag = QString::fromUtf8(kFontEndTag);
+    const int fontEnd = text.lastIndexOf(fontEndTag);
+    int i;
+
+    // the same test as autoAddedTagPosition(): Natron's font tag, not any </font>
+    if ( !text.contains( QString::fromUtf8(kFontSizeTag) ) || (fontEnd == -1) ) {
+        i = text.endsWith(toFind) ? text.size() - toFind.size() : -1;
+    } else {
+        i = text.indexOf(toFind, fontEnd + fontEndTag.size());
+    }
+    if (i != -1) {
+        text.remove( i, toFind.size() );
+    }
+}
+
+// If text is startTag...endTag around the whole text (isWrappedIn()), removes them and returns true
 static bool
 unwrapTag(QString& text,
           const char* startTag,
@@ -683,14 +761,10 @@ unwrapTag(QString& text,
     const QString start = QString::fromUtf8(startTag);
     const QString end = QString::fromUtf8(endTag);
 
-    if ( !text.startsWith(start) || !text.endsWith(end) || (text.size() < start.size() + end.size()) ) {
-        return false;
-    }
-    const QString inner = text.mid( start.size(), text.size() - start.size() - end.size() );
-    if ( inner.contains(start) || inner.contains(end) ) {
+    if ( !isWrappedIn(text, start, end) ) {
         return false; // e.g. "<b>a</b> and <b>b</b>"
     }
-    text = inner;
+    text = text.mid( start.size(), text.size() - start.size() - end.size() );
 
     return true;
 }
@@ -706,13 +780,13 @@ KnobGuiString::restoreTextInfoFromString()
         // shown. Bold and italic around the whole label go outside the font tag, where addHtmlTags() puts
         // them and where the other edits and removeAutoAddedHtmlTags() look for them.
         QString content = text;
-        _boldActivated = false;
-        _italicActivated = false;
+        bool bold = false;
+        bool italic = false;
         for (;;) {
-            if ( !_italicActivated && unwrapTag(content, kItalicStartTag, kItalicEndTag) ) {
-                _italicActivated = true;
-            } else if ( !_boldActivated && unwrapTag(content, kBoldStartTag, kBoldEndTag) ) {
-                _boldActivated = true;
+            if ( !italic && unwrapTag(content, kItalicStartTag, kItalicEndTag) ) {
+                italic = true;
+            } else if ( !bold && unwrapTag(content, kBoldStartTag, kBoldEndTag) ) {
+                bold = true;
             } else {
                 break;
             }
@@ -721,10 +795,10 @@ KnobGuiString::restoreTextInfoFromString()
         _fontColor = Qt::black;
         _fontFamily = _fontCombo->currentFont().family();
         text = decorateTextWithFontTag(_fontFamily, _fontSize, _fontColor, content);
-        if (_boldActivated) {
+        if (bold) {
             text = QString::fromUtf8(kBoldStartTag) + text + QString::fromUtf8(kBoldEndTag);
         }
-        if (_italicActivated) {
+        if (italic) {
             text = QString::fromUtf8(kItalicStartTag) + text + QString::fromUtf8(kItalicEndTag);
         }
         knob->setValue( text.toStdString() );
@@ -743,15 +817,22 @@ KnobGuiString::restoreTextInfoFromString()
         _fontSizeSpinBox->setValue(_fontSize);
 
         _fontColor = color;
-        _italicActivated = autoAddedTagPosition(text, kItalicStartTag) != -1;
-        _boldActivated = autoAddedTagPosition(text, kBoldStartTag) != -1;
     }
+    syncBoldItalicWithText(text);
+    updateFontColorIcon(_fontColor);
+} // restoreTextInfoFromString
+
+void
+KnobGuiString::syncBoldItalicWithText(const QString& text)
+{
+    assert(_setBoldButton && _setItalicButton); // created together, for rich text only
+    _italicActivated = autoAddedTagPosition(text, kItalicStartTag, kItalicEndTag) != -1;
+    _boldActivated = autoAddedTagPosition(text, kBoldStartTag, kBoldEndTag) != -1;
     _setItalicButton->setChecked(_italicActivated);
     _setItalicButton->setDown(_italicActivated);
     _setBoldButton->setChecked(_boldActivated);
     _setBoldButton->setDown(_boldActivated);
-    updateFontColorIcon(_fontColor);
-} // restoreTextInfoFromString
+}
 
 void
 KnobGuiString::parseFont(const QString & label,
@@ -922,16 +1003,17 @@ KnobGuiString::boldChanged(bool toggled)
     KnobStringPtr knob = _knob.lock();
     QString text = QString::fromUtf8( knob->getValue(0).c_str() );
     QString toFind = QString::fromUtf8(kBoldStartTag);
-    int i = autoAddedTagPosition(text, kBoldStartTag);
+    int i = autoAddedTagPosition(text, kBoldStartTag, kBoldEndTag);
 
-    assert( (toggled && i == -1) || (!toggled && i != -1) );
+    if ( toggled == (i != -1) ) {
+        // the label already is (or isn't) bold, e.g. changed from Python: show it instead of editing it
+        syncBoldItalicWithText(text);
 
+        return;
+    }
     if (!toggled) {
         text.remove( i, toFind.size() );
-        toFind = QString::fromUtf8(kBoldEndTag);
-        i = text.lastIndexOf(toFind);
-        assert (i != -1);
-        text.remove( i, toFind.size() );
+        removeAutoAddedEndTag(text, kBoldEndTag);
     } else {
         ///insert right prior to the font size, and after the font end tag: at the start and the end of a label
         ///without them, e.g. set from Python (#1807)
@@ -1007,29 +1089,22 @@ KnobGuiString::italicChanged(bool toggled)
         i = 0; // a label without Natron's font tag, e.g. set from Python (#1807): the tags go at the start
     }
 
-    ///search before i
     toFind = QString::fromUtf8(kItalicStartTag);
-    int foundItalic = text.lastIndexOf(toFind, i);
-    assert( (toggled && foundItalic == -1) || (!toggled && foundItalic != -1) );
+    int foundItalic = autoAddedTagPosition(text, kItalicStartTag, kItalicEndTag);
+    if ( toggled == (foundItalic != -1) ) {
+        // the label already is (or isn't) italic, e.g. changed from Python: show it instead of editing it
+        syncBoldItalicWithText(text);
+
+        return;
+    }
     if (!toggled) {
         text.remove( foundItalic, toFind.size() );
-        toFind = QString::fromUtf8(kItalicEndTag);
-        foundItalic = text.lastIndexOf(toFind);
-        assert(foundItalic != -1);
-        text.remove( foundItalic, toFind.size() );
+        removeAutoAddedEndTag(text, kItalicEndTag);
     } else {
-        int foundBold = text.lastIndexOf(QString::fromUtf8(kBoldStartTag), i);
-        assert( (foundBold == -1 && !_boldActivated) || (foundBold != -1 && _boldActivated) );
+        int foundBold = autoAddedTagPosition(text, kBoldStartTag, kBoldEndTag);
 
-        ///if bold is activated, insert prior to bold
-        if (foundBold != -1) {
-            foundBold = foundBold == 0 ? 0 : foundBold - 1;
-            text.insert( foundBold, QString::fromUtf8(kItalicStartTag) );
-        } else {
-            //there's no bold
-            i = i == 0 ? 0 : i - 1;
-            text.insert( i, QString::fromUtf8(kItalicStartTag) );
-        }
+        // right before the editor's bold, or else before the font tag (the start of a label without one)
+        text.insert( (foundBold != -1) ? foundBold : i, QString::fromUtf8(kItalicStartTag) );
         text.append( QString::fromUtf8(kItalicEndTag) ); //< this is always the last tag
     }
     _italicActivated = toggled;
@@ -1078,35 +1153,20 @@ KnobGuiString::removeAutoAddedHtmlTags(QString text,
     QString toFind = QString::fromUtf8(kFontSizeTag);
     int i = text.indexOf(toFind);
     bool foundFontStart = i != -1;
-    QString boldStr = QString::fromUtf8(kBoldStartTag);
-    int foundBold = text.lastIndexOf(boldStr, i);
-
-    ///Assert removed: the knob might be linked from elsewhere and the button might not have been pressed.
-    //assert((foundBold == -1 && !_boldActivated) || (foundBold != -1 && _boldActivated));
-
+    // only the tags that the editor adds, as the Bold and Italic buttons see them: a <b> or <i> in the text
+    // itself stays (e.g. a label set from Python, "Note: <b>keep</b>")
+    // (both decided on the label itself, as syncBoldItalicWithText() does: "<b><i>x</i></b>" keeps its <i>)
+    const bool italic = autoAddedTagPosition(text, kItalicStartTag, kItalicEndTag) != -1;
+    int foundBold = autoAddedTagPosition(text, kBoldStartTag, kBoldEndTag);
     if (foundBold != -1) {
-        text.remove( foundBold, boldStr.size() );
-        boldStr = QString::fromUtf8(kBoldEndTag);
-        foundBold = text.lastIndexOf(boldStr);
-        assert(foundBold != -1);
-        text.remove( foundBold, boldStr.size() );
+        text.remove( foundBold, QString::fromUtf8(kBoldStartTag).size() );
+        removeAutoAddedEndTag(text, kBoldEndTag);
     }
 
-    ///refresh the index
-    i = text.indexOf(toFind);
-
-    QString italStr = QString::fromUtf8(kItalicStartTag);
-    int foundItal = text.lastIndexOf(italStr, i);
-
-    //Assert removed: the knob might be linked from elsewhere and the button might not have been pressed.
-    // assert((_italicActivated && foundItal != -1) || (!_italicActivated && foundItal == -1));
-
+    int foundItal = italic ? autoAddedTagPosition(text, kItalicStartTag, kItalicEndTag) : -1;
     if (foundItal != -1) {
-        text.remove( foundItal, italStr.size() );
-        italStr = QString::fromUtf8(kItalicEndTag);
-        foundItal = text.lastIndexOf(italStr);
-        assert(foundItal != -1);
-        text.remove( foundItal, italStr.size() );
+        text.remove( foundItal, QString::fromUtf8(kItalicStartTag).size() );
+        removeAutoAddedEndTag(text, kItalicEndTag);
     }
 
     ///refresh the index
@@ -1120,11 +1180,13 @@ KnobGuiString::removeAutoAddedHtmlTags(QString text,
         text.remove(i, foundEndTag - i);
     }
 
-    endTag = QString::fromUtf8(kFontEndTag);
-    foundEndTag = text.lastIndexOf(endTag);
-    assert( (foundEndTag != -1 && foundFontStart) || !foundFontStart );
-    if (foundEndTag != -1) {
-        text.remove( foundEndTag, endTag.size() );
+    if (foundFontStart) {
+        // a label without Natron's font tag keeps its own </font>
+        endTag = QString::fromUtf8(kFontEndTag);
+        foundEndTag = text.lastIndexOf(endTag);
+        if (foundEndTag != -1) {
+            text.remove( foundEndTag, endTag.size() );
+        }
     }
 
     ///we also remove any custom data added by natron so the user doesn't see it
@@ -1150,6 +1212,10 @@ KnobGuiString::updateGUI(int /*dimension*/)
         int selectionEnd = cursor.selectionEnd();
         QString txt = QString::fromUtf8( value.c_str() );
         if ( knob->usesRichText() ) {
+            // an undo or a setValue() from Python may have added or removed the bold or italic tags
+            if (_setBoldButton) {
+                syncBoldItalicWithText(txt);
+            }
             txt = removeAutoAddedHtmlTags(txt);
         }
 

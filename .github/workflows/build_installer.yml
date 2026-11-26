@@ -340,12 +340,13 @@ jobs:
           }
           # Setup.exe must refuse the folder of a Natron 2.5 or older (Qt Installer Framework:
           # bin\Natron.exe next to the NatronSetup.exe maintenance tool), and leave it untouched.
-          # natron-setup 1.0-7 and later only: older package repositories have an older Setup.exe.
+          # natron-setup 1.0-9 and later only (exit code 7, #1911): older package repositories have an
+          # older Setup.exe.
           # (NATRON_SETUP_VERSION: recorded when it was installed, "Uninstall Natron dependencies"
           # removed the package)
           SETUP_VERSION="${NATRON_SETUP_VERSION:?}"
-          if [ "$(vercmp "${SETUP_VERSION}" 1.0-7)" -lt 0 ]; then
-            echo "::warning::natron-setup ${SETUP_VERSION} is older than 1.0-7: the check that Setup.exe refuses the folder of a Natron 2.5 or older is skipped"
+          if [ "$(vercmp "${SETUP_VERSION}" 1.0-9)" -lt 0 ]; then
+            echo "::warning::natron-setup ${SETUP_VERSION} is older than 1.0-9: the check that Setup.exe refuses the folder of a Natron 2.5 or older is skipped"
           else
             OLD_W='D:\ni25'
             OLD=$(cygpath -u "${OLD_W}")
@@ -386,20 +387,31 @@ jobs:
           done
           rm -rf "${APP}/bin/natron-user-test.exe" "${APP}/Plugins/OFX/Natron/UserTest.ofx.bundle"
           if [ ! -x "${APP}/unins000.exe" ]; then echo "::error::no uninstaller in ${APP}"; errors=1; fi
-          # the installed programs (no .pyc written into the installation, so that it can be removed)
-          export PYTHONDONTWRITEBYTECODE=1
+          # the installed programs, as a user runs them: they write Python caches (__pycache__) into
+          # the installation, which the uninstaller must remove ([UninstallDelete] in Natron.iss).
+          # NatronRenderer with a script imports the PyPlugs (those of Plugins\PyPlugs and of the OFX
+          # bundles) at startup.
+          before=$(cd "${APP}" && find . -type f | sort)
           timeout -k 10 600 env PATH="${APP}/bin:${SYSPATH}" "${APP}/bin/NatronRenderer.exe" -v < /dev/null || { echo "::error::the installed NatronRenderer -v failed"; errors=1; }
+          printf 'print("NatronRenderer script ran")\nimport sys\nsys.exit(0)\n' > installed_renderer.py
+          timeout -k 10 600 env PATH="${APP}/bin:${SYSPATH}" "${APP}/bin/NatronRenderer.exe" --no-settings "$(cygpath -w "${GITHUB_WORKSPACE}/installed_renderer.py")" < /dev/null || { echo "::error::the installed NatronRenderer failed to run a script"; errors=1; }
           timeout -k 10 600 env PATH="${APP}/bin:${SYSPATH}" "${APP}/bin/natron-python.exe" -c "import sys, ssl, ${PYSIDE}.QtCore, ${PYSIDE}.QtWidgets; print('natron-python', sys.version.split()[0], ${PYSIDE}.QtCore.qVersion())" < /dev/null || { echo "::error::the installed natron-python failed"; errors=1; }
-          # The uninstaller copies itself to %TEMP% and returns at once: wait for the directory to go.
+          echo "Files that the installed programs wrote into ${APP_W}:"
+          comm -13 <(echo "${before}") <(cd "${APP}" && find . -type f | sort) | sed -n '1,50p'
+          # The uninstaller copies itself to %TEMP% and returns at once: wait until nothing is left
+          # but the folders that existed before the first install (D:\ni and D:\ni\bin, see above),
+          # which the uninstaller keeps: it only removes the folders it created. (It removes some
+          # folders after unins000.exe and unins000.dat: those that still held [UninstallDelete]
+          # files at its first try.)
           MSYS2_ARG_CONV_EXCL='*' "${APP}/unins000.exe" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART || { echo "::error::the uninstaller failed"; errors=1; }
           for _ in $(seq 120); do
-            [ -e "${APP}/unins000.exe" ] || [ -e "${APP}/bin" ] || break
+            [ -n "$(find "${APP}" -mindepth 1 ! -path "${APP}/bin" -print -quit 2>/dev/null)" ] || break
             sleep 2
           done
           if [ -e "${APP}" ]; then
-            left=$(find "${APP}" -type f | grep -v -E '/__pycache__/|\.pyc$' || true)
+            left=$(find "${APP}" -mindepth 1 ! -path "${APP}/bin")
             if [ -n "${left}" ]; then
-              echo "::error::the uninstaller left files in ${APP}:"; echo "${left}" | head -50; errors=1
+              echo "::error::the uninstaller left files or folders in ${APP}:"; echo "${left}" | sed -n '1,50p'; errors=1
             fi
           fi
           exit ${errors}

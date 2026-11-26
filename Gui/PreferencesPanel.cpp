@@ -1221,10 +1221,7 @@ PreferencesPanel::restoreDefaults()
             if (!plugin) {
                 continue; // a group row (see buildPluginGroupHierarchy())
             }
-            plugin->setActivated( !plugin->getIsDeprecated() ); // the default (#171)
-            plugin->setRenderScaleEnabled(true);
-            plugin->setMultiThreadingEnabled(true);
-            plugin->setOpenGLEnabled(true);
+            plugin->restoreDefaultFlags();
             it->showPluginFlags();
         }
         _imp->pluginSettingsChanged = true;

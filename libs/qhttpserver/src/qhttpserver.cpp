@@ -31,7 +31,7 @@
 
 QHash<int, QString> STATUS_CODES;
 
-QHttpServer::QHttpServer(QObject *parent) : QObject(parent), m_tcpServer(0)
+QHttpServer::QHttpServer(QObject *parent) : QObject(parent), m_tcpServer(0), m_idleTimeoutMs(60000), m_maxConnections(32)
 {
 #define STATUS_CODE(num, reason) STATUS_CODES.insert(num, QString::fromUtf8(reason));
     // {{{
@@ -99,8 +99,17 @@ void QHttpServer::newConnection()
     Q_ASSERT(m_tcpServer);
 
     while (m_tcpServer->hasPendingConnections()) {
-        QHttpConnection *connection =
-            new QHttpConnection(m_tcpServer->nextPendingConnection(), this);
+        QTcpSocket *socket = m_tcpServer->nextPendingConnection();
+        // Natron: refuse connections beyond m_maxConnections (those closed but not deleted yet count too,
+        // until the event loop deletes them)
+        if (m_maxConnections > 0 &&
+            findChildren<QHttpConnection *>(QString(), Qt::FindDirectChildrenOnly).size() >= m_maxConnections) {
+            socket->abort();
+            socket->deleteLater();
+            continue;
+        }
+        QHttpConnection *connection = new QHttpConnection(socket, this);
+        connection->setIdleTimeout(m_idleTimeoutMs);
         connect(connection, SIGNAL(newRequest(QHttpRequest *, QHttpResponse *)), this,
                 SIGNAL(newRequest(QHttpRequest *, QHttpResponse *)));
     }
@@ -133,6 +142,16 @@ int QHttpServer::serverPort()
     // Natron: m_tcpServer is NULL if listen() failed (e.g. the port is in use): that was a null
     // dereference in release builds
     return m_tcpServer ? m_tcpServer->serverPort() : 0;
+}
+
+void QHttpServer::setIdleTimeout(int msecs)
+{
+    m_idleTimeoutMs = msecs;
+}
+
+void QHttpServer::setMaxConnections(int maxConnections)
+{
+    m_maxConnections = maxConnections;
 }
 
 void QHttpServer::close()

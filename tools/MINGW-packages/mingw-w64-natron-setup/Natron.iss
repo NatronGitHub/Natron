@@ -141,6 +141,26 @@ Type: filesandordirs; Name: "{app}\Plugins\PySide6"; Check: IsNatronInstall
 Type: filesandordirs; Name: "{app}\Plugins\shiboken6"; Check: IsNatronInstall
 Type: files; Name: "{app}\lib\python*.zip"; Check: IsNatronInstall
 
+; Uninstalling: also remove what Natron and natron-python write into the installation when they
+; run: the Python bytecode caches (__pycache__) of the modules they import from Plugins\ (the
+; PyPlugs, natron_convert_project.py, PySide/Shiboken, and the PyPlugs of the OFX bundles in their
+; Contents\Resources\), which would otherwise keep the folder. The directories that [InstallDelete]
+; replaces as a whole go as a whole; of Plugins\ and Plugins\PyPlugs, only the caches.
+[UninstallDelete]
+Type: filesandordirs; Name: "{app}\Plugins\__pycache__"
+Type: filesandordirs; Name: "{app}\Plugins\PyPlugs\__pycache__"
+Type: filesandordirs; Name: "{app}\Plugins\OFX\Natron\Arena.ofx.bundle"
+Type: filesandordirs; Name: "{app}\Plugins\OFX\Natron\CImg.ofx.bundle"
+Type: filesandordirs; Name: "{app}\Plugins\OFX\Natron\GMIC.ofx.bundle"
+Type: filesandordirs; Name: "{app}\Plugins\OFX\Natron\IO.ofx.bundle"
+Type: filesandordirs; Name: "{app}\Plugins\OFX\Natron\Misc.ofx.bundle"
+Type: filesandordirs; Name: "{app}\Plugins\OFX\Natron\Shadertoy.ofx.bundle"
+Type: filesandordirs; Name: "{app}\Plugins\PySide"
+Type: filesandordirs; Name: "{app}\Plugins\PySide2"
+Type: filesandordirs; Name: "{app}\Plugins\shiboken2"
+Type: filesandordirs; Name: "{app}\Plugins\PySide6"
+Type: filesandordirs; Name: "{app}\Plugins\shiboken6"
+
 [Files]
 Source: "{src}\bin\*"; DestDir: "{app}\bin\"; Components: natron; Flags: ignoreversion recursesubdirs createallsubdirs external
 Source: "{src}\docs\*"; DestDir: "{app}\docs\"; Components: natron; Flags: ignoreversion recursesubdirs createallsubdirs external
@@ -369,11 +389,13 @@ begin
       Result := WizardForm.PrevAppDir <> '';
 end;
 
-// The folder page refuses the folder of an older Natron
+// The folder page refuses the folder of an older Natron. Not in a silent install, which also goes
+// through NextButtonClick: there, returning False aborts Setup with exit code 1, without a
+// message; PrepareToInstall refuses the folder instead, with exit code 7 and a line in the log.
 function NextButtonClick(CurPageID: Integer): Boolean;
 begin
   Result := True;
-  if (CurPageID = wpSelectDir) and IsOldNatronDir(WizardDirValue) then begin
+  if (CurPageID = wpSelectDir) and not WizardSilent and IsOldNatronDir(WizardDirValue) then begin
     SuppressibleMsgBox(OldNatronDirMessage(WizardDirValue), mbError, MB_OK, IDOK);
     Result := False;
   end;

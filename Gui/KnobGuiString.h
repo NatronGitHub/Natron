@@ -244,6 +244,9 @@ private:
 
     void restoreTextInfoFromString();
 
+    // Sets the Bold and Italic flags and buttons from the tags that the editor adds around the label text
+    void syncBoldItalicWithText(const QString& text);
+
 
     QString addHtmlTags(QString text) const;
 
