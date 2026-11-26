@@ -48,6 +48,7 @@
 
 #ifdef __NATRON_WIN32__
 
+#include <iterator> // std::size
 #include <stdexcept>
 
 // —— general includes —————————————————————————
@@ -175,13 +176,22 @@ DocumentWindow::registerFileType(const QString& documentId,
         registerCommand( QString::fromUtf8("Print"), documentId, QString::fromUtf8("-print %1"), QString::fromUtf8("[print(\"%1\")]") );
     }
 
-    LONG lSize = _MAX_PATH * 2;
     wchar_t szTempBuffer[_MAX_PATH * 2];
+    LONG lSize = static_cast<LONG>( sizeof(szTempBuffer) );
     LONG lResult = ::RegQueryValueW(HKEY_CLASSES_ROOT,
                                     (const wchar_t*)fileExtension.utf16(),
                                     szTempBuffer,
                                     &lSize);
-    QString temp = QString::fromUtf16( (unsigned short*)szTempBuffer );
+    // On failure the buffer is not filled; on success lSize is the size of the
+    // value in bytes, which may or may not include the terminating null.
+    QString temp;
+    if (lResult == ERROR_SUCCESS) {
+        int length = static_cast<int>( lSize / static_cast<LONG>( sizeof(wchar_t) ) );
+        while ( (length > 0) && (szTempBuffer[length - 1] == L'\0') ) {
+            --length;
+        }
+        temp = QString::fromWCharArray(szTempBuffer, length);
+    }
 
     if ( (lResult != ERROR_SUCCESS) || temp.isEmpty() || (temp == documentId) ) {
         // no association for that suffix
@@ -346,8 +356,14 @@ DocumentWindow::SetHkcrUserRegKey(QString key,
         Dialogs::warningDialog( kRegistryErrorTitle, QString::fromUtf8("registration database update failed for key '%1'.").arg(key).toStdString() );
     } else {
         wchar_t buffer[4096];
-        ::FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM, 0, lRetVal, 0, buffer, 4096, 0);
-        Dialogs::warningDialog( kRegistryErrorTitle, QString::fromUtf16( (const ushort*)buffer ).toStdString() );
+        // FormatMessageW returns the number of characters written (0 on failure,
+        // leaving the buffer unset); system messages end with "\r\n".
+        const DWORD length = ::FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, 0, lRetVal, 0, buffer, static_cast<DWORD>( std::size(buffer) ), 0);
+        QString message = QString::fromWCharArray( buffer, static_cast<int>(length) ).trimmed();
+        if ( message.isEmpty() ) {
+            message = QString::fromUtf8("registration database update failed for key '%1' (error %2).").arg( key, QString::number(lRetVal) );
+        }
+        Dialogs::warningDialog( kRegistryErrorTitle, message.toStdString() );
     }
 
     return false;

@@ -38,7 +38,9 @@ def work_around_shiboken2_on_python_3_14():
     """
     import inspect
 
-    NatronEngine.ChoiceParam.setOptions.__signature__  # loads Shiboken's signature support
+    # Loads shiboken2's signature support; shiboken6 has no __signature__ on
+    # this method_descriptor (the probe below still decides).
+    getattr(NatronEngine.ChoiceParam.setOptions, "__signature__", None)
 
     def probe(value: int):
         pass
