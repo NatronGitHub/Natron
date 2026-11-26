@@ -231,6 +231,11 @@ jobs:
         # After the build dependencies are uninstalled, with only the bundle's bin/ and the Windows
         # directories on PATH: a DLL, Python module or PySide module missing from the bundle fails
         # here (Tests.exe and the docs ran with /ucrt64/bin on PATH).
+        # No Python caches: this tree is Setup.exe's input, and caches written here would be
+        # installed as ordinary files, so the uninstall check of the next step would not test the
+        # [UninstallDelete] entries of Natron.iss.
+        env:
+          PYTHONDONTWRITEBYTECODE: 1
         run: |
           INSTALLER_DIR=$(cygpath -u '${{ steps.build.outputs.INSTALLER_DIR }}')/${{ steps.build.outputs.INSTALLER_NAME }}
           SYSPATH="$(cygpath -u -S):$(cygpath -u -W)"
@@ -376,11 +381,16 @@ jobs:
           printf 'print("NatronRenderer script ran")\nimport sys\nsys.exit(0)\n' > installed_renderer.py
           timeout -k 10 600 env PATH="${APP}/bin:${SYSPATH}" "${APP}/bin/NatronRenderer.exe" --no-settings "$(cygpath -w "${GITHUB_WORKSPACE}/installed_renderer.py")" < /dev/null || { echo "::error::the installed NatronRenderer failed to run a script"; errors=1; }
           timeout -k 10 600 env PATH="${APP}/bin:${SYSPATH}" "${APP}/bin/natron-python.exe" -c "import sys, ssl, ${PYSIDE}.QtCore, ${PYSIDE}.QtWidgets; print('natron-python', sys.version.split()[0], ${PYSIDE}.QtCore.qVersion())" < /dev/null || { echo "::error::the installed natron-python failed"; errors=1; }
+          wrote=$(comm -13 <(echo "${before}") <(cd "${APP}" && find . -type f | sort))
           echo "Files that the installed programs wrote into ${APP_W}:"
-          comm -13 <(echo "${before}") <(cd "${APP}" && find . -type f | sort) | sed -n '1,50p'
-          # The uninstaller copies itself to %TEMP% and returns at once: wait until nothing is left
-          # but the folders that existed before the first install (\ni and \ni\bin, see above),
-          # which the uninstaller keeps: it only removes the folders it created. (It removes some
+          echo "${wrote}" | sed -n '1,50p'
+          # the uninstall check below must cover the caches of [UninstallDelete]
+          if ! grep -q '^\./Plugins/PyPlugs/__pycache__/' <<< "${wrote}"; then
+            echo "::error::the installed programs wrote no Plugins/PyPlugs/__pycache__: the uninstall check would not test the [UninstallDelete] entries"; errors=1
+          fi
+          # The uninstaller copies itself to %TEMP% and returns at once: wait until no file is left,
+          # and no folder but those that existed before the first install (\ni and \ni\bin, see
+          # above), which the uninstaller keeps: it only removes the folders it created. (It removes some
           # folders after unins000.exe and unins000.dat: those that still held [UninstallDelete]
           # files at its first try.)
           MSYS2_ARG_CONV_EXCL='*' "${APP}/unins000.exe" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART || { echo "::error::the uninstaller failed"; errors=1; }
