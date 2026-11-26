@@ -66,7 +66,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
-#include "Gui/ProjectGuiSerialization.h"
+#include "Engine/ProjectGuiSerialization.h"
 #include "Gui/PythonPanels.h"
 #include "Gui/RegisteredTabs.h"
 #include "Gui/ScriptEditor.h"

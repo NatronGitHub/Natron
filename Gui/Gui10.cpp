@@ -49,7 +49,7 @@
 #include "Gui/NodeGui.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/ProjectGui.h"
-#include "Gui/ProjectGuiSerialization.h" // PaneLayout
+#include "Engine/ProjectGuiSerialization.h" // PaneLayout
 #include "Gui/PropertiesBinWrapper.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/Splitter.h"

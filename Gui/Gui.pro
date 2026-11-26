@@ -157,7 +157,6 @@ SOURCES += \
     MessageBox.cpp \
     MultiInstancePanel.cpp \
     NewLayerDialog.cpp \
-    NodeBackdropSerialization.cpp \
     NodeCreationDialog.cpp \
     NodeGraph.cpp \
     NodeGraph05.cpp \
@@ -304,7 +303,6 @@ HEADERS += \
     MessageBox.h \
     MultiInstancePanel.h \
     NewLayerDialog.h \
-    NodeBackdropSerialization.h \
     NodeClipBoard.h \
     NodeCreationDialog.h \
     NodeGraph.h \
@@ -313,7 +311,6 @@ HEADERS += \
     NodeGraphTextItem.h \
     NodeGraphUndoRedo.h \
     NodeGui.h \
-    NodeGuiSerialization.h \
     NodeSettingsPanel.h \
     NodeViewerContext.h \
     PanelWidget.h \
@@ -323,7 +320,6 @@ HEADERS += \
     ProgressPanel.h \
     ProgressTaskInfo.h \
     ProjectGui.h \
-    ProjectGuiSerialization.h \
     PropertiesBinWrapper.h \
     PyGlobalGui.h \
     PyGuiApp.h \

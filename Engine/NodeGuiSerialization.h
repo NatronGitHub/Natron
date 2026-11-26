@@ -44,7 +44,7 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Engine/AppManager.h"
 
-#include "Gui/GuiFwd.h"
+#include "Engine/EngineFwd.h"
 
 
 #define NODE_GUI_INTRODUCES_COLOR 2
@@ -55,6 +55,10 @@ GCC_DIAG_ON(unused-parameter)
 #define NODE_GUI_SERIALIZATION_VERSION NODE_GUI_INTRODUCES_CHILDREN
 
 NATRON_NAMESPACE_ENTER
+
+// The GUI data of a node, saved in the ProjectGui part of a project file. In Engine, so that the Engine can read
+// and write them; initialize(), which reads them from the GUI, is defined in Gui.
+class NodeGui;
 
 class NodeGuiSerialization
 {

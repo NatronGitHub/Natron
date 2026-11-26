@@ -46,7 +46,7 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Engine/KnobSerialization.h"
 
-#include "Gui/GuiFwd.h"
+#include "Engine/EngineFwd.h"
 
 
 #define NODE_BACKDROP_INTRODUCES_SELECTED 2
