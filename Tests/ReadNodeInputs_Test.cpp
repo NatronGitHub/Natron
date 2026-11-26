@@ -88,10 +88,16 @@ TEST(ReadNodeInputs, DecoderWithoutSourceClip)
 
         return;
     }
-    if (plugin->getMajorVersion() != kNoSourceMajor) {
-        // a real ReadPDF with a major of 91 or more is installed
+    if (plugin->getMajorVersion() > kNoSourceMajor) {
+        // a real ReadPDF with a higher major is installed
         NatronTest::skip("the newest " PLUGINID_OFX_READPDF " is version " + std::to_string( plugin->getMajorVersion() ) +
                          ", not the test reader");
+
+        return;
+    }
+    if (plugin->getMajorVersion() != kNoSourceMajor) {
+        // the newest is a real ReadPDF (e.g. openfx-arena's): the test reader was not loaded
+        NatronTestPlugin::reportMissing(PLUGINID_OFX_READPDF);
 
         return;
     }

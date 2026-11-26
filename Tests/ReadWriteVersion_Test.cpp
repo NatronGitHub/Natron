@@ -71,9 +71,16 @@ versionsAvailable()
 
                 return false;
             }
+            if (newestPlugin->getMajorVersion() > kNewestMajor) {
+                // a real plug-in with that ID and a higher major is installed
+                NatronTest::skip(std::string("the newest ") + ids[i] + " is version " +
+                                 std::to_string( newestPlugin->getMajorVersion() ) + ", not the test plug-in");
+
+                return false;
+            }
             if ( (oldPlugin->getMajorVersion() != kOldMajor) || (newestPlugin->getMajorVersion() != kNewestMajor) ) {
-                // e.g. a real plug-in with that ID and a major of 91 or more is installed
-                NatronTest::skip(std::string("the versions of ") + ids[i] + " are not those of the test plug-ins");
+                // getPluginBinary() found another version (e.g. openfx-io's): the test plug-ins were not loaded
+                NatronTestPlugin::reportMissing(ids[i]);
 
                 return false;
             }
