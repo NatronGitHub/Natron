@@ -63,6 +63,7 @@ SOURCES += \
     Curve_Test.cpp \
     DeepGraphRender_Test.cpp \
     DiskCache_Test.cpp \
+    DocumentationServer_Test.cpp \
     ExpressionDepsRenderArgs_Test.cpp \
     ExpressionSetError_Test.cpp \
     ExprUtils_Test.cpp \
