@@ -1691,14 +1691,26 @@ escapeString(const std::string& str)
 #define NUM_INT(n) QString::number(n, 10)
 #define NUM_COLOR(n) QString::number(n, 'g', 4)
 #define NUM_PIXEL(n) QString::number(n, 'f', 0)
-// The precision should be set to digits10+1 (i.e. 16 for double)
-// see also:
-// - https://github.com/jbeder/yaml-cpp/issues/197
-// - https://stackoverflow.com/questions/4738768/printing-double-without-losing-precision
-#define NUM_VALUE(n) QString::number(n, 'g', std::numeric_limits<double>::digits10 + 1)
-#define NUM_TIME(n) QString::number(n, 'g', std::numeric_limits<double>::digits10 + 1)
+#define NUM_VALUE(n) doubleToPython(n)
+#define NUM_TIME(n) doubleToPython(n)
 
 /* *INDENT-ON* */
+
+// The shortest of value with 15, 16 or 17 significant digits that Python reads as value: 16 digits, which the
+// exporter wrote before, change some values in their last bit (e.g. 0.1 + 0.2), and 17 digits always give the
+// same value (std::numeric_limits<double>::max_digits10), as the .ntp files have it.
+static QString
+doubleToPython(double value)
+{
+    for (int precision = std::numeric_limits<double>::digits10; precision < std::numeric_limits<double>::max_digits10; ++precision) {
+        const QString text = QString::number(value, 'g', precision);
+        if (text.toDouble() == value) {
+            return text;
+        }
+    }
+
+    return QString::number(value, 'g', std::numeric_limits<double>::max_digits10);
+}
 
 // The Python name of an interpolation, e.g. "NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeSmooth"
 static QString
