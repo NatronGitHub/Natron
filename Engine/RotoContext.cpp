@@ -3291,6 +3291,11 @@ RotoContextPrivate::renderBezier(cairo_t* cr,
 
     for (double t = startTime; t <= endTime; t+=mbFrameStep) {
 
+        if ( !bezier->hasFiniteImageAtTime(false, t) ) {
+            // the shape crosses the line at infinity (e.g. with a perspective extra matrix): nothing to render
+            continue;
+        }
+
         double fallOff = bezier->getFeatherFallOff(t);
         double featherDist = bezier->getFeatherDistance(t);
         double shapeColor[3];
