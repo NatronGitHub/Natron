@@ -38,24 +38,18 @@ NatronRenderer -b runs a script that creates Read (on a missing file, or with no
   frame 1. The render must write the three frames: the missing frame is never used (skipped
   without openfx-misc's FrameHold).
 
-Exit status: 0 on success, 77 if skipped (in CI unless NATRON_GUI_TESTS=1, without OCIO, or if the
-Read/Write PNG plug-ins of openfx-io are not available: set OFX_PLUGIN_PATH), 1 on failure.
---debugger runs NatronRenderer under natron-lldb.sh (see run_gui_smoke_test.py), or set
-NATRON_TEST_WRAPPER.
+Exit status: 0 on success, 77 if skipped (without OCIO, or if the Read/Write PNG plug-ins of
+openfx-io are not available: set OFX_PLUGIN_PATH), 1 on failure. --debugger runs NatronRenderer
+under natron-lldb.sh, or set NATRON_TEST_WRAPPER (see natronrunner.py).
 """
 
 import os
-import shlex
 import shutil
-import subprocess
 import sys
 import tempfile
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
-from run_gui_smoke_test import killTree, writePNG  # noqa: E402
+import natronrunner
 
-SKIP = 77
 MODE_SKIPPED = "mode skipped"
 TIMEOUT = 120  # seconds per run; five runs stay below the ctest TIMEOUT (660)
 FRAMES = [1, 2, 3]
@@ -97,41 +91,27 @@ else:
 """.replace("@FIRST@", str(FRAMES[0])).replace("@LAST@", str(FRAMES[-1]))
 
 
-def runMode(renderer, wrapper, outDir, script, mode):
+def run_mode(renderer, cmd_wrapper, out_dir, script, mode):
     """Runs the script with the given mode.
 
     Returns:
         True on success, False on failure, SKIP if the whole test is skipped (no PNG plug-ins), or
         MODE_SKIPPED if only this mode is (no openfx-misc plug-in).
     """
-    env = dict(os.environ)
-    env["NATRON_MISSING_READ_TEST_DIR"] = outDir
-    env["NATRON_MISSING_READ_TEST_MODE"] = mode
-    # Debug builds: no trapped floating point exception (#1537), as with Natron --test
-    env["NATRON_NO_FP_TRAPS"] = "1"
-    cmd = wrapper + [renderer, "--no-settings", "-b", script]
-    print("Running (%s): %s" % (mode, " ".join(cmd)))
-    sys.stdout.flush()
-    # in its own process group, for killTree()
-    proc = subprocess.Popen(cmd, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                            start_new_session=(os.name == "posix"))
-    try:
-        outBytes, _ = proc.communicate(timeout=TIMEOUT)
-    except subprocess.TimeoutExpired:
-        killTree(proc)
-        outBytes, _ = proc.communicate()
-        sys.stdout.write(outBytes.decode(errors="replace"))
+    env = natronrunner.natron_env(out_dir, NATRON_MISSING_READ_TEST_DIR=out_dir, NATRON_MISSING_READ_TEST_MODE=mode)
+    print("Mode %s:" % mode)
+    status, out = natronrunner.run(cmd_wrapper + [renderer, "--no-settings", "-b", script], env, TIMEOUT)
+    sys.stdout.write(out)
+    if status is None:
         print("FAILED (%s): timeout after %d s" % (mode, TIMEOUT))
         return False
-    out = outBytes.decode(errors="replace")
-    sys.stdout.write(out)
     if "SKIP:" in out:
-        return SKIP
+        return natronrunner.SKIP
     if "SKIP MODE: no openfx-misc plug-in" in [line.strip() for line in out.splitlines()]:
         print("skipped (%s): no openfx-misc plug-in" % mode)
         return MODE_SKIPPED
-    print("NatronRenderer -b (%s) exited with status %d" % (mode, proc.returncode))
-    written = sorted(f for f in os.listdir(outDir) if f.startswith(mode + "_") and f.endswith(".png"))
+    print("NatronRenderer -b (%s) exited with status %d" % (mode, status))
+    written = sorted(f for f in os.listdir(out_dir) if f.startswith(mode + "_") and f.endswith(".png"))
     failed = "Error caught while rendering" in out
     ok = True
     if mode in ("error", "empty", "merge"):
@@ -141,8 +121,8 @@ def runMode(renderer, wrapper, outDir, script, mode):
         if not failed:
             print("FAILED (%s): the render did not report a failure" % mode)
             ok = False
-        if proc.returncode != 1:
-            print("FAILED (%s): exit status %d instead of 1" % (mode, proc.returncode))
+        if status != 1:
+            print("FAILED (%s): exit status %d instead of 1" % (mode, status))
             ok = False
         if mode == "empty" and "Filename empty" not in out:
             print("FAILED (empty): the render did not report the empty filename")
@@ -155,8 +135,8 @@ def runMode(renderer, wrapper, outDir, script, mode):
         if failed:
             print("FAILED (%s): the render reported a failure" % mode)
             ok = False
-        if proc.returncode != 0:
-            print("FAILED (%s): exit status %d instead of 0" % (mode, proc.returncode))
+        if status != 0:
+            print("FAILED (%s): exit status %d instead of 0" % (mode, status))
             ok = False
     return ok
 
@@ -165,47 +145,37 @@ def main(argv):
     if len(argv) < 2:
         sys.stderr.write(__doc__)
         return 2
-    if os.environ.get("CI") and os.environ.get("NATRON_GUI_TESTS") != "1":
-        print("renderer missing Read test skipped in CI (set NATRON_GUI_TESTS=1 to run it, as for GuiSmokeTest)")
-        return SKIP
     if not os.environ.get("OCIO"):
         # the Write node fails without an OCIO config ("Invalid OCIO config"), as for the Tests binary
         print("renderer missing Read test skipped: set OCIO to an OpenColorIO config")
-        return SKIP
-    wrapper = []
-    if "--debugger" in argv[2:]:
-        wrapper = [os.path.join(HERE, "natron-lldb.sh")]
-    elif os.environ.get("NATRON_TEST_WRAPPER"):
-        wrapper = shlex.split(os.environ["NATRON_TEST_WRAPPER"])
-    outDir = tempfile.mkdtemp(prefix="natron-missing-read-test-")
-    # a private disk cache (and OFX plug-in cache), removed with outDir, unless NATRON_DISK_CACHE_PATH is set
-    if not os.environ.get("NATRON_DISK_CACHE_PATH"):
-        os.environ["NATRON_DISK_CACHE_PATH"] = os.path.join(outDir, "cache")
+        return natronrunner.SKIP
+    cmd_wrapper = natronrunner.wrapper(argv[2:])
+    out_dir = tempfile.mkdtemp(prefix="natron-missing-read-test-")
     try:
-        writePNG(os.path.join(outDir, "input.png"), 64, 48)
-        os.mkdir(os.path.join(outDir, "seq"))
+        natronrunner.write_png(os.path.join(out_dir, "input.png"), 64, 48)
+        os.mkdir(os.path.join(out_dir, "seq"))
         for frame in (1, 3):  # frame 2 is missing
-            writePNG(os.path.join(outDir, "seq", "plate.%04d.png" % frame), 64, 48)
-        script = os.path.join(outDir, "missing_read_test.py")
+            natronrunner.write_png(os.path.join(out_dir, "seq", "plate.%04d.png" % frame), 64, 48)
+        script = os.path.join(out_dir, "missing_read_test.py")
         with open(script, "w") as f:
             f.write(SCRIPT)
         ok = True
         skipped = []
         for mode in ("error", "empty", "black", "merge", "hold"):
-            ret = runMode(argv[1], wrapper, outDir, script, mode)
+            ret = run_mode(argv[1], cmd_wrapper, out_dir, script, mode)
             if ret == MODE_SKIPPED:
                 skipped.append(mode)
                 continue
-            if ret == SKIP:
+            if ret == natronrunner.SKIP:
                 print("skipped: the PNG Read/Write plug-ins are not available (set OFX_PLUGIN_PATH to openfx-io)")
-                return SKIP
+                return natronrunner.SKIP
             if not ret:
                 ok = False
         if ok:
             print("renderer missing Read test passed" + (" (skipped: %s)" % ", ".join(skipped) if skipped else ""))
         return 0 if ok else 1
     finally:
-        shutil.rmtree(outDir, ignore_errors=True)
+        shutil.rmtree(out_dir, ignore_errors=True)
 
 
 if __name__ == "__main__":

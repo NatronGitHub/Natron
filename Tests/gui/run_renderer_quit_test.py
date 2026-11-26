@@ -32,24 +32,19 @@ of the project calls natron.quit(4) when the prompt creates a node. The SystemEx
 callback must end the prompt once the callback has returned (the commands after it must not
 run), and the exit status must be 4.
 
-Exit status: 0 on success, 77 if skipped (in CI unless NATRON_GUI_TESTS=1, or the Read/Write
-PNG plug-ins of openfx-io are not available: set OFX_PLUGIN_PATH), 1 on failure.
---debugger runs NatronRenderer under natron-lldb.sh (see run_gui_smoke_test.py), or set
-NATRON_TEST_WRAPPER.
+Exit status: 0 on success, 77 if the render part is skipped (the Read/Write PNG plug-ins of openfx-io
+are not available: set OFX_PLUGIN_PATH), 1 on failure. --debugger runs NatronRenderer under
+natron-lldb.sh, or set NATRON_TEST_WRAPPER (see natronrunner.py).
 """
 
 import os
-import shlex
 import shutil
-import subprocess
 import sys
 import tempfile
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
-from run_gui_smoke_test import writePNG  # noqa: E402
+import natronrunner
 
-SKIP = 77
+TIMEOUT = 300  # seconds, for each run of NatronRenderer
 LAST_FRAME = 200
 MAX_FRAMES = 30  # rendered frames allowed after natron.quit() at the first one
 
@@ -101,29 +96,23 @@ sys.stdout.write("prompt still running after natron.quit()\\n"); sys.stdout.flus
 """
 
 
-def runPromptQuit(renderer, wrapper, outDir):
+def run_prompt_quit(renderer, cmd_wrapper, out_dir):
     """natron.quit() in a callback while the -t prompt runs (#1292): returns True on success."""
-    setup = os.path.join(outDir, "prompt_setup.py")
+    setup = os.path.join(out_dir, "prompt_setup.py")
     with open(setup, "w") as f:
         f.write(PROMPT_SETUP)
-    stdinPath = os.path.join(outDir, "prompt_stdin.py")
-    with open(stdinPath, "w") as f:
+    stdin_path = os.path.join(out_dir, "prompt_stdin.py")
+    with open(stdin_path, "w") as f:
         f.write(PROMPT_STDIN)
-    env = dict(os.environ)
-    env["NATRON_LLDB_STDIN"] = stdinPath  # natron-lldb.sh reads stdin from there
-    cmd = wrapper + [renderer, "--no-settings", "-t", setup]
-    print("Running: " + " ".join(cmd) + " < " + stdinPath)
-    sys.stdout.flush()
-    try:
-        with open(stdinPath, "rb") as stdin:
-            proc = subprocess.run(cmd, env=env, stdin=stdin, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                  timeout=300)
-    except subprocess.TimeoutExpired:
+    cmd = cmd_wrapper + [renderer, "--no-settings", "-t", setup]
+    # FP traps on, as before (only the render part disabled them)
+    env = natronrunner.natron_env(out_dir, NATRON_NO_FP_TRAPS=os.environ.get("NATRON_NO_FP_TRAPS"))
+    status, out = natronrunner.run(cmd, env, TIMEOUT, stdin=stdin_path)
+    sys.stdout.write(out)
+    if status is None:
         print("FAILED: timeout (-t prompt)")
         return False
-    out = proc.stdout.decode(errors="replace")
-    sys.stdout.write(out)
-    print("NatronRenderer -t exited with status %d" % proc.returncode)
+    print("NatronRenderer -t exited with status %d" % status)
     ok = True
     if "prompt started" not in out:
         print("FAILED: the commands of the -t prompt did not run")
@@ -131,7 +120,7 @@ def runPromptQuit(renderer, wrapper, outDir):
     if "prompt still running" in out:
         print("FAILED: natron.quit() in a callback did not end the -t prompt")
         ok = False
-    if proc.returncode != 4:
+    if status != 4:
         print("FAILED: the exit status of the -t prompt should be 4, given to natron.quit()")
         ok = False
     return ok
@@ -141,46 +130,28 @@ def main(argv):
     if len(argv) < 2:
         sys.stderr.write(__doc__)
         return 2
-    if os.environ.get("CI") and os.environ.get("NATRON_GUI_TESTS") != "1":
-        print("renderer quit test skipped in CI (set NATRON_GUI_TESTS=1 to run it, as for GuiSmokeTest)")
-        return SKIP
-    wrapper = []
-    if "--debugger" in argv[2:]:
-        wrapper = [os.path.join(HERE, "natron-lldb.sh")]
-    elif os.environ.get("NATRON_TEST_WRAPPER"):
-        wrapper = shlex.split(os.environ["NATRON_TEST_WRAPPER"])
-    outDir = tempfile.mkdtemp(prefix="natron-quit-test-")
-    # a private disk cache (and OFX plug-in cache), removed with outDir, unless NATRON_DISK_CACHE_PATH is set:
-    # the user's one is shared by every Natron of this version, e.g. a concurrent test run (#1569)
-    if not os.environ.get("NATRON_DISK_CACHE_PATH"):
-        os.environ["NATRON_DISK_CACHE_PATH"] = os.path.join(outDir, "cache")
+    cmd_wrapper = natronrunner.wrapper(argv[2:])
+    out_dir = tempfile.mkdtemp(prefix="natron-quit-test-")
     try:
-        writePNG(os.path.join(outDir, "input.png"), 64, 48)
-        script = os.path.join(outDir, "quit_test.py")
+        natronrunner.write_png(os.path.join(out_dir, "input.png"), 64, 48)
+        script = os.path.join(out_dir, "quit_test.py")
         with open(script, "w") as f:
             f.write(SCRIPT)
-        env = dict(os.environ)
-        env["NATRON_QUIT_TEST_DIR"] = outDir
-        # Debug builds: no trapped floating point exception (#1537), as with Natron --test
-        env["NATRON_NO_FP_TRAPS"] = "1"
-        cmd = wrapper + [argv[1], "--no-settings", "-w", "Write1", "1-%d" % LAST_FRAME, script]
-        print("Running: " + " ".join(cmd))
-        sys.stdout.flush()
-        try:
-            proc = subprocess.run(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=600)
-        except subprocess.TimeoutExpired:
+        env = natronrunner.natron_env(out_dir, NATRON_QUIT_TEST_DIR=out_dir)
+        cmd = cmd_wrapper + [argv[1], "--no-settings", "-w", "Write1", "1-%d" % LAST_FRAME, script]
+        status, out = natronrunner.run(cmd, env, TIMEOUT)
+        sys.stdout.write(out)
+        if status is None:
             print("FAILED: timeout")
             return 1
-        out = proc.stdout.decode(errors="replace")
-        sys.stdout.write(out)
         if "SKIP:" in out:
-            print("skipped: the PNG Read/Write plug-ins are not available (set OFX_PLUGIN_PATH to openfx-io)")
-            # the -t prompt test needs no plug-in
-            return SKIP if runPromptQuit(argv[1], wrapper, outDir) else 1
-        frames = [f for f in os.listdir(outDir) if f.startswith("out_") and f.endswith(".png")]
-        print("NatronRenderer exited with status %d after rendering %d of %d frames" % (proc.returncode, len(frames), LAST_FRAME))
+            print("render part skipped: the PNG Read/Write plug-ins are not available (set OFX_PLUGIN_PATH to "
+                  "openfx-io); the -t prompt part needs no plug-in")
+            return natronrunner.SKIP if run_prompt_quit(argv[1], cmd_wrapper, out_dir) else 1
+        frames = [f for f in os.listdir(out_dir) if f.startswith("out_") and f.endswith(".png")]
+        print("NatronRenderer exited with status %d after rendering %d of %d frames" % (status, len(frames), LAST_FRAME))
         ok = True
-        if proc.returncode != 3:
+        if status != 3:
             print("FAILED: the exit status should be 3, given to natron.quit()")
             ok = False
         if "afterFrameRender" not in out:
@@ -189,13 +160,13 @@ def main(argv):
         if len(frames) > MAX_FRAMES:
             print("FAILED: natron.quit() in afterFrameRender should stop the render (at most %d frames)" % MAX_FRAMES)
             ok = False
-        if not runPromptQuit(argv[1], wrapper, outDir):
+        if not run_prompt_quit(argv[1], cmd_wrapper, out_dir):
             ok = False
         if ok:
             print("renderer quit test passed")
         return 0 if ok else 1
     finally:
-        shutil.rmtree(outDir, ignore_errors=True)
+        shutil.rmtree(out_dir, ignore_errors=True)
 
 
 if __name__ == "__main__":

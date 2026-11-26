@@ -2,11 +2,10 @@
 
 The node is no longer found, its script name is free, and it is no longer in its group. It used to wait until the
 event loop ran, i.e. after the script. A node destroyed by one of its own callbacks is still destroyed later, since
-the code that runs the callback still uses it. Run by NatronRenderer -t (see Tests/CMakeLists.txt).
+the code that runs the callback still uses it.
 """
-import traceback
 
-from NatronEngine import natron
+import natronheadless
 
 DOT = "fr.inria.built-in.Dot"
 GROUP = "fr.inria.built-in.Group"
@@ -44,10 +43,7 @@ def connect(node, input_number, input_node):
     assert connected, (node.getScriptName(), input_number, input_node.getScriptName())
 
 
-status = 1
-try:
-    app = natron.getInstance(0)
-
+def main(app):
     dot = app.createNode(DOT)
     name = dot.getScriptName()
     dot.destroy()
@@ -107,7 +103,6 @@ try:
     connect(self_destroying, 0, source)
     assert app.getNode(name) is not None, name
     assert callbacks_run == ["onParamChanged", "onInputChanged"], callbacks_run
-    status = 0
-except BaseException:
-    traceback.print_exc()
-natron.quit(status)
+
+
+natronheadless.run(main)

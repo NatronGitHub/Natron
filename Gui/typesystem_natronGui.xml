@@ -81,61 +81,7 @@
                 <remove-argument/>
             </modify-argument>
             <inject-code class="target" position="beginning">
-                if (!PyList_Check(%PYARG_1)) {
-                PyErr_SetString(PyExc_TypeError, "tasks must be a list of tuple objects.");
-                return 0;
-                }
-                std::list&lt;Effect*&gt; effects;
-                
-                std::list&lt;int&gt; firstFrames;
-                
-                std::list&lt;int&gt; lastFrames;
-                
-                std::list&lt;int&gt; frameSteps;
-                
-                int size = (int)PyList_GET_SIZE(%PYARG_1);
-                for (int i = 0; i &lt; size; ++i) {
-                // a task is any sequence (effect, firstFrame, lastFrame[, frameStep])
-                Shiboken::AutoDecRef task( PySequence_Fast(PyList_GET_ITEM(%PYARG_1, i), "a task must be a sequence (effect, firstFrame, lastFrame[, frameStep]).") );
-                if ( task.isNull() ) {
-                    return 0;
-                }
-
-                const Py_ssize_t taskSize = PySequence_Fast_GET_SIZE( task.object() );
-                if (taskSize != 4 &amp;&amp; taskSize != 3) {
-                    PyErr_SetString(PyExc_TypeError, "a task must have 3 or 4 items.");
-                    return 0;
-                }
-                PyObject* pyWriteNode = PySequence_Fast_GET_ITEM(task.object(), 0);
-                if ( (pyWriteNode == Py_None) || !%CHECKTYPE[Effect*](pyWriteNode) ) {
-                    PyErr_SetString(PyExc_TypeError, "the first item of a task must be an Effect.");
-                    return 0;
-                }
-                for (Py_ssize_t j = 1; j &lt; taskSize; ++j) {
-                    if ( !PyNumber_Check( PySequence_Fast_GET_ITEM(task.object(), j) ) ) {
-                        PyErr_SetString(PyExc_TypeError, "the frames of a task must be numbers.");
-                        return 0;
-                    }
-                }
-                Effect* writeNode = %CONVERTTOCPP[Effect*](pyWriteNode);
-                int firstFrame = %CONVERTTOCPP[int](PySequence_Fast_GET_ITEM(task.object(), 1));
-                int lastFrame = %CONVERTTOCPP[int](PySequence_Fast_GET_ITEM(task.object(), 2));
-                int frameStep;
-                if (taskSize == 4) {
-                    frameStep = %CONVERTTOCPP[int](PySequence_Fast_GET_ITEM(task.object(), 3));
-                } else {
-                    frameStep = std::numeric_limits&lt;int&gt;::min();
-                }
-                if ( PyErr_Occurred() ) {
-                    return 0;
-                }
-                effects.push_back(writeNode);
-                firstFrames.push_back(firstFrame);
-                lastFrames.push_back(lastFrame);
-                frameSteps.push_back(frameStep);
-                }
-                
-                %CPPSELF.%FUNCTION_NAME(effects,firstFrames,lastFrames, frameSteps);
+                <insert-template name="renderTasksFromPyList"/>
             </inject-code>
         </modify-function>
     </object-type>

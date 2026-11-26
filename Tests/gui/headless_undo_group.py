@@ -1,10 +1,9 @@
-# Undo groups are no-ops in background mode (#1455): run by NatronRenderer -t (see Tests/CMakeLists.txt).
-import NatronEngine
-from NatronEngine import natron
+"""Undo groups do nothing in background mode (App.undoGroup(), #1455)."""
 
-status = 1
-try:
-    app = natron.getInstance(0)
+import natronheadless
+
+
+def main(app):
     with app.undoGroup("Headless"):
         with app.undoGroup("Nested"):
             n = app.createNode("fr.inria.built-in.Dot")
@@ -19,8 +18,6 @@ try:
         raise AssertionError("endUndoGroup() without a group did not raise")
     except RuntimeError:
         pass
-    status = 0
-except BaseException:
-    import traceback
-    traceback.print_exc()
-natron.quit(status)
+
+
+natronheadless.run(main)

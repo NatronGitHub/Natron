@@ -194,14 +194,19 @@ elseif(WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 else()
     set(_natron_openmp_default OFF)
 endif()
-# An explicit -DNATRON_USE_OPENMP=ON fails if OpenMP is missing; the default only warns.
-if(DEFINED NATRON_USE_OPENMP)
-    set(_natron_openmp_explicit ON)
-else()
-    set(_natron_openmp_explicit OFF)
+# An explicit -DNATRON_USE_OPENMP=ON fails if OpenMP is missing; the default only warns. Whether it
+# was explicit is known only at the first configure: later, the option is in the cache anyway (in a
+# build directory configured before this entry existed, the option counts as explicit: to go back
+# to the default, cmake -U NATRON_USE_OPENMP).
+if(NOT DEFINED CACHE{_NATRON_OPENMP_EXPLICIT})
+    if(DEFINED NATRON_USE_OPENMP)
+        set(_NATRON_OPENMP_EXPLICIT ON CACHE INTERNAL "NATRON_USE_OPENMP was given at the first configure")
+    else()
+        set(_NATRON_OPENMP_EXPLICIT OFF CACHE INTERNAL "NATRON_USE_OPENMP was given at the first configure")
+    endif()
 endif()
 option(NATRON_USE_OPENMP
-    "use OpenMP in the bundled ceres and openMVG (tracker); with Apple clang, needs libomp (MacPorts: found automatically, else set OpenMP_ROOT)"
+    "use OpenMP in the bundled openMVG (tracker; the bundled Ceres uses C++ threads); with Apple clang, needs libomp (MacPorts: found automatically, else set OpenMP_ROOT)"
     ${_natron_openmp_default})
 option(NATRON_NO_ASSERTIONS
     "define NDEBUG, QT_NO_DEBUG, QT_NO_DEBUG_OUTPUT and QT_NO_WARNING_OUTPUT in every configuration, as the installers do"
@@ -384,7 +389,8 @@ if (MSVC)
 else()
     SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wmissing-prototypes" )
     add_compile_options(-Wall -Wextra -Wmissing-declarations -Wno-multichar -Winit-self -Wno-long-long
-                        -Wvla -Wdate-time -Wno-format-overflow -Wno-deprecated-copy)
+                        -Wvla -Wdate-time -Wno-format-overflow
+                        $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-copy>)
     if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         add_compile_options(-Wshift-overflow=2 -Wduplicated-cond -Wno-stringop-overflow)
     endif()
@@ -430,16 +436,16 @@ if(NATRON_USE_OPENMP)
         set(OpenMP_ROOT "/opt/local/include/libomp;/opt/local/lib/libomp")
     endif()
     find_package(OpenMP COMPONENTS CXX)
-    if(NOT OpenMP_CXX_FOUND AND _natron_openmp_explicit)
+    if(NOT OpenMP_CXX_FOUND AND _NATRON_OPENMP_EXPLICIT)
         message(FATAL_ERROR "NATRON_USE_OPENMP is ON but OpenMP was not found. "
             "Install libomp (or your compiler's OpenMP runtime) and set OpenMP_ROOT to its prefix, or configure with -DNATRON_USE_OPENMP=OFF.")
     elseif(NOT OpenMP_CXX_FOUND)
-        message(WARNING "OpenMP was not found: building ceres and openMVG without it (NATRON_USE_OPENMP=OFF)")
+        message(WARNING "OpenMP was not found: building openMVG without it (NATRON_USE_OPENMP=OFF)")
         set(NATRON_USE_OPENMP OFF CACHE BOOL "" FORCE)
     endif()
 endif()
 
-# Bundled third-party code (libs/*, Tests/google-test, Tests/google-mock) is
+# Bundled third-party code (libs/*, Tests/googletest) is
 # compiled without warnings: they are not ours to fix, and they hid Natron's
 # own warnings. Use as a PRIVATE target option or a per-source COMPILE_OPTIONS.
 # The bundled include directories are also SYSTEM, so that their headers don't
@@ -460,7 +466,7 @@ if (NOT MSVC)
 endif()
 
 if(NATRON_SYSTEM_LIBS)
-    find_package(glog)
+    # An installed Ceres brings its glog (or miniglog) with its CMake target.
     find_package(Ceres)
 endif()
 

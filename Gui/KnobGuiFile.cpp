@@ -62,6 +62,28 @@
 
 NATRON_NAMESPACE_ENTER
 
+// A new file path that uses [Project] before the project is saved, when [Project] has no value, would be in the root
+// folder of the file system: a file parameter refuses it and says why (#1539). Returns true if the path is refused,
+// after showing the current value back in lineEdit, before the dialog takes the focus (which finishes the editing
+// again, with the current value: not refused).
+static bool
+refuseUnsetProjectPath(const KnobStringBasePtr& knob,
+                       const std::string& path,
+                       LineEdit* lineEdit)
+{
+    const std::string currentValue = knob->getValue();
+    KnobHolder* holder = knob->getHolder();
+    AppInstancePtr app = holder ? holder->getApp() : AppInstancePtr();
+
+    if ( (path == currentValue) || !app || !app->getProject()->usesUnsetProjectPath(path) ) {
+        return false;
+    }
+    lineEdit->setText( QString::fromUtf8( currentValue.c_str() ) );
+    Dialogs::errorDialog( QObject::tr("File Path").toStdString(), Project::unsetProjectPathMessage(path).toStdString() );
+
+    return true;
+}
+
 
 //===========================FILE_KNOB_GUI=====================================
 KnobGuiFile::KnobGuiFile(KnobIPtr knob,
@@ -322,6 +344,9 @@ KnobGuiFile::onTextEdited()
     std::string oldValue = knob->getValue();
 
     if (str == oldValue) {
+        return;
+    }
+    if ( refuseUnsetProjectPath(knob, str, _lineEdit) ) {
         return;
     }
 
@@ -622,6 +647,9 @@ KnobGuiOutputFile::onTextEdited()
 //
     KnobOutputFilePtr knob = _knob.lock();
     if (!knob) {
+        return;
+    }
+    if ( refuseUnsetProjectPath(knob, newPattern, _lineEdit) ) {
         return;
     }
     pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(), knob->getValue(), newPattern ) );

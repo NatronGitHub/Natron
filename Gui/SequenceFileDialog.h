@@ -472,6 +472,10 @@ private:
     ///Goes to directory, the folder typed in the file name field, without keeping its name as a file name
     void enterTypedDirectory(const QString& directory);
 
+    ///If relative paths are allowed (a file parameter) and path uses [Project] while the project is not saved
+    ///yet, so that [Project] has no value, shows why the path is refused and returns true (#1539)
+    bool refuseUnsetProjectPath(const std::string& path);
+
     ///the filter that shows the files with any of the extensions given to the dialog, e.g. "*.exr *.png"
     QString combinedFilter() const;
 

@@ -43,6 +43,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/serialization/list.hpp>
+#include <boost/serialization/map.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/version.hpp>
@@ -1310,6 +1311,11 @@ private:
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
+
+// A copy of the serializations, which keeps the values of the knobs at the time of the call, unlike the serializations
+// themselves, which read them when they are written (ReadNode and WriteNode keep the parameters of their decoder or
+// encoder this way while they replace it)
+std::list<KnobSerializationPtr> copyKnobSerializations(const std::list<KnobSerializationPtr>& serialized);
 
 NATRON_NAMESPACE_EXIT
 

@@ -7,13 +7,7 @@ import tempfile
 import NatronGuiTest
 from natrontest import *
 
-try:
-    from PySide2 import QtCore, QtWidgets
-except ImportError:
-    try:
-        from PySide6 import QtCore, QtWidgets
-    except ImportError:
-        NatronGuiTest.skip("PySide2/PySide6 not available")
+QtCore, QtGui, QtWidgets = qt_modules()
 
 require_plugin(GENERATOR)
 
@@ -33,10 +27,7 @@ try:
 
     gen = app.createNode(GENERATOR)
     check(gen is not None, "createNode(%s) failed" % GENERATOR)
-    app.clearSelection()
-    app.selectNode(gen, True)
-    NatronGuiTest.sendKey("NodeGraph", "Return")  # open its settings panel
-    wait_idle()
+    open_settings_panel(gen)
     panels = [w for w in QtWidgets.QApplication.allWidgets()
               if w.metaObject().className() == "Natron::NodeSettingsPanel" and w.objectName() == gen.getScriptName()]
     check(panels, "no settings panel for %s" % gen.getScriptName())

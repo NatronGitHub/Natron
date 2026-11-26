@@ -7,10 +7,7 @@ import os
 import NatronGuiTest
 from natrontest import *
 
-try:
-    from PySide2 import QtWidgets
-except ImportError:
-    from PySide6 import QtWidgets
+QtCore, QtGui, QtWidgets = qt_modules()
 
 PYPLUG = "fr.natron.test.ExportVersion"
 # the PyPlug is part of the test: fail, don't skip, if it is not found

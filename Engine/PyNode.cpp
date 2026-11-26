@@ -28,6 +28,7 @@
 #include <cassert>
 #include <set>
 #include <stdexcept>
+#include <tuple>
 
 #include "Engine/Node.h"
 #include "Engine/KnobTypes.h"
@@ -78,7 +79,8 @@ ImageLayer::getHash(const ImageLayer& layer)
 {
     Hash64 h;
 
-    Hash64_appendQString( &h, QString::fromUtf8( layer._comps->getChannelsLabel().c_str() ) );
+    // The plane ID and the channels, which operator== compares: equal layers have the same hash (#1810)
+    Hash64_appendQString( &h, QString::fromUtf8( layer._comps->getPlaneID().c_str() ) );
     const std::vector<std::string>& comps = layer._comps->getChannels();
     for (std::size_t i = 0; i < comps.size(); ++i) {
         Hash64_appendQString( &h, QString::fromUtf8( comps[i].c_str() ) );
@@ -121,16 +123,20 @@ ImageLayer::getComponentsPrettyName() const
     return _componentsPrettyName;
 }
 
+// Two layers are equal if they have the same plane ID and channels (#1810). ImagePlaneDesc::operator==
+// compares only the number of channels, and ImagePlaneDesc::operator< ignores the channels.
 bool
 ImageLayer::operator==(const ImageLayer& other) const
 {
-    return _comps == other._comps;
+    return _comps->getPlaneID() == other._comps->getPlaneID() &&
+           _comps->getChannels() == other._comps->getChannels();
 }
 
 bool
 ImageLayer::operator<(const ImageLayer& other) const
 {
-    return _comps < other._comps;
+    return std::tie( _comps->getPlaneID(), _comps->getChannels() ) <
+           std::tie( other._comps->getPlaneID(), other._comps->getChannels() );
 }
 
 /*

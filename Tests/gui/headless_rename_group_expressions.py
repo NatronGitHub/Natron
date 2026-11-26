@@ -1,13 +1,14 @@
-# Renaming a group keeps the expressions of its knobs and of the knobs of the nodes inside it working
-# (#1686): run by NatronRenderer -t (see Tests/CMakeLists.txt). The expressions were compiled with the
-# group's old name, and those that read no parameter of the renamed nodes (e.g. "thisGroup.getInput(1) is
-# None" in the Glow PyPlug) were not recompiled, so they failed with "AttributeError: ... has no attribute
-# 'Group1'".
-from NatronEngine import natron
+"""Renaming a group recompiles the expressions of its knobs and of the nodes inside it (#1686).
 
-status = 1
-try:
-    app = natron.getInstance(0)
+The expressions were compiled with the group's old name, and those that read no parameter of the
+renamed nodes (e.g. "thisGroup.getInput(1) is None" in the Glow PyPlug) were not recompiled, so they
+failed with "AttributeError: ... has no attribute 'Group1'".
+"""
+
+import natronheadless
+
+
+def main(app):
     group = app.createNode("fr.inria.built-in.Group")
     assert group is not None
     group.setScriptName("Outer")
@@ -39,8 +40,6 @@ try:
         value = param.getValueAtTime(2)
         assert value == len("RenamedOuter"), "%s = %s after the rename" % (param.getScriptName(), value)
     assert no_input.getValueAtTime(2), "noInput is False after the rename"
-    status = 0
-except BaseException:
-    import traceback
-    traceback.print_exc()
-natron.quit(status)
+
+
+natronheadless.run(main)

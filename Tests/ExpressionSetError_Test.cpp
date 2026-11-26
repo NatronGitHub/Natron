@@ -44,41 +44,14 @@ NATRON_NAMESPACE_USING
 
 namespace {
 class ExpressionSetErrorTest
-    : public ::testing::Test
+    : public NatronTestPlugin::ParamsNodeTest
 {
 protected:
-    NodePtr _node;
-
-    virtual void SetUp() OVERRIDE
-    {
-        if ( !NatronTestPlugin::isAvailable(kNatronTestPluginParams) ) {
-            return;
-        }
-        AppInstancePtr app = appPTR->getTopLevelInstance();
-        CreateNodeArgs args( kNatronTestPluginParams, app->getProject() );
-        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-        _node = app->createNode(args);
-    }
-
     virtual void TearDown() OVERRIDE
     {
-        if (_node) {
-            _node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
-            _node.reset();
-        }
+        ParamsNodeTest::TearDown();
         std::string error;
         NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("natronTestResult = None\n", &error, 0);
-    }
-
-    bool skipped()
-    {
-        if (!_node) {
-            NatronTestPlugin::reportSkipped(kNatronTestPluginParams);
-
-            return true;
-        }
-
-        return false;
     }
 
     // call setExpression() from Python on doubleTo; returns what it printed, and its result in *result

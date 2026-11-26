@@ -43,7 +43,9 @@
 //     and sets "preset" back to 0;
 //   - "uiOnly" has kOfxParamPropEvaluateOnChange=0, "noUndo" has kOfxParamPropCanUndo=0;
 //   - "double2DRanged" has a range (kOfxParamPropMin/Max 0 to 1) but no display range
-//     (Tests/OfxParamRange_Test.cpp).
+//     (Tests/OfxParamRange_Test.cpp);
+//   - "intRect", "intRect2", "doubleRect" and "doubleRect2" are Natron rectangles (kNatronOfxParamPropTypeRectangle):
+//     each one's "_position" and "_size" parameters are one 4-dimensional knob.
 // - net.natron.test.Generator: a generator that fills its output with 0.5, with the pixel aspect ratio of
 //   its "par" parameter (it supports multiple clip PARs, so that it may set its output PAR, and "par" is a
 //   clip preferences slave parameter). If its "fps" parameter (also a slave parameter) is positive, it sets
@@ -65,8 +67,9 @@
 // - net.natron.test.GPURenderFailed: supports OpenGL render, returns kOfxStatGPURenderFailed from the
 //   OpenGL render, and renders on the CPU otherwise. net.natron.test.GPUOnlyRenderFailed does the same,
 //   but sets kOfxImageEffectPropCPURenderSupported to "false".
-// - net.natron.test.Question: the "ask" and "askFromThread" push buttons post a kOfxMessageQuestion from
-//   kOfxActionInstanceChanged, on the calling thread or on a thread of the plug-in, and count the replies.
+// - net.natron.test.Question: the "ask", "askFromThread" and "askHost" push buttons post a kOfxMessageQuestion
+//   from kOfxActionInstanceChanged, on the calling thread, on a thread of the plug-in, or on the host (a NULL
+//   handle), and count the replies.
 //
 // The binary counts the calls of OfxGetNumberOfPlugins and OfxGetPlugin ("Binary.getNumberOfPlugins",
 // "Binary.getPlugin"). It exports OfxSetHost (OFX 1.5), and counts its calls ("Binary.setHost"), whether it came
@@ -101,6 +104,7 @@
 #include <ofxGPURender.h>
 #include <ofxInteract.h>
 #include <ofxMessage.h>
+#include <ofxNatron.h> // kNatronOfxParamPropTypeRectangle
 #include <ofxParam.h>
 #include <ofxParametricParam.h>
 #include <ofxProperty.h>
@@ -679,6 +683,19 @@ paramsDescribeInContext(OfxImageEffectHandle effect)
     for (int i = 0; i < 2; ++i) {
         gPropSuite->propSetDouble(props, kOfxParamPropMin, i, 0.);
         gPropSuite->propSetDouble(props, kOfxParamPropMax, i, 1.);
+    }
+    const char* const rectTypes[][2] = {
+        { kOfxParamTypeInteger2D, "intRect" }, { kOfxParamTypeInteger2D, "intRect2" },
+        { kOfxParamTypeDouble2D, "doubleRect" }, { kOfxParamTypeDouble2D, "doubleRect2" }
+    };
+    for (const auto& rect : rectTypes) {
+        const char* const parts[] = { "_position", "_size" };
+        for (int i = 0; i < 2; ++i) {
+            if (paramsDefine(paramSet, rect[0], std::string(rect[1]) + parts[i], &props) != kOfxStatOK) {
+                return kOfxStatFailed;
+            }
+            gPropSuite->propSetInt(props, kNatronOfxParamPropTypeRectangle, 0, i + 1);
+        }
     }
 
     return kOfxStatOK;
@@ -1519,7 +1536,8 @@ questionPluginMain(const char* action,
         OfxPropertySetHandle props;
         if ( !paramSet ||
              (gParamSuite->paramDefine(paramSet, kOfxParamTypePushButton, "ask", &props) != kOfxStatOK) ||
-             (gParamSuite->paramDefine(paramSet, kOfxParamTypePushButton, "askFromThread", &props) != kOfxStatOK) ) {
+             (gParamSuite->paramDefine(paramSet, kOfxParamTypePushButton, "askFromThread", &props) != kOfxStatOK) ||
+             (gParamSuite->paramDefine(paramSet, kOfxParamTypePushButton, "askHost", &props) != kOfxStatOK) ) {
             return kOfxStatFailed;
         }
 
@@ -1536,6 +1554,9 @@ questionPluginMain(const char* action,
             });
             thread.join();
             recordReply("askFromThread", stat);
+        } else if (name == "askHost") {
+            // a NULL handle: the message is posted on the host (OfxHost::vmessage())
+            recordReply( "askHost", gMessageSuite->message(NULL, kOfxMessageQuestion, "", "Do you really want to (host)?") );
         }
 
         return kOfxStatOK;
@@ -1589,6 +1610,26 @@ natronTestGetCounter(const std::string& name)
     std::map<std::string, int>::const_iterator found = gCounters.find(name);
 
     return found == gCounters.end() ? 0 : found->second;
+}
+
+void
+natronTestSetCounter(const std::string& name,
+                     int value)
+{
+    setCounter(name, value);
+}
+
+int
+natronTestExchangeCounter(const std::string& name,
+                          int value)
+{
+    std::lock_guard<std::mutex> l(gMutex);
+    int& counter = gCounters[name];
+    const int previous = counter;
+
+    counter = value;
+
+    return previous;
 }
 
 extern "C" {

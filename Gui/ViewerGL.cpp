@@ -1982,10 +1982,11 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     // A color picker armed in a settings panel gets the picking clicks, and the left click that turns it
     // off after a pick, before the overlays: an overlay that uses the same clicks (the RotoPaint paint
     // tools paint on any click) would prevent picking (#206).
+    const bool pickColorClick = isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, modifiers, button);
+    const bool pickInputColorClick = isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickInputColor, modifiers, button);
+    const bool rectanglePickClick = isMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, modifiers, button);
     const bool pickerTakesClick = hasPickers && displayingImage() &&
-                                  ( isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, modifiers, button) ||
-                                    isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickInputColor, modifiers, button) ||
-                                    isMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, modifiers, button) ||
+                                  ( pickColorClick || pickInputColorClick || rectanglePickClick ||
                                     ( (_imp->pickerState != ePickerStateInactive) && buttonDownIsLeft(e) ) );
 
     // process plugin overlays
@@ -2000,9 +2001,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         updateOverlayCursor();
     }
 
-    if ( !overlaysCaught &&
-        isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, modifiers, button) &&
-        displayingImage() ) {
+    if ( !overlaysCaught && pickColorClick && displayingImage() ) {
         // picker with single-point selection
         _imp->pickerState = ePickerStatePoint;
         if ( pickColor( e->x(), e->y(), false ) ) {
@@ -2012,9 +2011,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         }
     }
 
-    if ( !overlaysCaught &&
-        isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickInputColor, modifiers, button) &&
-        displayingImage() ) {
+    if ( !overlaysCaught && pickInputColorClick && displayingImage() ) {
         // picker with single-point selection
         _imp->pickerState = ePickerStatePoint;
         if ( pickColor( e->x(), e->y(), true ) ) {
@@ -2024,9 +2021,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         }
     }
 
-    if ( !overlaysCaught &&
-         isMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, modifiers, button) &&
-         displayingImage() ) {
+    if ( !overlaysCaught && rectanglePickClick && displayingImage() ) {
         // start picker with rectangle selection (picked color is the average over the rectangle)
         _imp->pickerState = ePickerStateRectangle;
         _imp->pickerRect.setTopLeft(zoomPos);
@@ -3910,33 +3905,24 @@ int
 ViewerGL::getWidgetFontHeight() const
 {
     // in widget pixels, for the font that renderText() draws with
-    if ( !_imp->_textFont || !(_imp->_screenPixelRatio > 0.) ) {
-        return fontMetrics().height();
-    }
-
-    return (int)std::floor(QFontMetrics(*_imp->_textFont).height() / _imp->_screenPixelRatio + 0.5);
+    return TextRenderer::widgetFontMetric( _imp->_textFont.get(), _imp->_screenPixelRatio, fontMetrics(),
+                                           [](const QFontMetrics& m) { return m.height(); } );
 }
 
 int
 ViewerGL::getWidgetFontAscent() const
 {
     // in widget pixels, for the font that renderText() draws with
-    if ( !_imp->_textFont || !(_imp->_screenPixelRatio > 0.) ) {
-        return fontMetrics().ascent();
-    }
-
-    return (int)std::floor(QFontMetrics(*_imp->_textFont).ascent() / _imp->_screenPixelRatio + 0.5);
+    return TextRenderer::widgetFontMetric( _imp->_textFont.get(), _imp->_screenPixelRatio, fontMetrics(),
+                                           [](const QFontMetrics& m) { return m.ascent(); } );
 }
 
 int
 ViewerGL::getWidgetFontDescent() const
 {
     // in widget pixels, for the font that renderText() draws with
-    if ( !_imp->_textFont || !(_imp->_screenPixelRatio > 0.) ) {
-        return fontMetrics().descent();
-    }
-
-    return (int)std::floor(QFontMetrics(*_imp->_textFont).descent() / _imp->_screenPixelRatio + 0.5);
+    return TextRenderer::widgetFontMetric( _imp->_textFont.get(), _imp->_screenPixelRatio, fontMetrics(),
+                                           [](const QFontMetrics& m) { return m.descent(); } );
 }
 
 /**
@@ -3947,11 +3933,9 @@ ViewerGL::getStringWidthForCurrentFont(const std::string& string) const
 {
     // the width that renderText() draws, in widget pixels
     const QString text = QString::fromUtf8( string.c_str() );
-    if ( !_imp->_textFont || !(_imp->_screenPixelRatio > 0.) ) {
-        return TextRenderer::textWidth(fontMetrics(), text);
-    }
 
-    return (int)std::floor(TextRenderer::textWidth(QFontMetrics(*_imp->_textFont), text) / _imp->_screenPixelRatio + 0.5);
+    return TextRenderer::widgetFontMetric( _imp->_textFont.get(), _imp->_screenPixelRatio, fontMetrics(),
+                                           [&text](const QFontMetrics& m) { return TextRenderer::textWidth(m, text); } );
 }
 
 void

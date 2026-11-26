@@ -1,7 +1,10 @@
 # Helpers shared by the GUI tests (Natron --test test_*.py); see Documentation/source/devel/guitesting.rst.
 # The test script directory is on sys.path, so a test does "from natrontest import *".
 import ctypes
+import importlib
 import os
+import sys
+import time
 
 import NatronGui
 import NatronGuiTest
@@ -15,9 +18,29 @@ GENERATOR = "net.natron.test.Generator"  # fills its output with 0.5 (Tests/OfxT
 
 
 def require_plugin(pluginID):
-    """Skip the test if the plug-in is not available (e.g. openfx-misc is not on OFX_PLUGIN_PATH)."""
+    """Skip the test if the plug-in is not available (e.g. openfx-misc is not on OFX_PLUGIN_PATH).
+
+    A missing test plug-in (net.natron.test.*) fails the test under ctest, which puts them on OFX_PLUGIN_PATH.
+    """
     if pluginID not in natron.getPluginIDs():
+        check(not (pluginID.startswith("net.natron.test.") and os.environ.get("NATRON_TESTS_OFX_PLUGIN_BINARY")),
+              "test plug-in %s not found: the build of Tests/OfxTestPlugin is broken" % pluginID)
         NatronGuiTest.skip("plug-in %s not found (OFX_PLUGIN_PATH=%s)" % (pluginID, os.environ.get("OFX_PLUGIN_PATH", "")))
+
+
+def require_ocio():
+    """Skip the test without an OpenColorIO config: the Write nodes of openfx-io fail ("Invalid OCIO config")."""
+    if not os.environ.get("OCIO"):
+        NatronGuiTest.skip("OCIO is not set to an OpenColorIO config")
+
+
+def qt_modules():
+    """QtCore, QtGui and QtWidgets, from the PySide that NatronGui loaded (the one of Natron's Qt).
+
+    Not QT_API: Python reads the environment before Natron sets it.
+    """
+    pyside = "PySide6" if "PySide6.QtCore" in sys.modules else "PySide2"
+    return tuple(importlib.import_module(pyside + "." + name) for name in ("QtCore", "QtGui", "QtWidgets"))
 
 
 def test_plugin_counter(name):
@@ -34,6 +57,25 @@ def test_plugin_counter(name):
 def wait_idle(timeout=30.0):
     """Wait until no render runs and the events are processed; fail on timeout."""
     check(NatronGuiTest.waitIdle(timeout), "the GUI was not idle after %g s" % timeout)
+
+
+def wait_until(predicate, timeout, step=lambda: NatronGuiTest.waitIdle(0.2)):
+    """Calls step() until predicate() is true; returns False if it is still false after timeout seconds."""
+    deadline = time.monotonic() + timeout
+    while not predicate():
+        if time.monotonic() > deadline:
+            return False
+        step()
+    return True
+
+
+def open_settings_panel(node):
+    """Opens the settings panel of node, as the Return key does in the node graph."""
+    app = natron.getGuiInstance(0)
+    app.clearSelection()
+    app.selectNode(node, True)
+    NatronGuiTest.sendKey("NodeGraph", "Return")
+    wait_idle()
 
 
 def check(cond, msg):

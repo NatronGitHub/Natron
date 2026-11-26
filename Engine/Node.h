@@ -33,6 +33,7 @@
 #include <map>
 #include <list>
 #include <bitset>
+#include <unordered_set>
 
 CLANG_DIAG_OFF(deprecated)
 #include <QMetaType>
@@ -877,7 +878,7 @@ public:
 
 private:
 
-    void clearPersistentMessageRecursive(std::list<Node*>& markedNodes);
+    void clearPersistentMessageUpstream();
 
     void clearPersistentMessageInternal();
 
@@ -915,8 +916,6 @@ public:
     QMutex & getRenderInstancesSharedMutex();
 
     void refreshPreviewsRecursivelyDownstream(double time);
-
-    void refreshPreviewsRecursivelyUpstream(double time);
 
     void incrementKnobsAge();
 
@@ -1402,7 +1401,17 @@ private:
 
     bool setStreamWarningInternal(StreamWarningEnum warning, const QString& message);
 
-    void computeHashRecursive(std::list<Node*>& marked);
+    /**
+     * @brief Recomputes the hash of this node and, if it changed, of the nodes downstream, except those in marked.
+     * Adds the nodes whose hash it computes to marked.
+     **/
+    void computeHashDownstream(std::unordered_set<const Node*>& marked);
+
+    /**
+     * @brief Recomputes the hash of this node. Returns the nodes whose hash must be recomputed next, in order: its outputs
+     * and the nodes of its RotoPaint tree if its hash changed, nothing otherwise.
+     **/
+    NodesList computeHashOfThisNode();
 
     /**
      * @brief Refreshes the node hash depending on its context (knobs age, inputs etc...)

@@ -15,6 +15,7 @@
 #   macos_x86_64_sdk.sh run DEADLINE STEP...  run provision.sh STEPs; stop them at DEADLINE (seconds
 #                                        since the epoch): exit status 0 if all done, 3 if stopped
 #   macos_x86_64_sdk.sh save FILE [final]     tar the SDK into FILE (final: without the build directories)
+#   macos_x86_64_sdk.sh steps            print the provision.sh steps of the SDK
 set -euo pipefail
 
 ARTIFACT_PREFIX=natron-sdk-macos-x86_64-
@@ -161,5 +162,5 @@ steps)
     echo "$SDK_STEPS"
     ;;
 *)
-    sed -n 2,14p "$0"; exit 2 ;;
+    sed -n 2,18p "$0"; exit 2 ;;
 esac

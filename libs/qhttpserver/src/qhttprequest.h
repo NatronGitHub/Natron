@@ -51,8 +51,6 @@ class QHTTPSERVER_API QHttpRequest : public QObject
     Q_PROPERTY(QString path READ path)
     Q_PROPERTY(QString httpVersion READ httpVersion)
 
-    Q_ENUMS(HttpMethod)
-
     /// @cond nodoc
     friend class QHttpConnection;
     /// @endcond
@@ -81,6 +79,10 @@ public:
         HTTP_PROPPATCH,
         HTTP_SEARCH,
         HTTP_UNLOCK,
+        HTTP_BIND,
+        HTTP_REBIND,
+        HTTP_UNBIND,
+        HTTP_ACL,
         // subversion
         HTTP_REPORT,
         HTTP_MKACTIVITY,
@@ -93,8 +95,17 @@ public:
         HTTP_UNSUBSCRIBE,
         // RFC-5789
         HTTP_PATCH,
-        HTTP_PURGE
+        HTTP_PURGE,
+        // CalDAV
+        HTTP_MKCALENDAR,
+        // RFC-2068, section 19.6.1.2
+        HTTP_LINK,
+        HTTP_UNLINK,
+        // icecast
+        HTTP_SOURCE
     };
+    // Natron: Q_ENUM (Qt 5.5) replaces the obsolete Q_ENUMS
+    Q_ENUM(HttpMethod)
 
     /// The method used for the request.
     HttpMethod method() const;

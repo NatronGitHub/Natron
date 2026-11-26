@@ -90,6 +90,36 @@ struct PreferenceTab
     KnobPageGuiWPtr page;
 };
 
+// The flags of a plug-in that the Plug-ins page edits
+struct PluginFlags
+{
+    bool activated = false;
+    bool renderScale = false;
+    bool multiThreading = false;
+    bool openGL = false;
+
+    static PluginFlags read(const Plugin& plugin)
+    {
+        PluginFlags flags;
+
+        flags.activated = plugin.isActivated();
+        flags.renderScale = plugin.isRenderScaleEnabled();
+        flags.multiThreading = plugin.isMultiThreadingEnabled();
+        flags.openGL = plugin.isOpenGLEnabled();
+
+        return flags;
+    }
+
+    void apply(Plugin* plugin) const
+    {
+        plugin->setActivated(activated);
+        plugin->setRenderScaleEnabled(renderScale);
+        plugin->setMultiThreadingEnabled(multiThreading);
+        plugin->setOpenGLEnabled(openGL);
+    }
+};
+
+// A row of the Plug-ins page: a plug-in, with its checkboxes, or a group (plugin is NULL, no checkboxes)
 struct PluginTreeNode
 {
     PluginTreeNode()
@@ -99,11 +129,19 @@ struct PluginTreeNode
         , mtCheckbox(NULL)
         , glCheckbox(NULL)
         , plugin(NULL)
-        , shownActivated(false)
-        , shownRenderScaleEnabled(false)
-        , shownMultiThreadingEnabled(false)
-        , shownOpenGLEnabled(false)
+        , shownFlags()
     {
+    }
+
+    // Check the checkboxes of a plug-in row as the plug-in's flags (setChecked() doesn't emit clicked())
+    void showPluginFlags() const
+    {
+        enabledCheckbox->setChecked( plugin->isActivated() );
+        rsCheckbox->setChecked( plugin->isRenderScaleEnabled() );
+        mtCheckbox->setChecked( plugin->isMultiThreadingEnabled() );
+        // unchecked if the plug-in can't render with OpenGL
+        glCheckbox->setChecked( plugin->isOpenGLEnabled() &&
+                                (plugin->getPluginOpenGLRenderSupport() != ePluginOpenGLRenderSupportNone) );
     }
 
     QTreeWidgetItem* item;
@@ -113,10 +151,7 @@ struct PluginTreeNode
     AnimatedCheckBox* glCheckbox;
     Plugin* plugin;
     // The plug-in's flags when the panel was shown, restored by Cancel (#1538)
-    bool shownActivated;
-    bool shownRenderScaleEnabled;
-    bool shownMultiThreadingEnabled;
-    bool shownOpenGLEnabled;
+    PluginFlags shownFlags;
 };
 
 typedef std::list<PluginTreeNode> PluginTreeNodeList;
@@ -569,7 +604,6 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
                 checkboxLayout->setContentsMargins(0, 0, 0, 0);
                 checkboxLayout->setSpacing(0);
                 checkbox->setFixedSize( TO_DPIX(NATRON_SMALL_BUTTON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_SIZE) );
-                checkbox->setChecked( plugin->isActivated() );
                 QObject::connect( checkbox, SIGNAL(clicked(bool)), this, SLOT(onItemEnabledCheckBoxChecked(bool)) );
                 _imp->pluginsView->setItemWidget(node.item, COL_ENABLED, checkbox);
                 node.enabledCheckbox = checkbox;
@@ -582,7 +616,6 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
                 checkboxLayout->setContentsMargins(0, 0, 0, 0);
                 checkboxLayout->setSpacing(0);
                 checkbox->setFixedSize( TO_DPIX(NATRON_SMALL_BUTTON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_SIZE) );
-                checkbox->setChecked( plugin->isRenderScaleEnabled() );
                 QObject::connect( checkbox, SIGNAL(clicked(bool)), this, SLOT(onRSEnabledCheckBoxChecked(bool)) );
                 _imp->pluginsView->setItemWidget(node.item, COL_RS_ENABLED, checkbox);
                 node.rsCheckbox = checkbox;
@@ -596,7 +629,6 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
                 checkboxLayout->setContentsMargins(0, 0, 0, 0);
                 checkboxLayout->setSpacing(0);
                 checkbox->setFixedSize( TO_DPIX(NATRON_SMALL_BUTTON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_SIZE) );
-                checkbox->setChecked( plugin->isMultiThreadingEnabled() );
                 QObject::connect( checkbox, SIGNAL(clicked(bool)), this, SLOT(onMTEnabledCheckBoxChecked(bool)) );
                 _imp->pluginsView->setItemWidget(node.item, COL_MT_ENABLED, checkbox);
                 node.mtCheckbox = checkbox;
@@ -609,15 +641,14 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
                 checkboxLayout->setContentsMargins(0, 0, 0, 0);
                 checkboxLayout->setSpacing(0);
                 checkbox->setFixedSize( TO_DPIX(NATRON_SMALL_BUTTON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_SIZE) );
-                checkbox->setChecked( plugin->isOpenGLEnabled() );
                 QObject::connect( checkbox, SIGNAL(clicked(bool)), this, SLOT(onGLEnabledCheckBoxChecked(bool)) );
                 _imp->pluginsView->setItemWidget(node.item, COL_GL_ENABLED, checkbox);
                 if (plugin->getPluginOpenGLRenderSupport() == ePluginOpenGLRenderSupportNone) {
-                    checkbox->setChecked(false);
                     checkbox->setReadOnly(true);
                 }
                 node.glCheckbox = checkbox;
             }
+            node.showPluginFlags();
 
             _imp->pluginsList.push_back(node);
         }
@@ -1148,7 +1179,7 @@ void
 PreferencesPanel::openHelp()
 {
     int serverPort = appPTR->getDocumentationServerPort();
-    QString localUrl = QString::fromUtf8("http://localhost:") + QString::number(serverPort) + QString::fromUtf8("/_prefs.html");
+    QString localUrl = QString::fromUtf8("http://127.0.0.1:") + QString::number(serverPort) + QString::fromUtf8("/_prefs.html");
 #ifdef NATRON_DOCUMENTATION_ONLINE
     int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
     QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE);
@@ -1184,7 +1215,7 @@ PreferencesPanel::restoreDefaults()
         _imp->defaultsRestored = true;
 
         // The plug-in settings are not knobs: reset the plug-ins themselves, as clicking each checkbox
-        // would (setChecked() doesn't emit clicked()), and show their new state (#1744)
+        // would, and show their new state (#1744)
         for (PluginTreeNodeList::const_iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
             Plugin* plugin = it->plugin;
             if (!plugin) {
@@ -1194,20 +1225,7 @@ PreferencesPanel::restoreDefaults()
             plugin->setRenderScaleEnabled(true);
             plugin->setMultiThreadingEnabled(true);
             plugin->setOpenGLEnabled(true);
-            if (it->enabledCheckbox) {
-                it->enabledCheckbox->setChecked( plugin->isActivated() );
-            }
-            if (it->rsCheckbox) {
-                it->rsCheckbox->setChecked( plugin->isRenderScaleEnabled() );
-            }
-            if (it->mtCheckbox) {
-                it->mtCheckbox->setChecked( plugin->isMultiThreadingEnabled() );
-            }
-            if (it->glCheckbox) {
-                // as in createPluginsView(): unchecked if the plug-in can't render with OpenGL
-                it->glCheckbox->setChecked( plugin->isOpenGLEnabled() &&
-                                            plugin->getPluginOpenGLRenderSupport() != ePluginOpenGLRenderSupportNone );
-            }
+            it->showPluginFlags();
         }
         _imp->pluginSettingsChanged = true;
     }
@@ -1251,10 +1269,7 @@ PreferencesPanel::showEvent(QShowEvent* e)
     }
     for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
         if (it->plugin) {
-            it->shownActivated = it->plugin->isActivated();
-            it->shownRenderScaleEnabled = it->plugin->isRenderScaleEnabled();
-            it->shownMultiThreadingEnabled = it->plugin->isMultiThreadingEnabled();
-            it->shownOpenGLEnabled = it->plugin->isOpenGLEnabled();
+            it->shownFlags = PluginFlags::read(*it->plugin);
         }
     }
 
@@ -1283,22 +1298,8 @@ PreferencesPanel::closeEvent(QCloseEvent*)
                 if (!it->plugin) {
                     continue;
                 }
-                it->plugin->setActivated(it->shownActivated);
-                it->plugin->setRenderScaleEnabled(it->shownRenderScaleEnabled);
-                it->plugin->setMultiThreadingEnabled(it->shownMultiThreadingEnabled);
-                it->plugin->setOpenGLEnabled(it->shownOpenGLEnabled);
-                if (it->enabledCheckbox) {
-                    it->enabledCheckbox->setChecked(it->shownActivated);
-                }
-                if (it->rsCheckbox) {
-                    it->rsCheckbox->setChecked(it->shownRenderScaleEnabled);
-                }
-                if (it->mtCheckbox) {
-                    it->mtCheckbox->setChecked(it->shownMultiThreadingEnabled);
-                }
-                if ( it->glCheckbox && (it->plugin->getPluginOpenGLRenderSupport() != ePluginOpenGLRenderSupportNone) ) {
-                    it->glCheckbox->setChecked(it->shownOpenGLEnabled);
-                }
+                it->shownFlags.apply(it->plugin);
+                it->showPluginFlags();
             }
         }
     }

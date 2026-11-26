@@ -47,4 +47,11 @@ void natronTestIncrementCounter(const std::string& name, int delta = 1);
 // the value of the named counter of the bundle, 0 if it was never set (thread-safe)
 int natronTestGetCounter(const std::string& name);
 
+// set the named counter of the bundle to value (thread-safe)
+void natronTestSetCounter(const std::string& name, int value);
+
+// set the named counter of the bundle to value and return its previous value, in one step (thread-safe):
+// e.g. natronTestExchangeCounter(name, 0) != 0 is true for only one of the threads that test-and-clear it
+int natronTestExchangeCounter(const std::string& name, int value);
+
 #endif // NATRON_TESTS_OFXTESTPLUGIN_NATRONTESTPLUGINREGISTRY_H

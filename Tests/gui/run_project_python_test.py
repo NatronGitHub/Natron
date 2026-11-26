@@ -54,18 +54,18 @@ The three states must be the same.
 
 Exit status: 0 on success, 1 on failure, 2 on a usage error.
 --debugger runs NatronRenderer under natron-lldb.sh, or set
-NATRON_TEST_WRAPPER.
+NATRON_TEST_WRAPPER (see natronrunner.py).
 """
 
 import json
 import os
-import shlex
 import shutil
-import subprocess
 import sys
 import tempfile
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+import natronrunner
+
+TIMEOUT = 120  # seconds, for each run of NatronRenderer
 
 # The state of the project as JSON: the project parameters, then the nodes
 # with their parameters (values at a few frames, to compare animations and
@@ -355,6 +355,13 @@ try:
     folder = os.path.dirname(first).replace("\\", "/")
     if "<Name>Project</Name><Value>%s</Value>" % folder not in paths:
         raise RuntimeError("[Project] is not %s: %s" % (folder, paths))
+    # the copies expand [Project], as saveProject() does
+    for save, name in ((loaded.saveProjectCopy, "copy.ntp"),
+                       (loaded.saveTempProject, "temp.ntp")):
+        if not save("[Project]/" + name):
+            raise RuntimeError("%s() failed" % save.__name__)
+        if not os.path.isfile(os.path.join(os.path.dirname(first), name)):
+            raise RuntimeError("%s() did not expand [Project]" % save.__name__)
     dump(loaded, os.environ["NATRON_TEST_LOADED"])
     if not loaded.saveProjectAsPython(os.environ["NATRON_TEST_SECOND"]):
         raise RuntimeError("saveProjectAsPython() failed")
@@ -506,19 +513,13 @@ def _run_renderer(cmd, env):
     Returns:
       True if it exited with status 0.
     """
-    print("Running: " + " ".join(cmd))
-    sys.stdout.flush()
-    try:
-        proc = subprocess.run(cmd, env=env, stdin=subprocess.DEVNULL,
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.STDOUT, timeout=120)
-    except subprocess.TimeoutExpired:
+    status, output = natronrunner.run(cmd, env, TIMEOUT)
+    sys.stdout.write(output)
+    if status is None:
         print("FAILED: timeout")
         return False
-    # natron-lldb.sh runs it in a terminal, which ends the lines with \r\n
-    sys.stdout.write(proc.stdout.decode(errors="replace").replace("\r\n", "\n"))
-    print("exit status %d" % proc.returncode)
-    if proc.returncode != 0:
+    print("exit status %d" % status)
+    if status != 0:
         print("FAILED: the exit status should be 0")
         return False
     return True
@@ -638,7 +639,8 @@ def _check_results(files):
             print("FAILED: saveProjectAs(savedas.py) and"
                   " saveProjectAsPython() wrote different files")
             ok = False
-    print(first.decode())
+    if not ok:
+        print("first.py:\n" + first.decode())
     return ok
 
 
@@ -651,19 +653,12 @@ def main(argv):
     if len(argv) < 2:
         sys.stderr.write(__doc__)
         return 2
-    wrapper = []
-    if "--debugger" in argv[2:]:
-        wrapper = [os.path.join(HERE, "natron-lldb.sh")]
-    elif os.environ.get("NATRON_TEST_WRAPPER"):
-        wrapper = shlex.split(os.environ["NATRON_TEST_WRAPPER"])
-    renderer = wrapper + [argv[1], "--no-settings"]
+    renderer = natronrunner.wrapper(argv[2:]) + [argv[1], "--no-settings"]
     tmp_dir = os.path.realpath(
         tempfile.mkdtemp(prefix="natron-project-python-test-"))
     try:
-        env = dict(os.environ)
-        env["NATRON_DISK_CACHE_PATH"] = os.path.join(tmp_dir, "cache")
-        # Debug builds: no trapped floating point exception (#1537)
-        env["NATRON_NO_FP_TRAPS"] = "1"
+        env = natronrunner.natron_env(
+            tmp_dir, NATRON_DISK_CACHE_PATH=os.path.join(tmp_dir, "cache"))
         files = _write_test_files(tmp_dir, env)
         if not (_run_renderer(renderer + ["-t", files["build"]], env)
                 and _run_renderer(renderer + ["-t", files["load"]], env)

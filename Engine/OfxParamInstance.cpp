@@ -25,6 +25,7 @@
 
 #include "OfxParamInstance.h"
 
+#include <algorithm> // stable_sort
 #include <array>
 #include <iostream>
 #include <cassert>
@@ -283,12 +284,17 @@ copyFrom(const OFX::Host::Param::Instance & fromParam,
     if (allDims) {
         nDims = std::min( from->getDimension(), to->getDimension() );
     }
+    // The two halves of a rectangle are one knob, which KnobI::clone() can't copy onto itself: copy from a snapshot
+    const KnobIPtr source = (from == to) ? createKnobCopy(from) : from;
+    if (!source) {
+        return kOfxStatFailed;
+    }
     to->beginChanges();
     if (allDims) {
-        to->clone(from, dstOffset, frameRange);
+        to->clone(source, dstOffset, frameRange);
     } else {
         for (int i = 0; i < nDims; ++i) {
-            to->clone(from, dstOffset, frameRange, toStartDim + i, fromStartDim + i);
+            to->clone(source, dstOffset, frameRange, toStartDim + i, fromStartDim + i);
         }
     }
     double curTime = to->getCurrentTime();
@@ -1525,6 +1531,66 @@ OfxBooleanInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 
 ////////////////////////// OfxChoiceInstance /////////////////////////////////////////////////
 
+// The option i of a Choice param: the label is kOfxParamPropChoiceOption, the ID kOfxParamPropChoiceEnum
+// (an extension for Choice params; the value of StrChoice params) or else the label, the tooltip
+// kOfxParamPropChoiceLabelOption (an extension).
+static ChoiceOption
+choiceOptionFromProperties(const OFX::Host::Property::Set& properties,
+                           int i)
+{
+    ChoiceOption option;
+
+    option.label = properties.getStringProperty(kOfxParamPropChoiceOption, i);
+    if ( i < properties.getDimension(kOfxParamPropChoiceEnum) ) {
+        option.id = properties.getStringProperty(kOfxParamPropChoiceEnum, i);
+    }
+    if ( option.id.empty() ) {
+        option.id = option.label;
+    }
+    if ( i < properties.getDimension(kOfxParamPropChoiceLabelOption) ) {
+        option.tooltip = properties.getStringProperty(kOfxParamPropChoiceLabelOption, i);
+    }
+
+    return option;
+}
+
+static std::vector<ChoiceOption>
+choiceOptionsFromProperties(const OFX::Host::Property::Set& properties)
+{
+    std::vector<ChoiceOption> options( properties.getDimension(kOfxParamPropChoiceOption) );
+
+    for (std::size_t i = 0; i < options.size(); ++i) {
+        options[i] = choiceOptionFromProperties(properties, (int)i);
+    }
+
+    return options;
+}
+
+// kOfxParamPropChoiceOrder (OFX 1.5): "the host should sort the options and the order list together, and
+// display the options in increasing order". The indices of the options in their display order, or an
+// empty vector (the natural order) if the property doesn't have one value per option. Options with the
+// same value (undefined behaviour) keep their natural order.
+static std::vector<int>
+choiceDisplayOrderFromProperties(const OFX::Host::Property::Set& properties)
+{
+    const int nOptions = properties.getDimension(kOfxParamPropChoiceOption);
+
+    if ( (nOptions == 0) || ( properties.getDimension(kOfxParamPropChoiceOrder) != nOptions ) ) {
+        return std::vector<int>();
+    }
+    std::vector<int> sortKeys(nOptions);
+    properties.getIntPropertyN(kOfxParamPropChoiceOrder, sortKeys.data(), nOptions);
+    std::vector<int> order(nOptions);
+    for (int i = 0; i < nOptions; ++i) {
+        order[i] = i;
+    }
+    std::stable_sort( order.begin(), order.end(), [&sortKeys](int a, int b) {
+        return sortKeys[a] < sortKeys[b];
+    } );
+
+    return order;
+}
+
 OfxChoiceInstance::OfxChoiceInstance(const OfxEffectInstancePtr& node,
                                      OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
@@ -1535,26 +1601,9 @@ OfxChoiceInstance::OfxChoiceInstance(const OfxEffectInstancePtr& node,
 
     _knob = choice;
 
-
-    int dim = getProperties().getDimension(kOfxParamPropChoiceOption);
-    int labelOptionDim = getProperties().getDimension(kOfxParamPropChoiceLabelOption);
-    int enumOptionDim = getProperties().getDimension(kOfxParamPropChoiceEnum);
-    std::vector<ChoiceOption> entries(dim);
-    for (int i = 0; i < dim; ++i) {
-
-        ChoiceOption& option = entries[i];
-        option.label = getProperties().getStringProperty(kOfxParamPropChoiceOption, i);
-        if (i < enumOptionDim) {
-            option.id = getProperties().getStringProperty(kOfxParamPropChoiceEnum, i);
-        } else {
-            option.id = option.label;
-        }
-        if (i < labelOptionDim) {
-            option.tooltip = getProperties().getStringProperty(kOfxParamPropChoiceLabelOption, i);
-        }
-    }
-
-    choice->populateChoices(entries);
+    // the plug-in may change the display order of the options of an instance (setDisplayOrder())
+    properties.addNotifyHook(kOfxParamPropChoiceOrder, this);
+    choice->populateChoices( choiceOptionsFromProperties(properties), choiceDisplayOrderFromProperties(properties) );
 
     int def = properties.getIntProperty(kOfxParamPropDefault);
     choice->blockValueChanges();
@@ -1744,37 +1793,35 @@ OfxChoiceInstance::setOption(int num)
     assert(num == dim - 1 || num == dim);
 
     if ( num == (dim - 1) ) {
-        ChoiceOption option;
-        option.id = getProperties().getStringProperty(kOfxParamPropChoiceOption, num);
-        option.label = option.id;
-        int labelOptionDim = getProperties().getDimension(kOfxParamPropChoiceLabelOption);
-        int optionIDDim = getProperties().getDimension(kOfxParamPropChoiceEnum);
-        if (num < optionIDDim) {
-            option.id = getProperties().getStringProperty(kOfxParamPropChoiceEnum, num);
-        }
-        if (num < labelOptionDim) {
-            option.tooltip = getProperties().getStringProperty(kOfxParamPropChoiceLabelOption, num);
-        }
-        knob->appendChoice(option);
+        // displayed last; the plug-in may set its kOfxParamPropChoiceOrder next (notify())
+        knob->appendChoice( choiceOptionFromProperties(getProperties(), num) );
     } else if (num == dim) {
-
-        int labelOptionDim = getProperties().getDimension(kOfxParamPropChoiceLabelOption);
-        assert(labelOptionDim == 0 || labelOptionDim == dim);
-        int optionIDDim = getProperties().getDimension(kOfxParamPropChoiceEnum);
-        assert(optionIDDim == 0 || optionIDDim == dim);
-        std::vector<ChoiceOption> entries(dim);
-        for (std::size_t i = 0; i < entries.size(); ++i) {
-            entries[i].id = getProperties().getStringProperty(kOfxParamPropChoiceOption, i);
-            entries[i].label = entries[i].id;
-            if ( (int)i < optionIDDim ) {
-                entries[i].id = getProperties().getStringProperty(kOfxParamPropChoiceEnum, i);
-            }
-            if ( (int)i < labelOptionDim ) {
-                entries[i].tooltip = getProperties().getStringProperty(kOfxParamPropChoiceLabelOption, i);
-            }
-        }
-        knob->populateChoices(entries);
+        assert(getProperties().getDimension(kOfxParamPropChoiceLabelOption) == 0 || getProperties().getDimension(kOfxParamPropChoiceLabelOption) == dim);
+        assert(getProperties().getDimension(kOfxParamPropChoiceEnum) == 0 || getProperties().getDimension(kOfxParamPropChoiceEnum) == dim);
+        knob->populateChoices( choiceOptionsFromProperties( getProperties() ), choiceDisplayOrderFromProperties( getProperties() ) );
     }
+}
+
+void
+OfxChoiceInstance::notify(const std::string &name,
+                          bool single,
+                          int num) OFX_EXCEPTION_SPEC
+{
+    OFX::Host::Param::ChoiceInstance::notify(name, single, num);
+    if (name == kOfxParamPropChoiceOrder) {
+        setDisplayOrder();
+    }
+}
+
+void
+OfxChoiceInstance::setDisplayOrder()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    KnobChoicePtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDisplayOrder( choiceDisplayOrderFromProperties( getProperties() ) );
 }
 
 KnobIPtr
@@ -1824,6 +1871,322 @@ OfxChoiceInstance::copyFrom(const OFX::Host::Param::Instance &instance,
     const OfxParamToKnob & other = dynamic_cast<const OfxParamToKnob &>(instance);
 
     return OfxKeyFrame::copyFrom(instance, *this, other.getKnob(), getKnob(), offset, range);
+}
+
+////////////////////////// OfxStrChoiceInstance /////////////////////////////////////////////////
+
+struct OfxStrChoiceInstancePrivate
+{
+    KnobChoiceWPtr knob;
+    // the value returned by getV(), per thread (render threads read the param at the same time)
+    std::shared_ptr<TLSHolder<OfxParamToKnob::OfxParamTLSData> > tlsData;
+
+    OfxStrChoiceInstancePrivate()
+        : knob()
+        , tlsData( new TLSHolder<OfxParamToKnob::OfxParamTLSData>() )
+    {
+    }
+};
+
+OfxStrChoiceInstance::OfxStrChoiceInstance(const OfxEffectInstancePtr& node,
+                                           OFX::Host::Param::Descriptor & descriptor)
+    : OfxParamToKnob(node)
+    , OFX::Host::Param::StrChoiceInstance( descriptor, node->effectInstance() )
+    , _imp( new OfxStrChoiceInstancePrivate() )
+{
+    const OFX::Host::Property::Set &properties = getProperties();
+    KnobChoicePtr choice = checkIfKnobExistsWithNameOrCreate<KnobChoice>(descriptor.getName(), this, 1);
+
+    _imp->knob = choice;
+    // "The host stores the string value rather than the index of the option, and when loading a project, finds
+    // and selects the option with the corresponding enum"
+    choice->setOptionRestoration(KnobChoice::eOptionRestorationExactIDOrDefault);
+    properties.addNotifyHook(kOfxParamPropChoiceOrder, this);
+    choice->populateChoices( choiceOptionsFromProperties(properties), choiceDisplayOrderFromProperties(properties) );
+    choice->blockValueChanges();
+    choice->setDefaultValue(defaultOptionIndex(), 0);
+    choice->unblockValueChanges();
+    // Unlike OfxChoiceInstance, the slots that copy the entries of the knob back to the options
+    // (onChoiceMenuPopulated()...) are not connected: they are for the options that Natron adds to Choice
+    // params (kNatronOfxParamPropChoiceHostCanAddOptions), and StrChoice params have none.
+}
+
+OfxStrChoiceInstance::~OfxStrChoiceInstance()
+{
+}
+
+int
+OfxStrChoiceInstance::optionIndex(const std::string& value) const
+{
+    KnobChoicePtr knob = _imp->knob.lock();
+    if (!knob) {
+        return -1;
+    }
+    const std::vector<ChoiceOption> entries = knob->getEntries_mt_safe();
+    for (std::size_t i = 0; i < entries.size(); ++i) {
+        if (entries[i].id == value) {
+            return (int)i;
+        }
+    }
+
+    return -1;
+}
+
+int
+OfxStrChoiceInstance::defaultOptionIndex(const std::vector<ChoiceOption>& options) const
+{
+    // "The default value of a StrChoice param must be one of the specified enums, or the behavior is undefined.
+    // If no default value is set by the plugin, the host should use the first defined option (index 0)."
+    const std::string defaultEnum = getDefaultEnum();
+    for (std::size_t i = 0; i < options.size(); ++i) {
+        if (options[i].id == defaultEnum) {
+            return (int)i;
+        }
+    }
+
+    return 0;
+}
+
+int
+OfxStrChoiceInstance::defaultOptionIndex() const
+{
+    KnobChoicePtr knob = _imp->knob.lock();
+
+    return knob ? defaultOptionIndex( knob->getEntries_mt_safe() ) : 0;
+}
+
+OfxStatus
+OfxStrChoiceInstance::get(std::string & v)
+{
+    KnobChoicePtr knob = _imp->knob.lock();
+    if (!knob) {
+        return kOfxStatFailed;
+    }
+    v = knob->getEntryID_mt_safe( knob->getValue() );
+
+    return kOfxStatOK;
+}
+
+OfxStatus
+OfxStrChoiceInstance::get(OfxTime time,
+                          std::string & v)
+{
+    KnobChoicePtr knob = _imp->knob.lock();
+    if (!knob) {
+        return kOfxStatFailed;
+    }
+    v = knob->getEntryID_mt_safe( knob->getValueAtTime(time) );
+
+    return kOfxStatOK;
+}
+
+OfxStatus
+OfxStrChoiceInstance::set(const char* v)
+{
+    KnobChoicePtr knob = _imp->knob.lock();
+    if (!knob) {
+        return kOfxStatFailed;
+    }
+    const int index = v ? optionIndex(v) : -1;
+    if (index < 0) {
+        return kOfxStatErrValue;
+    }
+    knob->setValueFromPlugin(index, ViewSpec::current(), 0);
+
+    return kOfxStatOK;
+}
+
+OfxStatus
+OfxStrChoiceInstance::set(OfxTime /*time*/,
+                          const char* v)
+{
+    return set(v);
+}
+
+OfxStatus
+OfxStrChoiceInstance::getV(va_list arg)
+{
+    const char **value = va_arg(arg, const char **);
+    std::string& tls = _imp->tlsData->getOrCreateTLSData()->str;
+    OfxStatus stat = get(tls);
+
+    *value = tls.c_str();
+
+    return stat;
+}
+
+OfxStatus
+OfxStrChoiceInstance::getV(OfxTime time,
+                           va_list arg)
+{
+    if ( OFX::IsNaN(time) ) {
+        return kOfxStatErrValue; // as StrChoiceInstance::getV()
+    }
+    const char **value = va_arg(arg, const char **);
+    std::string& tls = _imp->tlsData->getOrCreateTLSData()->str;
+    OfxStatus stat = get(time, tls);
+
+    *value = tls.c_str();
+
+    return stat;
+}
+
+void
+OfxStrChoiceInstance::setEnabled()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    KnobChoicePtr knob = _imp->knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setAllDimensionsEnabled( getEnabled() );
+}
+
+void
+OfxStrChoiceInstance::setLabel()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    KnobChoicePtr knob = _imp->knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setLabel( getParamLabel(this) );
+}
+
+void
+OfxStrChoiceInstance::setSecret()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    KnobChoicePtr knob = _imp->knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setSecret( getSecret() );
+}
+
+void
+OfxStrChoiceInstance::setHint()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    KnobChoicePtr knob = _imp->knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setHintToolTip( getHint() );
+}
+
+void
+OfxStrChoiceInstance::setDefault()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    KnobChoicePtr knob = _imp->knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDefaultValueWithoutApplying(defaultOptionIndex(), 0);
+}
+
+void
+OfxStrChoiceInstance::setOption(int /*num*/)
+{
+    DYNAMIC_PROPERTY_CHECK();
+    KnobChoicePtr knob = _imp->knob.lock();
+    if (!knob) {
+        return;
+    }
+    const OFX::Host::Property::Set &properties = getProperties();
+    const int dim = properties.getDimension(kOfxParamPropChoiceOption);
+    if (dim == 0) {
+        knob->resetChoices();
+    } else if ( dim == properties.getDimension(kOfxParamPropChoiceEnum) ) {
+        // StrChoiceInstance::notify() calls this when the options or the enums change. "The Option and Enum
+        // arrays must be of the same length": wait for the other one when the plug-in sets one, then rebuild
+        // the entries. The default first (an index in the new options): populateChoices() selects the same
+        // enum again, or the default if the plug-in removed it.
+        const std::vector<ChoiceOption> options = choiceOptionsFromProperties(properties);
+        knob->setDefaultValueWithoutApplying(defaultOptionIndex(options), 0);
+        knob->populateChoices( options, choiceDisplayOrderFromProperties(properties) );
+    }
+}
+
+void
+OfxStrChoiceInstance::setEvaluateOnChange()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    KnobChoicePtr knob = _imp->knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setEvaluateOnChange( getEvaluateOnChange() );
+}
+
+void
+OfxStrChoiceInstance::setInViewportSecret()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    KnobChoicePtr knob = _imp->knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextSecret( getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret) );
+}
+
+void
+OfxStrChoiceInstance::setInViewportLabel()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    KnobChoicePtr knob = _imp->knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setInViewerContextLabel( QString::fromUtf8( getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel).c_str() ) );
+}
+
+void
+OfxStrChoiceInstance::notify(const std::string &name,
+                             bool single,
+                             int num) OFX_EXCEPTION_SPEC
+{
+    OFX::Host::Param::StrChoiceInstance::notify(name, single, num);
+    if (name == kOfxParamPropChoiceOrder) {
+        setDisplayOrder();
+    }
+}
+
+void
+OfxStrChoiceInstance::setDisplayOrder()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    KnobChoicePtr knob = _imp->knob.lock();
+    if (!knob) {
+        return;
+    }
+    knob->setDisplayOrder( choiceDisplayOrderFromProperties( getProperties() ) );
+}
+
+// paramCopy: StrChoice params don't animate, and the value is the enum, not the option index (the two params
+// may have different options)
+OfxStatus
+OfxStrChoiceInstance::copyFrom(const OFX::Host::Param::Instance &instance,
+                               OfxTime /*offset*/,
+                               const OfxRangeD* /*range*/)
+{
+    const OfxStrChoiceInstance* other = dynamic_cast<const OfxStrChoiceInstance*>(&instance);
+    if (!other) {
+        return kOfxStatErrBadHandle;
+    }
+    KnobChoicePtr otherKnob = other->_imp->knob.lock();
+    if (!otherKnob) {
+        return kOfxStatErrBadHandle;
+    }
+
+    return set( otherKnob->getEntryID_mt_safe( otherKnob->getValue() ).c_str() );
+}
+
+KnobIPtr
+OfxStrChoiceInstance::getKnob() const
+{
+    return _imp->knob.lock();
 }
 
 ////////////////////////// OfxRGBAInstance /////////////////////////////////////////////////
@@ -3102,9 +3465,14 @@ OfxInteger2DInstance::copyFrom(const OFX::Host::Param::Instance &instance,
                                OfxTime offset,
                                const OfxRangeD* range)
 {
-    const OfxParamToKnob & other = dynamic_cast<const OfxParamToKnob &>(instance);
+    const OfxInteger2DInstance* other = dynamic_cast<const OfxInteger2DInstance*>(&instance);
 
-    return OfxKeyFrame::copyFrom(instance, *this, other.getKnob(), getKnob(), offset, range);
+    if (!other) {
+        return kOfxStatErrBadHandle;
+    }
+
+    // as OfxDouble2DInstance::copyFrom(): the knob of a rectangle holds its position and its size
+    return OfxKeyFrame::copyFrom(instance, *this, other->getKnob(), getKnob(), offset, range, other->_startIndex, _startIndex, 2);
 }
 
 ////////////////////////// OfxDouble3DInstance /////////////////////////////////////////////////

@@ -117,7 +117,7 @@ TEST(OfxContexts, UnsupportedPluginNotLoaded)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginRetimerOrFilter) ) {
         // the bundle was not loaded at all
-        NatronTestPlugin::reportSkipped(kNatronTestPluginRetimerOrFilter);
+        NatronTestPlugin::reportMissing(kNatronTestPluginRetimerOrFilter);
 
         return;
     }
@@ -129,7 +129,7 @@ TEST(OfxContexts, UnsupportedPluginNotLoaded)
 TEST(OfxContexts, UnsupportedContextNotDescribed)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginRetimerOrFilter) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginRetimerOrFilter);
+        NatronTestPlugin::reportMissing(kNatronTestPluginRetimerOrFilter);
 
         return;
     }
@@ -142,7 +142,7 @@ TEST(OfxContexts, UnsupportedContextNotDescribed)
 TEST(OfxContexts, MissingHostFeatureFallback)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginContextFallback) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginContextFallback);
+        NatronTestPlugin::reportMissing(kNatronTestPluginContextFallback);
 
         return;
     }

@@ -559,10 +559,7 @@ ProjectPrivate::runOnProjectSaveCallback(const std::string& filename,
             }
             std::string appID = _publicInterface->getApp()->getAppIDString();
             std::stringstream ss;
-            // In background mode, "app" stays app1, also for a Precomp's instance (see AppInstance::getAppIDString()).
-            if ( (appID != "app") && !appPTR->isBackground() ) {
-                ss << "app = " << appID << "\n";
-            }
+            ss << _publicInterface->getApp()->getAppVariableAssignment();
             ss << "ret = " << onProjectSave << "(\"" << filename << "\"," << appID << ",";
             if (autoSave) {
                 ss << "True)\n";
@@ -645,12 +642,7 @@ ProjectPrivate::runOnProjectCloseCallback()
             return;
         }
         std::string appID = _publicInterface->getApp()->getAppIDString();
-        std::string script;
-        // In background mode, "app" stays app1, also for a Precomp's instance (see AppInstance::getAppIDString()).
-        if ( (appID != "app") && !appPTR->isBackground() ) {
-            script = script +  "app = " + appID;
-        }
-        script = script + "\n" + onProjectClose + "(" + appID + ")\n";
+        const std::string script = _publicInterface->getApp()->getAppVariableAssignment() + onProjectClose + "(" + appID + ")\n";
         std::string err;
         std::string output;
         if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, &output) ) {
@@ -696,12 +688,7 @@ ProjectPrivate::runOnProjectLoadCallback()
         }
 
         std::string appID = _publicInterface->getApp()->getAppIDString();
-        std::string script;
-        // In background mode, "app" stays app1, also for a Precomp's instance (see AppInstance::getAppIDString()).
-        if ( (appID != "app") && !appPTR->isBackground() ) {
-            script =  script + "app = " + appID;
-        }
-        script =  script + "\n" + cb + "(" + appID + ")\n";
+        const std::string script = _publicInterface->getApp()->getAppVariableAssignment() + cb + "(" + appID + ")\n";
         std::string err;
         std::string output;
         if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, &output) ) {

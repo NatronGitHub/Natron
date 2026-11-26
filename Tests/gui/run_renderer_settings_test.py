@@ -28,19 +28,18 @@ runs a tiny project script with these settings, which checks that the settings h
 given on the command line and that the caches are in the given disk cache path, and exits with
 natron.quit(0). The exit status must be 0.
 
-Exit status: 0 on success, 1 on failure.
---debugger runs NatronRenderer under natron-lldb.sh (see run_gui_smoke_test.py), or set
-NATRON_TEST_WRAPPER.
+Exit status: 0 on success, 1 on failure. --debugger runs NatronRenderer under natron-lldb.sh, or set
+NATRON_TEST_WRAPPER (see natronrunner.py).
 """
 
 import os
-import shlex
 import shutil
-import subprocess
 import sys
 import tempfile
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+import natronrunner
+
+TIMEOUT = 300  # seconds
 
 # name, value given to --setting (a Python expression), value read back by the script
 SETTINGS = [
@@ -64,11 +63,11 @@ try:
     for name, expected in %(expected)r:
         value = settings.getParam(name).getValue()
         assert value == expected, "%%s is %%r, expected %%r" %% (name, value, expected)
-    cacheDir = os.environ["NATRON_SETTINGS_TEST_CACHE"]
-    assert settings.getParam("diskCachePath").getValue() == cacheDir, settings.getParam("diskCachePath").getValue()
+    cache_dir = os.environ["NATRON_SETTINGS_TEST_CACHE"]
+    assert settings.getParam("diskCachePath").getValue() == cache_dir, settings.getParam("diskCachePath").getValue()
     # the caches were created in the disk cache path given by --setting
     for cache in ("ViewerCache", "DiskCache"):
-        assert os.path.isdir(os.path.join(cacheDir, cache)), "no %%s in %%s: %%r" %% (cache, cacheDir, os.listdir(cacheDir))
+        assert os.path.isdir(os.path.join(cache_dir, cache)), "no %%s in %%s: %%r" %% (cache, cache_dir, os.listdir(cache_dir))
     # a tiny project
     app = natron.getInstance(0)
     dot = app.createNode("fr.inria.built-in.Dot")
@@ -87,46 +86,34 @@ def main(argv):
     if len(argv) < 2:
         sys.stderr.write(__doc__)
         return 2
-    wrapper = []
-    if "--debugger" in argv[2:]:
-        wrapper = [os.path.join(HERE, "natron-lldb.sh")]
-    elif os.environ.get("NATRON_TEST_WRAPPER"):
-        wrapper = shlex.split(os.environ["NATRON_TEST_WRAPPER"])
-    outDir = tempfile.mkdtemp(prefix="natron-settings-test-")
+    cmd_wrapper = natronrunner.wrapper(argv[2:])
+    out_dir = tempfile.mkdtemp(prefix="natron-settings-test-")
     try:
-        cacheDir = os.path.join(outDir, "cache").replace("\\", "/")
-        script = os.path.join(outDir, "settings_test.py")
+        cache_dir = os.path.join(out_dir, "cache").replace("\\", "/")
+        script = os.path.join(out_dir, "settings_test.py")
         with open(script, "w") as f:
             f.write(SCRIPT % {"expected": [(name, expected) for name, _, expected in SETTINGS]})
-        env = dict(os.environ)
+        env = natronrunner.natron_env(out_dir, XDG_CACHE_HOME=os.path.join(out_dir, "xdg-cache"),
+                                      NATRON_SETTINGS_TEST_CACHE=cache_dir)
         # the environment variable takes precedence over the diskCachePath setting (#1265): unset, so that the
         # test checks the setting. Before the setting applies, the first refreshDiskCacheLocation() uses the
         # default location: on Linux, a private one (XDG_CACHE_HOME), not the user's (#1569). macOS and Windows
         # have no environment override for it, but nothing is written there except a short-lived instance lock.
-        env.pop("NATRON_DISK_CACHE_PATH", None)
-        env["XDG_CACHE_HOME"] = os.path.join(outDir, "xdg-cache")
-        env["NATRON_SETTINGS_TEST_CACHE"] = cacheDir
-        # Debug builds: no trapped floating point exception (#1537), as with Natron --test
-        env["NATRON_NO_FP_TRAPS"] = "1"
-        cmd = wrapper + [argv[1], "--no-settings"]
+        del env["NATRON_DISK_CACHE_PATH"]
+        cmd = cmd_wrapper + [argv[1], "--no-settings"]
         # the disk cache path first: the caches are created there
-        cmd += ["--setting", "diskCachePath=%r" % cacheDir]
+        cmd += ["--setting", "diskCachePath=%r" % cache_dir]
         for name, value, _ in SETTINGS:
             cmd += ["--setting", "%s=%s" % (name, value)]
         cmd += ["-t", script]
-        print("Running: " + " ".join(cmd))
-        sys.stdout.flush()
-        try:
-            proc = subprocess.run(cmd, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                                  stderr=subprocess.STDOUT, timeout=300)
-        except subprocess.TimeoutExpired:
+        status, out = natronrunner.run(cmd, env, TIMEOUT)
+        sys.stdout.write(out)
+        if status is None:
             print("FAILED: timeout")
             return 1
-        out = proc.stdout.decode(errors="replace")
-        sys.stdout.write(out)
-        print("NatronRenderer exited with status %d" % proc.returncode)
+        print("NatronRenderer exited with status %d" % status)
         ok = True
-        if proc.returncode != 0:
+        if status != 0:
             print("FAILED: the exit status should be 0")
             ok = False
         if "settings test script passed" not in out:
@@ -136,7 +123,7 @@ def main(argv):
             print("renderer settings test passed")
         return 0 if ok else 1
     finally:
-        shutil.rmtree(outDir, ignore_errors=True)
+        shutil.rmtree(out_dir, ignore_errors=True)
 
 
 if __name__ == "__main__":

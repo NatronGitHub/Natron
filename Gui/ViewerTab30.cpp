@@ -289,15 +289,10 @@ ViewerTab::getChannelsString() const
 void
 ViewerTab::setChannels(const std::string & channelsStr)
 {
-    // The names of getChannelsString(), which the projects save, in the order of the channels combo box items
-    // (see setDisplayChannels()). The items are tr() labels ("Red", "Alpha"...): looking the name up among them
-    // failed for all but RGB and Luminance (#1550).
-    static const char* const channelsNames[] = { "Luminance", "RGB", "R", "G", "B", "A", "Matte" };
-
-    const int nChannels = sizeof(channelsNames) / sizeof(channelsNames[0]);
-
-    for (int index = 0; index < nChannels; ++index) {
-        if (channelsStr == channelsNames[index]) {
+    // The names of getChannelsString(), which the projects save, not the tr() labels of the combo box items
+    // ("Red", "Alpha"...): looking the name up among those failed for all but RGB and Luminance (#1550).
+    for (int index = 0; index < ViewerTabPrivate::channelsComboItemCount(); ++index) {
+        if ( channelsStr == getChannelsString( ViewerTabPrivate::channelsForComboIndex(index) ) ) {
             _imp->viewerChannels->setCurrentIndex_no_emit(index);
             setDisplayChannels(index, true);
 

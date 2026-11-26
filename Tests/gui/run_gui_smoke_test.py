@@ -50,42 +50,15 @@ It never takes a screen-level screenshot: only Natron's widgets are captured.
 """
 
 import os
-import shlex
 import shutil
-import signal
-import struct
 import subprocess
 import sys
 import tempfile
-import zlib
 
-SKIP = 77
-HERE = os.path.dirname(os.path.abspath(__file__))
+import natronrunner
 
 
-def writePNG(path, width=320, height=240):
-    """Writes an 8-bit RGB test image: a colour gradient with a white square."""
-    rows = []
-    for y in range(height):
-        row = bytearray([0])  # filter type None
-        for x in range(width):
-            if width // 3 < x < width // 2 and height // 3 < y < height // 2:
-                row += b"\xff\xff\xff"
-            else:
-                row += bytes((255 * x // width, 255 * y // height, 128))
-        rows.append(bytes(row))
-
-    def chunk(tag, data):
-        return struct.pack(">I", len(data)) + tag + data + struct.pack(">I", zlib.crc32(tag + data) & 0xffffffff)
-
-    with open(path, "wb") as f:
-        f.write(b"\x89PNG\r\n\x1a\n")
-        f.write(chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)))
-        f.write(chunk(b"IDAT", zlib.compress(b"".join(rows))))
-        f.write(chunk(b"IEND", b""))
-
-
-def hasDisplay():
+def has_display():
     if sys.platform.startswith("linux") or sys.platform.startswith("freebsd"):
         return bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
     if sys.platform == "darwin":
@@ -103,12 +76,12 @@ def hasDisplay():
 # for the auto-save of the project (--setting autoSaveDelay=1), then quits, so that the
 # test can check that the auto-save was removed.
 QUIT_SCRIPT = """
-import os
+import importlib, os, sys
 from NatronGui import natron
-try:
-    from PySide2 import QtCore, QtWidgets
-except ImportError:
-    from PySide6 import QtCore, QtWidgets
+# the PySide that NatronGui loaded (the one of Natron's Qt)
+_pyside = "PySide6" if "PySide6.QtCore" in sys.modules else "PySide2"
+QtCore = importlib.import_module(_pyside + ".QtCore")
+QtWidgets = importlib.import_module(_pyside + ".QtWidgets")
 
 autosaves = os.path.join(QtCore.QStandardPaths.writableLocation(QtCore.QStandardPaths.AppLocalDataLocation), "Autosaves")
 waited = [0]
@@ -153,58 +126,12 @@ before = autosaveFiles()
 QtCore.QTimer.singleShot(200, start)
 """
 
-WRAPPER = []
 # seconds, for each Natron run (NATRON_TEST_RUN_TIMEOUT overrides it, e.g. to test the timeout)
 RUN_TIMEOUT = int(os.environ.get("NATRON_TEST_RUN_TIMEOUT", "300"))
 
 
-def descendants(pid):
-    """The pids of all the descendants of pid (needs pgrep, else none)."""
-    try:
-        out = subprocess.check_output(["pgrep", "-P", str(pid)], stderr=subprocess.DEVNULL)
-    except (OSError, subprocess.CalledProcessError):
-        return []
-    ret = []
-    for c in out.split():
-        c = int(c)
-        ret += descendants(c) + [c]
-    return ret
-
-
-def killTree(p):
-    """Kills p, its process group, and all its descendants: under lldb, Natron runs in its
-    own process group, below debugserver, so killing the group of the wrapper is not enough."""
-    if sys.platform == "win32":
-        # no process groups nor SIGKILL: taskkill kills the whole tree
-        subprocess.call(["taskkill", "/T", "/F", "/PID", str(p.pid)],
-                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        try:
-            p.kill()
-        except OSError:
-            pass
-        p.wait()
-        return
-    # let a wrapper such as natron-lldb.sh kill its inferior first
-    try:
-        p.terminate()
-        p.wait(timeout=10)
-    except (OSError, subprocess.TimeoutExpired):
-        pass
-    pids = descendants(p.pid)
-    try:
-        os.killpg(p.pid, signal.SIGKILL)
-    except OSError:
-        pass
-    for pid in pids + [p.pid]:
-        try:
-            os.kill(pid, signal.SIGKILL)
-        except OSError:
-            pass
-    p.wait()
-
-
 def run(cmd, env):
-    cmd = WRAPPER + cmd
+    """Runs cmd (its output is not captured); returns its exit status, or None after a timeout."""
     print("Running: " + " ".join(cmd))
     sys.stdout.flush()
     # in its own process group, so that a timeout kills the wrapper and Natron
@@ -213,13 +140,13 @@ def run(cmd, env):
         return p.wait(timeout=RUN_TIMEOUT)
     except subprocess.TimeoutExpired:
         print("timeout: killing Natron and its wrapper")
-        killTree(p)
+        natronrunner.kill_tree(p)
         return None
 
 
-def checkAutosaves(outDir, mode):
+def check_autosaves(out_dir, mode):
     """The auto-save that appeared while the script ran must have been removed at quit."""
-    path = os.path.join(outDir, "autosave_%s.txt" % mode)
+    path = os.path.join(out_dir, "autosave_%s.txt" % mode)
     if not os.path.isfile(path):
         print("FAILED: the %s script did not finish" % mode)
         return False
@@ -239,28 +166,24 @@ def main(argv):
     if len(argv) < 2:
         sys.stderr.write(__doc__)
         return 2
-    natronBin = argv[1]
+    natron_bin = natronrunner.wrapper(argv[2:]) + [argv[1]]
     keep = "--keep" in argv[2:]
     strict = "--strict-exit" in argv[2:]
-    if "--debugger" in argv[2:]:
-        WRAPPER[:] = [os.path.join(HERE, "natron-lldb.sh")]
-    elif os.environ.get("NATRON_TEST_WRAPPER"):
-        WRAPPER[:] = shlex.split(os.environ["NATRON_TEST_WRAPPER"])
     if os.environ.get("CI") and os.environ.get("NATRON_GUI_TESTS") != "1":
         print("GUI smoke test skipped in CI (set NATRON_GUI_TESTS=1 to run it)")
-        return SKIP
-    if not hasDisplay():
+        return natronrunner.SKIP
+    if not has_display():
         print("GUI smoke test skipped: no display")
-        return SKIP
+        return natronrunner.SKIP
 
     # Debug builds: no trapped floating point exception (Mesa llvmpipe's threads inherit the trapping and
     # its shaders raise exceptions, #1537), as with Natron --test
     os.environ["NATRON_NO_FP_TRAPS"] = "1"
-    outDir = tempfile.mkdtemp(prefix="natron-gui-test-")
-    # a private disk cache (and OFX plug-in cache), removed with outDir, unless NATRON_DISK_CACHE_PATH is set:
+    out_dir = tempfile.mkdtemp(prefix="natron-gui-test-")
+    # a private disk cache (and OFX plug-in cache), removed with out_dir, unless NATRON_DISK_CACHE_PATH is set:
     # the user's one is shared by every Natron of this version, e.g. a concurrent test run (#1569)
     if not os.environ.get("NATRON_DISK_CACHE_PATH"):
-        os.environ["NATRON_DISK_CACHE_PATH"] = os.path.join(outDir, "cache")
+        os.environ["NATRON_DISK_CACHE_PATH"] = os.path.join(out_dir, "cache")
     try:
         # 1. natron.quit(exitCode) sets the exit status, and
         # 2. closing the main window doesn't block on "Save changes?"
@@ -268,54 +191,57 @@ def main(argv):
         env = dict(os.environ)
         env.pop("OFX_PLUGIN_PATH", None)
         for mode, expected in (("quit", 42), ("close", 0)):
-            quitScript = os.path.join(outDir, "quit_%s.py" % mode)
-            with open(quitScript, "w") as f:
-                f.write("MODE = %r\nOUTDIR = %r\n" % (mode, outDir) + QUIT_SCRIPT)
-            status = run([natronBin, "--no-dialogs", "--no-settings",
-                          "--setting", "useStdOFXPluginsLocation=False",
-                          "--setting", "autoSaveDelay=1", quitScript], env)
+            quit_script = os.path.join(out_dir, "quit_%s.py" % mode)
+            with open(quit_script, "w") as f:
+                f.write("MODE = %r\nOUTDIR = %r\n" % (mode, out_dir) + QUIT_SCRIPT)
+            status = run(natron_bin + ["--no-dialogs", "--no-settings",
+                                       "--setting", "useStdOFXPluginsLocation=False",
+                                       "--setting", "autoSaveDelay=1", quit_script], env)
             print("Natron exited with status %s" % status)
             if status != expected:
                 print("FAILED: %s should exit with status %d" % ("natron.quit(42)" if mode == "quit" else "closing the main window", expected))
                 return 1
-            if not checkAutosaves(outDir, mode):
+            if not check_autosaves(out_dir, mode):
                 return 1
 
         # 3. the smoke test
-        image = os.path.join(outDir, "input.png")
-        writePNG(image)
+        image = os.path.join(out_dir, "input.png")
+        natronrunner.write_png(image)
         env = dict(os.environ)
-        env["NATRON_GUI_TEST_OUTDIR"] = outDir
+        env["NATRON_GUI_TEST_OUTDIR"] = out_dir
         env["NATRON_GUI_TEST_IMAGE"] = image
-        status = run([natronBin, "--no-dialogs", "--no-settings", os.path.join(HERE, "gui_smoke_test_script.py")], env)
+        script = os.path.join(natronrunner.HERE, "gui_smoke_test_script.py")
+        status = run(natron_bin + ["--no-dialogs", "--no-settings", script], env)
         print("Natron exited with status %s" % status)
         if status is None:
             return 1
-        statusFile = os.path.join(outDir, "status.txt")
-        scriptStatus = None
-        if os.path.isfile(statusFile):
-            with open(statusFile) as f:
-                scriptStatus = int(f.read().strip())
-        if scriptStatus is None:
+        status_file = os.path.join(out_dir, "status.txt")
+        script_status = None
+        if os.path.isfile(status_file):
+            with open(status_file) as f:
+                script_status = int(f.read().strip())
+        if script_status is None:
             print("FAILED: the test script did not finish")
             return 1
-        if status != scriptStatus:
+        if status != script_status:
             print("WARNING: the test script called natron.quit(%d), but Natron exited with status %d: "
-                  "crash at exit, see https://github.com/NatronGitHub/Natron/issues/1253" % (scriptStatus, status))
+                  "crash at exit, see https://github.com/NatronGitHub/Natron/issues/1253" % (script_status, status))
             if strict:
                 return 1
-        if scriptStatus == 0:
+        if script_status == 0:
             for name in ("mainWindow.png", "Viewer1.png"):
-                if not os.path.isfile(os.path.join(outDir, name)):
+                if not os.path.isfile(os.path.join(out_dir, name)):
                     print("FAILED: missing screenshot " + name)
                     return 1
             print("GUI smoke test passed")
+        elif script_status == natronrunner.SKIP:
+            print("GUI smoke test: runs 1 and 2 passed, run 3 (the smoke test script) skipped")
         if keep:
-            print("screenshots kept in " + outDir)
-        return scriptStatus
+            print("screenshots kept in " + out_dir)
+        return script_status
     finally:
         if not keep:
-            shutil.rmtree(outDir, ignore_errors=True)
+            shutil.rmtree(out_dir, ignore_errors=True)
 
 
 if __name__ == "__main__":

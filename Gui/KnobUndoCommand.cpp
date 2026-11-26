@@ -549,36 +549,15 @@ MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
         return false;
     }
 
-    // if all knobs from the new command are included in the old command, ignore the createNew flag and merge them anyway
+    // A new edit block is merged into the previous command only if the parameter it changes first (the only one in
+    // its createNew command; the rest of the block merges unconditionally) was changed by the previous command,
+    // e.g. a plug-in that sets the same parameters in one block at each event of a gesture. The lookup uses the
+    // map's own ordering (std::owner_less), so that the result doesn't depend on heap addresses (#1445).
     if ( knobCommand->createNew && (_overlayGesture == 0) ) {
-        bool ignoreCreateNew = false;
-        //qDebug() << "mergeWith" << knobs.size() << "with" << knobCommand->knobs.size();
-        if ( knobs.size() >= knobCommand->knobs.size() ) {
-            ParamsMap::const_iterator thisIt = knobs.begin();
-            ParamsMap::const_iterator otherIt = knobCommand->knobs.begin();
-            bool oneDifferent = false;
-            for (; thisIt != knobs.end() && otherIt != knobCommand->knobs.end(); ++thisIt) {
-                KnobGuiPtr thisItKey = thisIt->first.lock();
-                KnobGuiPtr otherItKey = otherIt->first.lock();
-
-                if (otherIt->first.lock() < thisIt->first.lock()) {
-                    //qDebug() << thisItKey->getKnob()->getName().c_str() << "!=" << otherItKey->getKnob()->getName().c_str();
-                    
-                    oneDifferent = true;
-                    break;
-                } else if (!(thisIt->first.lock() < otherIt->first.lock())) {
-                    //qDebug() << thisItKey->getKnob()->getName().c_str() << "==" << otherItKey->getKnob()->getName().c_str();
-                    ++otherIt;
-                }
+        for (ParamsMap::const_iterator otherIt = knobCommand->knobs.begin(); otherIt != knobCommand->knobs.end(); ++otherIt) {
+            if ( knobs.find(otherIt->first) == knobs.end() ) {
+                return false;
             }
-            if (!oneDifferent) {
-                ignoreCreateNew = true;
-            }
-        }
-        
-        if (!ignoreCreateNew) {
-            //qDebug() << "mergeWith failed";
-            return false;
         }
     }
     //qDebug() << "mergeWith: list of existing knob/values:";
@@ -728,7 +707,7 @@ RestoreDefaultsCommand::undo()
 void
 RestoreDefaultsCommand::redo()
 {
-    std::list<SequenceTime> times;
+    std::list<SequenceTime> times; // the keyframes that are removed
     KnobIPtr first = _knobs.front().lock();
     AppInstancePtr app;
     KnobHolder* holder = first ? first->getHolder() : nullptr;
@@ -739,8 +718,6 @@ RestoreDefaultsCommand::redo()
         holder->beginChanges();
     }
 
-
-    // the keyframes that are removed
     std::list<KnobIPtr> knobs;
     for (std::list<KnobIWPtr>::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
         KnobIPtr itKnob = it->lock();

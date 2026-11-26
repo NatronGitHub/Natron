@@ -101,6 +101,7 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
+#include <QSet>
 #include <QCoreApplication>
 #include <QFile>
 #include <QSysInfo>
@@ -1976,6 +1977,21 @@ AppManager::getAllNonOFXPluginsPaths() const
         ///look-in the bundled plug-ins
         templatesSearchPath.push_back(natronBundledPluginsPath);
     }
+
+    // Last, the PyPlugs that ship in the loaded OFX plug-in bundles (<bundle>/Contents/Resources/PyPlugs), so that
+    // all the paths above override them (the first PyPlug found with an ID and version wins), unless one of the
+    // paths above already is such a directory
+    if (_imp->ofxHost) {
+        QStringList cleanedSearchPath;
+        Q_FOREACH(const QString &dir, templatesSearchPath) {
+            cleanedSearchPath.push_back( QDir::cleanPath(dir) );
+        }
+        Q_FOREACH(const QString &bundleDir, _imp->ofxHost->getBundlesPyPlugsPaths()) {
+            if ( !cleanedSearchPath.contains(bundleDir) ) {
+                templatesSearchPath.push_back(bundleDir);
+            }
+        }
+    }
     qDebug() << "templatesSearchPath: " << templatesSearchPath;
     
     return templatesSearchPath;
@@ -2195,6 +2211,10 @@ AppManager::loadPythonGroups()
 
     appPTR->setLoadingStatus( tr("Loading PyPlugs...") );
 
+    // Python imports a module from the first directory of sys.path that has it, which is the first of the search
+    // path: a module of the same name in a later directory (e.g. the same PyPlug in two OFX bundles, or a copy in
+    // ~/.Natron of one that ships with Natron or a plug-in) would import the first one again, and register nothing.
+    QSet<QString> loadedModuleNames;
     Q_FOREACH(const QString &plugin, allPlugins) {
         QString moduleName = plugin;
         QString modulePath;
@@ -2208,7 +2228,10 @@ AppManager::loadPythonGroups()
             modulePath = moduleName.mid(0, lastSlash + 1);
             moduleName = moduleName.remove(0, lastSlash + 1);
         }
-
+        if ( loadedModuleNames.contains(moduleName) ) {
+            qDebug() << "Not loading" << plugin << ": the PyPlug module" << moduleName << "was loaded from an earlier search path";
+            continue;
+        }
 
         // A project saved as a Python script, e.g. next to the PyPlugs it uses, is not a PyPlug
         if ( Project::isPythonProjectFile(plugin) ) {
@@ -2271,6 +2294,7 @@ AppManager::loadPythonGroups()
 
             p->setPythonModule(modulePath + moduleName);
             p->setToolsetScript(isToolset);
+            loadedModuleNames.insert(moduleName);
         }
     }
 } // AppManager::loadPythonGroups

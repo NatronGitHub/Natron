@@ -114,13 +114,18 @@ struct Graph
     }
 };
 
-bool
-canRunTest(const char* pluginID)
+// false, and the test is skipped (or fails, see reportMissing()), if one of the test plug-ins was not loaded:
+// pluginID, the generator, and downstreamID if not null
+[[nodiscard]] bool
+canRunTest(const char* pluginID,
+           const char* downstreamID = nullptr)
 {
-    if ( !NatronTestPlugin::isAvailable(pluginID) || !NatronTestPlugin::isAvailable(kNatronTestPluginGenerator) ) {
-        NatronTestPlugin::reportSkipped(pluginID);
+    for (const char* id : { pluginID, kNatronTestPluginGenerator, downstreamID }) {
+        if ( id && !NatronTestPlugin::isAvailable(id) ) {
+            NatronTestPlugin::reportMissing(id);
 
-        return false;
+            return false;
+        }
     }
 
     return true;
@@ -209,7 +214,7 @@ TEST(SequentialRender, StatusIsOneOnlyInFrameOrder)
 // images of the render, without rendering the sequential node again for each clipGetImage.
 TEST(SequentialRender, DownstreamNodeRendersSequentialNodeOnce)
 {
-    if ( !canRunTest(kNatronTestPluginSequential) || !NatronTestPlugin::isAvailable(kNatronTestPluginMultiPAR) ) {
+    if ( !canRunTest(kNatronTestPluginSequential, kNatronTestPluginMultiPAR) ) {
         return;
     }
     const std::string id("Sequential");
@@ -231,7 +236,7 @@ TEST(SequentialRender, DownstreamNodeRendersSequentialNodeOnce)
 // same render from the cache: the sequential node renders each frame once, in frame order.
 TEST(SequentialRender, TemporalNodeDownstream)
 {
-    if ( !canRunTest(kNatronTestPluginSequential) || !NatronTestPlugin::isAvailable(kNatronTestPluginTimeBlur) ) {
+    if ( !canRunTest(kNatronTestPluginSequential, kNatronTestPluginTimeBlur) ) {
         return;
     }
     const std::string id("Sequential");

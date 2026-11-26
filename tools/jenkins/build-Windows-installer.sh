@@ -337,8 +337,8 @@ if [ -x "${NATRON_PYTHON}" ]; then
     # get-pip.py of a fixed pypa/get-pip commit (pip 26.3, Python 3.10 or later), checked against
     # its sha256 before it runs: the bundle's Python runs it (ensurepip is not shipped, see
     # python-exclude.txt). To update: take the commit of a newer pypa/get-pip tag and its sha256.
-    GET_PIP_COMMIT=03f582d4710047617da50bd36a871b596e651363
-    GET_PIP_SHA256=f7654c5589318e1d0789575b2586ce76937eb9943602adda8b15b3be3aa0dac3
+    GET_PIP_COMMIT=8c427468071b5d15717839ffd76c53a96df8b703
+    GET_PIP_SHA256=356e0d0de21cdc348c3394084d90939b85e4246c4d14c76aee6ca4f46646ea98
     rm -f get-pip.py
     $CURL --fail --output get-pip.py "https://raw.githubusercontent.com/pypa/get-pip/${GET_PIP_COMMIT}/public/get-pip.py"
     if ! echo "${GET_PIP_SHA256}  get-pip.py" | sha256sum -c -; then

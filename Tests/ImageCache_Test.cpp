@@ -49,22 +49,13 @@
 #include "Engine/Project.h"
 #include "Engine/ViewIdx.h"
 
+#include "TestUtils.h"
+
 NATRON_NAMESPACE_USING
 
 namespace {
 typedef Cache<Image> ImageCache;
 typedef std::shared_ptr<ImageCache> ImageCachePtr;
-
-NodePtr
-createDot()
-{
-    AppInstancePtr app = appPTR->getTopLevelInstance();
-    CreateNodeArgs args(PLUGINID_NATRON_DOT, app->getProject());
-    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-
-    return app->createNode(args);
-}
 
 // An in-memory cache, like the NodeCache (see AppManager::initializeCaches())
 class ImageCacheTest
@@ -73,9 +64,9 @@ class ImageCacheTest
 protected:
     virtual void SetUp() OVERRIDE
     {
-        _holderA = createDot();
+        _holderA = NatronTest::createNode(PLUGINID_NATRON_DOT);
         ASSERT_TRUE( bool(_holderA) );
-        _holderB = createDot();
+        _holderB = NatronTest::createNode(PLUGINID_NATRON_DOT);
         ASSERT_TRUE( bool(_holderB) );
         std::string cacheName = std::string("TestImageCache") + QString::number( QCoreApplication::applicationPid() ).toStdString();
         _cache = std::make_shared<ImageCache>(cacheName, NATRON_CACHE_VERSION, 1024ULL * 1024ULL * 1024ULL, 1.);

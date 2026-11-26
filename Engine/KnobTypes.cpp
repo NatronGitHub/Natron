@@ -508,6 +508,7 @@ KnobChoice::KnobChoice(KnobHolder* holder,
     , _currentEntry()
     , _addNewChoice(false)
     , _isCascading(false)
+    , _optionRestoration(eOptionRestorationMatch)
 {
 }
 
@@ -520,6 +521,7 @@ KnobChoice::KnobChoice(KnobHolder* holder,
     , _currentEntry()
     , _addNewChoice(false)
     , _isCascading(false)
+    , _optionRestoration(eOptionRestorationMatch)
 {
 }
 
@@ -657,15 +659,26 @@ KnobChoice::findAndSetOldChoice()
 {
 
     int found = -1;
+    // read the default before locking _entriesMutex (it locks the values)
+    const int defaultIndex = (_optionRestoration == eOptionRestorationExactIDOrDefault) ? getDefaultValue(0) : -1;
+    // the missing option that stays the active entry, if the value becomes the default
+    ChoiceOption missing;
 
     {
         QMutexLocker k(&_entriesMutex);
 
         if ( !_currentEntry.id.empty() ) {
             ChoiceOption matched;
-            found = choiceMatch(_currentEntry.id, _entries, &matched);
+            found = matchOption_locked(_currentEntry.id, &matched);
             if (found != -1) {
                 _currentEntry = matched;
+            } else if ( (_optionRestoration == eOptionRestorationExactIDOrDefault) &&
+                        (defaultIndex >= 0) && ( defaultIndex < (int)_entries.size() ) ) {
+                // The selected option is not in the new options: the value is the default, but the option
+                // stays the active entry, so that it is selected again if the plug-in adds it (e.g. while it
+                // rebuilds its options one at a time) and the menu shows it as missing otherwise.
+                found = defaultIndex;
+                missing = _currentEntry;
             }
         }
     }
@@ -677,15 +690,40 @@ KnobChoice::findAndSetOldChoice()
         unblockValueChanges();
         endChanges();
     }
+    if ( !missing.id.empty() ) {
+        // setValue() made the default the active entry (onInternalValueChanged())
+        QMutexLocker k(&_entriesMutex);
+        _currentEntry = missing;
+    }
+}
+
+std::vector<int>
+KnobChoice::validDisplayOrder(const std::vector<int>& displayOrder,
+                              std::size_t nEntries)
+{
+    if ( displayOrder.size() != nEntries ) {
+        return std::vector<int>();
+    }
+    std::vector<bool> seen(nEntries, false);
+    for (int index : displayOrder) {
+        if ( (index < 0) || ( index >= (int)nEntries ) || seen[index] ) {
+            return std::vector<int>();
+        }
+        seen[index] = true;
+    }
+
+    return displayOrder;
 }
 
 bool
-KnobChoice::populateChoices(const std::vector<ChoiceOption> &entries)
+KnobChoice::populateChoices(const std::vector<ChoiceOption> &entries,
+                            const std::vector<int>& displayOrder)
 {
     bool hasChanged = false;
     {
         QMutexLocker l(&_entriesMutex);
         _entries = entries;
+        _displayOrder = validDisplayOrder( displayOrder, entries.size() );
         for (std::size_t i = 0; i < _entries.size(); ++i) {
 
             // The ID cannot be empty, this is the only way to uniquely identify the choice.
@@ -722,6 +760,7 @@ KnobChoice::resetChoices()
     {
         QMutexLocker l(&_entriesMutex);
         _entries.clear();
+        _displayOrder.clear();
     }
     findAndSetOldChoice();
     if (_signalSlotHandler) {
@@ -736,6 +775,9 @@ KnobChoice::appendChoice(const ChoiceOption& entry)
     {
         QMutexLocker l(&_entriesMutex);
         _entries.push_back(entry);
+        if ( !_displayOrder.empty() ) {
+            _displayOrder.push_back( (int)_entries.size() - 1 );
+        }
         ChoiceOption& opt = _entries.back();
 
         // If label is empty, set to the option id
@@ -759,6 +801,44 @@ KnobChoice::getEntries_mt_safe() const
     return _entries;
 }
 
+void
+KnobChoice::setDisplayOrder(const std::vector<int>& displayOrder)
+{
+    {
+        QMutexLocker l(&_entriesMutex);
+        std::vector<int> order = validDisplayOrder( displayOrder, _entries.size() );
+        if (order == _displayOrder) {
+            return;
+        }
+        _displayOrder.swap(order);
+    }
+    Q_EMIT populated();
+}
+
+std::vector<int>
+KnobChoice::getExplicitDisplayOrder_mt_safe() const
+{
+    QMutexLocker l(&_entriesMutex);
+
+    return _displayOrder;
+}
+
+std::vector<int>
+KnobChoice::getDisplayOrder_mt_safe() const
+{
+    QMutexLocker l(&_entriesMutex);
+
+    if ( !_displayOrder.empty() ) {
+        return _displayOrder;
+    }
+    std::vector<int> order( _entries.size() );
+    for (std::size_t i = 0; i < order.size(); ++i) {
+        order[i] = (int)i;
+    }
+
+    return order;
+}
+
 bool
 KnobChoice::isActiveEntryPresentInEntries() const
 {
@@ -779,6 +859,8 @@ KnobChoice::isActiveEntryPresentInEntries() const
 ChoiceOption
 KnobChoice::getEntry(int v) const
 {
+    QMutexLocker l(&_entriesMutex);
+
     if ( (int)_entries.size() <= v || v < 0) {
         throw std::runtime_error( std::string("KnobChoice::getEntry: index out of range") );
     }
@@ -865,13 +947,21 @@ KnobChoice::getHintToolTipFull() const
 {
     assert( QThread::currentThread() == qApp->thread() );
 
+    // a copy: the other mutexes (hint...) are not taken while _entriesMutex is held
+    std::vector<ChoiceOption> entries;
+    std::vector<int> displayOrder;
+    {
+        QMutexLocker l(&_entriesMutex);
+        entries = _entries;
+        displayOrder = _displayOrder;
+    }
     int gothelp = 0;
 
     // list values that either have help or have label != id
-    if ( !_entries.empty() ) {
-        assert( _entries.size() == _entries.size() );
-        for (U32 i = 0; i < _entries.size(); ++i) {
-            if ( !_entries.empty() && ( (_entries[i].id != _entries[i].label) || !_entries[i].tooltip.empty() ) ) {
+    if ( !entries.empty() ) {
+        assert( entries.size() == entries.size() );
+        for (U32 i = 0; i < entries.size(); ++i) {
+            if ( !entries.empty() && ( (entries[i].id != entries[i].label) || !entries[i].tooltip.empty() ) ) {
                 ++gothelp;
             }
         }
@@ -891,14 +981,17 @@ KnobChoice::getHintToolTipFull() const
     }
     // param may have no hint but still have per-option help
     if (gothelp) {
-        for (U32 i = 0; i < _entries.size(); ++i) {
-            if ( !_entries[i].tooltip.empty() ) { // no help line is needed if help is unavailable for this option
-                std::string entry = StrUtils::trim_copy(_entries[i].label);
+        // in the order of the menu (kOfxParamPropChoiceOrder)
+        const bool natural = ( displayOrder.size() != entries.size() );
+        for (U32 k = 0; k < entries.size(); ++k) {
+            const U32 i = natural ? k : (U32)displayOrder[k];
+            if ( !entries[i].tooltip.empty() ) { // no help line is needed if help is unavailable for this option
+                std::string entry = StrUtils::trim_copy(entries[i].label);
                 std::replace_if(entry.begin(), entry.end(), ::isspace, ' ');
-                if (_entries[i].label != _entries[i].id) {
-                    entry += "  (" + _entries[i].id + ")";
+                if (entries[i].label != entries[i].id) {
+                    entry += "  (" + entries[i].id + ")";
                 }
-                std::string help = StrUtils::trim_copy(_entries[i].tooltip);
+                std::string help = StrUtils::trim_copy(entries[i].tooltip);
                 std::replace_if(help.begin(), help.end(), ::isspace, ' ');
                 if ( isHintInMarkdown() ) {
                     ss << "* **" << entry << "**";
@@ -907,7 +1000,7 @@ KnobChoice::getHintToolTipFull() const
                 }
                 ss << ": ";
                 ss << help;
-                if (i < _entries.size() - 1) {
+                if (k < entries.size() - 1) {
                     ss << '\n';
                 }
             }
@@ -925,7 +1018,7 @@ KnobChoice::setValueFromID(const std::string & value,
     int i;
     {
         QMutexLocker k(&_entriesMutex);
-        i = choiceMatch(value, _entries, &_currentEntry);
+        i = matchOption_locked(value, &_currentEntry);
     }
     if (i >= 0) {
         return setValue(i, ViewIdx(0), dimension, turnOffAutoKeying);
@@ -942,7 +1035,11 @@ void
 KnobChoice::setDefaultValueFromIDWithoutApplying(const std::string & value,
                                                     int dimension)
 {
-    int i = choiceMatch(value, _entries, 0);
+    int i;
+    {
+        QMutexLocker k(&_entriesMutex);
+        i = matchOption_locked(value, 0);
+    }
     if (i >= 0) {
         return setDefaultValueWithoutApplying(i, dimension);
     }
@@ -953,11 +1050,43 @@ void
 KnobChoice::setDefaultValueFromID(const std::string & value,
                                      int dimension)
 {
-    int i = choiceMatch(value, _entries, 0);
+    int i;
+    {
+        QMutexLocker k(&_entriesMutex);
+        i = matchOption_locked(value, 0);
+    }
     if (i >= 0) {
         return setDefaultValue(i, dimension);
     }
     throw std::runtime_error(std::string("KnobChoice::setDefaultValueFromLabel: unknown label ") + value);
+}
+
+int
+KnobChoice::matchOption_locked(const std::string& optionID,
+                               ChoiceOption* matchedEntry) const
+{
+    if (_optionRestoration == eOptionRestorationMatch) {
+        return choiceMatch(optionID, _entries, matchedEntry);
+    }
+    for (std::size_t i = 0; i < _entries.size(); ++i) {
+        if (_entries[i].id == optionID) {
+            if (matchedEntry) {
+                *matchedEntry = _entries[i];
+            }
+
+            return (int)i;
+        }
+    }
+
+    return -1;
+}
+
+std::string
+KnobChoice::getEntryID_mt_safe(int index) const
+{
+    QMutexLocker l(&_entriesMutex);
+
+    return ( (index >= 0) && ( index < (int)_entries.size() ) ) ? _entries[index].id : std::string();
 }
 
 // try to match entry id first, then label
@@ -1120,7 +1249,7 @@ KnobChoice::choiceRestorationId(KnobChoice* knob,
     int i;
     {
         QMutexLocker k(&_entriesMutex);
-        i = choiceMatch(optionID, _entries, &_currentEntry);
+        i = matchOption_locked(optionID, &_currentEntry);
     }
 
     if (i >= 0) {
@@ -1147,9 +1276,16 @@ KnobChoice::choiceRestoration(KnobChoice* knob,
     }
     
 
+    // read the default before locking _entriesMutex (it locks the values)
+    const int defaultIndex = getDefaultValue(0);
     {
         QMutexLocker k(&_entriesMutex);
-        if (id >= 0) {
+        if ( (id < 0) && (_optionRestoration == eOptionRestorationExactIDOrDefault) &&
+             (defaultIndex >= 0) && ( defaultIndex < (int)_entries.size() ) ) {
+            // the option was removed: "it is recommended that the host use the default value"
+            id = defaultIndex;
+        }
+        if ( (id >= 0) && ( id < (int)_entries.size() ) ) {
             // we found a reasonable id
             _currentEntry = _entries[id]; // avoid numerous warnings in the GUI
         } else {
@@ -1168,7 +1304,7 @@ KnobChoice::onKnobAboutToAlias(const KnobIPtr &slave)
     KnobChoice* isChoice = dynamic_cast<KnobChoice*>( slave.get() );
 
     if (isChoice) {
-        populateChoices(isChoice->getEntries_mt_safe());
+        populateChoices( isChoice->getEntries_mt_safe(), isChoice->getExplicitDisplayOrder_mt_safe() );
     }
 }
 
@@ -1180,7 +1316,7 @@ KnobChoice::onOriginalKnobPopulated()
     if (!isChoice) {
         return;
     }
-    populateChoices(isChoice->_entries);
+    populateChoices( isChoice->getEntries_mt_safe(), isChoice->getExplicitDisplayOrder_mt_safe() );
 }
 
 void
@@ -1198,7 +1334,7 @@ KnobChoice::onOriginalKnobEntryAppend()
         return;
     }
 
-    populateChoices(isChoice->_entries);
+    populateChoices( isChoice->getEntries_mt_safe(), isChoice->getExplicitDisplayOrder_mt_safe() );
 }
 
 void
@@ -2694,48 +2830,6 @@ const std::string&
 KnobLayers::typeNameStatic()
 {
     return _typeNameStr;
-}
-
-KnobIPtr
-createKnobCopy(const KnobIPtr & originalKnob)
-{
-    const std::string & typeName = originalKnob->typeName();
-    KnobIPtr copy;
-    int dimension = originalKnob->getDimension();
-
-    if ( typeName == KnobInt::typeNameStatic() ) {
-        copy = std::make_shared<KnobInt>((KnobHolder*)NULL, std::string(), dimension, false);
-    } else if ( typeName == KnobBool::typeNameStatic() ) {
-        copy = std::make_shared<KnobBool>((KnobHolder*)NULL, std::string(), dimension, false);
-    } else if ( typeName == KnobDouble::typeNameStatic() ) {
-        copy = std::make_shared<KnobDouble>((KnobHolder*)NULL, std::string(), dimension, false);
-    } else if ( typeName == KnobChoice::typeNameStatic() ) {
-        copy = std::make_shared<KnobChoice>((KnobHolder*)NULL, std::string(), dimension, false);
-    } else if ( typeName == KnobString::typeNameStatic() ) {
-        copy = std::make_shared<KnobString>((KnobHolder*)NULL, std::string(), dimension, false);
-    } else if ( typeName == KnobBytes::typeNameStatic() ) {
-        copy = std::make_shared<KnobBytes>((KnobHolder*)NULL, std::string(), dimension, false);
-    } else if ( typeName == KnobParametric::typeNameStatic() ) {
-        copy = std::make_shared<KnobParametric>((KnobHolder*)NULL, std::string(), dimension, false);
-    } else if ( typeName == KnobColor::typeNameStatic() ) {
-        copy = std::make_shared<KnobColor>((KnobHolder*)NULL, std::string(), dimension, false);
-    } else if ( typeName == KnobPath::typeNameStatic() ) {
-        copy = std::make_shared<KnobPath>((KnobHolder*)NULL, std::string(), dimension, false);
-    } else if ( typeName == KnobFile::typeNameStatic() ) {
-        copy = std::make_shared<KnobFile>((KnobHolder*)NULL, std::string(), dimension, false);
-    } else if ( typeName == KnobOutputFile::typeNameStatic() ) {
-        copy = std::make_shared<KnobOutputFile>((KnobHolder*)NULL, std::string(), dimension, false);
-    }
-
-    if (!copy) {
-        return KnobIPtr();
-    }
-    copy->populate();
-
-    ///make a clone of the original knob at that time and stash it
-    copy->clone(originalKnob);
-
-    return copy;
 }
 
 NATRON_NAMESPACE_EXIT

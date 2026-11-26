@@ -1,7 +1,8 @@
 name: Build Installer
 
 # The Windows installer (Setup.exe and the portable zip, #1498): built weekly (Sunday, on the
-# default branch), on demand, and for release tags; never on pull requests. The weekly run is never
+# default branch), on demand, and for release tags; never on pull requests. On pre-release tags, the
+# zip and the test results are attached to the GitHub pre-release (the release job). The weekly run is never
 # skipped, even if the branch didn't change: MSYS2 (setup-msys2 with update: true) is a rolling
 # toolchain. Every run uses the package repository pinned by
 # tools/MINGW-packages/windows_pacman_repo_version.txt (natron_package_repo-<version>.zip on the
@@ -28,9 +29,7 @@ on:
     tags:
     - 'v*'
 
-# A new manual run cancels the previous manual run of the same branch; scheduled runs, tag pushes
-# and manual runs on a tag are never cancelled. Each event has its own group, so that a manual run
-# doesn't cancel a scheduled or tag-push run either.
+# Only a manual run on a branch cancels the previous manual run of that branch (one group per event).
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'workflow_dispatch' && !startsWith(github.ref, 'refs/tags/') }}
@@ -47,8 +46,7 @@ env:
   # built by these scripts (MINGW64, qmake)
   BASELINE_INSTALLER_URL: 'https://github.com/NatronGitHub/Natron/releases/download/v2.6.0-alpha1/Natron-RB-2.6-202305242302-b9a9b81-Windows-x86_64.zip'
   # how long the artifacts are kept: 14 days for the weekly runs (enough to compare two of them), the
-  # repository's maximum (90) for the manual and tag runs, whose installers no job attaches to a
-  # release yet
+  # repository's maximum (90) for the manual and tag runs
   ARTIFACT_RETENTION_DAYS: ${{ github.event_name == 'schedule' && '14' || '90' }}
 
 jobs:
@@ -111,6 +109,9 @@ jobs:
             echo "::error::${MINGW_PACKAGE_PREFIX}-natron-build-deps-qt5 could not be installed (unresolvable dependencies, see above)"
             exit 1
           fi
+          # for the Setup.exe step, which runs after "Uninstall Natron dependencies"
+          SETUP_VERSION=$(pacman -Q ${MINGW_PACKAGE_PREFIX}-natron-setup | cut -d' ' -f2)
+          echo "NATRON_SETUP_VERSION=${SETUP_VERSION}" >> $GITHUB_ENV
 
       - name: Build
         id: build
@@ -142,6 +143,7 @@ jobs:
 
           echo "INSTALLER_NAME=${INSTALLER_NAME}" >> $GITHUB_OUTPUT
           echo "INSTALLER_DIR=$(cygpath -m ${INSTALLER_DIR})" >> $GITHUB_OUTPUT
+          echo "INSTALLER_ZIP=$(cygpath -m ${INSTALLER_ZIP_UNIX})" >> $GITHUB_OUTPUT
           # the bundled DLLs and where they come from (genDllVersions.sh)
           echo "DLL_LIST=$(cygpath -m ${ARCHIVE_DIR}/${INSTALLER_NAME}-dlls.txt)" >> $GITHUB_OUTPUT
 
@@ -149,11 +151,14 @@ jobs:
           TEST_RESULTS_NAME="${INSTALLER_NAME}-tests"
           echo "TEST_RESULTS_NAME=${TEST_RESULTS_NAME}" >> $GITHUB_OUTPUT
           echo "TEST_RESULTS_FILE=$(cygpath -m ${TEST_RESULTS_FILE})" >> $GITHUB_OUTPUT
+          # runTests.sh's summary.txt (the counts and RESULT: PASS or FAIL)
+          echo "TEST_SUMMARY_FILE=$(cygpath -m ${ARCHIVE_DIR}/${INSTALLER_NAME}-tests-summary.txt)" >> $GITHUB_OUTPUT
 
-          TEST_FAILURES_DIR="${ARCHIVE_DIR}/${INSTALLER_NAME}-unit_tests_failures"
+          # runUnitTests.sh zips the failed tests' outputs (only if a test failed)
+          TEST_FAILURES_ZIP="${ARCHIVE_DIR}/${INSTALLER_NAME}-unit_tests_failures.zip"
           TEST_FAILURES_NAME="${INSTALLER_NAME}-unit_tests_failures"
           echo "TEST_FAILURES_NAME=${TEST_FAILURES_NAME}" >> $GITHUB_OUTPUT
-          echo "TEST_FAILURES_DIR=$(cygpath -m ${TEST_FAILURES_DIR})" >> $GITHUB_OUTPUT
+          echo "TEST_FAILURES_ZIP=$(cygpath -m ${TEST_FAILURES_ZIP})" >> $GITHUB_OUTPUT
 
       - name: Build verify_plugin_loads binary
         run: |
@@ -164,7 +169,8 @@ jobs:
       - name: Compare with the previous Windows installer
         # Informative: the file list and the DLLs of the new portable zip against those of
         # BASELINE_INSTALLER_URL. The report is the compare-<installer> artifact, and the DLL
-        # differences are in the job summary.
+        # differences are in the job summary. x86-64 only, as the baseline.
+        if: matrix.msystem == 'UCRT64'
         continue-on-error: true
         run: |
           INSTALLER_DIR=$(cygpath -u '${{ steps.build.outputs.INSTALLER_DIR }}')/${{ steps.build.outputs.INSTALLER_NAME }}
@@ -222,14 +228,17 @@ jobs:
         uses: actions/upload-artifact@v4.3.1
         with:
           name:  ${{ steps.build.outputs.TEST_RESULTS_NAME }}
-          path:  ${{ steps.build.outputs.TEST_RESULTS_FILE }}
+          path: |
+            ${{ steps.build.outputs.TEST_RESULTS_FILE }}
+            ${{ steps.build.outputs.TEST_SUMMARY_FILE }}
           retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
 
       - name: Upload test failures
         uses: actions/upload-artifact@v4.3.1
         with:
           name:  ${{ steps.build.outputs.TEST_FAILURES_NAME }}
-          path:  ${{ steps.build.outputs.TEST_FAILURES_DIR }}
+          path:  ${{ steps.build.outputs.TEST_FAILURES_ZIP }}
+          if-no-files-found: ignore
           retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
 
       - name: Verify plugin loading
@@ -316,6 +325,11 @@ jobs:
           check_installed() { # every file of each required Source: is installed
             local src missing
             while IFS= read -r src; do
+              # a single file (installed under the same path: DestDir "{app}\<its directory>")
+              if [ -f "${INSTALLER_DIR}/${src}" ]; then
+                if ! cmp -s "${INSTALLER_DIR}/${src}" "${APP}/${src}"; then echo "::error::${src} was not installed"; errors=1; fi
+                continue
+              fi
               if [ ! -d "${INSTALLER_DIR}/${src}" ]; then
                 echo "::error::${src} is missing from the portable tree"; errors=1; continue
               fi
@@ -327,7 +341,9 @@ jobs:
           # Setup.exe must refuse the folder of a Natron 2.5 or older (Qt Installer Framework:
           # bin\Natron.exe next to the NatronSetup.exe maintenance tool), and leave it untouched.
           # natron-setup 1.0-7 and later only: older package repositories have an older Setup.exe.
-          SETUP_VERSION=$(pacman -Q "${MINGW_PACKAGE_PREFIX}-natron-setup" | cut -d' ' -f2)
+          # (NATRON_SETUP_VERSION: recorded when it was installed, "Uninstall Natron dependencies"
+          # removed the package)
+          SETUP_VERSION="${NATRON_SETUP_VERSION:?}"
           if [ "$(vercmp "${SETUP_VERSION}" 1.0-7)" -lt 0 ]; then
             echo "::warning::natron-setup ${SETUP_VERSION} is older than 1.0-7: the check that Setup.exe refuses the folder of a Natron 2.5 or older is skipped"
           else
@@ -389,7 +405,9 @@ jobs:
           exit ${errors}
 
       - name: Compare the passing tests with the 2.5.0 release
-        # Informative: 2.5.0 was a Qt4 MINGW64 build, so differences are expected
+        # Informative: 2.5.0 was a Qt4 MINGW64 (x86-64) build, so differences are expected
+        if: matrix.msystem == 'UCRT64'
+        continue-on-error: true
         run: |
           wget -q https://github.com/NatronGitHub/Natron/releases/download/v2.5.0/Natron-2.5.0-Windows-x86_64-tests.txt
           if diff Natron-2.5.0-Windows-x86_64-tests.txt '${{ steps.build.outputs.TEST_RESULTS_FILE }}'; then
@@ -397,3 +415,78 @@ jobs:
           else
             echo "::warning::Natron-Tests results differ from the 2.5.0 release (see the diff above)"
           fi
+
+      - name: Upload the files for the pre-release
+        # pre-release tags only (as the release job, which attaches them)
+        if: >-
+          github.event_name == 'push' &&
+          (contains(github.ref_name, '-alpha') || contains(github.ref_name, '-beta') ||
+          contains(github.ref_name, '-rc') || contains(github.ref_name, '-RC'))
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name: Natron-Windows-${{ matrix.msystem }}-prerelease
+          path: |
+            ${{ steps.build.outputs.INSTALLER_ZIP }}
+            ${{ steps.build.outputs.TEST_RESULTS_FILE }}
+            ${{ steps.build.outputs.TEST_SUMMARY_FILE }}
+            ${{ steps.build.outputs.TEST_FAILURES_ZIP }}
+          compression-level: 0
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+
+      - name: Check the Natron-Tests results
+        # Last, so that every other check and upload runs first. launchBuildMain.sh doesn't fail the
+        # build when Natron-Tests fails. A known failure that passed (UNEXPECTED PASS) fails the job:
+        # Natron-Tests' known_failures/ lists must be updated. Other failures are only warnings, as
+        # long as the Windows known failures aren't checked against a 2.6 run (#1629).
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: |
+          RESULTS=$(cygpath -u '${{ steps.build.outputs.TEST_RESULTS_FILE }}')
+          SUMMARY=$(cygpath -u '${{ steps.build.outputs.TEST_SUMMARY_FILE }}')
+          # summary.txt is written last: without it, runTests.sh did not finish (killed by its
+          # timeout, for example) and result.txt has the raw PASS/FAIL lines, known failures included
+          if [ ! -f "${SUMMARY}" ]; then echo "::error::no Natron-Tests summary (${SUMMARY}): Natron-Tests did not finish"; exit 1; fi
+          {
+            echo "## Natron-Tests (${{ matrix.msystem }})"
+            echo '```'
+            cat "${SUMMARY}"
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
+          sed -n -e 's/ : FAIL$//p' "${RESULTS}" | while IFS= read -r t; do
+            echo "::warning::Natron-Tests: $t failed and isn't a known failure"
+          done
+          sed -n -e 's/ : UNEXPECTED PASS$//p' "${RESULTS}" | while IFS= read -r t; do
+            echo "::error::Natron-Tests: $t is a known failure that passed (UNEXPECTED PASS): remove it from Natron-Tests' known_failures/"
+          done
+          if grep -q '^UNEXPECTED PASS: [1-9]' "${SUMMARY}"; then exit 1; fi
+
+  # pre-release tags only (v*-alpha*, -beta*, -rc*, -RC*, as linux_packages.yml and macos_x86_64.yml):
+  # attach the portable zip (with Setup.exe) and the test results to the GitHub pre-release
+  release:
+    name: Attach to the pre-release
+    needs: win-installer
+    if: >-
+      ${{ !cancelled() && needs.win-installer.result == 'success' && github.event_name == 'push' &&
+      (contains(github.ref_name, '-alpha') || contains(github.ref_name, '-beta') ||
+      contains(github.ref_name, '-rc') || contains(github.ref_name, '-RC')) }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/workflows/attach_to_prerelease.sh
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: Natron-Windows-*-prerelease
+          path: assets
+          merge-multiple: true
+      - name: Attach to the pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          ls -l assets
+          shopt -s nullglob
+          .github/workflows/attach_to_prerelease.sh "$GITHUB_REF_NAME" assets/*.zip assets/*-tests.txt assets/*-tests-summary.txt

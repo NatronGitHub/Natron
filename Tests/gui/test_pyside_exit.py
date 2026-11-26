@@ -3,16 +3,9 @@
 # The Python wrappers outlive the script: the functions defined here keep its globals alive until Python
 # is finalized at exit. The test passes only if Natron then exits cleanly: a crash makes it fail even
 # though the script itself passed.
-import NatronGuiTest
 from natrontest import *
 
-try:
-    from PySide2 import QtCore, QtWidgets
-except ImportError:
-    try:
-        from PySide6 import QtCore, QtWidgets
-    except ImportError:
-        NatronGuiTest.skip("PySide2/PySide6 not available")
+QtCore, QtGui, QtWidgets = qt_modules()
 
 require_plugin(GENERATOR)
 
@@ -29,10 +22,7 @@ viewer.connectInput(0, gen)
 wait_idle()
 
 # open the settings panel of the node (Return in the node graph)
-app.clearSelection()
-app.selectNode(gen, True)
-NatronGuiTest.sendKey("NodeGraph", "Return")
-wait_idle()
+open_settings_panel(gen)
 
 qapp = QtWidgets.QApplication.instance()
 check(qapp is not None, "no QApplication")

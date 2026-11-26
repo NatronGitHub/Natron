@@ -53,41 +53,9 @@ const char* const kParamsPrefixes[] = {
 };
 
 class OfxParamCopyTest
-    : public ::testing::Test
+    : public NatronTestPlugin::ParamsNodeTest
 {
 protected:
-    NodePtr _node;
-
-    virtual void SetUp() OVERRIDE
-    {
-        if ( !NatronTestPlugin::isAvailable(kNatronTestPluginParams) ) {
-            return;
-        }
-        AppInstancePtr app = appPTR->getTopLevelInstance();
-        CreateNodeArgs args( kNatronTestPluginParams, app->getProject() );
-        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-        _node = app->createNode(args);
-    }
-
-    virtual void TearDown() OVERRIDE
-    {
-        if (_node) {
-            _node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
-            _node.reset();
-        }
-    }
-
-    bool skipped()
-    {
-        if (!_node) {
-            NatronTestPlugin::reportSkipped(kNatronTestPluginParams);
-
-            return true;
-        }
-
-        return false;
-    }
-
     KnobIPtr knob(const std::string& name) const
     {
         return _node->getKnobByName(name);
@@ -339,4 +307,39 @@ TEST_F(OfxParamCopyTest, DifferentTypes)
     EXPECT_EQ( kOfxStatErrBadHandle, paramCopy("double2DTo", "doubleFrom", 0., NULL) );
     EXPECT_EQ( kOfxStatErrBadHandle, paramCopy("double2DTo", "intFrom", 0., NULL) );
     EXPECT_EQ( 1., double2D->getValue(0) );
+}
+
+// The position and the size of a Natron rectangle (kNatronOfxParamPropTypeRectangle) are two parameters on
+// the dimensions 0-1 and 2-3 of one knob: paramCopy(<rect2>_position, <rect>_size) copies only the size of the
+// first one to the position of the second one (the integer rectangle copied the whole knob: the dimensions
+// were lost when paramCopy was rewritten), and paramCopy(<rect>_size, <rect>_position) the position of a
+// rectangle to its own size (nothing was copied: a knob can't be cloned onto itself).
+TEST_F(OfxParamCopyTest, Rectangles)
+{
+    if ( skipped() ) {
+        return;
+    }
+    for (const char* rect : { "intRect", "doubleRect" }) {
+        const std::string from(rect);
+        const std::string to = from + '2';
+        KnobIPtr f = knob(from);
+        KnobIPtr t = knob(to);
+        ASSERT_TRUE( f && t && (f->getDimension() == 4) && (t->getDimension() == 4) ) << from;
+        for (int dim = 0; dim < 4; ++dim) {
+            setValue(f, dim, dim < 2 ? 1 : 2, 1., false); // position 1+dim(+0.5), size 2+dim(+0.5)
+            setValue(t, dim, 0, 1., false);
+        }
+        const std::string size = valueAt(f, 2, 1.) + ' ' + valueAt(f, 3, 1.);
+        const std::string toSize = valueAt(t, 2, 1.) + ' ' + valueAt(t, 3, 1.);
+
+        EXPECT_EQ( kOfxStatOK, paramCopy(to + "_position", from + "_size", 0., NULL) ) << from;
+        EXPECT_EQ( size, valueAt(t, 0, 1.) + ' ' + valueAt(t, 1, 1.) ) << from;
+        EXPECT_EQ( toSize, valueAt(t, 2, 1.) + ' ' + valueAt(t, 3, 1.) ) << from; // the size of the target is unchanged
+
+        // within one rectangle
+        const std::string position = valueAt(f, 0, 1.) + ' ' + valueAt(f, 1, 1.);
+        EXPECT_EQ( kOfxStatOK, paramCopy(from + "_size", from + "_position", 0., NULL) ) << from;
+        EXPECT_EQ( position, valueAt(f, 2, 1.) + ' ' + valueAt(f, 3, 1.) ) << from;
+        EXPECT_EQ( position, valueAt(f, 0, 1.) + ' ' + valueAt(f, 1, 1.) ) << from;
+    }
 }

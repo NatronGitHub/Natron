@@ -51,7 +51,7 @@ TEST(OfxTestPlugin, CreateAndDestroyInstance)
 
     for (int i = 0; i < 4; ++i) {
         if ( !NatronTestPlugin::isAvailable(pluginIDs[i]) ) {
-            NatronTestPlugin::reportSkipped(pluginIDs[i]);
+            NatronTestPlugin::reportMissing(pluginIDs[i]);
 
             return;
         }

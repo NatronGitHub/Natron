@@ -111,6 +111,13 @@ public:
 
     Gui* getGui() const WARN_UNUSED_RETURN;
 
+    // Loads a project in a new, empty window (see Project::loadProject() for the arguments): onProjectCreated
+    // must not run on the window before the project is loaded, the load runs onProjectLoaded (#1463), and
+    // onProjectCreated runs only if the load fails, on the empty project left. Returns the window if the
+    // project was loaded, NULL if it was not or if the window could not be created (an error was shown).
+    static AppInstancePtr loadProjectInNewWindow(const QString& path, const QString& name, bool isUntitledAutosave,
+                                                 bool attemptToLoadAutosave) WARN_UNUSED_RETURN;
+
 
     //////////
     virtual bool shouldRefreshPreview() const OVERRIDE FINAL;

@@ -53,6 +53,8 @@
 #include "Engine/Project.h"
 #include "Engine/TimeLine.h"
 
+#include "TestUtils.h"
+
 // The OFX plug-ins of Tests/OfxTestPlugin/NatronTestPlugin.cpp, built with the tests (see
 // Tests/CMakeLists.txt) and loaded by the host like any other OFX plug-in.
 #define kNatronTestPluginParamInteract "net.natron.test.ParamInteract"
@@ -75,28 +77,29 @@
 #define kNatronTestPluginMaskIdentityNoTiles "net.natron.test.MaskIdentityNoTiles"
 
 namespace NatronTestPlugin {
-// true if the host loaded the plug-in
+using NatronTest::createNode;
+
+// true if the host loaded the test plug-in
 inline bool
 isAvailable(const char* pluginID)
 {
-    try {
-        NATRON_NAMESPACE::Plugin* p = NATRON_NAMESPACE::appPTR->getPluginBinary(QString::fromUtf8(pluginID), -1, -1, false);
-
-        return p && p->getOfxPlugin();
-    } catch (...) {
-        return false;
-    }
+    return NatronTest::isPluginAvailable(pluginID);
 }
 
-// The bundled google-test predates GTEST_SKIP(): the tests return early and are reported as passed,
-// so say clearly that they did not run.
+// A test plug-in was not loaded. The test plug-ins are built with the tests, in NATRON_TESTS_OFX_PLUGIN_DIR,
+// which wmain.cpp puts in OFX_PLUGIN_PATH: when they were built, this is a failure (e.g. a plug-in ID that
+// changed, or a plug-in that failed to load). The test is skipped only when Tests runs without them.
 inline void
-reportSkipped(const char* pluginID)
+reportMissing(const char* pluginID)
 {
-    const testing::TestInfo* info = testing::UnitTest::GetInstance()->current_test_info();
+#ifdef NATRON_TESTS_OFX_PLUGIN_DIR
+    if ( QDir( QString::fromUtf8(NATRON_TESTS_OFX_PLUGIN_DIR "/NatronTestPlugin.ofx.bundle") ).exists() ) {
+        ADD_FAILURE() << "test plug-in " << pluginID << " not loaded from " NATRON_TESTS_OFX_PLUGIN_DIR "/NatronTestPlugin.ofx.bundle";
 
-    std::cerr << "[  SKIPPED ] " << info->test_case_name() << '.' << info->name() << ": plug-in " << pluginID
-              << " not found (the test plug-in built with the tests, NatronTestPlugin.ofx.bundle)" << std::endl;
+        return;
+    }
+#endif
+    NatronTest::skip(std::string("test plug-in ") + pluginID + " not found (NatronTestPlugin.ofx.bundle, built with the tests)");
 }
 
 #ifdef NATRON_TESTS_OFX_PLUGIN_BINARY
@@ -175,19 +178,44 @@ setCounter(const std::string& name,
 #endif
 }
 
-// Create a node of the top-level app's project, without undo/redo command and without connecting it.
-inline NATRON_NAMESPACE::NodePtr
-createNode(const char* pluginID)
+// A test with a node of the net.natron.test.Params plug-in (_node), destroyed after each test. A test
+// returns at once if skipped() is true (the plug-in was not loaded: see reportMissing()).
+class ParamsNodeTest
+    : public ::testing::Test
 {
-    NATRON_NAMESPACE::AppInstancePtr app = NATRON_NAMESPACE::appPTR->getTopLevelInstance();
-    NATRON_NAMESPACE::CreateNodeArgs args( pluginID, app->getProject() );
+protected:
+    NATRON_NAMESPACE::NodePtr _node;
 
-    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-    args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+    virtual void SetUp() OVERRIDE
+    {
+        if ( !isAvailable(kNatronTestPluginParams) ) {
+            return;
+        }
+        NATRON_NAMESPACE::AppInstancePtr app = NATRON_NAMESPACE::appPTR->getTopLevelInstance();
+        NATRON_NAMESPACE::CreateNodeArgs args( kNatronTestPluginParams, app->getProject() );
+        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        _node = app->createNode(args);
+    }
 
-    return app->createNode(args);
-}
+    virtual void TearDown() OVERRIDE
+    {
+        if (_node) {
+            _node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
+            _node.reset();
+        }
+    }
+
+    bool skipped()
+    {
+        if (!_node) {
+            reportMissing(kNatronTestPluginParams);
+
+            return true;
+        }
+
+        return false;
+    }
+};
 
 // Render the output of node at time, view 0 and scale 1, as an interactive render (like the preview
 // render of Node::makePreviewImage()). allowGPURendering is passed to renderRoI(). Returns the

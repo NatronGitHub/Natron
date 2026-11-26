@@ -53,6 +53,15 @@ QHttpResponse::~QHttpResponse()
 
 void QHttpResponse::setHeader(const QString &field, const QString &value)
 {
+    // Natron: a CR or LF would end the header and let the rest of the value inject headers or a body
+    // (response splitting)
+    if (field.contains(QLatin1Char('\r')) || field.contains(QLatin1Char('\n')) ||
+        value.contains(QLatin1Char('\r')) || value.contains(QLatin1Char('\n'))) {
+#ifdef DEBUG
+        qWarning() << "QHttpResponse::setHeader() Ignoring a header with a CR or LF.";
+#endif
+        return;
+    }
     if (!m_finished)
         m_headers[field] = value;
     else {
@@ -175,14 +184,17 @@ void QHttpResponse::write(const QByteArray &data)
     m_connection->write(data);
 }
 
+// Natron: the connection may be deleted (see connectionClosed())
 void QHttpResponse::flush()
 {
-    m_connection->flush();
+    if (m_connection)
+        m_connection->flush();
 }
 
 void QHttpResponse::waitForBytesWritten()
 {
-    m_connection->waitForBytesWritten();
+    if (m_connection)
+        m_connection->waitForBytesWritten();
 }
 
 void QHttpResponse::end(const QByteArray &data)
@@ -207,6 +219,7 @@ void QHttpResponse::end(const QByteArray &data)
 void QHttpResponse::connectionClosed()
 {
     m_finished = true;
-    Q_EMIT done();
+    // Natron: no done(): this runs from ~QHttpConnection() (its destroyed() signal), and done()'s
+    // receiver is that connection (QHttpConnection::responseDone()), already destroyed
     deleteLater();
 }

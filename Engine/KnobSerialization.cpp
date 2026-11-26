@@ -29,6 +29,7 @@
 
 #include <algorithm> // min, max
 #include <cassert>
+#include <sstream>
 #include <stdexcept>
 
 #include <ofxNatron.h>
@@ -188,6 +189,27 @@ KnobSerialization::createKnob(const std::string & typeName,
     return ret;
 }
 
+// declared in KnobTypes.h
+KnobIPtr
+createKnobCopy(const KnobIPtr & originalKnob)
+{
+    const std::string & typeName = originalKnob->typeName();
+
+    // only the knobs that hold values (KnobLayers was never copied either)
+    if ( (typeName == KnobButton::typeNameStatic()) || (typeName == KnobSeparator::typeNameStatic()) ||
+         (typeName == KnobGroup::typeNameStatic()) || (typeName == KnobPage::typeNameStatic()) ||
+         (typeName == KnobLayers::typeNameStatic()) ) {
+        return KnobIPtr();
+    }
+    KnobIPtr copy = KnobSerialization::createKnob( typeName, originalKnob->getDimension() );
+    if (copy) {
+        ///make a clone of the original knob at that time and stash it
+        copy->clone(originalKnob);
+    }
+
+    return copy;
+}
+
 
 void
 KnobSerialization::restoreBytesKnob()
@@ -253,7 +275,7 @@ KnobSerialization::storeKnobLinks(const KnobIPtr & knob)
             knob->storeLink(-1, aliasNodeNameFull, aliasNodeName, masterTrackName, aliasKnobName, -1);
         }
     } else {
-        assert(_masters.size() == _dimension);
+        assert( _masters.size() == static_cast<std::size_t>(_dimension) );
         int slaveDim = 0;
         for (std::list<MasterSerialization>::iterator it = _masters.begin(); it != _masters.end(); ++it, ++slaveDim) {
             if (it->masterDimension != -1) {
@@ -950,5 +972,54 @@ filterKnobChoiceOptionCompat(const std::string& pluginID, int pluginVersionMajor
     return false;
 }
 
+
+// declared in KnobSerialization.h
+std::list<KnobSerializationPtr>
+copyKnobSerializations(const std::list<KnobSerializationPtr>& serialized)
+{
+    std::string serializationString;
+    try {
+        std::ostringstream ss;
+        {   // see http://boost.2283326.n4.nabble.com/the-boost-xml-serialization-to-a-stringstream-does-not-have-an-end-tag-td2580772.html
+            // xml_oarchive must be destroyed before obtaining ss.str(), or the </boost_serialization> tag is missing,
+            // which throws an exception in boost 1.66.0, due to the following change:
+            // https://fossies.org/diffs/boost/1_65_1_vs_1_66_0/libs/serialization/src/basic_xml_grammar.ipp-diff.html
+            // see also https://svn.boost.org/trac10/ticket/13400
+            // see also https://svn.boost.org/trac10/ticket/13354
+
+            boost::archive::xml_oarchive oArchive(ss);
+            int n = (int)serialized.size();
+            oArchive << boost::serialization::make_nvp("numItems", n);
+            for (std::list<KnobSerializationPtr>::const_iterator it = serialized.begin(); it!= serialized.end(); ++it) {
+                oArchive << boost::serialization::make_nvp("item", **it);
+            }
+        }
+        serializationString = ss.str();
+    } catch (...) {
+        assert(false);
+    }
+
+    std::list<KnobSerializationPtr> copy;
+    try {
+        std::stringstream ss(serializationString);
+        {
+            boost::archive::xml_iarchive iArchive(ss);
+            int n ;
+            iArchive >> boost::serialization::make_nvp("numItems", n);
+            for (int i = 0; i < n; ++i) {
+                KnobSerializationPtr s = std::make_shared<KnobSerialization>();
+                iArchive >> boost::serialization::make_nvp("item", *s);
+                copy.push_back(s);
+            }
+        }
+    } catch (const std::exception& e) {
+        qDebug() << e.what();
+        assert(false);
+    } catch (...) {
+        assert(false);
+    }
+
+    return copy;
+}
 
 NATRON_NAMESPACE_EXIT

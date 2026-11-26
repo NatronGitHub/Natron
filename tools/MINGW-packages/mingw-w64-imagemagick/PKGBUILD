@@ -9,6 +9,8 @@
 # - freetype and fontconfig for the Text plug-ins (fonts by family name)
 # - zlib, bzip2 and xz for the compressed layers in ReadPSD
 # - libpng for the PNG-based formats
+# configure finds bzip2 with or without pkg-config, but the other six only with
+# pkg-config (pkgconf); build() checks that all seven are enabled (#1864).
 # MSYS2's own imagemagick is a Q16, shared, modules build, which openfx-arena
 # can't link statically.
 
@@ -18,13 +20,15 @@ pkgver=${_basever//-/.}
 _realname=imagemagick
 pkgbase="mingw-w64-natron_${_realname}"
 pkgname="${MINGW_PACKAGE_PREFIX}-natron_${_realname}"
-pkgrel=2
+pkgrel=3
 pkgdesc="An image viewing/manipulation program, static Q32 HDRI build for openfx-arena (mingw-w64)"
 arch=('any')
 mingw_arch=('ucrt64' 'clangarm64')
 url="https://www.imagemagick.org/"
 license=("spdx:ImageMagick")
-makedepends=("${MINGW_PACKAGE_PREFIX}-cc")
+makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
+             "${MINGW_PACKAGE_PREFIX}-pkgconf"
+            )
 depends=(
          "${MINGW_PACKAGE_PREFIX}-libpng"
          "${MINGW_PACKAGE_PREFIX}-bzip2"
@@ -102,6 +106,17 @@ build() {
     --without-zstd \
     CFLAGS="${CFLAGS}" CPPFLAGS="${CPPFLAGS}" LDFLAGS="${LDFLAGS}"
 
+  # configure silently leaves out a --with- delegate that it can't find (without
+  # pkg-config, all of them but bzip2: #1864), so check the ones openfx-arena needs.
+  local _delegate _missing=""
+  for _delegate in BZLIB FONTCONFIG FREETYPE LCMS LZMA PNG ZLIB; do
+    grep -q "^#define ${_delegate}_DELEGATE 1" config/config.h || _missing+=" ${_delegate}"
+  done
+  if [[ -n "${_missing}" ]]; then
+    echo "error: ImageMagick's configure did not enable these delegates:${_missing} (see config.log)" >&2
+    return 1
+  fi
+
   make
 }
 
@@ -117,4 +132,8 @@ package() {
   for _f in "${pkgdir}${MINGW_PREFIX}"/lib/pkgconfig/*.pc; do
     sed -e "s|${PREFIX_WIN}|${MINGW_PREFIX}|g" -i ${_f}
   done
+  # The URL coder calls URLDownloadToFileA, but ImageMagick links urlmon only into its
+  # URL module: without modules, the coder is in the static MagickCore, whose users
+  # (openfx-arena) need -lurlmon (#1863). ImageMagick*.pc have the same Libs.private.
+  sed -e '/^Libs.private:/ s/$/ -lurlmon/' -i "${pkgdir}${MINGW_PREFIX}"/lib/pkgconfig/{MagickCore,ImageMagick}*.pc
 }

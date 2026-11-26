@@ -1,11 +1,12 @@
 """The ExprUtils noise functions and App.render(tasks) check their arguments (#1795).
 
 They accept any sequence and raise TypeError for a wrong argument, instead of reading garbage or
-crashing. Run by NatronRenderer -t (see Tests/CMakeLists.txt).
+crashing.
 """
-import traceback
 
-from NatronEngine import ExprUtils, natron
+from NatronEngine import ExprUtils
+
+import natronheadless
 
 
 def assert_raises_type_error(func, *args):
@@ -59,18 +60,11 @@ def check_render_tasks(app, node):
     assert_raises_type_error(app.render, [5])
 
 
-def main():
-    status = 1
-    try:
-        app = natron.getInstance(0)
-        node = app.createNode("fr.inria.built-in.Dot")
-        assert node is not None, "createNode(Dot) failed"
-        check_noise(node)
-        check_render_tasks(app, node)
-        status = 0
-    except BaseException:
-        traceback.print_exc()
-    natron.quit(status)
+def main(app):
+    node = app.createNode("fr.inria.built-in.Dot")
+    assert node is not None, "createNode(Dot) failed"
+    check_noise(node)
+    check_render_tasks(app, node)
 
 
-main()
+natronheadless.run(main)

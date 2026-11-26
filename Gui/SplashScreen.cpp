@@ -63,14 +63,20 @@ SplashScreen::SplashScreen(const QString & filePath)
                          .arg( QString::fromUtf8(NATRON_DEVELOPMENT_STATUS) )
                          .arg(buildNo);
 #     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+        // The build date is wanted in snapshot and debug builds (-Wdate-time guards the others).
+        GCC_DIAG_OFF(date-time)
         _versionString += QString::fromUtf8(" - ") + tr("built on %1").arg( QString::fromUtf8(__DATE__) );
+        GCC_DIAG_ON(date-time)
 #     endif
     } else {
         _versionString = tr("%1 for %2")
                          .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) )
                          .arg(customBuildString);
 #     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+        // The build date is wanted in snapshot and debug builds (-Wdate-time guards the others).
+        GCC_DIAG_OFF(date-time)
         _versionString += QString::fromUtf8(" - ") + tr("built on %1").arg( QString::fromUtf8(__DATE__) );
+        GCC_DIAG_ON(date-time)
 #     endif
     }
 

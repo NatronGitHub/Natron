@@ -82,6 +82,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ProjectSerialization.h"
 #include "Engine/Settings.h"
 
+#include "TestUtils.h"
+
 NATRON_NAMESPACE_USING
 
 namespace {
@@ -134,16 +136,6 @@ saveCopy(const ProjectPtr& project,
          ProjectFileFormatEnum format)
 {
     return project->saveProject_imp(dir, name, false /*autoSave*/, false /*updateProjectProperties*/, 0, 0, format);
-}
-
-// The bundled google-test predates GTEST_SKIP(): say clearly that the test did not run.
-// TODO: Convert to GTEST_SKIP() when gtest updated.
-void
-reportSkipped(const char* reason)
-{
-    const testing::TestInfo* info = testing::UnitTest::GetInstance()->current_test_info();
-
-    std::cerr << "[  SKIPPED ] " << info->test_case_name() << '.' << info->name() << ": " << reason << std::endl;
 }
 
 // The directory of the committed project files (Tests/data), or an empty string if it isn't there
@@ -370,6 +362,34 @@ TEST(ProjectFileFormat, Detection)
     EXPECT_EQ( eProjectFileFormatNone, Project::detectFileFormat( QString::fromUtf8("/nonexistent/project.ntp") ) );
 }
 
+// The command line, the macOS file-open event and drops all use Project::isProjectFile(): a
+// .ntp file, or a .py file that starts with NATRON_PROJECT_PYTHON_MAGIC; suffixes are case-insensitive.
+TEST(ProjectFileFormat, IsProjectFile)
+{
+    QTemporaryDir tmpDir;
+
+    ASSERT_TRUE( tmpDir.isValid() );
+    const auto write = [&tmpDir](const char* name, const char* contents) {
+        const QString path = tmpDir.path() + QLatin1Char('/') + QString::fromUtf8(name);
+        QFile f(path);
+        EXPECT_TRUE( f.open(QIODevice::WriteOnly) );
+        f.write(contents);
+
+        return path;
+    };
+    const char* const pythonProject = "# -*- coding: utf-8 -*-\n" NATRON_PROJECT_PYTHON_MAGIC "\n";
+    const char* const script = "# -*- coding: utf-8 -*-\nprint(1)\n";
+
+    EXPECT_TRUE( Project::isProjectFile( write("a.ntp", "") ) );
+    EXPECT_TRUE( Project::isProjectFile( write("b.NTP", "") ) );
+    EXPECT_TRUE( Project::isProjectFile( write("c.py", pythonProject) ) );
+    EXPECT_TRUE( Project::isProjectFile( write("d.PY", pythonProject) ) );
+    EXPECT_FALSE( Project::isProjectFile( write("e.py", script) ) );
+    EXPECT_FALSE( Project::isProjectFile( write("f.txt", pythonProject) ) );
+    EXPECT_TRUE( Project::hasPythonFileExtension( QString::fromUtf8("/x/d.PY") ) );
+    EXPECT_FALSE( Project::hasPythonFileExtension( QString::fromUtf8("/x/c.py.binautosave") ) );
+}
+
 // Text -> binary -> text: the binary file goes through the same serialize() functions (and class
 // versions) as the text one, so the project saved again as text after loading the binary file is
 // identical to the original text file. Each project also keeps the format of its file.
@@ -588,7 +608,7 @@ TEST(ProjectFileFormat, AutoSaveNames)
 TEST(ProjectFileFormat, RestoreNatron25AutoSave)
 {
     if ( dataDir().isEmpty() ) {
-        reportSkipped("Tests/data not found");
+        NatronTest::skip("Tests/data not found");
 
         return;
     }
@@ -870,6 +890,15 @@ TEST(ProjectFileFormat, InvalidKnobData)
         EXPECT_EQ( 1, std::count_if( log.begin(), log.end(), [](const LogEntry& e) {
             return e.context == QString::fromUtf8("myInt2") && e.message.contains( QString::fromUtf8("Could not restore the link of dimension 1") );
         } ) );
+        // a master that doesn't exist is in the error log too (only the dimension errors were)
+        appPTR->clearErrorLog_mt_safe();
+        myInt2->storeLink(0, "Group1", "Group1", "", "noSuchKnob", 0);
+        EXPECT_NO_THROW( myInt2->restoreLinks(allNodes, noRenames, false) );
+        log.clear();
+        appPTR->getErrorLog_mt_safe(&log);
+        EXPECT_EQ( 1, std::count_if( log.begin(), log.end(), [](const LogEntry& e) {
+            return e.context == QString::fromUtf8("myInt2") && e.message.contains( QString::fromUtf8("Could not restore the link of Group1/myInt2 to node/knob/track Group1/noSuchKnob/") );
+        } ) );
         // with throwOnFailure, the valid links after a bad one are still restored, then it throws
         myInt2->storeLink(0, "Group1", "Group1", "", "myInt", 1 /*master dimension*/);
         myInt2->storeLink(0, "Group1", "Group1", "", "myInt", 0);
@@ -917,7 +946,7 @@ TEST(PortableBinaryArchive, DamagedSizes)
 TEST(ProjectFileFormat, Natron25Project)
 {
     if ( dataDir().isEmpty() ) {
-        reportSkipped("Tests/data not found");
+        NatronTest::skip("Tests/data not found");
 
         return;
     }
@@ -956,7 +985,7 @@ TEST(ProjectFileFormat, Natron25Project)
 TEST(ProjectFileFormat, CommittedBinaryProject)
 {
     if ( dataDir().isEmpty() ) {
-        reportSkipped("Tests/data not found");
+        NatronTest::skip("Tests/data not found");
 
         return;
     }
@@ -1284,7 +1313,7 @@ TEST(ProjectSave, FailedSaveKeepsThePreviousFile)
     const QFileDevice::Permissions permissions = QFile::permissions(path);
     ASSERT_TRUE( QFile::setPermissions(path, QFileDevice::ReadOwner | QFileDevice::ReadUser | QFileDevice::ReadGroup | QFileDevice::ReadOther) );
     if ( canWriteReadOnly(path) ) {
-        reportSkipped("the read-only file is writable (root?)");
+        NatronTest::skipPart("the read-only file is writable (root?)");
     } else {
         failedSave("read-only file");
     }
@@ -1295,7 +1324,7 @@ TEST(ProjectSave, FailedSaveKeepsThePreviousFile)
     const QFileDevice::Permissions dirPermissions = QFile::permissions(tmpDir.path());
     ASSERT_TRUE( QFile::setPermissions(tmpDir.path(), QFileDevice::ReadOwner | QFileDevice::ExeOwner | QFileDevice::ReadUser | QFileDevice::ExeUser) );
     if ( canWriteReadOnly( tmpDir.path() ) ) {
-        reportSkipped("the read-only directory is writable (root?)");
+        NatronTest::skipPart("the read-only directory is writable (root?)");
     } else {
         failedSave("read-only directory");
     }
@@ -1395,7 +1424,7 @@ TEST(ProjectSave, FailedRollbackSaysWhereThePreviousVersionIs)
         const bool rootCanWrite = canWriteReadOnly( scratch.path() );
         ASSERT_TRUE( QFile::setPermissions(scratch.path(), scratchPermissions) );
         if (rootCanWrite) {
-            reportSkipped("a read-only directory is writable (root?)");
+            NatronTest::skip("a read-only directory is writable (root?)");
             project->resetProject();
 
             return;
@@ -1632,7 +1661,7 @@ TEST(ProjectFileFormat, LargeProject)
 {
     const char* largeProject = std::getenv("NATRON_TEST_LARGE_PROJECT");
     if (!largeProject) {
-        reportSkipped("NATRON_TEST_LARGE_PROJECT is not set");
+        NatronTest::skip("NATRON_TEST_LARGE_PROJECT is not set");
 
         return;
     }

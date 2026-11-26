@@ -54,6 +54,8 @@
 #include "Engine/RenderScale.h"
 #include "Engine/ViewIdx.h"
 
+#include "TestUtils.h"
+
 NATRON_NAMESPACE_USING
 
 namespace {
@@ -126,29 +128,6 @@ public:
         return 10;
     }
 };
-
-bool
-isPluginAvailable(const char* pluginID)
-{
-    try {
-        Plugin* p = appPTR->getPluginBinary(QString::fromUtf8(pluginID), -1, -1, false);
-
-        return p && p->getLibraryBinary();
-    } catch (...) {
-        return false;
-    }
-}
-
-// The bundled google-test predates GTEST_SKIP(): the tests return early and are reported as passed,
-// so say clearly that they did not run, as RotoPaint_Test does.
-// TODO: Convert to GTEST_SKIP() when gtest updated.
-void
-reportSkipped(const std::string& why)
-{
-    const testing::TestInfo* info = testing::UnitTest::GetInstance()->current_test_info();
-
-    std::cerr << "[  SKIPPED ] " << info->test_case_name() << '.' << info->name() << ": " << why << std::endl;
-}
 
 const double kTime = 1.;
 } // anonymous namespace
@@ -249,9 +228,7 @@ protected:
 // A reader without overlay (ReadOIIO): the Read node has no overlay, and ignores overlay events.
 TEST_F(ReadNodeOverlayTest, ReaderWithoutOverlay)
 {
-    if ( !isPluginAvailable(PLUGINID_OFX_READOIIO) ) {
-        reportSkipped("plug-in not found (needs " PLUGINID_OFX_READOIIO " from openfx-io in OFX_PLUGIN_PATH)");
-
+    if ( !NatronTest::requirePlugins({ PLUGINID_OFX_READOIIO }, "openfx-io") ) {
         return;
     }
     createReadNode(_exrFile);
@@ -270,9 +247,8 @@ TEST_F(ReadNodeOverlayTest, ReaderWithoutOverlay)
 // its overlay, which edits the reader's parameters, and follows the reader when the file type changes.
 TEST_F(ReadNodeOverlayTest, ReaderWithOverlay)
 {
-    if ( !isPluginAvailable(PLUGINID_OFX_READSVG) || !isPluginAvailable(PLUGINID_OFX_READOIIO) ) {
-        reportSkipped("plug-ins not found (needs " PLUGINID_OFX_READSVG " from openfx-arena and " PLUGINID_OFX_READOIIO " from openfx-io in OFX_PLUGIN_PATH)");
-
+    if ( !NatronTest::requirePlugins({ PLUGINID_OFX_READOIIO }, "openfx-io") ||
+         !NatronTest::requirePlugins({ PLUGINID_OFX_READSVG }, "openfx-arena") ) {
         return;
     }
     createReadNode(_svgFile);
@@ -280,7 +256,7 @@ TEST_F(ReadNodeOverlayTest, ReaderWithOverlay)
     ASSERT_TRUE( bool(reader) );
     ASSERT_EQ(reader->getPluginID(), std::string(PLUGINID_OFX_READSVG));
     if ( !reader->getEffectInstance()->hasOverlay() ) {
-        reportSkipped(PLUGINID_OFX_READSVG " has no overlay interact (needs openfx-arena#84)");
+        NatronTest::skip(PLUGINID_OFX_READSVG " has no overlay interact (needs openfx-arena#84)");
 
         return;
     }
@@ -358,9 +334,7 @@ TEST_F(ReadNodeOverlayTest, ReaderWithOverlay)
 // created, so the values checked here are the same either way.
 TEST_F(ReadNodeOverlayTest, ProjectSaveAndLoad)
 {
-    if ( !isPluginAvailable(PLUGINID_OFX_READOIIO) ) {
-        reportSkipped("plug-in not found (needs " PLUGINID_OFX_READOIIO " from openfx-io in OFX_PLUGIN_PATH)");
-
+    if ( !NatronTest::requirePlugins({ PLUGINID_OFX_READOIIO }, "openfx-io") ) {
         return;
     }
     // A sequence of three 2x2 PPM images
@@ -411,7 +385,7 @@ TEST_F(ReadNodeOverlayTest, ProjectSaveAndLoad)
     EXPECT_EQ( lastFrame->getValue(), 2 );
     EXPECT_FALSE( _effect->hasOverlay() );
 
-    if ( isPluginAvailable(PLUGINID_OFX_READSVG) ) {
+    if ( NatronTest::isPluginAvailable(PLUGINID_OFX_READSVG) ) {
         // After the load, a new decoder still gets its file.
         setFile(_svgFile);
         reader = getEmbeddedReader();

@@ -28,7 +28,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <algorithm>
-#include <deque>
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -148,16 +147,19 @@ const ButtonName buttonNames[] = {
     { eStandardButtonNoButton, "none" },
 };
 
+// The UTF-8 text of a Python str, empty if it can't be encoded (e.g. lone surrogates)
 std::string
-buttonName(StandardButtonEnum b)
+utf8(PyObject* str)
 {
-    for (const ButtonName& n : buttonNames) {
-        if (n.button == b) {
-            return n.name;
-        }
+    const char* s = PyUnicode_AsUTF8(str);
+
+    if (!s) {
+        PyErr_Clear();
+
+        return std::string();
     }
 
-    return "unknown";
+    return s;
 }
 
 bool
@@ -384,11 +386,11 @@ handleWindow(QWidget* window)
                 return; // the handler answered it
             }
             if ( PyUnicode_Check(r) ) {
-                answer = PyUnicode_AsUTF8(r);
+                answer = utf8(r);
             }
             Py_DECREF(r);
         } else if ( PyUnicode_Check(a) ) {
-            answer = PyUnicode_AsUTF8(a);
+            answer = utf8(a);
             Py_DECREF(a);
         } else {
             Py_DECREF(a);
@@ -1017,8 +1019,9 @@ PyMethodDef guiTestMethods[] = {
       "gets no answer is closed, and fails the test." },
     { "getDialogLog", py_getDialogLog, METH_NOARGS,
       "getDialogLog() -> list of dict\n"
-      "The modal dialogs shown so far: dicts with the keys type ('dialog' for an answered one, "
-      "'unexpected' for one that was rejected), title, text and answer (the button name, or 'reject')." },
+      "The modal dialogs and menus shown so far: dicts with the keys type ('dialog' or 'menu' when answered, "
+      "'unexpected' when closed), title, text and answer (the button name or menu item, 'handler' when a "
+      "callable handled it, or 'reject')." },
     { "clearDialogLog", py_clearDialogLog, METH_NOARGS,
       "clearDialogLog()\nClear the dialog log." },
     { 0, 0, 0, 0 }

@@ -125,7 +125,7 @@ pluginsAvailable()
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginProjectLoad) ||
          !NatronTestPlugin::isAvailable(kNatronTestPluginGenerator) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginProjectLoad);
+        NatronTestPlugin::reportMissing(kNatronTestPluginProjectLoad);
 
         return false;
     }

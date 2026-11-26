@@ -95,6 +95,11 @@ Name: "sgl"; Description: "OpenGL Software Renderer (FOR LEGACY HARDWARE ONLY)"
 ; that choosing an existing folder (e.g. D:\Tools) never deletes its bin\.
 [InstallDelete]
 Type: files; Name: "{app}\bin\*.dll"; Check: IsNatronInstall
+; PIKColor and EdgeBlur came with Natron up to 2.6.0-rc: they come with openfx-misc (Misc.ofx.bundle and
+; CImg.ofx.bundle) since, and an old copy in Plugins\PyPlugs would hide them (the PyPlugs of the OFX bundles are
+; searched last, #1854)
+Type: files; Name: "{app}\Plugins\PyPlugs\PIKColor.*"; Check: IsNatronInstall
+Type: files; Name: "{app}\Plugins\PyPlugs\EdgeBlur.*"; Check: IsNatronInstall
 Type: filesandordirs; Name: "{app}\bin\audio"; Check: IsNatronInstall
 Type: filesandordirs; Name: "{app}\bin\bearer"; Check: IsNatronInstall
 Type: filesandordirs; Name: "{app}\bin\generic"; Check: IsNatronInstall
@@ -146,6 +151,7 @@ Source: "{src}\Plugins\PySide2\*"; DestDir: "{app}\Plugins\PySide2\"; Components
 Source: "{src}\Plugins\shiboken2\*"; DestDir: "{app}\Plugins\shiboken2\"; Components: natron; Flags: ignoreversion recursesubdirs createallsubdirs external skipifsourcedoesntexist
 Source: "{src}\Plugins\PySide6\*"; DestDir: "{app}\Plugins\PySide6\"; Components: natron; Flags: ignoreversion recursesubdirs createallsubdirs external skipifsourcedoesntexist
 Source: "{src}\Plugins\shiboken6\*"; DestDir: "{app}\Plugins\shiboken6\"; Components: natron; Flags: ignoreversion recursesubdirs createallsubdirs external skipifsourcedoesntexist
+Source: "{src}\Plugins\natron_convert_project.py"; DestDir: "{app}\Plugins\"; Components: natron; Flags: ignoreversion external
 Source: "{src}\Plugins\PyPlugs\*"; DestDir: "{app}\Plugins\PyPlugs\"; Components: pyplugs; Flags: ignoreversion recursesubdirs createallsubdirs external
 Source: "{src}\Plugins\OFX\Natron\Arena.ofx.bundle\*"; DestDir: "{app}\Plugins\OFX\Natron\Arena.ofx.bundle\"; Components: arena; Flags: ignoreversion recursesubdirs createallsubdirs external
 Source: "{src}\Plugins\OFX\Natron\CImg.ofx.bundle\*"; DestDir: "{app}\Plugins\OFX\Natron\CImg.ofx.bundle\"; Components: cimg; Flags: ignoreversion recursesubdirs createallsubdirs external

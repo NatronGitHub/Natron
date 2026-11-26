@@ -1,10 +1,9 @@
-# AnimatedParam.setDerivativesAtTime() (#1745): run by NatronRenderer -t (see Tests/CMakeLists.txt).
-"""Sets the tangents of keyframes and checks the interpolated values."""
+"""AnimatedParam.setDerivativesAtTime() (#1745).
 
-import traceback
+Sets the tangents of keyframes and checks the interpolated values.
+"""
 
-import NatronEngine
-from NatronEngine import natron
+import natronheadless
 
 
 def _hermite(t, t0, v0, d0, t1, v1, d1):
@@ -15,9 +14,7 @@ def _hermite(t, t0, v0, d0, t1, v1, d1):
             + (-2 * s**3 + 3 * s**2) * v1 + (s**3 - s**2) * dt * d1)
 
 
-status = 1
-try:
-    app = natron.getInstance(0)
+def main(app):
     group = app.createNode("fr.inria.built-in.Group")
     param = group.createDoubleParam("curve", "Curve")
     param.setValueAtTime(0, 0)
@@ -40,7 +37,6 @@ try:
     # the tangents are kept when another keyframe is added: the keys are free
     param.setValueAtTime(20, 30)
     assert abs(param.getValueAtTime(5) - _hermite(5, 0, 0, 3, 10, 10, 1)) < 1e-9
-    status = 0
-except Exception:  # pylint: disable=broad-except
-    traceback.print_exc()
-natron.quit(status)
+
+
+natronheadless.run(main)

@@ -7,7 +7,7 @@ name: Tests
 #   Windows use ccache; its cache is saved only by pushes to master and RB-*
 #   (and by workflow_dispatch runs), so that pull requests restore the base
 #   branch's cache but never evict it with their own.
-# - Debug (-O0 -g; -O1 -g on Windows, see CMakeLists.txt) and Release
+# - Debug (-O0 -g) and Release
 #   (-O3 -DNDEBUG): weekly, on tags, and on workflow_dispatch unless
 #   "fast" is chosen. No compiler cache.
 on:
@@ -226,10 +226,9 @@ jobs:
     # Disabled on RB-2.7 until it builds with Qt6 (maintainer, 2026-11-20); re-enable it by removing
     # the next line and uncommenting the draft condition below it (RB-2.6 runs this job except on drafts).
     if: false
-    # Draft pull requests run no CI (maintainer, 2026-11-25): a draft is rebased on the latest base before it is
-    # marked ready, so its earlier runs would have to be redone anyway. Marking it ready (ready_for_review) runs CI.
-    # if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     timeout-minutes: 240
+    # no CI on draft pull requests (see unix_test)
+    # if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     name: Test ${{ matrix.os }} UCRT64 Python ${{ matrix.python-version }} ${{ matrix.config }}
     runs-on: ${{ matrix.os }}
     defaults:
@@ -388,16 +387,13 @@ jobs:
     # resulting /opt/local is cached, keyed on the MacPorts version, the
     # overlay (tools/MacPorts) and MACPORTS_CACHE_VERSION (bump it when the
     # port list below changes).
-    # macOS arm64 runners are scarce: run only once Linux and Windows have passed, and not on draft
-    # pull requests (no job runs on drafts; CI runs when the PR is marked ready). Merging only
-    # requires Linux and Windows; this job is informative. Weekly, it always runs, whatever the
-    # Linux and Windows results.
+    # macOS arm64 runners are scarce: run only once Linux and Windows have passed (so not on draft
+    # pull requests, where they don't run). Merging only requires Linux and Windows; this job is
+    # informative. Weekly, it always runs, whatever the Linux and Windows results.
     needs: [unix_test, win-test]
     if: >-
-      false && !cancelled() && (
-      github.event_name == 'schedule' ||
-      (github.event_name != 'schedule' && needs.unix_test.result == 'success' && needs.win-test.result == 'success' &&
-       (github.event_name != 'pull_request' || !github.event.pull_request.draft)))
+      false && !cancelled() && (github.event_name == 'schedule' ||
+      (needs.unix_test.result == 'success' && needs.win-test.result == 'success'))
     name: Test macos-15 arm64 MacPorts Python 3.11 ${{ matrix.config }}
     runs-on: macos-15
     strategy:

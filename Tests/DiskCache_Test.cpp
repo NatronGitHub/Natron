@@ -82,36 +82,16 @@
 #include "Engine/TextureRect.h"
 #include "Engine/ViewIdx.h"
 
+#include "TestUtils.h"
+
 NATRON_NAMESPACE_USING
 
 namespace {
-// The bundled google-test predates GTEST_SKIP(): the tests return early and are reported as passed,
-// so say clearly that they did not run, as RotoPaint_Test does.
-// TODO: Convert to GTEST_SKIP() when gtest updated.
-void
-reportSkipped(const std::string& why)
-{
-    const testing::TestInfo* info = testing::UnitTest::GetInstance()->current_test_info();
-
-    std::cerr << "[  SKIPPED ] " << info->test_case_name() << '.' << info->name() << ": " << why << std::endl;
-}
-
 typedef Cache<Image> ImageCache;
 typedef std::shared_ptr<ImageCache> ImageCachePtr;
 
 // A 16x16 RGBA 8-bit image: 1024 bytes of data
 const std::size_t kImageBytes = 16 * 16 * 4;
-
-NodePtr
-createDot()
-{
-    AppInstancePtr app = appPTR->getTopLevelInstance();
-    CreateNodeArgs args(PLUGINID_NATRON_DOT, app->getProject());
-    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-
-    return app->createNode(args);
-}
 
 // The folder of a cache, with the 256 sub-folders 00..ff of a non-tiled cache (see AppManagerPrivate::cleanUpCacheDiskStructure)
 void
@@ -145,7 +125,7 @@ class DiskCacheTest
 protected:
     virtual void SetUp() OVERRIDE
     {
-        _holder = createDot();
+        _holder = NatronTest::createNode(PLUGINID_NATRON_DOT);
         ASSERT_TRUE( bool(_holder) );
         _cacheName = std::string("TestDiskCache") + QString::number( QCoreApplication::applicationPid() ).toStdString();
         _cache = makeCache();
@@ -409,13 +389,13 @@ TEST(MemoryFileTest, ReserveFailsWhenTheDiskIsFull)
 {
     const QString dir = QString::fromUtf8( qgetenv("NATRON_TEST_SMALL_VOLUME") );
     if ( dir.isEmpty() ) {
-        reportSkipped("set NATRON_TEST_SMALL_VOLUME to a directory on a small volume");
+        NatronTest::skip("set NATRON_TEST_SMALL_VOLUME to a directory on a small volume");
 
         return;
     }
     const qint64 available = QStorageInfo(dir).bytesAvailable();
     if ( (available <= 0) || ( available > 512LL * 1024 * 1024 ) ) {
-        reportSkipped("NATRON_TEST_SMALL_VOLUME must have less than 512 MB free");
+        NatronTest::skip("NATRON_TEST_SMALL_VOLUME must have less than 512 MB free");
 
         return;
     }
@@ -617,7 +597,7 @@ TEST_F(DiskCacheTest, TiledRestoreRemovesUnreferencedFiles)
 TEST(DiskCacheLocation, DetectsOtherProcesses)
 {
     if ( appPTR->isDiskCacheUsedByAnotherProcess() ) {
-        reportSkipped("another Natron process uses the disk cache location");
+        NatronTest::skip("another Natron process uses the disk cache location");
 
         return;
     }

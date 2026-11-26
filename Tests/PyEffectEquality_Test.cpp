@@ -40,27 +40,16 @@
 #include "Engine/Project.h"
 #include "Engine/PyNode.h"
 
+#include "TestUtils.h"
+
 NATRON_NAMESPACE_USING
-
-namespace {
-NodePtr
-createDot(const AppInstancePtr& app)
-{
-    CreateNodeArgs args( PLUGINID_NATRON_DOT, app->getProject() );
-
-    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-
-    return app->createNode(args);
-}
-} // anonymous namespace
 
 TEST(PyEffect, EqualityAndHash)
 {
     AppInstancePtr app = appPTR->getTopLevelInstance();
     ASSERT_TRUE( bool(app) );
-    NodePtr dot1 = createDot(app);
-    NodePtr dot2 = createDot(app);
+    NodePtr dot1 = NatronTest::createNode(PLUGINID_NATRON_DOT);
+    NodePtr dot2 = NatronTest::createNode(PLUGINID_NATRON_DOT);
     ASSERT_TRUE( dot1 && dot2 );
 
     // C++
@@ -109,7 +98,7 @@ TEST(PyEffect, NoNodeOnlyEqualsItself)
     typedef NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::Effect PyEffect;
     AppInstancePtr app = appPTR->getTopLevelInstance();
     ASSERT_TRUE( bool(app) );
-    PyEffect dead1( createDot(app) ), dead2( createDot(app) );
+    PyEffect dead1( NatronTest::createNode(PLUGINID_NATRON_DOT) ), dead2( NatronTest::createNode(PLUGINID_NATRON_DOT) );
     ASSERT_TRUE( dead1.getInternalNode() && dead2.getInternalNode() );
     dead1.destroy();
     dead2.destroy();
@@ -120,7 +109,7 @@ TEST(PyEffect, NoNodeOnlyEqualsItself)
     EXPECT_FALSE(dead1 == dead2);
     EXPECT_TRUE(dead1 != dead2);
 
-    NodePtr dot = createDot(app);
+    NodePtr dot = NatronTest::createNode(PLUGINID_NATRON_DOT);
     ASSERT_TRUE( bool(dot) );
     {
         PyEffect alive(dot);
@@ -135,8 +124,8 @@ TEST(PyEffect, DestroyedNode)
 {
     AppInstancePtr app = appPTR->getTopLevelInstance();
     ASSERT_TRUE( bool(app) );
-    NodePtr dot1 = createDot(app);
-    NodePtr dot2 = createDot(app);
+    NodePtr dot1 = NatronTest::createNode(PLUGINID_NATRON_DOT);
+    NodePtr dot2 = NatronTest::createNode(PLUGINID_NATRON_DOT);
     ASSERT_TRUE( dot1 && dot2 );
     const std::string name1 = dot1->getScriptName();
     const std::string name2 = dot2->getScriptName();

@@ -359,6 +359,10 @@ private:
 
     // End the blocks of _pluginEditBlocks (main thread only).
     void endPluginEditBlocks();
+
+    // Warn once per plug-in and param if a param that never animates in Natron (Bytes, StrChoice) sets
+    // kOfxParamPropAnimates to 1.
+    void warnIfAnimates(const std::string& paramName, const OFX::Host::Param::Descriptor& descriptor) const;
 };
 
 class OfxImageEffectDescriptor

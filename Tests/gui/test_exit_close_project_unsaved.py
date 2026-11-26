@@ -15,10 +15,7 @@ gen = app.createNode(GENERATOR)
 check(gen is not None, "createNode(%s) failed" % GENERATOR)
 viewer.connectInput(0, gen)
 # the settings panel of the node, open in the Properties pane
-app.clearSelection()
-app.selectNode(gen, True)
-NatronGuiTest.sendKey("NodeGraph", "Return")
-wait_idle()
+open_settings_panel(gen)
 # an unsaved change
 app.getProjectParam("frameRange").set(1, 200)
 wait_idle()

@@ -50,27 +50,21 @@ once the archive is open.
 
 Exit status: 0 on success, 1 on failure, 2 on a usage error.
 --debugger runs NatronRenderer under natron-lldb.sh, or set
-NATRON_TEST_WRAPPER.
+NATRON_TEST_WRAPPER (see natronrunner.py).
 """
 
 import json
 import os
-import shlex
 import shutil
-import subprocess
 import sys
 import tempfile
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-PROJECT = os.path.join(os.path.dirname(HERE), "data",
-                       "ProjectFileFormat-2.5.ntp")
+import natronrunner
 
-BACKGROUND_TAG = b"<Background_project>1</Background_project>"
-GUI_TAG = b"<Background_project>0</Background_project>"
-DOT_PLUGIN_TAG = b"<Plugin_id>fr.inria.built-in.Dot</Plugin_id>"
+TIMEOUT = 300  # seconds
+
 # the only Input node of the project is in Group1
 INPUT_PLUGIN_TAG = b"<Plugin_id>fr.inria.built-in.Input</Plugin_id>"
-MISSING_PLUGIN_TAG = b"<Plugin_id>fr.inria.built-in.NoSuchPlugin</Plugin_id>"
 # the input of the Output node of Group1
 SOURCE_INPUT_TAG = b"<first>Source</first>"
 MISSING_INPUT_TAG = b"<first>NoSuchInput</first>"
@@ -197,57 +191,34 @@ EXPECTED = [
 MAJOR_VERSION_MESSAGE = "was found in the script but was loaded with version"
 
 
-def _replace(data, old, new, after=None):
-    """Replaces the first occurrence of old, or the first one after after.
-
-    Args:
-      data: the project file contents (bytes).
-      old: the bytes to replace.
-      new: the replacement.
-      after: if given, only an occurrence of old after the first occurrence
-        of after is replaced.
-
-    Returns:
-      The new contents.
-
-    Raises:
-      ValueError: old (or after) is not in data.
-    """
-    start = 0
-    if after is not None:
-        start = data.find(after)
-        if start == -1:
-            raise ValueError("%r not found in the test project" % after)
-    index = data.find(old, start)
-    if index == -1:
-        raise ValueError("%r not found in the test project" % old)
-    return data[:index] + new + data[index + len(old):]
-
-
 def _variants(data):
     """Returns the test projects, by label (see LOADS).
 
     Raises:
       ValueError: the test project doesn't have the expected contents.
     """
-    missing_in_group = _replace(data, INPUT_PLUGIN_TAG, MISSING_PLUGIN_TAG)
-    callback = _replace(_replace(missing_in_group, BACKGROUND_TAG, GUI_TAG),
-                        KNOBS_COUNT_TAG,
-                        b"<ProjectKnobsCount>5</ProjectKnobsCount>")
-    callback = _replace(callback, FORMATS_TAG, CALLBACK_KNOB + FORMATS_TAG)
+    # short names for the table below
+    replace = natronrunner.replace_first
+    background, gui = natronrunner.BACKGROUND_TAG, natronrunner.GUI_TAG
+    dot, missing = natronrunner.DOT_PLUGIN_TAG, natronrunner.MISSING_PLUGIN_TAG
+    missing_in_group = replace(data, INPUT_PLUGIN_TAG, missing)
+    callback = replace(replace(missing_in_group, background, gui),
+                       KNOBS_COUNT_TAG,
+                       b"<ProjectKnobsCount>5</ProjectKnobsCount>")
+    callback = replace(callback, FORMATS_TAG, CALLBACK_KNOB + FORMATS_TAG)
     return {
         "background": data,
-        "gui": _replace(data, BACKGROUND_TAG, GUI_TAG),
-        "missingplugin": _replace(data, DOT_PLUGIN_TAG, MISSING_PLUGIN_TAG),
+        "gui": replace(data, background, gui),
+        "missingplugin": replace(data, dot, missing),
         "aftererrors": data,
         "missingingroup": missing_in_group,
-        "missinginput": _replace(data, SOURCE_INPUT_TAG, MISSING_INPUT_TAG),
-        "majorversion": _replace(data, MAJOR_VERSION_TAG,
-                                 OTHER_MAJOR_VERSION_TAG,
-                                 after=DOT_PLUGIN_TAG),
-        "missingpyplug": _replace(data, GROUP_PYTHON_MODULE_TAG,
-                                  MISSING_PYTHON_MODULE_TAG),
-        "pyplug": _replace(data, GROUP_PYTHON_MODULE_TAG, PYTHON_MODULE_TAG),
+        "missinginput": replace(data, SOURCE_INPUT_TAG, MISSING_INPUT_TAG),
+        "majorversion": replace(data, MAJOR_VERSION_TAG,
+                                OTHER_MAJOR_VERSION_TAG,
+                                after=dot),
+        "missingpyplug": replace(data, GROUP_PYTHON_MODULE_TAG,
+                                 MISSING_PYTHON_MODULE_TAG),
+        "pyplug": replace(data, GROUP_PYTHON_MODULE_TAG, PYTHON_MODULE_TAG),
         "callback": callback,
     }
 
@@ -266,7 +237,7 @@ def _write_test_files(tmp_dir, env):
       OSError: a file can't be read or written.
       ValueError: the test project doesn't have the expected contents.
     """
-    with open(PROJECT, "rb") as f:
+    with open(natronrunner.TEST_PROJECT, "rb") as f:
         data = f.read()
     for label, contents in _variants(data).items():
         path = os.path.join(tmp_dir, label + ".ntp")
@@ -291,20 +262,13 @@ def _run_renderer(cmd, env):
     Returns:
       Its output, or None if it failed or timed out.
     """
-    print("Running: " + " ".join(cmd))
-    sys.stdout.flush()
-    try:
-        proc = subprocess.run(cmd, env=env, stdin=subprocess.DEVNULL,
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.STDOUT, timeout=300)
-    except subprocess.TimeoutExpired:
+    status, output = natronrunner.run(cmd, env, TIMEOUT)
+    sys.stdout.write(output)
+    if status is None:
         print("FAILED: timeout")
         return None
-    # natron-lldb.sh runs it in a terminal, which ends the lines with \r\n
-    output = proc.stdout.decode(errors="replace").replace("\r\n", "\n")
-    sys.stdout.write(output)
-    print("exit status %d" % proc.returncode)
-    if proc.returncode != 0:
+    print("exit status %d" % status)
+    if status != 0:
         print("FAILED: the exit status should be 0")
         return None
     return output
@@ -337,20 +301,14 @@ def main(argv):
     if len(argv) < 2:
         sys.stderr.write(__doc__)
         return 2
-    wrapper = []
-    if "--debugger" in argv[2:]:
-        wrapper = [os.path.join(HERE, "natron-lldb.sh")]
-    elif os.environ.get("NATRON_TEST_WRAPPER"):
-        wrapper = shlex.split(os.environ["NATRON_TEST_WRAPPER"])
+    cmd_wrapper = natronrunner.wrapper(argv[2:])
     tmp_dir = tempfile.mkdtemp(prefix="natron-project-load-info-test-")
     try:
-        env = dict(os.environ)
-        env["NATRON_DISK_CACHE_PATH"] = os.path.join(tmp_dir, "cache")
-        # Debug builds: no trapped floating point exception (#1537)
-        env["NATRON_NO_FP_TRAPS"] = "1"
+        env = natronrunner.natron_env(
+            tmp_dir, NATRON_DISK_CACHE_PATH=os.path.join(tmp_dir, "cache"))
         script = _write_test_files(tmp_dir, env)
         output = _run_renderer(
-            wrapper + [argv[1], "--no-settings", "-t", script], env)
+            cmd_wrapper + [argv[1], "--no-settings", "-t", script], env)
         if output is None:
             return 1
         with open(env["NATRON_TEST_OUTPUT"]) as f:

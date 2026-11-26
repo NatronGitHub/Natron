@@ -94,6 +94,9 @@ namespace Python { }
 // - App/NatronInfo.plist.in (macOS)
 // - Gui/GuiApplicationManager10.cpp (comment in the QFileOpenEvent handler)
 #define NATRON_PROJECT_FILE_EXT "ntp"
+// The extension of Python scripts, PyPlugs and projects saved as a Python script (eProjectFileFormatPython):
+// Project::isProjectFile() tells a Python project from the others by its content.
+#define NATRON_PYTHON_FILE_EXT "py"
 #define NATRON_PROJECT_FILE_MIME_TYPE "application/vnd.natron.project"
 #define NATRON_PROJECT_UNTITLED "Untitled." NATRON_PROJECT_FILE_EXT
 #define NATRON_CACHE_FILE_EXT "ntc"

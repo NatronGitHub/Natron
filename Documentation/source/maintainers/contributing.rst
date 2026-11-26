@@ -171,7 +171,7 @@ version: two test runs at the same time would rewrite each other's (#1569).
 - ``Tests`` also enables Qt's test mode (``QStandardPaths::setTestModeEnabled()``): the
   auto-saves that the tests write go to ``~/.qttest/...``, not to the user's ``Autosaves``
   directory (on Linux, the native ``QSettings`` also go to ``~/.qttest/config``).
-- The GUI tests (``gui.*``) and *UndoGroupHeadless* use a cache directory of the build tree,
+- The GUI tests (``gui.*``) and the headless tests (``headless.*``) use a cache directory of the build tree,
   and the driver scripts of ``Tests/gui`` (``run_*.py``) a temporary one, removed at the end,
   unless ``NATRON_DISK_CACHE_PATH`` is set.
 
@@ -275,16 +275,11 @@ The procedure, from an up-to-date RB-2.6 checkout with ``gh`` authenticated:
    can't parse. Fix those pull request descriptions (``gh pr edit N
    --body-file ...``) and run it again.
 3. Run the same command with ``--write``. The script adds the new lines to the
-   topmost version, merges the lines that differ only by their references, and
-   groups the entries of each section by component (in the order above, then
-   the other components alphabetically, then the lines without one), and in
-   ``Plugins`` by bundle and plug-in. A section that has ``####`` sub-headings
-   or paragraphs is not regrouped; the new lines go at its end. The script
-   drops the lines of pull requests that say ``none`` or have an internal
-   label (``commercial``, ``dependencies``; see ``--internal-label`` and
-   ``--include-internal``), and reports them. It refuses to run when
-   ``CHANGELOG.md`` has uncommitted changes (``--force`` overrides), since a
-   second ``--write`` would add the lines again.
+   topmost version, grouped by component (in ``Plugins``, by bundle and
+   plug-in), and drops and reports the lines of pull requests that say
+   ``none`` or have an internal label; ``--help`` lists the options. It
+   refuses to run when ``CHANGELOG.md`` has uncommitted changes: a second
+   ``--write`` would add the lines again.
 4. **Editorial pass**, which can't be automated: a person, or an agent whose
    result a person reviews, rewrites the topmost version for users. One entry
    per user-visible change; related fixes merged into one line; internal items
@@ -358,9 +353,10 @@ The workflow also:
 
 **Weekly** (Sunday 03:17 UTC), all three jobs build the default branch in
 Debug and Release; macOS runs without waiting for Linux and Windows. The weekly
-run is never skipped: every job uses rolling toolchains. Any branch can also be run by hand (``workflow_dispatch``). Other configurations (Qt 6, extra C++
+run is never skipped: every job uses rolling toolchains. Any branch can also be run by hand (``workflow_dispatch``). Other configurations (extra C++
 standards such as C++23, other compilers or OS versions) are meant to run
-weekly or by hand, never per pull request; none is set up yet.
+weekly or by hand, never per pull request; none is set up yet. Qt 6 is built
+by RB-2.7's Linux job (see :doc:`qt6-migration`), not on RB-2.6.
 
 **Installers and packages are built weekly, on demand and for tags (the
 Windows package repository only on demand and for tags), never for pull

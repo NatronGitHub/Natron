@@ -69,7 +69,7 @@ waitForCounter(const char* name,
 TEST(OfxRenderClone, DestroyedBeforeMainInstance)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginRenderClone) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginRenderClone);
+        NatronTestPlugin::reportMissing(kNatronTestPluginRenderClone);
 
         return;
     }

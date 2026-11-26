@@ -32,9 +32,13 @@
 
 #include "Global/Macros.h"
 
+#include <cmath>
+#include <cstdio>
 #include <iostream>
+#include <list>
 #include <set>
 #include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -45,6 +49,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/CreateNodeArgs.h"
+#include "Engine/Format.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/Plugin.h"
@@ -52,6 +57,8 @@
 #include "Engine/TimeLine.h"
 #include "Engine/TrackMarker.h"
 #include "Engine/TrackerContext.h"
+
+#include "TestUtils.h"
 
 #define PLUGINID_OFX_CHECKERBOARD "net.sf.openfx.CheckerBoardPlugin"
 
@@ -64,50 +71,17 @@
 #define kTrackerParamTransformType "transformType"
 #define kTrackerParamReferenceFrame "referenceFrame"
 #define kTransformParamTranslate "translate"
+#define kTransformParamRotate "rotate"
+#define kTransformParamScale "scale"
 #define kTransformParamCenter "center"
 const int kMotionTypeMatchMove = 2; // eTrackerMotionTypeMatchMove
 const int kTransformTypeTransform = 0; // eTrackerTransformNodeTransform
+const int kTransformTypeCornerPin = 1; // eTrackerTransformNodeCornerPin
 
 NATRON_NAMESPACE_USING
 
 namespace {
-bool
-isPluginAvailable(const char* pluginID)
-{
-    try {
-        Plugin* p = appPTR->getPluginBinary(QString::fromUtf8(pluginID), -1, -1, false);
-
-        return p && p->getLibraryBinary();
-    } catch (...) {
-        return false;
-    }
-}
-
-// The bundled google-test predates GTEST_SKIP(): say clearly that the test did not run
-bool
-skipIfMissing(const char* pluginID)
-{
-    if ( isPluginAvailable(pluginID) ) {
-        return false;
-    }
-    const testing::TestInfo* info = testing::UnitTest::GetInstance()->current_test_info();
-    std::cerr << "[  SKIPPED ] " << info->test_case_name() << '.' << info->name()
-              << ": plug-in " << pluginID << " not found (needs openfx-misc in OFX_PLUGIN_PATH)" << std::endl;
-
-    return true;
-}
-
-NodePtr
-createNode(const char* pluginID)
-{
-    AppInstancePtr app = appPTR->getTopLevelInstance();
-    CreateNodeArgs args( pluginID, app->getProject() );
-
-    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-
-    return app->createNode(args);
-}
+using NatronTest::createNode;
 
 class TrackerHeadlessTest
     : public ::testing::Test
@@ -119,7 +93,7 @@ protected:
 
     virtual void SetUp() OVERRIDE
     {
-        if ( !isPluginAvailable(PLUGINID_OFX_TRANSFORM) || !isPluginAvailable(PLUGINID_OFX_CORNERPIN) ) {
+        if ( !NatronTest::isPluginAvailable(PLUGINID_OFX_TRANSFORM) || !NatronTest::isPluginAvailable(PLUGINID_OFX_CORNERPIN) ) {
             return;
         }
         _tracker = createNode(PLUGINID_NATRON_TRACKER);
@@ -148,13 +122,15 @@ protected:
         }
     }
 
+    // true if the test must return: the plug-ins are missing (skipped), or the tracker was not created (failed)
     bool skipped()
     {
-        if ( skipIfMissing(PLUGINID_OFX_TRANSFORM) || skipIfMissing(PLUGINID_OFX_CORNERPIN) ) {
+        if ( !NatronTest::requirePlugins({ PLUGINID_OFX_TRANSFORM, PLUGINID_OFX_CORNERPIN }, "openfx-misc") ) {
             return true;
         }
+        EXPECT_TRUE( bool(_track) ) << "the Tracker node or its track was not created";
 
-        return false;
+        return !_track;
     }
 
     template <typename K>
@@ -265,7 +241,7 @@ trackNextOnCheckerBoard(const NodePtr& tracker,
 // The Track Next button tracks the selected tracks without a viewer, from the timeline's current frame
 TEST_F(TrackerHeadlessTest, TrackNextButtonWithoutViewer)
 {
-    if ( skipped() || skipIfMissing(PLUGINID_OFX_CHECKERBOARD) ) {
+    if ( skipped() || !NatronTest::requirePlugins({ PLUGINID_OFX_CHECKERBOARD }, "openfx-misc") ) {
         return;
     }
     ASSERT_TRUE(_tracker && _context && _track);
@@ -275,7 +251,7 @@ TEST_F(TrackerHeadlessTest, TrackNextButtonWithoutViewer)
 // The transform is solved after a tracking (the motion type is not None), without a viewer
 TEST_F(TrackerHeadlessTest, SolveAfterTrackingWithoutViewer)
 {
-    if ( skipped() || skipIfMissing(PLUGINID_OFX_CHECKERBOARD) ) {
+    if ( skipped() || !NatronTest::requirePlugins({ PLUGINID_OFX_CHECKERBOARD }, "openfx-misc") ) {
         return;
     }
     ASSERT_TRUE(_tracker && _context && _track);
@@ -291,4 +267,207 @@ TEST_F(TrackerHeadlessTest, SolveAfterTrackingWithoutViewer)
     EXPECT_NEAR( 256., transformCenter->getValue(1), 1e-6 ) << "the transform was not solved after the tracking";
     // and the solve ended: it enables the solver parameters again
     EXPECT_TRUE( motionType->isEnabled(0) ) << "the solve after the tracking did not end";
+}
+
+namespace {
+// The motion of the synthetic sequence of TracksAKnownMotion: a Transform centered on the image, which moves it by
+// (3, -2) pixels, rotates it by 1 degree and scales it by 1% per frame from frame 1, where it is the identity.
+const int kKnownMotionFirstFrame = 1;
+const int kKnownMotionLastFrame = 6;
+// The CornerPin points are the corners of the image, far from the tracks: the tracking errors grow there
+const double kCornerPinTolerance = 2.;
+
+struct KnownMotion
+{
+    double tx, ty, rotateDegrees, scale;
+};
+
+KnownMotion
+knownMotion(int frame)
+{
+    const int t = frame - kKnownMotionFirstFrame;
+
+    return KnownMotion{ 3. * t, -2. * t, 1. * t, 1. + 0.01 * t };
+}
+
+struct Point2D
+{
+    double x, y;
+};
+
+// Where the known motion around center takes the point p of the first frame
+Point2D
+knownMotionPoint(int frame,
+                 const Point2D& center,
+                 const Point2D& p)
+{
+    const KnownMotion m = knownMotion(frame);
+    const double a = m.rotateDegrees * std::atan(1.) / 45.;
+    const double dx = m.scale * (p.x - center.x);
+    const double dy = m.scale * (p.y - center.y);
+
+    return Point2D{ center.x + m.tx + std::cos(a) * dx - std::sin(a) * dy,
+                    center.y + m.ty + std::sin(a) * dx + std::cos(a) * dy };
+}
+
+// Records a value with all its digits in the test's XML output (--gtest_output=xml), to compare two builds exactly
+void
+recordValue(const std::string& key,
+            double value)
+{
+    char buf[64];
+
+    std::snprintf(buf, sizeof(buf), "%.17g", value);
+    ::testing::Test::RecordProperty(key, buf);
+}
+} // anonymous namespace
+
+// Tracks four corners of a CheckerBoard moved by a known Transform animation with each motion model, then solves a
+// Transform and a CornerPin from the tracks. The tracks and the solved parameters must follow the known motion.
+TEST_F(TrackerHeadlessTest, TracksAKnownMotion)
+{
+    if ( skipped() || !NatronTest::requirePlugins({ PLUGINID_OFX_CHECKERBOARD }, "openfx-misc") ) {
+        return;
+    }
+    ASSERT_TRUE(_tracker && _context && _track);
+    // only the tracks created below are solved
+    _context->removeMarker(_track);
+    _track.reset();
+
+    // destroyed at the end of the test, also when an assertion fails
+    NatronTest::NodeScope nodes;
+    NodePtr checkerBoard = nodes.create(PLUGINID_OFX_CHECKERBOARD);
+    ASSERT_TRUE( bool(checkerBoard) );
+    NodePtr transform = nodes.create(PLUGINID_OFX_TRANSFORM);
+    ASSERT_TRUE( bool(transform) );
+    ASSERT_TRUE( transform->connectInput(checkerBoard, 0) );
+    ASSERT_TRUE( _tracker->connectInput(transform, 0) );
+    KnobDoublePtr translate = std::dynamic_pointer_cast<KnobDouble>( transform->getKnobByName(kTransformParamTranslate) );
+    KnobDoublePtr rotate = std::dynamic_pointer_cast<KnobDouble>( transform->getKnobByName(kTransformParamRotate) );
+    KnobDoublePtr scale = std::dynamic_pointer_cast<KnobDouble>( transform->getKnobByName(kTransformParamScale) );
+    KnobDoublePtr center = std::dynamic_pointer_cast<KnobDouble>( transform->getKnobByName(kTransformParamCenter) );
+    ASSERT_TRUE(translate && rotate && scale && center);
+    // the CheckerBoard covers the project format, and its 64x64 boxes start from its center
+    Format format;
+    _tracker->getApp()->getProject()->getProjectDefaultFormat(&format);
+    const Point2D motionCenter{ (format.x1 + format.x2) / 2., (format.y1 + format.y2) / 2. };
+    center->setValue(motionCenter.x, ViewSpec::all(), 0);
+    center->setValue(motionCenter.y, ViewSpec::all(), 1);
+    for (int f = kKnownMotionFirstFrame; f <= kKnownMotionLastFrame; ++f) {
+        const KnownMotion m = knownMotion(f);
+        translate->setValueAtTime(f, m.tx, ViewSpec::all(), 0);
+        translate->setValueAtTime(f, m.ty, ViewSpec::all(), 1);
+        rotate->setValueAtTime(f, m.rotateDegrees, ViewSpec::all(), 0);
+        scale->setValueAtTime(f, m.scale, ViewSpec::all(), 0);
+        scale->setValueAtTime(f, m.scale, ViewSpec::all(), 1);
+    }
+
+    // corners of boxes of the CheckerBoard, around the center of the Transform (also the center of the tracks)
+    const Point2D corners[4] = {
+        { motionCenter.x - 192., motionCenter.y - 128. }, { motionCenter.x + 192., motionCenter.y - 128. },
+        { motionCenter.x + 192., motionCenter.y + 128. }, { motionCenter.x - 192., motionCenter.y + 128. }
+    };
+    std::vector<ChoiceOption> models;
+    TrackerContext::getMotionModelsAndHelps(true, &models);
+    ASSERT_EQ( 6u, models.size() );
+    std::list<TrackMarkerPtr> tracks;
+    for (std::size_t m = 0; m < models.size(); ++m) {
+        SCOPED_TRACE(models[m].id);
+        for (TrackMarkerPtr& track : tracks) {
+            _context->removeMarker(track);
+        }
+        tracks.clear();
+        for (int i = 0; i < 4; ++i) {
+            TrackMarkerPtr track = _context->createMarker();
+            ASSERT_TRUE( bool(track) );
+            KnobChoicePtr motionModel = std::dynamic_pointer_cast<KnobChoice>( track->getKnobByName(kTrackerParamMotionModel) );
+            ASSERT_TRUE( bool(motionModel) );
+            motionModel->setValue( (int)m );
+            track->getCenterKnob()->setValueAtTime(kKnownMotionFirstFrame, corners[i].x, ViewSpec::all(), 0);
+            track->getCenterKnob()->setValueAtTime(kKnownMotionFirstFrame, corners[i].y, ViewSpec::all(), 1);
+            tracks.push_back(track);
+        }
+        _tracker->getApp()->getTimeLine()->seekFrame(kKnownMotionFirstFrame, false, 0, eTimelineChangeReasonOtherSeek);
+        // the last frame is excluded
+        _context->trackMarkers(tracks, kKnownMotionFirstFrame, kKnownMotionLastFrame + 1, 1, 0);
+        // the tracking runs in its own thread, which may not have started yet
+        const int frameCount = kKnownMotionLastFrame - kKnownMotionFirstFrame + 1;
+        KnobDoublePtr lastTrackCenter = tracks.back()->getCenterKnob();
+        // (it may also end before every frame is tracked, if a track is lost)
+        QElapsedTimer timer;
+        timer.start();
+        bool started = false;
+        while (timer.elapsed() < 60000) {
+            const bool tracking = _context->isCurrentlyTracking();
+            started = started || tracking;
+            if ( !tracking && ( started || (lastTrackCenter->getKeyFramesCount(ViewSpec::all(), 0) >= frameCount) ) ) {
+                break;
+            }
+            QCoreApplication::processEvents();
+            QThread::msleep(10);
+        }
+        QCoreApplication::processEvents();
+        ASSERT_FALSE( _context->isCurrentlyTracking() ) << "the tracking did not end";
+
+        int i = 0;
+        for (const TrackMarkerPtr& track : tracks) {
+            KnobDoublePtr trackCenter = track->getCenterKnob();
+            EXPECT_EQ( frameCount, trackCenter->getKeyFramesCount(ViewSpec::all(), 0) );
+            for (int f = kKnownMotionFirstFrame + 1; f <= kKnownMotionLastFrame; ++f) {
+                const Point2D expected = knownMotionPoint(f, motionCenter, corners[i]);
+                const double trackedX = trackCenter->getValueAtTime(f, 0);
+                const double trackedY = trackCenter->getValueAtTime(f, 1);
+                const std::string key = "model" + std::to_string(m) + "_track" + std::to_string(i) + "_frame" + std::to_string(f);
+                recordValue(key + "_x", trackedX);
+                recordValue(key + "_y", trackedY);
+                EXPECT_NEAR(expected.x, trackedX, 0.25) << key;
+                EXPECT_NEAR(expected.y, trackedY, 0.25) << key;
+            }
+            ++i;
+        }
+
+        // solve a Transform, then a CornerPin, from the tracks
+        knob<KnobChoice>(kTrackerParamMotionType)->setValue(kMotionTypeMatchMove);
+        knob<KnobInt>(kTrackerParamReferenceFrame)->setValue(kKnownMotionFirstFrame);
+        knob<KnobChoice>(kTrackerParamTransformType)->setValue(kTransformTypeTransform);
+        _context->solveTransformParams();
+        KnobDoublePtr solvedTranslate = knob<KnobDouble>(kTransformParamTranslate);
+        KnobDoublePtr solvedRotate = knob<KnobDouble>(kTransformParamRotate);
+        KnobDoublePtr solvedScale = knob<KnobDouble>(kTransformParamScale);
+        ASSERT_TRUE(solvedTranslate && solvedRotate && solvedScale);
+        for (int f = kKnownMotionFirstFrame + 1; f <= kKnownMotionLastFrame; ++f) {
+            const KnownMotion expected = knownMotion(f);
+            const std::string key = "model" + std::to_string(m) + "_transform_frame" + std::to_string(f);
+            recordValue( key + "_tx", solvedTranslate->getValueAtTime(f, 0) );
+            recordValue( key + "_ty", solvedTranslate->getValueAtTime(f, 1) );
+            recordValue( key + "_rotate", solvedRotate->getValueAtTime(f, 0) );
+            recordValue( key + "_scale", solvedScale->getValueAtTime(f, 0) );
+            EXPECT_NEAR(expected.tx, solvedTranslate->getValueAtTime(f, 0), 0.25) << key;
+            EXPECT_NEAR(expected.ty, solvedTranslate->getValueAtTime(f, 1), 0.25) << key;
+            EXPECT_NEAR(expected.rotateDegrees, solvedRotate->getValueAtTime(f, 0), 0.05) << key;
+            EXPECT_NEAR(expected.scale, solvedScale->getValueAtTime(f, 0), 0.001) << key;
+        }
+
+        knob<KnobChoice>(kTrackerParamTransformType)->setValue(kTransformTypeCornerPin);
+        _context->solveTransformParams();
+        // the CornerPin takes its "from" points (at the reference frame) where the known motion takes them
+        for (int c = 0; c < 4; ++c) {
+            KnobDoublePtr from = knob<KnobDouble>( "from" + std::to_string(c + 1) );
+            KnobDoublePtr to = knob<KnobDouble>( "to" + std::to_string(c + 1) );
+            ASSERT_TRUE(from && to);
+            const Point2D fromPoint{ from->getValueAtTime(kKnownMotionFirstFrame, 0), from->getValueAtTime(kKnownMotionFirstFrame, 1) };
+            for (int f = kKnownMotionFirstFrame + 1; f <= kKnownMotionLastFrame; ++f) {
+                const std::string key = "model" + std::to_string(m) + "_cornerpin_to" + std::to_string(c + 1) + "_frame" + std::to_string(f);
+                const Point2D expected = knownMotionPoint(f, motionCenter, fromPoint);
+                recordValue( key + "_x", to->getValueAtTime(f, 0) );
+                recordValue( key + "_y", to->getValueAtTime(f, 1) );
+                EXPECT_NEAR(expected.x, to->getValueAtTime(f, 0), kCornerPinTolerance) << key;
+                EXPECT_NEAR(expected.y, to->getValueAtTime(f, 1), kCornerPinTolerance) << key;
+            }
+        }
+    }
+    for (TrackMarkerPtr& track : tracks) {
+        _context->removeMarker(track);
+    }
+    _context->abortTracking_blocking();
 }

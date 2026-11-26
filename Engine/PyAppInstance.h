@@ -287,6 +287,8 @@ class App
 private:
     AppInstanceWPtr _instance;
 
+    std::string expandedFileName(const QString& filename) const;
+
 public:
 
 
@@ -342,6 +344,7 @@ public:
     // format: the format of the file (see ProjectFileFormatEnum). eProjectFileFormatNone uses the format of the
     // project, or the "Save projects as binary by default" preference for a project that was never saved.
     // For saveProject() and saveProjectAs(), a format other than eProjectFileFormatNone becomes the format of the project.
+    // The save functions expand the project variables, such as [Project], in filename.
     bool saveProject(const QString& filename, Natron::ProjectFileFormatEnum format = Natron::ProjectFileFormatEnum::eProjectFileFormatNone);
     bool saveProjectAs(const QString& filename, Natron::ProjectFileFormatEnum format = Natron::ProjectFileFormatEnum::eProjectFileFormatNone);
     // Saves a copy of the project to filename, without changing the project's file name, path or format.

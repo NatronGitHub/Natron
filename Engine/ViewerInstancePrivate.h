@@ -221,6 +221,17 @@ MinMaxVal findAutoContrastVminVmax(const ImagePtr inputImage,
                                    int alphaChannelIndex,
                                    const RectI & rect);
 
+/// Auto contrast: the gain and offset (value * gain + offset) that show range, the result of
+/// findAutoContrastVminVmax(), in [0, 1], whatever its sign. A constant image (min == max) is shown white if it is
+/// positive, black otherwise; an empty range (min > max) gets gain 1 and offset 0.
+struct AutoContrastGainOffset
+{
+    double gain;
+    double offset;
+};
+
+AutoContrastGainOffset autoContrastGainOffset(const MinMaxVal& range);
+
 struct ViewerInstance::ViewerInstancePrivate
     : public QObject, public LockManagerI<FrameEntry>
 {

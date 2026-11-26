@@ -25,11 +25,16 @@
 
 #include "Global/Macros.h"
 
+#include <list>
+
 #include <gtest/gtest.h>
 
+#include "Global/GLIncludes.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/GPUContextPool.h"
 #include "Engine/Settings.h"
+
+#include "TestUtils.h"
 
 NATRON_NAMESPACE_USING
 
@@ -47,8 +52,7 @@ std::ostream& operator<<(std::ostream& os, const std::nullptr_t p) {
 TEST(OSGLContext, Basic)
 {
     if (!appPTR->isOpenGLLoaded()) {
-        // TODO: Convert to GTEST_SKIP() when gtest updated.
-        std::cerr << "Skipping test because OpenGL loading failed." << std::endl;
+        NatronTest::skip("OpenGL loading failed");
         return;
     }
 
@@ -77,8 +81,7 @@ TEST(OSGLContext, Basic)
 
 TEST(GPUContextPool, Basic) {
     if (!appPTR->isOpenGLLoaded()) {
-        /// TODO: Convert to GTEST_SKIP() when gtest updated.
-        std::cerr << "Skipping test because OpenGL loading failed." << std::endl;
+        NatronTest::skip("OpenGL loading failed");
         return;
     }
 
@@ -114,4 +117,50 @@ TEST(GPUContextPool, Basic) {
     context.reset();
 
     EXPECT_FALSE(OSGLContext::threadHasACurrentContext());
+}
+
+// OSGLContext::getGPUInfos() creates a context per renderer and makes it current: the context of the caller (e.g. a
+// QOpenGLWidget, whose initializeGL() calls AppManager::initializeOpenGLFunctionsOnce(), which updates the About
+// window) must be current again when it returns (#1502).
+TEST(OSGLContext, GetGPUInfosRestoresCurrentContext)
+{
+    // Without a renderer that getGPUInfos() accepts, it makes no context current and the test would check nothing:
+    // e.g. on the Linux CI (Xvfb, Mesa llvmpipe), OSGLContext_x11::getGPUInfos() skips the renderers that are not
+    // accelerated before creating a context.
+    if ( !appPTR->isOpenGLLoaded() || appPTR->getOpenGLRenderers().empty() ) {
+        NatronTest::skip("no OpenGL renderer that getGPUInfos() uses");
+
+        return;
+    }
+
+    GPUContextPool pool;
+    OSGLContextPtr context = pool.attachGLContextToRender(/* checkIfGLLoaded */ false);
+    ASSERT_NE(context.get(), nullptr);
+    context->setContextCurrentNoRender();
+    // no context left current for the next tests, also when an assertion fails
+    struct ContextReleaser
+    {
+        GPUContextPool& pool;
+        OSGLContextPtr context;
+
+        ~ContextReleaser()
+        {
+            OSGLContext::unsetCurrentContextNoRender();
+            pool.releaseGLContextFromRender(context);
+        }
+    } releaser{pool, context};
+    ASSERT_TRUE(OSGLContext::threadHasACurrentContext());
+    // a texture of this context, unknown to the (unshared) contexts that getGPUInfos() creates
+    GLuint texture = 0;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    ASSERT_EQ(glIsTexture(texture), GL_TRUE);
+
+    std::list<OpenGLRendererInfo> renderers;
+    OSGLContext::getGPUInfos(renderers);
+
+    ASSERT_TRUE(OSGLContext::threadHasACurrentContext());
+    EXPECT_EQ(glIsTexture(texture), GL_TRUE) << "another context is current after getGPUInfos()";
+    glDeleteTextures(1, &texture);
 }

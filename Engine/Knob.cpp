@@ -324,49 +324,48 @@ KnobI::restoreLinks(const NodesList & allNodes,
     KnobIPtr thisKnob = shared_from_this();
     // All the links are restored, even if one of them fails, then the failures are reported at once (#1612).
     std::vector<std::string> errors;
+    const std::string prefix("KnobI::restoreLinks(): Could not restore ");
+    EffectInstance* effect = dynamic_cast<EffectInstance*>( getHolder() );
+    // the knob, with its node: the log may have the same knob of several nodes (paste)
+    const std::string knobName = ( ( effect && effect->getNode() ) ? effect->getNode()->getScriptName_mt_safe() + '/' : std::string() ) + getName();
     for (std::vector<Link>::const_iterator l = _links.begin(); l != _links.end(); ++l) {
+        const std::string linkName = "node/knob/track " + l->nodeName + '/' + l->knobName + '/' + l->trackName;
         KnobIPtr linkedKnob = findMaster(thisKnob, allNodes, l->nodeNameFull, l->nodeName, l->trackName, l->knobName, oldNewScriptNamesMapping);
         if (!linkedKnob) {
-            errors.push_back(std::string("KnobI::restoreLinks(): Could not restore link to node/knob/track ") + l->nodeName + '/' + l->knobName + '/' + l->trackName);
-            continue;
-        }
-        if (linkedKnob == thisKnob) {
-            qDebug() << "Link for" << getName().c_str()
-            << "failed to restore the following linkage:"
-            << "node=" << l->nodeName.c_str()
-            << "knob=" << l->knobName.c_str()
-            << "track=" << l->trackName.c_str()
-            << "because it returned the same Knob. Probably a pre-2.3.16 project with Group clones";
-            errors.push_back(std::string("KnobI::restoreLinks(): Could not restore link to node/knob/track ") + l->nodeName + '/' + l->knobName + '/' + l->trackName + " because it returned the same Knob. Probably a pre-2.3.16 project with Group clones.");
+            errors.push_back(prefix + "the link of " + knobName + " to " + linkName);
+        } else if (linkedKnob == thisKnob) {
+            errors.push_back(prefix + "the link of " + knobName + " to " + linkName + " because it returned the same Knob. Probably a pre-2.3.16 project with Group clones.");
         } else if (l->dimension == -1) {
             setKnobAsAliasOfThis(linkedKnob, true);
         } else if ( (l->slaveDimension < 0) || (l->slaveDimension >= getDimension()) ||
                     (l->dimension < 0) || ( l->dimension >= linkedKnob->getDimension() ) ) {
             // The dimensions come from the file: it may be damaged, or a plug-in may have reduced
             // the number of dimensions of one of the two parameters since it was saved (#1612).
-            EffectInstance* effect = dynamic_cast<EffectInstance*>( getHolder() );
-            const std::string nodeName = ( effect && effect->getNode() ) ? effect->getNode()->getScriptName_mt_safe() + '/' : std::string();
-            const std::string err = "KnobI::restoreLinks(): Could not restore the link of dimension " + std::to_string(l->slaveDimension) +
-                                    " of " + nodeName + getName() + " (" + std::to_string( getDimension() ) + " dimension(s)) to dimension " +
-                                    std::to_string(l->dimension) + " of node/knob/track " + l->nodeName + '/' + l->knobName + '/' + l->trackName +
-                                    " (" + std::to_string( linkedKnob->getDimension() ) + " dimension(s))";
-            if (!throwOnFailure) {
-                // the callers that don't throw (paste, presets) would not report it otherwise
-                appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( getName().c_str() ), QDateTime::currentDateTime(), QString::fromUtf8( err.c_str() ) );
-            }
-            errors.push_back(err);
+            errors.push_back(prefix + "the link of dimension " + std::to_string(l->slaveDimension) +
+                             " of " + knobName + " (" + std::to_string( getDimension() ) + " dimension(s)) to dimension " +
+                             std::to_string(l->dimension) + " of " + linkName +
+                             " (" + std::to_string( linkedKnob->getDimension() ) + " dimension(s))");
         } else {
             slaveTo(l->slaveDimension, linkedKnob, l->dimension);
         }
     }
     _links.clear();
-    if ( throwOnFailure && !errors.empty() ) {
-        std::string what = errors.front();
-        for (std::size_t i = 1; i < errors.size(); ++i) {
-            what += '\n' + errors[i];
-        }
-        throw std::runtime_error(what);
+    if ( errors.empty() ) {
+        return;
     }
+    if (!throwOnFailure) {
+        // the callers that don't throw (paste, presets) would not report them otherwise
+        for (const std::string& err : errors) {
+            appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( getName().c_str() ), QDateTime::currentDateTime(), QString::fromUtf8( err.c_str() ) );
+        }
+
+        return;
+    }
+    std::string what = errors.front();
+    for (std::size_t i = 1; i < errors.size(); ++i) {
+        what += '\n' + errors[i];
+    }
+    throw std::runtime_error(what);
 }
 
 void
@@ -942,9 +941,7 @@ KnobHelper::deleteValuesAtTime(CurveChangeReason curveChangeReason,
                                ViewSpec view,
                                int dimension, bool copyCurveValueAtTimeToInternalValue)
 {
-    if ( ( dimension >= (int)_imp->curves.size() ) || (dimension < 0) ) {
-        throw std::invalid_argument("KnobHelper::deleteValueAtTime(): Dimension out of range");
-    }
+    checkDimension(dimension, "KnobHelper::deleteValuesAtTime");
 
     if ( times.empty() ) {
         return;
@@ -1021,9 +1018,7 @@ KnobHelper::deleteValueAtTime(CurveChangeReason curveChangeReason,
                               ViewSpec view,
                               int dimension, bool copyCurveValueAtTimeToInternalValue)
 {
-    if ( ( dimension >= (int)_imp->curves.size() ) || (dimension < 0) ) {
-        throw std::invalid_argument("KnobHelper::deleteValueAtTime(): Dimension out of range");
-    }
+    checkDimension(dimension, "KnobHelper::deleteValueAtTime");
 
     if ( !canAnimate() || !isAnimated(dimension, view) ) {
         return;
@@ -1461,9 +1456,7 @@ KnobHelper::moveDerivativesAtTime(CurveChangeReason reason,
                                   double right)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if ( ( dimension >= (int)_imp->curves.size() ) || (dimension < 0) ) {
-        throw std::invalid_argument("KnobHelper::moveDerivativesAtTime(): Dimension out of range");
-    }
+    checkDimension(dimension, "KnobHelper::moveDerivativesAtTime");
 
     if ( !canAnimate() || !isAnimated(dimension, view) ) {
         return false;
@@ -1521,9 +1514,7 @@ KnobHelper::moveDerivativeAtTime(CurveChangeReason reason,
                                  bool isLeft)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if ( ( dimension >= (int)_imp->curves.size() ) || (dimension < 0) ) {
-        throw std::invalid_argument("KnobHelper::setInterpolationAtTime(): Dimension out of range");
-    }
+    checkDimension(dimension, "KnobHelper::moveDerivativeAtTime");
 
     if ( !canAnimate() || !isAnimated(dimension, view) ) {
         return false;
@@ -1584,11 +1575,7 @@ KnobHelper::removeAnimationWithReason(ViewSpec view,
                                       int dimension,
                                       ValueChangedReasonEnum reason)
 {
-    assert(0 <= dimension);
-    if ( (dimension < 0) || ( (int)_imp->curves.size() <= dimension ) ) {
-        throw std::invalid_argument("KnobHelper::removeAnimationWithReason(): Dimension out of range");
-    }
-
+    checkDimension(dimension, "KnobHelper::removeAnimationWithReason");
 
     if ( !canAnimate() || !isAnimated(dimension, view) ) {
         return;
@@ -1810,6 +1797,15 @@ int
 KnobHelper::getDimension() const
 {
     return _imp->dimension;
+}
+
+void
+KnobHelper::checkDimension(int dimension,
+                           const char* function) const
+{
+    if ( (dimension < 0) || (dimension >= _imp->dimension) ) {
+        throw std::invalid_argument( std::string(function) + "(): Dimension out of range" );
+    }
 }
 
 void
@@ -3185,9 +3181,6 @@ KnobHelper::executeExpression(const std::string& expr,
 
         return false;
     }
-    if ( !catchErrors(mainModule, error) ) {
-        return false;
-    }
 
     return true;
 }
@@ -3895,6 +3888,8 @@ KnobHelper::checkAnimationLevel(ViewSpec view,
 AnimationLevelEnum
 KnobHelper::getAnimationLevel(int dimension) const
 {
+    checkDimension(dimension, "KnobHelper::getAnimationLevel");
+
     ///if the knob is slaved to another knob, returns the other knob value
     std::pair<int, KnobIPtr> master = getMaster(dimension);
 
@@ -3906,9 +3901,6 @@ KnobHelper::getAnimationLevel(int dimension) const
     }
 
     QMutexLocker l(&_imp->animationLevelMutex);
-    if ( dimension >= (int)_imp->animationLevel.size() ) {
-        throw std::invalid_argument("Knob::getAnimationLevel(): Dimension out of range");
-    }
 
     return _imp->animationLevel[dimension];
 }
@@ -4583,9 +4575,7 @@ KnobHelper::hasModificationsForSerialization() const
 bool
 KnobHelper::hasModifications(int dimension) const
 {
-    if ( (dimension < 0) || (dimension >= _imp->dimension) ) {
-        throw std::invalid_argument("KnobHelper::hasModifications: Dimension out of range");
-    }
+    checkDimension(dimension, "KnobHelper::hasModifications");
     QMutexLocker k(&_imp->hasModificationsMutex);
 
     return _imp->hasModifications[dimension];
@@ -4707,8 +4697,11 @@ KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
     } else if (isChoice) {
         KnobChoicePtr newKnob = otherHolder->createChoiceKnob(newScriptName, newLabel, isUserKnob);
         if (!makeAlias) {
-            newKnob->populateChoices( isChoice->getEntries_mt_safe() );
+            newKnob->populateChoices( isChoice->getEntries_mt_safe(), isChoice->getExplicitDisplayOrder_mt_safe() );
         }
+        // e.g. a StrChoice param exported to a group: found again by exact ID (the mode is not saved with user
+        // knobs, so a reloaded group uses the default matching)
+        newKnob->setOptionRestoration( isChoice->getOptionRestoration() );
         output = newKnob;
     } else if (isColor) {
         KnobColorPtr newKnob = otherHolder->createColorKnob(newScriptName, newLabel, getDimension(), isUserKnob);

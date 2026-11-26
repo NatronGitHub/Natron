@@ -360,6 +360,12 @@ if [ "$BUILD_MISC" = "1" ] && [ -d "$TMP_PATH/openfx-misc" ]; then
     MESALIB="-lOSMesa"
     if [ -s "$OSMESA_PATH/lib/libMangledOSMesa32.a" ]; then
         MESALIB="-lMangledOSMesa32"
+        if [ "$PKGOS" = "Windows" ]; then
+            # The static OSMesa (Mesa >= 25, mingw-w64-osmesa) needs the Windows system
+            # libraries of its osmesa.pc's Libs.private: synchronization (WaitOnAddress and
+            # WakeByAddress* in Mesa's futex.c) and ws2_32 (#1858).
+            MESALIB="${MESALIB} -lsynchronization -lws2_32"
+        fi
     fi
     GLULIB="-lMangledGLU"
 
@@ -469,6 +475,42 @@ if [ "$BUILD_MISC" = "1" ] && [ -d "$TMP_PATH/openfx-misc" ]; then
         set +x
         echo "Info: build openfx-misc using make... done!"
     fi
+
+    # The PIKColor and EdgeBlur PyPlugs ship with openfx-misc, in <bundle>/Contents/Resources/PyPlugs/, where Natron
+    # loads them from (openfx-misc#414). Until every openfx-misc built here installs them there (the Makefiles, or a
+    # checkout older than openfx-misc#414), copy them from the openfx-misc sources: nothing to copy when the bundle
+    # already has the PyPlug. Natron 2.6 projects have version 2 of both (#1679): an older openfx-misc (version 1)
+    # would downgrade them, so the version of the shipped copy is checked, however it got there.
+    # Usage: misc_bundle_pyplug <bundle> <source dir> <PyPlug> <minimum version> <other files of the source dir>...
+    misc_bundle_pyplug() {
+        local bundle="$TMP_BINARIES_PATH/OFX/Plugins/$1" srcdir="$2" pyplug="$3" minversion="$4"
+        shift 4
+        local pyplugs="$bundle/Contents/Resources/PyPlugs"
+        local f version
+        if [ ! -d "$bundle" ]; then
+            return 0
+        fi
+        if [ ! -f "$pyplugs/$pyplug.py" ]; then
+            if [ ! -f "$srcdir/$pyplug.py" ]; then
+                echo "Error: $pyplugs/$pyplug.py is missing, and openfx-misc has no $srcdir/$pyplug.py to copy there"
+                exit 1
+            fi
+            echo "Info: copying the $pyplug PyPlug from openfx-misc/$srcdir to $pyplugs"
+            mkdir -p "$pyplugs"
+            for f in "$pyplug.py" "$@"; do
+                if [ -f "$srcdir/$f" ]; then
+                    cp "$srcdir/$f" "$pyplugs/"
+                fi
+            done
+        fi
+        version="$(sed -n '/^def getVersion/,/return/s/^ *return *\([0-9][0-9]*\).*/\1/p' "$pyplugs/$pyplug.py")"
+        if [ -z "$version" ] || [ "$version" -lt "$minversion" ]; then
+            echo "Error: $pyplugs/$pyplug.py is version ${version:-unknown}, Natron needs version $minversion or later (openfx-misc#414)"
+            exit 1
+        fi
+    }
+    misc_bundle_pyplug Misc.ofx.bundle PIK PIKColor 2 fr.inria.PIKColor.png fr.inria.PIKColor.svg PIKColor.gizmo
+    misc_bundle_pyplug CImg.ofx.bundle CImg/Blur EdgeBlur 2 fr.inria.EdgeBlur.png fr.inria.EdgeBlur.svg EdgeBlur.gizmo
 
     maybe_cleanup_binary_files
 

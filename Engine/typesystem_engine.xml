@@ -71,14 +71,96 @@
                 return %out;
             </native-to-target>
             <target-to-native>
+                <!--The generated check (Shiboken::Conversions::convertiblePairTypes) accepts any
+                    sequence of 2 items of the right types, and the call raises TypeError otherwise.
+                    %in may be neither a tuple nor a list: read it with PySequence_GetItem, not
+                    PySequence_Fast_GET_ITEM (#1811). The NULL checks are defensive (the check has
+                    already read both items): on error, the exception is set and the caller checks
+                    PyErr_Occurred(). A str of 2 characters is a sequence of 2 strings, so the
+                    generated check accepts it as a pair of strings, but it is almost certainly a
+                    mistake (e.g. "de" for ("de", "")): reject it with TypeError here. A bytes is
+                    a sequence of ints, rejected the same way for pairs of integer types. -->
                 <add-conversion type="PySequence">
-                    %out.first = %CONVERTTOCPP[%OUTTYPE_0](PySequence_Fast_GET_ITEM(%in, 0));
-                    %out.second = %CONVERTTOCPP[%OUTTYPE_1](PySequence_Fast_GET_ITEM(%in, 1));
+                    if ( PyUnicode_Check(%in) || PyBytes_Check(%in) ) {
+                        PyErr_SetString(PyExc_TypeError, "a pair must be a sequence of 2 items, not a string");
+                        return;
+                    }
+                    Shiboken::AutoDecRef pyFirst( PySequence_GetItem(%in, 0) );
+                    if ( pyFirst.isNull() ) {
+                        return;
+                    }
+                    Shiboken::AutoDecRef pySecond( PySequence_GetItem(%in, 1) );
+                    if ( pySecond.isNull() ) {
+                        return;
+                    }
+                    %out.first = %CONVERTTOCPP[%OUTTYPE_0](pyFirst.object());
+                    %out.second = %CONVERTTOCPP[%OUTTYPE_1](pySecond.object());
                 </add-conversion>
             </target-to-native>
         </conversion-rule>
     </container-type>
     
+    <!-- App.render() and GuiApp.renderBlocking() (Gui/typesystem_natronGui.xml): converts their list of tasks
+         (effect, firstFrame, lastFrame[, frameStep]) to the four lists of the C++ function, and calls it -->
+    <template name="renderTasksFromPyList">
+        if (!PyList_Check(%PYARG_1)) {
+            PyErr_SetString(PyExc_TypeError, "tasks must be a list of (effect, firstFrame, lastFrame[, frameStep]) sequences.");
+            return 0;
+        }
+        std::list&lt;Effect*&gt; effects;
+
+        std::list&lt;int&gt; firstFrames;
+
+        std::list&lt;int&gt; lastFrames;
+
+        std::list&lt;int&gt; frameSteps;
+
+        int size = (int)PyList_GET_SIZE(%PYARG_1);
+        for (int i = 0; i &lt; size; ++i) {
+            // a task is any sequence (effect, firstFrame, lastFrame[, frameStep])
+            Shiboken::AutoDecRef task( PySequence_Fast(PyList_GET_ITEM(%PYARG_1, i), "a task must be a sequence (effect, firstFrame, lastFrame[, frameStep]).") );
+            if ( task.isNull() ) {
+                return 0;
+            }
+
+            const Py_ssize_t taskSize = PySequence_Fast_GET_SIZE( task.object() );
+            if (taskSize != 4 &amp;&amp; taskSize != 3) {
+                PyErr_SetString(PyExc_TypeError, "a task must have 3 or 4 items.");
+                return 0;
+            }
+            PyObject* pyWriteNode = PySequence_Fast_GET_ITEM(task.object(), 0);
+            if ( (pyWriteNode == Py_None) || !%CHECKTYPE[Effect*](pyWriteNode) ) {
+                PyErr_SetString(PyExc_TypeError, "the first item of a task must be an Effect.");
+                return 0;
+            }
+            for (Py_ssize_t j = 1; j &lt; taskSize; ++j) {
+                // PyNumber_Check(), as Shiboken's int conversion (which then raises for a value it can't convert, e.g. a complex)
+                if ( !PyNumber_Check( PySequence_Fast_GET_ITEM(task.object(), j) ) ) {
+                    PyErr_SetString(PyExc_TypeError, "the frames of a task must be numbers.");
+                    return 0;
+                }
+            }
+            Effect* writeNode = %CONVERTTOCPP[Effect*](pyWriteNode);
+            int firstFrame = %CONVERTTOCPP[int](PySequence_Fast_GET_ITEM(task.object(), 1));
+            int lastFrame = %CONVERTTOCPP[int](PySequence_Fast_GET_ITEM(task.object(), 2));
+            int frameStep;
+            if (taskSize == 4) {
+                frameStep = %CONVERTTOCPP[int](PySequence_Fast_GET_ITEM(task.object(), 3));
+            } else {
+                frameStep = std::numeric_limits&lt;int&gt;::min();
+            }
+            if ( PyErr_Occurred() ) {
+                return 0;
+            }
+            effects.push_back(writeNode);
+            firstFrames.push_back(firstFrame);
+            lastFrames.push_back(lastFrame);
+            frameSteps.push_back(frameStep);
+        }
+
+        %CPPSELF.%FUNCTION_NAME(effects,firstFrames,lastFrames, frameSteps);
+    </template>
+
     <!--Templates for type conversions used many times-->
     <template name="stdListToPyList">
         PyObject* %out = PyList_New((int) %in.size());
@@ -92,7 +174,13 @@
     <template name="pyListToStdList">
         for (int i = 0; i &lt; PySequence_Size(%in); i++) {
         Shiboken::AutoDecRef pyItem(PySequence_GetItem(%in, i));
+        if ( pyItem.isNull() ) {
+            break; // __getitem__ raised after the check passed: the exception is set
+        }
         %OUTTYPE_0 cppItem = %CONVERTTOCPP[%OUTTYPE_0](pyItem);
+        if ( PyErr_Occurred() ) {
+            break; // the item conversion raised (e.g. a str given as a pair): stop calling the C-API
+        }
         %out.push_back(cppItem);
         }
     </template>
@@ -111,7 +199,13 @@
         %out.reserve(vectorSize);
         for (int idx = 0; idx &lt; vectorSize; ++idx) {
         Shiboken::AutoDecRef pyItem(PySequence_GetItem(%in, idx));
+        if ( pyItem.isNull() ) {
+            break; // __getitem__ raised after the check passed: the exception is set
+        }
         %OUTTYPE_0 cppItem = %CONVERTTOCPP[%OUTTYPE_0](pyItem);
+        if ( PyErr_Occurred() ) {
+            break; // the item conversion raised (e.g. a str given as a pair): stop calling the C-API
+        }
         %out.push_back(cppItem);
         }
     </template>
@@ -746,7 +840,10 @@
             </modify-argument>
             <inject-code class="target" position="beginning">
                 %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1,%2, %3);
-                %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
+                // don't convert the result when an error is set (a refused file name, #1539)
+                if ( !PyErr_Occurred() ) {
+                    %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
+                }
             </inject-code>
         </modify-function>
         <modify-function signature="createWriter(QString,Group*, std::map&lt;QString, NodeCreationProperty* &gt;)const">
@@ -755,7 +852,10 @@
             </modify-argument>
             <inject-code class="target" position="beginning">
                 %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1,%2, %3);
-                %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
+                // don't convert the result when an error is set (a refused file name, #1539)
+                if ( !PyErr_Occurred() ) {
+                    %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
+                }
             </inject-code>
         </modify-function>
         <modify-function signature="getProjectParam(QString)const">
@@ -784,61 +884,7 @@
                 <remove-argument/>
             </modify-argument>
             <inject-code class="target" position="beginning">
-                if (!PyList_Check(%PYARG_1)) {
-                    PyErr_SetString(PyExc_TypeError, "tasks must be a list of tuple objects.");
-                    return 0;
-                }
-                std::list&lt;Effect*&gt; effects;
-                
-                std::list&lt;int&gt; firstFrames;
-                
-                std::list&lt;int&gt; lastFrames;
-                
-                std::list&lt;int&gt; frameSteps;
-                
-                int size = (int)PyList_GET_SIZE(%PYARG_1);
-                for (int i = 0; i &lt; size; ++i) {
-                    // a task is any sequence (effect, firstFrame, lastFrame[, frameStep])
-                    Shiboken::AutoDecRef task( PySequence_Fast(PyList_GET_ITEM(%PYARG_1, i), "a task must be a sequence (effect, firstFrame, lastFrame[, frameStep]).") );
-                    if ( task.isNull() ) {
-                        return 0;
-                    }
-
-                    const Py_ssize_t taskSize = PySequence_Fast_GET_SIZE( task.object() );
-                    if (taskSize != 4 &amp;&amp; taskSize != 3) {
-                        PyErr_SetString(PyExc_TypeError, "a task must have 3 or 4 items.");
-                        return 0;
-                    }
-                    PyObject* pyWriteNode = PySequence_Fast_GET_ITEM(task.object(), 0);
-                    if ( (pyWriteNode == Py_None) || !%CHECKTYPE[Effect*](pyWriteNode) ) {
-                        PyErr_SetString(PyExc_TypeError, "the first item of a task must be an Effect.");
-                        return 0;
-                    }
-                    for (Py_ssize_t j = 1; j &lt; taskSize; ++j) {
-                        if ( !PyNumber_Check( PySequence_Fast_GET_ITEM(task.object(), j) ) ) {
-                            PyErr_SetString(PyExc_TypeError, "the frames of a task must be numbers.");
-                            return 0;
-                        }
-                    }
-                    Effect* writeNode = %CONVERTTOCPP[Effect*](pyWriteNode);
-                    int firstFrame = %CONVERTTOCPP[int](PySequence_Fast_GET_ITEM(task.object(), 1));
-                    int lastFrame = %CONVERTTOCPP[int](PySequence_Fast_GET_ITEM(task.object(), 2));
-                    int frameStep;
-                    if (taskSize == 4) {
-                        frameStep = %CONVERTTOCPP[int](PySequence_Fast_GET_ITEM(task.object(), 3));
-                    } else {
-                        frameStep = std::numeric_limits&lt;int&gt;::min();
-                    }
-                    if ( PyErr_Occurred() ) {
-                        return 0;
-                    }
-                    effects.push_back(writeNode);
-                    firstFrames.push_back(firstFrame);
-                    lastFrames.push_back(lastFrame);
-                    frameSteps.push_back(frameStep);
-                }
-                
-                %CPPSELF.%FUNCTION_NAME(effects,firstFrames,lastFrames, frameSteps);
+                <insert-template name="renderTasksFromPyList"/>
             </inject-code>
         </modify-function>
         <modify-function signature="loadProject(QString)">
@@ -1006,6 +1052,7 @@
                 } else if (App* app = dynamic_cast&lt;App*&gt;(group)) {
                     %PYARG_0 = %CONVERTTOPYTHON[App*](app);
                 } else {
+                    assert(!group); // getContainerGroup() returns an Effect, an App or NULL
                     delete group;
                     Py_RETURN_NONE;
                 }

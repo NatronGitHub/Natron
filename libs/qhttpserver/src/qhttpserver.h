@@ -66,19 +66,22 @@ public:
 
     /// Start the server by bounding to the given @c address and @c port.
     /** @note This function returns immediately, it does not block.
-        @param address Address on which to listen to. Default is to listen on
-        all interfaces which means the server can be accessed from anywhere.
+        @param address Address on which to listen to. Natron: the default is the
+        loopback interface (127.0.0.1), so that the server can only be accessed
+        from this computer (upstream: all interfaces).
         @param port Port number on which the server should run.
         @return True if the server was started successfully, false otherwise.
         @sa listen(quint16) */
-    bool listen(const QHostAddress &address = QHostAddress::Any, quint16 port = 80);
+    bool listen(const QHostAddress &address = QHostAddress::LocalHost, quint16 port = 80);
 
-    /// Starts the server on @c port listening on all interfaces.
-    /** @param port Port number on which the server should run.
+    /// Starts the server on @c port listening on the loopback interface (127.0.0.1).
+    /** (Natron; upstream: all interfaces)
+        @param port Port number on which the server should run.
         @return True if the server was started successfully, false otherwise.
         @sa listen(const QHostAddress&, quint16) */
     bool listen(quint16 port);
 
+    /// The port the server listens on, or 0 if it is not listening (Natron).
     int serverPort();
 
     /// Stop the server and listening for new connections.

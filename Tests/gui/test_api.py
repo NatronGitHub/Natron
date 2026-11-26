@@ -1,14 +1,12 @@
 # Public API of #1455 part 2: undo/redo/history, waitForRenders, viewer fit/zoom/centre, getPixel/getImage,
 # widget names.
 import array
+import threading
 
 import NatronGuiTest
 from natrontest import *
 
-try:
-    from PySide2 import QtWidgets
-except ImportError:
-    from PySide6 import QtWidgets
+QtCore, QtGui, QtWidgets = qt_modules()
 
 require_plugin(GENERATOR)
 
@@ -19,6 +17,30 @@ viewer.connectInput(0, gen)
 v.fit()
 check(app.waitForRenders(30), "waitForRenders()")
 check(not NatronGuiTest.isRendering(), "no render after waitForRenders()")
+
+# fit(), setZoom() and setCenter() raise RuntimeError outside the main thread (e.g. in a callback that runs
+# in a render thread), as getPixel() and getImage() do
+outside = []
+
+
+def call_outside_main_thread():
+    for name, call in (("fit", v.fit), ("setZoom", lambda: v.setZoom(2.)), ("setCenter", lambda: v.setCenter(0., 0.)),
+                       ("getPixel", lambda: v.getPixel(0., 0.))):
+        try:
+            call()
+            outside.append((name, None))
+        except RuntimeError:
+            outside.append((name, "RuntimeError"))
+        except Exception as e:  # pylint: disable=broad-except
+            outside.append((name, type(e).__name__))
+
+
+thread = threading.Thread(target=call_outside_main_thread)
+thread.start()
+thread.join(30)
+check(not thread.is_alive(), "the viewer calls outside the main thread did not return")
+check(all(error == "RuntimeError" for _, error in outside) and len(outside) == 4,
+      "outside the main thread: %r, expected RuntimeError for each" % outside)
 
 # zoom and centre
 z = v.getZoom()
@@ -88,32 +110,31 @@ for n in ("nodeGraph", "Viewer1", "TimeLine", "PropertiesBin"):
 # a choice parameter, through its combo box: the popup menu is answered
 # with the item text, and the combo box gets the item that QMenu::exec() returns
 PARAMS = "net.natron.test.Params"
-if PARAMS in natron.getPluginIDs():
-    # created as the user does (Other > Test > ParamsTest in the node graph menu), so that its settings
-    # panel, with the parameter widgets, is open
-    vx, vy = viewer.getPosition()
-    NatronGuiTest.setDialogAnswers(["ParamsTest"])
-    NatronGuiTest.penEvent("NodeGraph", "press", vx - 300, vy - 300, button="right")
-    NatronGuiTest.penEvent("NodeGraph", "release", vx - 300, vy - 300, button="right")
-    wait_idle()
-    created = [n for n in app.getChildren() if n.getPluginID() == PARAMS]
-    check(len(created) == 1, "the node graph menu created %d %s nodes" % (len(created), PARAMS))
-    params = created[0]
-    choice = params.getParam("choiceFrom")
-    check(choice is not None and choice.getValue() == 0, "choiceFrom is 0")
-    # its combo box has the paramName property (its object name, dim-0, is used by the right-click
-    # menu): give it a name that penEvent() can find
-    combos = [w for w in QtWidgets.QApplication.allWidgets()
-              if w.property("paramName") == "choiceFrom" and w.metaObject().className().endswith("ComboBox")]
-    check(len(combos) == 1, "one combo box has paramName choiceFrom: %d" % len(combos))
-    combos[0].setObjectName("testChoiceFromComboBox")
-    NatronGuiTest.clearDialogLog()
-    NatronGuiTest.setDialogAnswers(["two"])
-    NatronGuiTest.penEvent("testChoiceFromComboBox", "press", 5, 5)  # the popup runs in the press
-    NatronGuiTest.penEvent("testChoiceFromComboBox", "release", 5, 5)
-    wait_idle()
-    log = NatronGuiTest.getDialogLog()
-    check(len(log) == 1 and log[0]["type"] == "menu" and log[0]["answer"] == "two", "dialog log: %r" % log)
-    check(choice.getValue() == 2, "the combo box set choiceFrom to %r, not 2 (two)" % choice.getValue())
-else:
-    print("%s not found: the combo box answer is not tested" % PARAMS)
+# in the same binary as GENERATOR
+require_plugin(PARAMS)
+# created as the user does (Other > Test > ParamsTest in the node graph menu), so that its settings
+# panel, with the parameter widgets, is open
+vx, vy = viewer.getPosition()
+NatronGuiTest.setDialogAnswers(["ParamsTest"])
+NatronGuiTest.penEvent("NodeGraph", "press", vx - 300, vy - 300, button="right")
+NatronGuiTest.penEvent("NodeGraph", "release", vx - 300, vy - 300, button="right")
+wait_idle()
+created = [n for n in app.getChildren() if n.getPluginID() == PARAMS]
+check(len(created) == 1, "the node graph menu created %d %s nodes" % (len(created), PARAMS))
+params = created[0]
+choice = params.getParam("choiceFrom")
+check(choice is not None and choice.getValue() == 0, "choiceFrom is 0")
+# its combo box has the paramName property (its object name, dim-0, is used by the right-click
+# menu): give it a name that penEvent() can find
+combos = [w for w in QtWidgets.QApplication.allWidgets()
+          if w.property("paramName") == "choiceFrom" and w.metaObject().className().endswith("ComboBox")]
+check(len(combos) == 1, "one combo box has paramName choiceFrom: %d" % len(combos))
+combos[0].setObjectName("testChoiceFromComboBox")
+NatronGuiTest.clearDialogLog()
+NatronGuiTest.setDialogAnswers(["two"])
+NatronGuiTest.penEvent("testChoiceFromComboBox", "press", 5, 5)  # the popup runs in the press
+NatronGuiTest.penEvent("testChoiceFromComboBox", "release", 5, 5)
+wait_idle()
+log = NatronGuiTest.getDialogLog()
+check(len(log) == 1 and log[0]["type"] == "menu" and log[0]["answer"] == "two", "dialog log: %r" % log)
+check(choice.getValue() == 2, "the combo box set choiceFrom to %r, not 2 (two)" % choice.getValue())
