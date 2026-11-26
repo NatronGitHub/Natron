@@ -394,7 +394,7 @@ function fetch_checked() {
     fi
     echo "*** downloading $url"
     # wget is the system one: don't let it load the SDK's libraries (on Rocky Linux 9, the
-    # system gnutls fails with the SDK's older nettle)
+    # system gnutls failed with the older nettle the SDK used to build)
     if $setcertdir env -u LD_LIBRARY_PATH wget -q "$url" -O "$dest" && [ -s "$dest" ] && sha256_ok "$dest" "$sha256"; then
         return 0
     fi
@@ -636,7 +636,6 @@ build autoconf
 build automake
 build yasm
 build nasm # (for x264, lame, and others)
-build gmp # (for nettle's hogweed, used by gnutls)
 build openssl
 build patchelf
 build gettext
@@ -647,12 +646,7 @@ build zstd # (for tiff, curl, libarchive, boost_iostreams, Qt and others: they w
 checkpoint
 
 build readline
-build nettle # (for gnutls)
-build libtasn1 # (for gnutls)
-build libunistring # (for gnutls)
 build libffi
-build p11-kit # (for gnutls)
-build gnutls # (no longer used by ffmpeg, #1531)
 build curl
 build libarchive # (for cmake)
 #build libuv # (for cmake but we use the one bundled with cmake)
@@ -792,8 +786,6 @@ build orc
 build x264
 build xvid
 build soxr
-build libass # (no longer used by ffmpeg, #1531)
-build libbluray # (no longer used by ffmpeg, #1531)
 build openh264 # (for ffmpeg)
 build snappy # (for ffmpeg)
 checkpoint
