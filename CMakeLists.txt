@@ -206,7 +206,7 @@ if(NOT DEFINED CACHE{_NATRON_OPENMP_EXPLICIT})
     endif()
 endif()
 option(NATRON_USE_OPENMP
-    "use OpenMP in the bundled ceres and openMVG (tracker); with Apple clang, needs libomp (MacPorts: found automatically, else set OpenMP_ROOT)"
+    "use OpenMP in the bundled openMVG (tracker; the bundled Ceres uses C++ threads); with Apple clang, needs libomp (MacPorts: found automatically, else set OpenMP_ROOT)"
     ${_natron_openmp_default})
 option(NATRON_NO_ASSERTIONS
     "define NDEBUG, QT_NO_DEBUG, QT_NO_DEBUG_OUTPUT and QT_NO_WARNING_OUTPUT in every configuration, as the installers do"
@@ -440,7 +440,7 @@ if(NATRON_USE_OPENMP)
         message(FATAL_ERROR "NATRON_USE_OPENMP is ON but OpenMP was not found. "
             "Install libomp (or your compiler's OpenMP runtime) and set OpenMP_ROOT to its prefix, or configure with -DNATRON_USE_OPENMP=OFF.")
     elseif(NOT OpenMP_CXX_FOUND)
-        message(WARNING "OpenMP was not found: building ceres and openMVG without it (NATRON_USE_OPENMP=OFF)")
+        message(WARNING "OpenMP was not found: building openMVG without it (NATRON_USE_OPENMP=OFF)")
         set(NATRON_USE_OPENMP OFF CACHE BOOL "" FORCE)
     endif()
 endif()
@@ -466,7 +466,7 @@ if (NOT MSVC)
 endif()
 
 if(NATRON_SYSTEM_LIBS)
-    find_package(glog)
+    # An installed Ceres brings its glog (or miniglog) with its CMake target.
     find_package(Ceres)
 endif()
 

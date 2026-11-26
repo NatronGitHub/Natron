@@ -16,9 +16,7 @@ Natron binaries include components from the following libraries:
 * openfx-arena (GPLv2) https://github.com/NatronGitHub/openfx-arena
 * openfx-gmic (CeCILL-C, LGPL-like) https://github.com/NatronGitHub/openfx-gmic
 * Eigen 3 (MPL 2.0) https://libeigen.gitlab.io/
-* Ceres Solver (New BSD) http://ceres-solver.org/
-* gflags (New BSD) http://gflags.github.io/gflags/
-* glog (New BSD) https://github.com/google/glog
+* Ceres Solver (New BSD; two headers from Abseil under the Apache License 2.0) http://ceres-solver.org/
 * libmv (BSD) https://developer.blender.org/project/profile/59/
 * openMVG (MPL 2.0) http://imagine.enpc.fr/~moulonp/openMVG/
 * qhttpserver (BSD) https://github.com/nikhilm/qhttpserver

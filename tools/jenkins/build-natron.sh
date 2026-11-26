@@ -287,7 +287,7 @@ if [ "$NATRON_BUILD_SYSTEM" = "cmake" ]; then
             ;;
     esac
 
-    # OpenMP (ceres and openMVG, for the tracker), as with qmake
+    # OpenMP (openMVG, for the tracker), as with qmake
     if [ "$COMPILER" = "clang" ]; then
         CMAKE_FLAGS+=(-DNATRON_USE_OPENMP=OFF)
     else

@@ -31,8 +31,6 @@ CONFIG(enable-breakpad) {
 
 SUBDIRS += \
     HostSupport \
-    gflags \
-    glog \
     ceres \
     libmv \
     openMVG \
@@ -48,8 +46,6 @@ SUBDIRS += \
     App
 
 # where to find the sub projects - give the folders
-gflags.subdir      = libs/gflags
-glog.subdir        = libs/glog
 ceres.subdir       = libs/ceres
 libmv.subdir       = libs/libmv
 openMVG.subdir     = libs/openMVG
@@ -59,9 +55,7 @@ libtess.subdir     = libs/libtess
 NatronTestPlugin.subdir = Tests/OfxTestPlugin
 
 # what subproject depends on others
-glog.depends = gflags
-ceres.depends = glog gflags
-libmv.depends = gflags ceres
+libmv.depends = ceres
 openMVG.depends = ceres
 Engine.depends = libmv openMVG HostSupport libtess ceres md4c
 Renderer.depends = Engine

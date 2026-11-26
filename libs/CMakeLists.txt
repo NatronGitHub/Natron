@@ -17,10 +17,6 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-if(NOT glog_FOUND)
-    add_subdirectory(gflags)
-    add_subdirectory(glog)
-endif()
 add_subdirectory(libtess)
 add_subdirectory(md4c)
 if(NOT Ceres_FOUND)

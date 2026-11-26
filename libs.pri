@@ -64,25 +64,16 @@ INCLUDEPATH += $$PWD/libs/flann/src/cpp
 }
 
 ceres-flags {
-CONFIG += glog-flags
-DEFINES += CERES_HAVE_PTHREAD CERES_NO_SUITESPARSE CERES_NO_CXSPARSE CERES_HAVE_RWLOCK
-# Comment to make ceres use a lapack library
-DEFINES += CERES_NO_LAPACK
-!macx:*g++* {
-    CONFIG += openmp
-}
-openmp {
-    DEFINES += CERES_USE_OPENMP
-}
-#If undefined, make sure to add to sources all the files in ceres/internal/ceres/generated
-DEFINES += CERES_RESTRICT_SCHUR_SPECIALIZATION
-DEFINES += WITH_LIBMV_GUARDED_ALLOC GOOGLE_GLOG_DLL_DECL= LIBMV_NO_FAST_DETECTOR=
-DEFINES += CERES_STD_UNORDERED_MAP
-DEFINES += CERES_STD_SHARED_PTR
+# Ceres Solver 2.2.0: its configuration (no LAPACK, no sparse libraries, only
+# the dynamic Schur eliminator) is in libs/ceres/config/ceres/internal/config.h.
+# Ceres' miniglog (libs/ceres/internal/ceres/miniglog) provides glog/logging.h;
+# MAX_LOG_LEVEL=-2: miniglog prints errors only (see libs/ceres/CMakeLists.txt).
+DEFINES += MAX_LOG_LEVEL=-2
+DEFINES += WITH_LIBMV_GUARDED_ALLOC LIBMV_NO_FAST_DETECTOR=
 
 INCLUDEPATH += $$PWD/libs/ceres/config
 INCLUDEPATH += $$PWD/libs/ceres/include
-INCLUDEPATH += $$PWD/libs/ceres/internal
+INCLUDEPATH += $$PWD/libs/ceres/internal/ceres/miniglog
 INCLUDEPATH += $$PWD/libs/Eigen3
 win32-msvc* {
     CONFIG(64bit) {
@@ -91,40 +82,6 @@ win32-msvc* {
         QMAKE_LFLAGS += /MACHINE:X86
     }
 }
-}
-
-glog-flags {
-CONFIG += gflags-flags
-DEFINES += GOOGLE_GLOG_DLL_DECL=
-INCLUDEPATH += $$PWD/libs/gflags
-INCLUDEPATH += $$PWD/libs/gflags/src
-INCLUDEPATH += $$PWD/libs/gflags/src/gflags
-INCLUDEPATH += $$PWD/libs/glog/src
-win32* {
-     INCLUDEPATH += $$PWD/libs/glog/src/windows
-
-    # wingdi.h defines ERROR to be 0. When we call LOG(ERROR), it gets
-    # substituted with 0, and it expands to COMPACT_GOOGLE_LOG_0. To allow us
-    # to keep using this syntax, we define this macro to do the same thing
-    # as COMPACT_GOOGLE_LOG_ERROR.
-     DEFINES += GLOG_NO_ABBREVIATED_SEVERITIES
-}
-!win32* {
-    INCLUDEPATH += $$PWD/libs/glog/src
-}
-win32-msvc* {
-    CONFIG(64bit) {
-        QMAKE_LFLAGS += /MACHINE:X64
-    } else {
-        QMAKE_LFLAGS += /MACHINE:X86
-    }
-}
-}
-
-gflags-flags {
-INCLUDEPATH += $$PWD/libs/gflags
-INCLUDEPATH += $$PWD/libs/gflags/src
-INCLUDEPATH += $$PWD/libs/gflags/src/gflags
 }
 
 libtess-flags {
@@ -325,6 +282,10 @@ win32-msvc*{
 # openMVG
 static-openmvg {
 CONFIG += static-ceres
+# openMVG uses OpenMP (openmvg-flags): link with it
+!macx:*g++* {
+    CONFIG += openmp
+}
 INCLUDEPATH += $$PWD/libs/openMVG
 DEPENDPATH += $$OUT_PWD/../libs/openMVG
 
@@ -367,10 +328,6 @@ win32-msvc*{
 ################
 # ceres
 static-ceres {
-CONFIG += static-glog
-!macx:*g++* {
-    CONFIG += openmp
-}
 win32-msvc*{
         CONFIG(64bit) {
                 CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/ceres/x64/release/ -lceres
@@ -405,83 +362,6 @@ win32-msvc*{
         else:unix: PRE_TARGETDEPS += $$OUT_PWD/../libs/ceres/libceres.a
 }
 } # static-ceres {
-
-################
-# glog
-static-glog {
-CONFIG += static-gflags
-win32-msvc*{
-        CONFIG(64bit) {
-                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/glog/x64/release/ -lglog
-                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/glog/x64/debug/ -lglog
-        } else {
-                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/glog/win32/release/ -lglog
-                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/glog/win32/debug/ -lglog
-        }
-} else {
-        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/glog/release/ -lglog
-        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/glog/debug/ -lglog
-        else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/glog/build/Release/ -lglog
-        else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/glog/build/Debug/ -lglog
-        else:unix: LIBS += -L$$OUT_PWD/../libs/glog/ -lglog
-}
-
-win32-msvc*{
-        CONFIG(64bit) {
-                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/glog/x64/release/libglog.lib
-                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/glog/x64/debug/libglog.lib
-        } else {
-                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/glog/win32/release/libglog.lib
-                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/glog/win32/debug/libglog.lib
-        }
-} else {
-        win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/glog/release/libglog.a
-        else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/glog/debug/libglog.a
-        else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/glog/release/libglog.lib
-        else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/glog/debug/libglog.lib
-        else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/glog/build/Release/libglog.a
-        else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/glog/build/Debug/libglog.a
-        else:unix: PRE_TARGETDEPS += $$OUT_PWD/../libs/glog/libglog.a
-}
-} # static-glog {
-
-################
-# gflags
-static-gflags {
-win32-msvc*{
-        CONFIG(64bit) {
-                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/gflags/x64/release/ -lgflags
-                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/gflags/x64/debug/ -lgflags
-        } else {
-                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/gflags/win32/release/ -lgflags
-                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/gflags/win32/debug/ -lgflags
-        }
-} else {
-        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/gflags/release/ -lgflags
-        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/gflags/debug/ -lgflags
-        else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/gflags/build/Release/ -lgflags
-        else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/gflags/build/Debug/ -lgflags
-        else:unix: LIBS += -L$$OUT_PWD/../libs/gflags/ -lgflags
-}
-
-win32-msvc*{
-        CONFIG(64bit) {
-                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/gflags/x64/release/libgflags.lib
-                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/gflags/x64/debug/libgflags.lib
-        } else {
-                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/gflags/win32/release/libgflags.lib
-                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/gflags/win32/debug/libgflags.lib
-        }
-} else {
-        win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/gflags/release/libgflags.a
-        else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/gflags/debug/libgflags.a
-        else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/gflags/release/libgflags.lib
-        else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/gflags/debug/libgflags.lib
-        else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/gflags/build/Release/libgflags.a
-        else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/gflags/build/Debug/libgflags.a
-        else:unix: PRE_TARGETDEPS += $$OUT_PWD/../libs/gflags/libgflags.a
-}
-} # static-gflags {
 
 ################
 # qhttpserver

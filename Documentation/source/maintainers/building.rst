@@ -60,9 +60,7 @@ The qmake ``Project.pro`` declares the module dependency graph explicitly
 (the CMake build gets the same order from the targets' link dependencies).
 Reading it is the fastest way to understand how the pieces fit together::
 
-    glog.depends     = gflags
-    ceres.depends    = glog gflags
-    libmv.depends    = gflags ceres
+    libmv.depends    = ceres
     openMVG.depends  = ceres
     Engine.depends   = libmv openMVG HostSupport libtess ceres md4c
     Renderer.depends = Engine
@@ -70,8 +68,8 @@ Reading it is the fastest way to understand how the pieces fit together::
     Tests.depends    = Gui Engine
     App.depends      = Gui Engine
 
-So the build order is: the bundled libraries first (``gflags``, ``glog``,
-``ceres``, ``libmv``, ``openMVG``, ``qhttpserver``, ``md4c``, ``libtess``),
+So the build order is: the bundled libraries first (``ceres``, ``libmv``,
+``openMVG``, ``qhttpserver``, ``md4c``, ``libtess``),
 then ``HostSupport``, then ``Engine``, then the front-ends (``Renderer``,
 ``Gui``), then ``App``, ``Tests`` and ``PythonBin``.
 
@@ -80,7 +78,7 @@ Third-party dependencies
 
 Some dependencies are **bundled** in ``libs/`` and built from source as part of
 the project: ``ceres``, ``openMVG`` and ``libmv`` (the tracker), ``Eigen3``
-(headers), ``gflags`` and ``glog``, ``md4c`` (CommonMark Markdown → HTML for node docs and tooltips),
+(headers), ``md4c`` (CommonMark Markdown → HTML for node docs and tooltips),
 ``libtess`` (polygon tessellation for roto), ``qhttpserver`` (the internal
 documentation web server), ``SequenceParsing`` (image sequence detection) and
 ``google-breakpad`` (crash reporting). With CMake, ``-DNATRON_SYSTEM_LIBS=ON``
@@ -300,8 +298,9 @@ and ``libs.pri``. Their defaults give a plain developer build; the installers
    CMake stops with an error. The old ``-DBUILD_USER_NAME=…`` still sets its
    initial value.
 ``NATRON_USE_OPENMP`` (``ON`` with GCC except on macOS, ``OFF`` otherwise, as in ``libs.pri``)
-   Compile the bundled ceres and openMVG, which the tracker uses, with OpenMP
-   (``CERES_USE_OPENMP``, ``OPENMVG_USE_OPENMP``, ``OpenMP::OpenMP_CXX``).
+   Compile the bundled openMVG, which the tracker uses, with OpenMP
+   (``OPENMVG_USE_OPENMP``, ``OpenMP::OpenMP_CXX``). The bundled Ceres uses
+   C++ threads.
    Apple clang has no OpenMP runtime: install MacPorts' ``libomp``, which is
    found automatically in ``/opt/local/include/libomp`` and
    ``/opt/local/lib/libomp``. For another libomp, set ``OpenMP_ROOT`` to its

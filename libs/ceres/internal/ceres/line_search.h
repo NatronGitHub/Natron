@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -33,17 +33,18 @@
 #ifndef CERES_INTERNAL_LINE_SEARCH_H_
 #define CERES_INTERNAL_LINE_SEARCH_H_
 
+#include <memory>
 #include <string>
 #include <vector>
+
+#include "ceres/function_sample.h"
 #include "ceres/internal/eigen.h"
-#include "ceres/internal/port.h"
+#include "ceres/internal/export.h"
 #include "ceres/types.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 class Evaluator;
-struct FunctionSample;
 class LineSearchFunction;
 
 // Line search is another name for a one dimensional optimization
@@ -51,31 +52,19 @@ class LineSearchFunction;
 // dimensional optimization problems that arise as subproblems of
 // general multidimensional optimization problems.
 //
-// While finding the exact minimum of a one dimensionl function is
+// While finding the exact minimum of a one dimensional function is
 // hard, instances of LineSearch find a point that satisfies a
 // sufficient decrease condition. Depending on the particular
 // condition used, we get a variety of different line search
 // algorithms, e.g., Armijo, Wolfe etc.
-class LineSearch {
+class CERES_NO_EXPORT LineSearch {
  public:
   struct Summary;
 
-  struct Options {
-    Options()
-        : interpolation_type(CUBIC),
-          sufficient_decrease(1e-4),
-          max_step_contraction(1e-3),
-          min_step_contraction(0.9),
-          min_step_size(1e-9),
-          max_num_iterations(20),
-          sufficient_curvature_decrease(0.9),
-          max_step_expansion(10.0),
-          is_silent(false),
-          function(NULL) {}
-
+  struct CERES_NO_EXPORT Options {
     // Degree of the polynomial used to approximate the objective
     // function.
-    LineSearchInterpolationType interpolation_type;
+    LineSearchInterpolationType interpolation_type = CUBIC;
 
     // Armijo and Wolfe line search parameters.
 
@@ -88,7 +77,7 @@ class LineSearch {
     // s.t.
     //
     //  f(step_size) <= f(0) + sufficient_decrease * f'(0) * step_size
-    double sufficient_decrease;
+    double sufficient_decrease = 1e-4;
 
     // In each iteration of the Armijo / Wolfe line search,
     //
@@ -98,7 +87,7 @@ class LineSearch {
     //
     //  0 < max_step_contraction < min_step_contraction < 1
     //
-    double max_step_contraction;
+    double max_step_contraction = 1e-3;
 
     // In each iteration of the Armijo / Wolfe line search,
     //
@@ -107,16 +96,16 @@ class LineSearch {
     //
     //  0 < max_step_contraction < min_step_contraction < 1
     //
-    double min_step_contraction;
+    double min_step_contraction = 0.9;
 
     // If during the line search, the step_size falls below this
     // value, it is truncated to zero.
-    double min_step_size;
+    double min_step_size = 1e-9;
 
     // Maximum number of trial step size iterations during each line search,
     // if a step size satisfying the search conditions cannot be found within
     // this number of trials, the line search will terminate.
-    int max_num_iterations;
+    int max_num_iterations = 20;
 
     // Wolfe-specific line search parameters.
 
@@ -131,7 +120,7 @@ class LineSearch {
     //
     // Where f() is the line search objective and f'() is the derivative
     // of f w.r.t step_size (d f / d step_size).
-    double sufficient_curvature_decrease;
+    double sufficient_curvature_decrease = 0.9;
 
     // During the bracketing phase of the Wolfe search, the step size is
     // increased until either a point satisfying the Wolfe conditions is
@@ -142,52 +131,42 @@ class LineSearch {
     //   new_step_size <= max_step_expansion * step_size.
     //
     // By definition for expansion, max_step_expansion > 1.0.
-    double max_step_expansion;
+    double max_step_expansion = 10;
 
-    bool is_silent;
+    bool is_silent = false;
 
     // The one dimensional function that the line search algorithm
     // minimizes.
-    LineSearchFunction* function;
+    LineSearchFunction* function = nullptr;
   };
 
   // Result of the line search.
   struct Summary {
-    Summary()
-        : success(false),
-          optimal_step_size(0.0),
-          num_function_evaluations(0),
-          num_gradient_evaluations(0),
-          num_iterations(0),
-          cost_evaluation_time_in_seconds(-1.0),
-          gradient_evaluation_time_in_seconds(-1.0),
-          polynomial_minimization_time_in_seconds(-1.0),
-          total_time_in_seconds(-1.0) {}
-
-    bool success;
-    double optimal_step_size;
-    int num_function_evaluations;
-    int num_gradient_evaluations;
-    int num_iterations;
+    bool success = false;
+    FunctionSample optimal_point;
+    int num_function_evaluations = 0;
+    int num_gradient_evaluations = 0;
+    int num_iterations = 0;
     // Cumulative time spent evaluating the value of the cost function across
     // all iterations.
-    double cost_evaluation_time_in_seconds;
+    double cost_evaluation_time_in_seconds = 0.0;
     // Cumulative time spent evaluating the gradient of the cost function across
     // all iterations.
-    double gradient_evaluation_time_in_seconds;
+    double gradient_evaluation_time_in_seconds = 0.0;
     // Cumulative time spent minimizing the interpolating polynomial to compute
     // the next candidate step size across all iterations.
-    double polynomial_minimization_time_in_seconds;
-    double total_time_in_seconds;
+    double polynomial_minimization_time_in_seconds = 0.0;
+    double total_time_in_seconds = 0.0;
     std::string error;
   };
 
   explicit LineSearch(const LineSearch::Options& options);
-  virtual ~LineSearch() {}
+  virtual ~LineSearch();
 
-  static LineSearch* Create(const LineSearchType line_search_type,
-                            const LineSearch::Options& options,
-                            std::string* error);
+  static std::unique_ptr<LineSearch> Create(
+      const LineSearchType line_search_type,
+      const LineSearch::Options& options,
+      std::string* error);
 
   // Perform the line search.
   //
@@ -230,10 +209,11 @@ class LineSearch {
 // In practice, this object provides access to the objective
 // function value and the directional derivative of the underlying
 // optimization problem along a specific search direction.
-class LineSearchFunction {
+class CERES_NO_EXPORT LineSearchFunction {
  public:
   explicit LineSearchFunction(Evaluator* evaluator);
   void Init(const Vector& position, const Vector& direction);
+
   // Evaluate the line search objective
   //
   //   f(x) = p(position + x * direction)
@@ -241,27 +221,29 @@ class LineSearchFunction {
   // Where, p is the objective function of the general optimization
   // problem.
   //
-  // g is the gradient f'(x) at x.
+  // evaluate_gradient controls whether the gradient will be evaluated
+  // or not.
   //
-  // f must not be null. The gradient is computed only if g is not null.
-  bool Evaluate(double x, double* f, double* g);
+  // On return output->*_is_valid indicate indicate whether the
+  // corresponding fields have numerically valid values or not.
+  void Evaluate(double x, bool evaluate_gradient, FunctionSample* output);
+
   double DirectionInfinityNorm() const;
+
   // Resets to now, the start point for the results from TimeStatistics().
   void ResetTimeStatistics();
   void TimeStatistics(double* cost_evaluation_time_in_seconds,
                       double* gradient_evaluation_time_in_seconds) const;
+  const Vector& position() const { return position_; }
+  const Vector& direction() const { return direction_; }
 
  private:
   Evaluator* evaluator_;
   Vector position_;
   Vector direction_;
 
-  // evaluation_point = Evaluator::Plus(position_,  x * direction_);
-  Vector evaluation_point_;
-
   // scaled_direction = x * direction_;
   Vector scaled_direction_;
-  Vector gradient_;
 
   // We may not exclusively own the evaluator (e.g. in the Trust Region
   // minimizer), hence we need to save the initial evaluation durations for the
@@ -276,16 +258,15 @@ class LineSearchFunction {
 // minFunc package by Mark Schmidt.
 //
 // For more details: http://www.di.ens.fr/~mschmidt/Software/minFunc.html
-class ArmijoLineSearch : public LineSearch {
+class CERES_NO_EXPORT ArmijoLineSearch final : public LineSearch {
  public:
   explicit ArmijoLineSearch(const LineSearch::Options& options);
-  virtual ~ArmijoLineSearch() {}
 
  private:
-  virtual void DoSearch(double step_size_estimate,
-                        double initial_cost,
-                        double initial_gradient,
-                        Summary* summary) const;
+  void DoSearch(double step_size_estimate,
+                double initial_cost,
+                double initial_gradient,
+                Summary* summary) const final;
 };
 
 // Bracketing / Zoom Strong Wolfe condition line search.  This implementation
@@ -295,10 +276,9 @@ class ArmijoLineSearch : public LineSearch {
 //
 // [1] Nocedal J., Wright S., Numerical Optimization, 2nd Ed., Springer, 1999.
 // [2] http://www.di.ens.fr/~mschmidt/Software/minFunc.html.
-class WolfeLineSearch : public LineSearch {
+class CERES_NO_EXPORT WolfeLineSearch final : public LineSearch {
  public:
   explicit WolfeLineSearch(const LineSearch::Options& options);
-  virtual ~WolfeLineSearch() {}
 
   // Returns true iff either a valid point, or valid bracket are found.
   bool BracketingPhase(const FunctionSample& initial_position,
@@ -315,13 +295,12 @@ class WolfeLineSearch : public LineSearch {
                  Summary* summary) const;
 
  private:
-  virtual void DoSearch(double step_size_estimate,
-                        double initial_cost,
-                        double initial_gradient,
-                        Summary* summary) const;
+  void DoSearch(double step_size_estimate,
+                double initial_cost,
+                double initial_gradient,
+                Summary* summary) const final;
 };
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
 
 #endif  // CERES_INTERNAL_LINE_SEARCH_H_
