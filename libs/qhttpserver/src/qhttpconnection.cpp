@@ -78,6 +78,11 @@ QHttpConnection::QHttpConnection(QTcpSocket *socket, QObject *parent)
 
 QHttpConnection::~QHttpConnection()
 {
+    // Natron: a request that the handler never got belongs to the connection (see MessageBegin());
+    // delete it here, before ~QObject() deletes the children and the destroyed() slots run on this
+    // partially destroyed object
+    deleteUnemittedRequest();
+
     //delete m_socket;
     m_socket = 0;
 
@@ -99,11 +104,25 @@ void QHttpConnection::socketDisconnected()
 
 void QHttpConnection::invalidateRequest()
 {
+    // Natron: a request that the handler never got (the client disconnected before the end of the
+    // headers) has nobody to receive end(): delete it (it leaked)
+    deleteUnemittedRequest();
+
     if (m_request && !m_request->successful()) {
         Q_EMIT m_request->end();
     }
 
     m_request = NULL;
+}
+
+// Natron: deletes the current request if the newRequest() handler didn't get it
+void QHttpConnection::deleteUnemittedRequest()
+{
+    if (m_request && !m_currentRequestEmitted) {
+        QHttpRequest *request = m_request;
+        m_request = NULL;
+        delete request;
+    }
 }
 
 // Natron: the handler owns the request and may delete it at any time, also after the next pipelined
@@ -153,9 +172,7 @@ void QHttpConnection::rejectMalformedRequest()
     disconnect(m_socket, SIGNAL(readyRead()), this, SLOT(parseRequest()));
     if (!m_currentRequestEmitted) {
         // nobody else knows about this request
-        QHttpRequest *request = m_request;
-        m_request = NULL;
-        delete request;
+        deleteUnemittedRequest();
         write("HTTP/1.1 400 Bad Request\r\n"
               "Connection: close\r\n"
               "Content-Length: 0\r\n"
@@ -183,8 +200,8 @@ void QHttpConnection::waitForBytesWritten()
 void QHttpConnection::responseDone()
 {
     QHttpResponse *response = qobject_cast<QHttpResponse *>(QObject::sender());
-    // Natron: m_socket is NULL if this is called from ~QHttpConnection() (through the destroyed() signal
-    // and QHttpResponse::connectionClosed())
+    // Natron: defensive; QHttpResponse::connectionClosed() no longer emits done() from
+    // ~QHttpConnection() (m_socket is NULL then)
     if (m_socket && response->m_last)
         m_socket->disconnectFromHost();
 }
@@ -244,7 +261,9 @@ int QHttpConnection::MessageBegin(http_parser *parser)
 
     // The QHttpRequest should not be parented to this, since it's memory
     // management is the responsibility of the user of the library.
-    theConnection->m_request = new QHttpRequest(theConnection);
+    // Natron: parented to the connection until HeadersComplete() gives it to the handler, so that it
+    // can't leak before
+    theConnection->m_request = new QHttpRequest(theConnection, theConnection);
 
     // Invalidate the request when it is deleted to prevent keep-alive requests
     // from calling a signal on a deleted object.
@@ -296,6 +315,7 @@ int QHttpConnection::HeadersComplete(http_parser *parser)
 
     // we are good to go!
     theConnection->m_currentRequestEmitted = true;
+    theConnection->m_request->setParent(NULL); // the handler's from now on
     Q_EMIT theConnection->newRequest(theConnection->m_request, response);
     return 0;
 }
@@ -309,6 +329,9 @@ int QHttpConnection::MessageComplete(http_parser *parser)
         theConnection->m_request->setSuccessful(true);
         Q_EMIT theConnection->m_request->end();
     }
+    // Natron: the request is complete and the handler's: forget it (deleteUnemittedRequest() must not
+    // delete it, e.g. on a parse error before the next request)
+    theConnection->m_request = NULL;
     theConnection->m_currentRequestEmitted = false;
     return 0;
 }

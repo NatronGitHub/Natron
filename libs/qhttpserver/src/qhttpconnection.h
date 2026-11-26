@@ -56,6 +56,7 @@ private Q_SLOTS:
 
 private:
     void rejectMalformedRequest();
+    void deleteUnemittedRequest();
     void insertCurrentHeader();
 
     static int MessageBegin(http_parser *parser);
