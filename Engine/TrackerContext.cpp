@@ -874,12 +874,14 @@ TrackerContext::exportTrackDataFromExportOptions()
         return;
     }
 
-    // Move the new node
-    double thisNodePos[2];
-    double thisNodeSize[2];
-    thisNode->getPosition(&thisNodePos[0], &thisNodePos[1]);
-    thisNode->getSize(&thisNodeSize[0], &thisNodeSize[1]);
-    createdNode->setPosition(thisNodePos[0] + thisNodeSize[0] * 2., thisNodePos[1]);
+    // Move the new node (without a GUI, the nodes have no position, see Node::setPosition())
+    if ( thisNode->hasGuiData() ) {
+        double thisNodePos[2];
+        double thisNodeSize[2];
+        thisNode->getPosition(&thisNodePos[0], &thisNodePos[1]);
+        thisNode->getSize(&thisNodeSize[0], &thisNodeSize[1]);
+        createdNode->setPosition(thisNodePos[0] + thisNodeSize[0] * 2., thisNodePos[1]);
+    }
 
     int timeForFromPoints = getTransformReferenceFrame();
 

@@ -23,7 +23,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "NodeGuiSerialization.h"
+#include "Engine/NodeGuiSerialization.h"
 
 #include <stdexcept>
 

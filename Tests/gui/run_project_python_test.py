@@ -27,8 +27,8 @@ Usage: run_project_python_test.py /path/to/NatronRenderer [--debugger]
    Backdrop, a Group with an Input, an Output and a Dot, user parameters with
    keyframes (one linear, one with its own tangents) and an expression, a
    parametric curve, connections, and a Read of a small image if
-   the openfx-io plug-ins are found (OFX_PLUGIN_PATH). (NatronRenderer has no node
-   positions, sizes or colours.)
+   the openfx-io plug-ins are found (OFX_PLUGIN_PATH). (NatronRenderer keeps the
+   node positions, sizes and colours that the script sets.)
    It saves it with app.saveProjectAsPython() to first.py, and writes the
    state of the project (every node, parameter and project parameter) to
    built.json. Then, after a save as text.ntp, app.saveProjectAs(savedas.py)

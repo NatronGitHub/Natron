@@ -78,6 +78,7 @@
 #include "Engine/MemoryInfo.h" // printAsRAM
 #include "Engine/NodeGroup.h"
 #include "Engine/NodeGuiI.h"
+#include "Engine/NodeGuiSerialization.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/ProjectSerialization.h"
@@ -6494,6 +6495,44 @@ Node::isDraftModeUsed() const
     return _imp->draftModeUsed;
 }
 
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+// A node that sets its GUI data while a Python project is loaded: the file has GUI data (see
+// Project::fileHasGuiData())
+void
+notifyGuiDataSet(const Node& node)
+{
+    // the nodes of a PyPlug instance are placed by the PyPlug, not by the file
+    for (NodeCollectionPtr collection = node.getGroup(); collection; ) {
+        NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collection.get() );
+        if (!isGroup) {
+            break;
+        }
+        NodePtr groupNode = isGroup->getNode();
+        if ( !groupNode || groupNode->isPyPlug() ) {
+            return;
+        }
+        collection = groupNode->getGroup();
+    }
+    AppInstancePtr app = node.getApp();
+    ProjectPtr project = app ? app->getProject() : ProjectPtr();
+
+    if (project) {
+        project->onGuiDataSet();
+    }
+}
+
+// The GUI data of a node without a NodeGui, created if it has none (see Node::getGuiDataWithoutGui())
+NodeGuiSerialization&
+guiDataWithoutGui(NodeGuiSerializationPtr& data)
+{
+    if (!data) {
+        data = std::make_shared<NodeGuiSerialization>();
+    }
+
+    return *data;
+}
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
 void
 Node::setPosition(double x,
                   double y)
@@ -6502,7 +6541,11 @@ Node::setPosition(double x,
 
     if (gui) {
         gui->setPosition(x, y);
+    } else {
+        QMutexLocker l(&_imp->guiDataMutex);
+        guiDataWithoutGui(_imp->guiDataWithoutGui).setPosition(x, y);
     }
+    notifyGuiDataSet(*this);
 }
 
 void
@@ -6514,8 +6557,14 @@ Node::getPosition(double *x,
     if (gui) {
         gui->getPosition(x, y);
     } else {
-        *x = 0.;
-        *y = 0.;
+        QMutexLocker l(&_imp->guiDataMutex);
+        if (_imp->guiDataWithoutGui) {
+            *x = _imp->guiDataWithoutGui->getX();
+            *y = _imp->guiDataWithoutGui->getY();
+        } else {
+            *x = 0.;
+            *y = 0.;
+        }
     }
 }
 
@@ -6527,7 +6576,11 @@ Node::setSize(double w,
 
     if (gui) {
         gui->setSize(w, h);
+    } else {
+        QMutexLocker l(&_imp->guiDataMutex);
+        guiDataWithoutGui(_imp->guiDataWithoutGui).setSize(w, h);
     }
+    notifyGuiDataSet(*this);
 }
 
 void
@@ -6539,8 +6592,13 @@ Node::getSize(double* w,
     if (gui) {
         gui->getSize(w, h);
     } else {
-        *w = 0.;
-        *h = 0.;
+        QMutexLocker l(&_imp->guiDataMutex);
+        if (_imp->guiDataWithoutGui) {
+            _imp->guiDataWithoutGui->getSize(w, h);
+        } else {
+            *w = 0.;
+            *h = 0.;
+        }
     }
 }
 
@@ -6553,13 +6611,24 @@ Node::getColor(double* r,
 
     if (gui) {
         gui->getColor(r, g, b);
+
         return true;
-    } else {
-        *r = 0.;
-        *g = 0.;
-        *b = 0.;
-        return false;
     }
+    QMutexLocker l(&_imp->guiDataMutex);
+    if ( _imp->guiDataWithoutGui && _imp->guiDataWithoutGui->colorWasFound() ) {
+        float fr, fg, fb;
+        _imp->guiDataWithoutGui->getColor(&fr, &fg, &fb);
+        *r = fr;
+        *g = fg;
+        *b = fb;
+
+        return true;
+    }
+    *r = 0.;
+    *g = 0.;
+    *b = 0.;
+
+    return false;
 }
 
 void
@@ -6571,7 +6640,95 @@ Node::setColor(double r,
 
     if (gui) {
         gui->setColor(r, g, b);
+    } else {
+        QMutexLocker l(&_imp->guiDataMutex);
+        guiDataWithoutGui(_imp->guiDataWithoutGui).setColor( static_cast<float>(r), static_cast<float>(g), static_cast<float>(b) );
     }
+    notifyGuiDataSet(*this);
+}
+
+void
+Node::getDefaultColor(double* r,
+                      double* g,
+                      double* b) const
+{
+    SettingsPtr settings = appPTR->getCurrentSettings();
+    EffectInstancePtr effect = getEffectInstance();
+    std::list<std::string> grouping;
+
+    getPluginGrouping(&grouping);
+    const std::string majGroup = grouping.empty() ? "" : grouping.front();
+    float fr, fg, fb;
+    if ( effect && effect->isReader() ) {
+        settings->getReaderColor(&fr, &fg, &fb);
+    } else if ( dynamic_cast<Backdrop*>( effect.get() ) ) {
+        settings->getDefaultBackdropColor(&fr, &fg, &fb);
+    } else if ( effect && effect->isWriter() ) {
+        settings->getWriterColor(&fr, &fg, &fb);
+    } else if ( effect && effect->isGenerator() ) {
+        settings->getGeneratorColor(&fr, &fg, &fb);
+    } else if (majGroup == PLUGIN_GROUP_COLOR) {
+        settings->getColorGroupColor(&fr, &fg, &fb);
+    } else if (majGroup == PLUGIN_GROUP_FILTER) {
+        settings->getFilterGroupColor(&fr, &fg, &fb);
+    } else if (majGroup == PLUGIN_GROUP_CHANNEL) {
+        settings->getChannelGroupColor(&fr, &fg, &fb);
+    } else if (majGroup == PLUGIN_GROUP_KEYER) {
+        settings->getKeyerGroupColor(&fr, &fg, &fb);
+    } else if (majGroup == PLUGIN_GROUP_MERGE) {
+        settings->getMergeGroupColor(&fr, &fg, &fb);
+    } else if (majGroup == PLUGIN_GROUP_PAINT) {
+        settings->getDrawGroupColor(&fr, &fg, &fb);
+    } else if (majGroup == PLUGIN_GROUP_TIME) {
+        settings->getTimeGroupColor(&fr, &fg, &fb);
+    } else if (majGroup == PLUGIN_GROUP_TRANSFORM) {
+        settings->getTransformGroupColor(&fr, &fg, &fb);
+    } else if (majGroup == PLUGIN_GROUP_MULTIVIEW) {
+        settings->getViewsGroupColor(&fr, &fg, &fb);
+    } else if (majGroup == PLUGIN_GROUP_DEEP) {
+        settings->getDeepGroupColor(&fr, &fg, &fb);
+    } else {
+        settings->getDefaultNodeColor(&fr, &fg, &fb);
+    }
+    *r = Image::clamp<double>(fr, 0., 1.);
+    *g = Image::clamp<double>(fg, 0., 1.);
+    *b = Image::clamp<double>(fb, 0., 1.);
+}
+
+bool
+Node::hasGuiData() const
+{
+    if ( _imp->guiPointer.lock() ) {
+        return true;
+    }
+    QMutexLocker l(&_imp->guiDataMutex);
+
+    return (bool)_imp->guiDataWithoutGui;
+}
+
+NodeGuiSerializationPtr
+Node::getGuiDataWithoutGui() const
+{
+    if ( _imp->guiPointer.lock() ) {
+        return NodeGuiSerializationPtr();
+    }
+    QMutexLocker l(&_imp->guiDataMutex);
+    if (!_imp->guiDataWithoutGui) {
+        return NodeGuiSerializationPtr();
+    }
+
+    return std::make_shared<NodeGuiSerialization>(*_imp->guiDataWithoutGui);
+}
+
+void
+Node::setGuiDataWithoutGui(const NodeGuiSerialization& data)
+{
+    NodeGuiSerializationPtr copy = std::make_shared<NodeGuiSerialization>(data);
+
+    // the children are the GUI data of the nodes of a group, which they keep
+    copy->setChildren( std::list<NodeGuiSerializationPtr>() );
+    QMutexLocker l(&_imp->guiDataMutex);
+    _imp->guiDataWithoutGui = copy;
 }
 
 void

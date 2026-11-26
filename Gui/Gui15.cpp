@@ -47,7 +47,7 @@
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Menu.h"
 #include "Gui/ProjectGui.h"
-#include "Gui/ProjectGuiSerialization.h" // PaneLayout, GuiLayoutSerialization
+#include "Engine/ProjectGuiSerialization.h" // PaneLayout, GuiLayoutSerialization
 #include "Gui/SequenceFileDialog.h"
 
 

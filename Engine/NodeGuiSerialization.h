@@ -44,7 +44,7 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Engine/AppManager.h"
 
-#include "Gui/GuiFwd.h"
+#include "Engine/EngineFwd.h"
 
 
 #define NODE_GUI_INTRODUCES_COLOR 2
@@ -55,6 +55,10 @@ GCC_DIAG_ON(unused-parameter)
 #define NODE_GUI_SERIALIZATION_VERSION NODE_GUI_INTRODUCES_CHILDREN
 
 NATRON_NAMESPACE_ENTER
+
+// The GUI data of a node, saved in the ProjectGui part of a project file. In Engine, so that the Engine can read
+// and write them; initialize(), which reads them from the GUI, is defined in Gui.
+class NodeGui;
 
 class NodeGuiSerialization
 {
@@ -143,6 +147,46 @@ public:
     const std::list<NodeGuiSerializationPtr>& getChildren() const
     {
         return _children;
+    }
+
+    // Without a GUI, the data are kept and saved by the Engine (see Node::getGuiDataWithoutGui())
+    void setFullySpecifiedName(const std::string& name)
+    {
+        _nodeName = name;
+    }
+
+    void setPosition(double x,
+                     double y)
+    {
+        _posX = x;
+        _posY = y;
+    }
+
+    void setSize(double w,
+                 double h)
+    {
+        _width = w;
+        _height = h;
+    }
+
+    void setColor(float r,
+                  float g,
+                  float b)
+    {
+        _r = r;
+        _g = g;
+        _b = b;
+        _colorWasFound = true;
+    }
+
+    void setPreviewEnabled(bool enabled)
+    {
+        _previewEnabled = enabled;
+    }
+
+    void setChildren(const std::list<NodeGuiSerializationPtr>& children)
+    {
+        _children = children;
     }
 
 private:

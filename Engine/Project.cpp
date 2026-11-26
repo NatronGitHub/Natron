@@ -83,9 +83,11 @@
 #include "Engine/Hash64.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Node.h"
+#include "Engine/NodeGuiSerialization.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/PortableBinaryArchive.h"
+#include "Engine/ProjectGuiSerialization.h"
 #include "Engine/ProjectPrivate.h"
 #include "Engine/ProjectSerialization.h"
 #include "Engine/RectDSerialization.h"
@@ -412,6 +414,88 @@ Project::fileHasGuiData() const
     return _imp->fileHasGuiData;
 }
 
+void
+Project::onGuiDataSet()
+{
+    if (_imp->runningPythonProjectScript) {
+        _imp->pythonProjectSetGuiData = true;
+    }
+}
+
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+// In background mode, gives the GUI data of the nodes of a project file (the entries of its ProjectGui part, see
+// ProjectGui::load()) to the nodes, or to the groups that keep the Viewers. The entries of the nodes that weren't
+// created are dropped, as the GUI does.
+void
+restoreNodesGuiDataWithoutGui(Project& project,
+                              const std::list<NodeGuiSerializationPtr>& nodesGui)
+{
+    for (std::list<NodeGuiSerializationPtr>::const_iterator it = nodesGui.begin(); it != nodesGui.end(); ++it) {
+        const std::string& name = (*it)->getFullySpecifiedName();
+        NodePtr node = project.getNodeByFullySpecifiedName(name);
+        if (node) {
+            node->setGuiDataWithoutGui(**it);
+        } else {
+            // a Viewer, kept by its group (see NodeCollection::addViewerWithoutGui())
+            const std::size_t dot = name.rfind('.');
+            NodeCollection* collection = &project;
+            if (dot != std::string::npos) {
+                NodePtr groupNode = project.getNodeByFullySpecifiedName( name.substr(0, dot) );
+                collection = groupNode ? groupNode->isEffectGroup() : 0;
+            }
+            if (collection) {
+                collection->setViewerWithoutGuiData( (dot == std::string::npos) ? name : name.substr(dot + 1), **it );
+            }
+        }
+        restoreNodesGuiDataWithoutGui( project, (*it)->getChildren() );
+    }
+}
+
+// The GUI data of the nodes of collection, for a save in background mode: the inverse of
+// restoreNodesGuiDataWithoutGui(), with the names the nodes have now, as ProjectGuiSerialization::initialize() saves them.
+std::list<NodeGuiSerializationPtr>
+getNodesGuiDataWithoutGui(const NodeCollection& collection)
+{
+    std::list<NodeGuiSerializationPtr> ret;
+    NodesList nodes;
+
+    collection.getActiveNodes(&nodes);
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        // the nodes that the project file has (see NodeCollectionSerialization::initialize())
+        if ( (*it)->getParentMultiInstance() || !(*it)->isPartOfProject() ) {
+            continue;
+        }
+        std::list<NodeGuiSerializationPtr> children;
+        const NodeGroup* isGroup = (*it)->isEffectGroup();
+        // the nodes of a PyPlug instance are placed by the PyPlug when it is loaded
+        if ( isGroup && !(*it)->isPyPlug() ) {
+            children = getNodesGuiDataWithoutGui(*isGroup);
+        }
+        NodeGuiSerializationPtr data = (*it)->getGuiDataWithoutGui();
+        if (data) {
+            data->setFullySpecifiedName( (*it)->getFullyQualifiedName() );
+            // the GUI saves the current state (NodeGuiSerialization::initialize()), and sets it from the file
+            data->setPreviewEnabled( (*it)->isPreviewEnabled() );
+            if ( !data->colorWasFound() ) {
+                // the file always has a colour, which the GUI sets if it isn't the default one
+                double r, g, b;
+                (*it)->getDefaultColor(&r, &g, &b);
+                data->setColor( static_cast<float>(r), static_cast<float>(g), static_cast<float>(b) );
+            }
+            data->setChildren(children);
+            ret.push_back(data);
+        } else {
+            // the GUI finds the nodes by their fully qualified name, also outside of their group's entry
+            ret.insert( ret.end(), children.begin(), children.end() );
+        }
+    }
+    const std::list<NodeGuiSerializationPtr> viewers = collection.getViewersWithoutGuiData();
+    ret.insert( ret.end(), viewers.begin(), viewers.end() );
+
+    return ret;
+}
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
 bool
 Project::fileLoadedWithErrors() const
 {
@@ -619,7 +703,8 @@ Project::loadProjectInternal(const QString & path,
     bool hasGuiData = false;
 
     // Same contents for both formats, so that they go through the same serialize() functions and versions.
-    auto loadFromArchive = [&](auto & iArchive) {
+    // guiPartFollows: whether the ProjectGui part follows the Project part (see below)
+    auto loadFromArchive = [&](auto & iArchive, const std::function<bool()>& guiPartFollows) {
         bool bgProject;
         {
             FlagSetter __raii_loadingProjectInternal__(true, &_imp->isLoadingProjectInternal, &_imp->isLoadingProjectMutex);
@@ -631,9 +716,33 @@ Project::loadProjectInternal(const QString & path,
         } // __raii_loadingProjectInternal__
 
         hasGuiData = !bgProject;
-        if (!bgProject) {
+        std::shared_ptr<ProjectGuiSerialization> guiDataWithoutGui;
+        if ( !bgProject && getApp()->isBackground() ) {
+            // Without a GUI, keep the GUI data, to save them with the project. A file flagged as saved by the GUI
+            // but without a ProjectGui part loaded in background mode before (which didn't read that part): it
+            // still loads, but saving would lose the GUI data. A damaged ProjectGui part is a damaged file, as
+            // with the GUI.
+            if ( guiPartFollows() ) {
+                guiDataWithoutGui = std::make_shared<ProjectGuiSerialization>();
+                iArchive >> boost::serialization::make_nvp("ProjectGui", *guiDataWithoutGui);
+            } else {
+                std::cerr << tr("Warning: %1 has no GUI data (node positions, viewer settings, window layout), but it is flagged as saved by the GUI.").arg(filePath).toStdString() << std::endl;
+                ret.dataLost = true;
+            }
+            if (guiDataWithoutGui) {
+                std::list<NodeGuiSerializationPtr> nodesGui;
+                const std::list<NodeGuiSerialization>& serializedNodesGui = guiDataWithoutGui->getSerializedNodesGui();
+                for (std::list<NodeGuiSerialization>::const_iterator it = serializedNodesGui.begin(); it != serializedNodesGui.end(); ++it) {
+                    nodesGui.push_back( std::make_shared<NodeGuiSerialization>(*it) );
+                }
+                restoreNodesGuiDataWithoutGui(*this, nodesGui);
+                // the nodes keep them
+                guiDataWithoutGui->setSerializedNodesGui( std::list<NodeGuiSerialization>() );
+            }
+        } else if (!bgProject) {
             getApp()->loadProjectGui(isAutoSave, iArchive);
         }
+        _imp->guiDataWithoutGui = guiDataWithoutGui;
     };
 
     try {
@@ -644,7 +753,18 @@ Project::loadProjectInternal(const QString & path,
                 throw std::runtime_error( tr("Failed to open %1").arg(filePath).toStdString() );
             }
             boost::archive::xml_iarchive iArchive(ifile);
-            loadFromArchive(iArchive);
+            loadFromArchive(iArchive, [&ifile]() {
+                // the next element, after white space, which the archive skips too (reading it from an archive
+                // that doesn't have it would leave the archive in a state that its destructor can't close)
+                ifile >> std::ws;
+                const std::streampos pos = ifile.tellg();
+                char tag[sizeof("<ProjectGui") - 1];
+                const bool found = ifile.read( tag, sizeof(tag) ) && ( std::memcmp( tag, "<ProjectGui", sizeof(tag) ) == 0 );
+                ifile.clear();
+                ifile.seekg(pos);
+
+                return found;
+            });
             if (isUntitledAutosave) {
                 // an auto-save of a new project, by Natron 2.5 or earlier: the format will be chosen when it is saved
                 projectFormat = eProjectFileFormatNone;
@@ -663,7 +783,10 @@ Project::loadProjectInternal(const QString & path,
             }
             int originalFormat;
             iArchive >> boost::serialization::make_nvp("Project_file_format", originalFormat);
-            loadFromArchive(iArchive);
+            // a binary file ends with the ProjectGui part: if it is missing, reading it fails
+            loadFromArchive(iArchive, [&ifile]() {
+                return ifile.peek() != std::char_traits<char>::eof();
+            });
             if (isAutoSave) {
                 // auto-saves are always binary, but "Save" must write the format of the original project
                 projectFormat = ( (originalFormat == eProjectFileFormatText) ? eProjectFileFormatText :
@@ -786,8 +909,15 @@ Project::loadPythonProjectInternal(const QString & path,
     }
     onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(), false);
 
+    _imp->guiDataWithoutGui.reset();
+    // the script sets the GUI data of the nodes (see onGuiDataSet())
+    _imp->pythonProjectSetGuiData = false;
+    _imp->runningPythonProjectScript = true;
     std::string error;
-    if ( !getApp()->runPythonProjectScript(filePath, &error) ) {
+    const bool scriptOk = getApp()->runPythonProjectScript(filePath, &error);
+    _imp->runningPythonProjectScript = false;
+    const bool hasGuiData = _imp->pythonProjectSetGuiData;
+    if (!scriptOk) {
         // the script stopped at the first error: the project is incomplete (loadProjectImpl() sets fileLoadedWithErrors())
         throw std::runtime_error( tr("%1: the Python script failed: %2").arg( filePath, QString::fromUtf8( error.c_str() ) ).toStdString() );
     }
@@ -800,7 +930,7 @@ Project::loadPythonProjectInternal(const QString & path,
         QMutexLocker l(&_imp->projectLock);
         _imp->hasProjectBeenSavedByUser = true;
         _imp->fileFormat = eProjectFileFormatPython;
-        _imp->fileHasGuiData = false;
+        _imp->fileHasGuiData = hasGuiData;
         _imp->fileLoadedWithErrors = false;
         _imp->ageSinceLastSave = time;
         _imp->lastAutoSave = time;
@@ -1327,11 +1457,29 @@ Project::saveProjectInternal(const QString & path,
     // Same contents for both formats (see loadProjectInternal())
     auto saveToArchive = [&](auto & oArchive) {
         bool bgProject = getApp()->isBackground();
+        // in background mode, the GUI data that the project file or a script gave (see loadProjectInternal())
+        std::shared_ptr<ProjectGuiSerialization> guiDataWithoutGui;
+        if (bgProject) {
+            const std::list<NodeGuiSerializationPtr> nodesGui = getNodesGuiDataWithoutGui(*this);
+            if ( _imp->guiDataWithoutGui || !nodesGui.empty() ) {
+                guiDataWithoutGui = _imp->guiDataWithoutGui ? _imp->guiDataWithoutGui : std::make_shared<ProjectGuiSerialization>();
+                std::list<NodeGuiSerialization> serializedNodesGui;
+                for (std::list<NodeGuiSerializationPtr>::const_iterator it = nodesGui.begin(); it != nodesGui.end(); ++it) {
+                    serializedNodesGui.push_back(**it);
+                }
+                guiDataWithoutGui->setSerializedNodesGui(serializedNodesGui);
+                bgProject = false;
+            }
+        }
         oArchive << boost::serialization::make_nvp("Background_project", bgProject);
         ProjectSerialization projectSerializationObj( getApp() );
         save(&projectSerializationObj);
         oArchive << boost::serialization::make_nvp("Project", projectSerializationObj);
-        if (!bgProject) {
+        if (guiDataWithoutGui) {
+            // as ProjectGui::save()
+            oArchive << boost::serialization::make_nvp("ProjectGui", *guiDataWithoutGui);
+            guiDataWithoutGui->setSerializedNodesGui( std::list<NodeGuiSerialization>() );
+        } else if (!bgProject) {
             AppInstancePtr app = getApp();
             if (app) {
                 app->saveProjectGui(oArchive);
@@ -3050,6 +3198,7 @@ Project::doResetEnd(bool aboutToQuit)
             _imp->fileFormat = eProjectFileFormatNone;
             _imp->fileHasGuiData = false;
             _imp->fileLoadedWithErrors = false;
+            _imp->guiDataWithoutGui.reset();
             _imp->projectCreationTime = QDateTime::currentDateTime();
             _imp->setProjectFilename(NATRON_PROJECT_UNTITLED);
             _imp->setProjectPath("");

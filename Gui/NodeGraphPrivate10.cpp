@@ -46,7 +46,7 @@
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/NodeClipBoard.h"
 #include "Gui/NodeGui.h"
-#include "Gui/NodeGuiSerialization.h"
+#include "Engine/NodeGuiSerialization.h"
 
 
 NATRON_NAMESPACE_ENTER

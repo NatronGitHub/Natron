@@ -97,6 +97,22 @@ public:
     void clearNodesBlocking();
     void clearNodesNonBlocking();
 
+    /**
+     * @brief Without a GUI (NatronRenderer), the Viewers of a project file are not created: the collection keeps
+     * their serialization, and their GUI data (the entries of the ProjectGui part named after them), which saving the
+     * project writes back (see NodeCollectionSerialization::initialize() and Project::saveProjectInternal()). Until
+     * the nodes are cleared. MT-safe.
+     **/
+    void addViewerWithoutGui(const NodeSerializationPtr& viewer);
+    // Once the nodes of the collection are created: the Viewers follow their input nodes, renamed or deleted later
+    void connectViewersWithoutGui();
+    // copies, with the names their input nodes have now
+    std::list<NodeSerializationPtr> getViewersWithoutGui() const;
+    // false if the collection keeps no Viewer named scriptName
+    bool setViewerWithoutGuiData(const std::string& scriptName, const NodeGuiSerialization& data);
+    // copies, named after their Viewer in the collection (see Node::getFullyQualifiedName())
+    std::list<NodeGuiSerializationPtr> getViewersWithoutGuiData() const;
+
 private:
 
     void clearNodesInternal(bool blocking);

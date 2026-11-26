@@ -261,10 +261,9 @@ class ConvertProjectTest:
 
     def test_gui_data(self):
         """A project with GUI data is converted only with discard_gui."""
-        # Only the flag: NatronRenderer does not read the GUI part
+        # saved by the Natron GUI
         with_gui = self.path("withgui.ntp")
-        write_variant(self.data, natronrunner.BACKGROUND_TAG,
-                      natronrunner.GUI_TAG, with_gui)
+        shutil.copyfile(natronrunner.GUI_TEST_PROJECT, with_gui)
         dst = self.path("withgui.bin.ntp")
         self.check_refused(self.runner.convert(with_gui, dst, "binary"), dst,
                            "RuntimeError: %s has GUI data" % with_gui,

@@ -53,6 +53,8 @@
 #include "Engine/Node.h"
 #include "Engine/NodeGraphI.h"
 #include "Engine/NodeGuiI.h"
+#include "Engine/NodeGuiSerialization.h"
+#include "Engine/NodeSerialization.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
@@ -82,6 +84,16 @@ struct NodeCollectionPrivate
     NodeGraphI* graph;
     mutable QMutex nodesMutex;
     NodesList nodes;
+    // see NodeCollection::addViewerWithoutGui(), protected by nodesMutex
+    struct ViewerWithoutGui
+    {
+        NodeSerializationPtr serialization;
+        // by input name: the input node, null if it wasn't found (its name is kept), set by connectViewersWithoutGui()
+        std::map<std::string, NodeWPtr> inputs;
+        bool connected = false;
+    };
+    std::list<ViewerWithoutGui> viewersWithoutGui;
+    std::map<std::string, NodeGuiSerializationPtr> viewersWithoutGuiData; // by script name
 
     NodeCollectionPrivate(const AppInstancePtr& app)
         : app(app)
@@ -460,9 +472,126 @@ NodeCollection::clearNodesInternal(bool blocking)
     {
         QMutexLocker l(&_imp->nodesMutex);
         _imp->nodes.clear();
+        _imp->viewersWithoutGui.clear();
+        _imp->viewersWithoutGuiData.clear();
     }
 
     nodesToDelete.clear();
+}
+
+void
+NodeCollection::addViewerWithoutGui(const NodeSerializationPtr& viewer)
+{
+    NodeCollectionPrivate::ViewerWithoutGui v;
+
+    v.serialization = viewer;
+    QMutexLocker l(&_imp->nodesMutex);
+    _imp->viewersWithoutGui.push_back(v);
+}
+
+void
+NodeCollection::connectViewersWithoutGui()
+{
+    {
+        // with a GUI, there are none
+        QMutexLocker l(&_imp->nodesMutex);
+        if ( _imp->viewersWithoutGui.empty() ) {
+            return;
+        }
+    }
+    // the names of the nodes are read without the nodesMutex (Node::setScriptName() reads the nodes of the group)
+    const NodesList nodes = getNodes();
+    std::map<std::string, NodePtr> nodesByName;
+
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        nodesByName[(*it)->getScriptName_mt_safe()] = *it;
+    }
+    QMutexLocker l(&_imp->nodesMutex);
+    for (std::list<NodeCollectionPrivate::ViewerWithoutGui>::iterator it = _imp->viewersWithoutGui.begin(); it != _imp->viewersWithoutGui.end(); ++it) {
+        if (it->connected) {
+            continue;
+        }
+        const std::map<std::string, std::string>& inputs = it->serialization->getInputs();
+        for (std::map<std::string, std::string>::const_iterator input = inputs.begin(); input != inputs.end(); ++input) {
+            std::map<std::string, NodePtr>::const_iterator found = nodesByName.find(input->second);
+            if ( found != nodesByName.end() ) {
+                it->inputs[input->first] = found->second;
+            }
+        }
+        it->connected = true;
+    }
+}
+
+std::list<NodeSerializationPtr>
+NodeCollection::getViewersWithoutGui() const
+{
+    std::list<NodeCollectionPrivate::ViewerWithoutGui> viewers;
+    {
+        QMutexLocker l(&_imp->nodesMutex);
+        viewers = _imp->viewersWithoutGui;
+    }
+    std::list<NodeSerializationPtr> ret;
+    for (std::list<NodeCollectionPrivate::ViewerWithoutGui>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        std::map<std::string, std::string> inputs;
+        const std::map<std::string, std::string>& savedInputs = it->serialization->getInputs();
+        for (std::map<std::string, std::string>::const_iterator input = savedInputs.begin(); input != savedInputs.end(); ++input) {
+            std::map<std::string, NodeWPtr>::const_iterator found = it->inputs.find(input->first);
+            if ( found == it->inputs.end() ) {
+                // not found when the project was loaded: as in the file
+                inputs.insert(*input);
+            } else if ( NodePtr node = found->second.lock() ) {
+                // renamed, or deleted
+                if ( node->isActivated() ) {
+                    inputs[input->first] = node->getScriptName_mt_safe();
+                }
+            }
+        }
+        NodeSerializationPtr copy = std::make_shared<NodeSerialization>(*it->serialization);
+        copy->setInputs(inputs);
+        ret.push_back(copy);
+    }
+
+    return ret;
+}
+
+bool
+NodeCollection::setViewerWithoutGuiData(const std::string& scriptName,
+                                        const NodeGuiSerialization& data)
+{
+    QMutexLocker l(&_imp->nodesMutex);
+
+    for (std::list<NodeCollectionPrivate::ViewerWithoutGui>::const_iterator it = _imp->viewersWithoutGui.begin(); it != _imp->viewersWithoutGui.end(); ++it) {
+        if ( it->serialization->getNodeScriptName() == scriptName ) {
+            _imp->viewersWithoutGuiData[scriptName] = std::make_shared<NodeGuiSerialization>(data);
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
+std::list<NodeGuiSerializationPtr>
+NodeCollection::getViewersWithoutGuiData() const
+{
+    // the prefix of the fully qualified names of the nodes of this collection
+    std::string prefix;
+    if ( const NodeGroup* isGroup = dynamic_cast<const NodeGroup*>(this) ) {
+        prefix = isGroup->getNode()->getFullyQualifiedName() + '.';
+    }
+    std::list<NodeGuiSerializationPtr> ret;
+    QMutexLocker l(&_imp->nodesMutex);
+    for (std::list<NodeCollectionPrivate::ViewerWithoutGui>::const_iterator it = _imp->viewersWithoutGui.begin(); it != _imp->viewersWithoutGui.end(); ++it) {
+        const std::string& scriptName = it->serialization->getNodeScriptName();
+        std::map<std::string, NodeGuiSerializationPtr>::const_iterator found = _imp->viewersWithoutGuiData.find(scriptName);
+        if ( found != _imp->viewersWithoutGuiData.end() ) {
+            NodeGuiSerializationPtr data = std::make_shared<NodeGuiSerialization>(*found->second);
+            data->setFullySpecifiedName(prefix + scriptName);
+            ret.push_back(data);
+        }
+    }
+
+    return ret;
 }
 
 void
@@ -3080,16 +3209,22 @@ exportGroupInternal(int indentLevel,
             WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setScriptName(") + ESC( (*it)->getScriptName_mt_safe() ) + QString::fromUtf8(")") );
         }
         WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setLabel(") + ESC( (*it)->getLabel_mt_safe() ) + QString::fromUtf8(")") );
-        double r, g, b;
-        // Without a GUI (NatronRenderer), a node has no position, size or colour: don't write zeros (black nodes)
-        if ( (*it)->getColor(&r, &g, &b) ) {
+        // Without a GUI (NatronRenderer), a node has a position, size or colour only if its project file or a
+        // script gave it one (see Node::getGuiDataWithoutGui()): don't write zeros (black nodes)
+        if ( (*it)->hasGuiData() ) {
             double x, y;
             (*it)->getPosition(&x, &y);
             double w, h;
             (*it)->getSize(&w, &h);
             // a precision of 1 pixel is enough for the position on the nodegraph
             WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setPosition(") + NUM_PIXEL(x) + QString::fromUtf8(", ") + NUM_PIXEL(y) + QString::fromUtf8(")") );
-            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setSize(") + NUM_PIXEL(w) + QString::fromUtf8(", ") + NUM_PIXEL(h) + QString::fromUtf8(")") );
+            // without a GUI, a node that was only given a position has no size
+            if ( (w > 0) && (h > 0) ) {
+                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setSize(") + NUM_PIXEL(w) + QString::fromUtf8(", ") + NUM_PIXEL(h) + QString::fromUtf8(")") );
+            }
+        }
+        double r, g, b;
+        if ( (*it)->getColor(&r, &g, &b) ) {
             // a precision of 3 digits is enough for the node color
             WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setColor(") + NUM_COLOR(r) + QString::fromUtf8(", ") + NUM_COLOR(g) + QString::fromUtf8(", ") + NUM_COLOR(b) +  QString::fromUtf8(")") );
         }
