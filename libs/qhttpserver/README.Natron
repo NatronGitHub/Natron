@@ -2,3 +2,14 @@ Extracted from qhttpserver main repository
 Git URL=https://github.com/nikhilm/qhttpserver
 Git HEAD version=ca8f3277d37c90546870c72313d0cdae61bf5bac
 Patch applied=qhttpserver-Natron.patch
+
+http-parser (http-parser/): nodejs/http-parser v2.9.4, its last release
+(the repository is archived), unmodified:
+Git URL=https://github.com/nodejs/http-parser
+Git tag=v2.9.4 (2343fd6b5214b2ded2cdcf76de2bf60903bb90cd)
+It replaces the 2.5.0 copy that came with qhttpserver, whose fixes since include
+the rejection of interior blanks in Content-Length (CVE-2018-7159), of empty
+and duplicate Content-Length values, the Transfer-Encoding handling of
+CVE-2019-15605, and out-of-bounds reads in http_parser_parse_url().
+The QHttpRequest::HttpMethod enum mirrors its HTTP_METHOD_MAP (checked by a
+static_assert in src/qhttpconnection.cpp).

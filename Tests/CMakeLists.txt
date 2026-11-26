@@ -107,6 +107,7 @@ set(Tests_SOURCES
     PyParamDefault_Test.cpp
     PythonGILUnlocker_Test.cpp
     PythonScript_Test.cpp
+    QHttpServer_Test.cpp
     ProjectFileFormat_Test.cpp
     PythonExpressionScope_Test.cpp
     ReadNodeInputs_Test.cpp
@@ -142,7 +143,9 @@ target_link_libraries(Tests
     PRIVATE
         openMVG
         NatronEngine
+        qhttpserver
         Qt::Core
+        Qt::Network
         Python3::Python
 )
 target_include_directories(Tests PRIVATE ..)
@@ -153,6 +156,12 @@ target_include_directories(Tests
         googletest/googletest
         googletest/googlemock/include
         googletest/googlemock
+        ../libs/qhttpserver/src
+        ../libs/qhttpserver/http-parser
+        google-test/include
+        google-test
+        google-mock/include
+        google-mock
 )
 # bundled third-party code (see NATRON_THIRD_PARTY_NO_WARNINGS)
 set_property(SOURCE googletest/googletest/src/gtest-all.cc googletest/googlemock/src/gmock-all.cc
