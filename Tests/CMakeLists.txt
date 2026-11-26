@@ -19,8 +19,8 @@
 
 set(Tests_HEADERS BaseTest.h NaNGuards_FastMath.h OfxTestPlugin.h TestUtils.h)
 set(Tests_SOURCES
-    google-test/src/gtest-all.cc
-    google-mock/src/gmock-all.cc
+    googletest/googletest/src/gtest-all.cc
+    googletest/googlemock/src/gmock-all.cc
     BaseTest.cpp
     CLArgs_Test.cpp
     CacheHolderID_Test.cpp
@@ -149,13 +149,13 @@ target_include_directories(Tests PRIVATE ..)
 target_include_directories(Tests
     SYSTEM PRIVATE
         ../libs/SequenceParsing
-        google-test/include
-        google-test
-        google-mock/include
-        google-mock
+        googletest/googletest/include
+        googletest/googletest
+        googletest/googlemock/include
+        googletest/googlemock
 )
 # bundled third-party code (see NATRON_THIRD_PARTY_NO_WARNINGS)
-set_property(SOURCE google-test/src/gtest-all.cc google-mock/src/gmock-all.cc
+set_property(SOURCE googletest/googletest/src/gtest-all.cc googletest/googlemock/src/gmock-all.cc
     APPEND PROPERTY COMPILE_OPTIONS ${NATRON_THIRD_PARTY_NO_WARNINGS})
 add_test(NAME Tests COMMAND Tests)
 # The same OFX tests with the plug-ins known from the OFX plug-in cache that Tests wrote, instead of a

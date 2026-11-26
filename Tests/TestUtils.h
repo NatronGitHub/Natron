@@ -62,18 +62,18 @@ currentTestName()
 {
     const testing::TestInfo* info = testing::UnitTest::GetInstance()->current_test_info();
 
-    return info ? std::string( info->test_case_name() ) + '.' + info->name() : std::string();
+    return info ? std::string( info->test_suite_name() ) + '.' + info->name() : std::string();
 }
 
-// Says that the current test did not run, and why. The bundled google-test (1.7) predates GTEST_SKIP():
-// the test then returns early and is reported as passed. Every skip prints this one line, so that the
-// skips can be counted in the output:
-//   [  SKIPPED ] Suite.Name: reason
-// TODO: GTEST_SKIP() once google-test is upgraded.
+// Says that the current test did not run, and why: google-test reports it as skipped ("[  SKIPPED ]",
+// with the reason), not as passed, unless it also failed. GTEST_SKIP() returns only from this function,
+// so the caller must return too, as must every helper that calls it (they return false, or true for
+// skipped()), up to the test: the code after a skip would still run, and its failures would count.
+// From a fixture's SetUp(), the test body does not run.
 inline void
 skip(const std::string& reason)
 {
-    std::cerr << "[  SKIPPED ] " << currentTestName() << ": " << reason << std::endl;
+    GTEST_SKIP() << reason;
 }
 
 // Says that a part of the current test did not run, and why; the rest of the test runs.
@@ -98,7 +98,7 @@ isPluginAvailable(const std::string& pluginID)
 
 // false, and the test is skipped, if one of the plug-ins was not loaded. bundle says where they come
 // from, e.g. "openfx-misc".
-inline bool
+[[nodiscard]] inline bool
 requirePlugins(std::initializer_list<const char*> pluginIDs,
                const char* bundle)
 {
@@ -205,7 +205,7 @@ struct ProjectResetScope
 // that can render: e.g. on the Linux CI (Xvfb, Mesa llvmpipe), OSGLContext_x11::getGPUInfos() skips the
 // renderers that are not accelerated, so the "OpenGL Rendering" preference is hidden and
 // Settings::isOpenGLRenderingEnabled() is always false.
-inline bool
+[[nodiscard]] inline bool
 requireOpenGLRendering()
 {
     if ( !NATRON_NAMESPACE::appPTR->isOpenGLLoaded() ) {
