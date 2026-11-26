@@ -2,13 +2,9 @@
 # goes outside the font tag that the editor adds, as the editor writes it, so that the editor shows the
 # text without the tags, Italic can be turned on and off, and editing the text keeps the bold. Bold used to
 # be checked but dropped when the text was edited (#1807).
-import NatronGuiTest
 from natrontest import *
 
-try:
-    from PySide2 import QtCore, QtWidgets
-except ImportError:
-    from PySide6 import QtCore, QtWidgets
+QtCore, QtGui, QtWidgets = qt_modules()
 
 bd = app.createNode("fr.inria.built-in.BackDrop")
 check(bd is not None, "createNode(BackDrop) failed")
@@ -16,10 +12,7 @@ label = bd.getParam("Label")
 check(label is not None, "no Label parameter on %s" % bd.getScriptName())
 label.setValue("<b>a sticky note</b>")  # no font tag
 wait_idle()
-app.clearSelection()
-app.selectNode(bd, True)
-NatronGuiTest.sendKey("NodeGraph", "Return")  # open its settings panel: it reads the label
-wait_idle()
+open_settings_panel(bd)  # it reads the label
 
 widgets = QtWidgets.QApplication.allWidgets()
 editors = [w for w in widgets if w.objectName() == label.getScriptName()

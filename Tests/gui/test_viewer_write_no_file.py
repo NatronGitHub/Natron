@@ -10,12 +10,8 @@ import NatronGuiTest
 from natrontest import *
 
 require_plugin(GENERATOR)
-if not os.environ.get("OCIO"):
-    # the Write node fails without an OCIO config ("Invalid OCIO config")
-    NatronGuiTest.skip("OCIO is not set to an OpenColorIO config")
-if not any(i.startswith("fr.inria.openfx.WritePNG") for i in natron.getPluginIDs()):
-    NatronGuiTest.skip("plug-in fr.inria.openfx.WritePNG not found (OFX_PLUGIN_PATH=%s)" %
-                       os.environ.get("OFX_PLUGIN_PATH", ""))
+require_ocio()
+require_plugin("fr.inria.openfx.WritePNG")
 
 outDir = tempfile.mkdtemp(prefix="natron-viewer-write-no-file-")
 try:
