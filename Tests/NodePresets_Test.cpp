@@ -231,6 +231,11 @@ TEST(NodePresets, TrackerLoadReplacesTracks)
 // or loading such a track threw (#1513).
 TEST(NodePresets, TrackerLoadPatternMatchingTracks)
 {
+#ifndef DEBUG
+    // the parameter, and pattern-matching tracks, exist only in DEBUG builds (NATRON_TRACKER_ENABLE_TRACKER_PM in
+    // Engine/TrackerContextPrivate.h)
+    NatronTest::skip("pattern-matching tracks exist only in DEBUG builds");
+#else
     if ( !NatronTest::requirePlugins({ PLUGINID_OFX_TRANSFORM, PLUGINID_OFX_CORNERPIN, PLUGINID_OFX_TRACKERPM }, "openfx-misc") ) {
         return;
     }
@@ -242,12 +247,7 @@ TEST(NodePresets, TrackerLoadPatternMatchingTracks)
     TrackerContextPtr context = node->getTrackerContext();
     ASSERT_TRUE( bool(context) );
     KnobBoolPtr usePM = std::dynamic_pointer_cast<KnobBool>( node->getKnobByName("usePatternMatching") );
-    if (!usePM) {
-        // the parameter exists only in DEBUG builds (NATRON_TRACKER_ENABLE_TRACKER_PM in TrackerContextPrivate.h)
-        NatronTest::skip("no usePatternMatching parameter: pattern-matching tracks are only in DEBUG builds");
-
-        return;
-    }
+    ASSERT_TRUE( bool(usePM) );
     usePM->setValue(true);
     ASSERT_TRUE( context->isTrackerPMEnabled() );
 
@@ -264,6 +264,7 @@ TEST(NodePresets, TrackerLoadPatternMatchingTracks)
     context->getAllMarkers(&markers);
     ASSERT_EQ( 1u, markers.size() );
     EXPECT_TRUE( dynamic_cast<TrackMarkerPM*>( markers[0].get() ) != NULL );
+#endif
 }
 
 // A PyPlug script makes a shape on a Roto node inside the PyPlug; the project saved the node with that
