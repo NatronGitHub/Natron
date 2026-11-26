@@ -52,6 +52,7 @@ QHttpConnection::QHttpConnection(QTcpSocket *socket, QObject *parent)
       m_parser(0),
       m_parserSettings(0),
       m_request(0),
+      m_currentHeaderValueSeen(false),
       m_currentRequestEmitted(false),
       m_transmitLen(0),
       m_transmitPos(0)
@@ -233,6 +234,10 @@ int QHttpConnection::MessageBegin(http_parser *parser)
 {
     QHttpConnection *theConnection = static_cast<QHttpConnection *>(parser->data);
     theConnection->m_currentHeaders.clear();
+    // Natron: the last header of the previous request was added to the next one
+    theConnection->m_currentHeaderField.clear();
+    theConnection->m_currentHeaderValue.clear();
+    theConnection->m_currentHeaderValueSeen = false;
     theConnection->m_currentUrl.clear();
     theConnection->m_currentUrl.reserve(128);
     theConnection->m_currentRequestEmitted = false;
@@ -275,8 +280,7 @@ int QHttpConnection::HeadersComplete(http_parser *parser)
     theConnection->m_request->setUrl(createUrl(theConnection->m_currentUrl.constData(), urlInfo));
 
     // Insert last remaining header
-    theConnection->m_currentHeaders[theConnection->m_currentHeaderField.toLower()] =
-        theConnection->m_currentHeaderValue;
+    theConnection->insertCurrentHeader();
     theConnection->m_request->setHeaders(theConnection->m_currentHeaders);
 
     /** set client information **/
@@ -325,16 +329,10 @@ int QHttpConnection::HeaderField(http_parser *parser, const char *at, size_t len
 
     // insert the header we parsed previously
     // into the header map
-    if (!theConnection->m_currentHeaderField.isEmpty() &&
-        !theConnection->m_currentHeaderValue.isEmpty()) {
-        // header names are always lower-cased
-        theConnection->m_currentHeaders[theConnection->m_currentHeaderField.toLower()] =
-            theConnection->m_currentHeaderValue;
-        // clear header value. this sets up a nice
-        // feedback loop where the next time
-        // HeaderValue is called, it can simply append
-        theConnection->m_currentHeaderField = QString();
-        theConnection->m_currentHeaderValue = QString();
+    // Natron: also if its value is empty: the next field name was appended to its name
+    // ("X-Empty:\r\nHost: localhost" gave "x-emptyhost: localhost" and no Host header)
+    if (theConnection->m_currentHeaderValueSeen) {
+        theConnection->insertCurrentHeader();
     }
 
     QString fieldSuffix = QString::fromLatin1(at, length);
@@ -349,7 +347,27 @@ int QHttpConnection::HeaderValue(http_parser *parser, const char *at, size_t len
 
     QString valueSuffix = QString::fromLatin1(at, length);
     theConnection->m_currentHeaderValue += valueSuffix;
+    theConnection->m_currentHeaderValueSeen = true;
     return 0;
+}
+
+// Natron: adds the header being parsed to m_currentHeaders (header names are always lower-cased) and
+// clears it. A repeated header is combined into one comma-separated value, as RFC 7230 section 3.2.2
+// says, instead of keeping only the last value.
+void QHttpConnection::insertCurrentHeader()
+{
+    if (!m_currentHeaderField.isEmpty()) {
+        const QString field = m_currentHeaderField.toLower();
+        HeaderHash::iterator found = m_currentHeaders.find(field);
+        if (found == m_currentHeaders.end()) {
+            m_currentHeaders.insert(field, m_currentHeaderValue);
+        } else {
+            found.value() += QString::fromUtf8(", ") + m_currentHeaderValue;
+        }
+    }
+    m_currentHeaderField.clear();
+    m_currentHeaderValue.clear();
+    m_currentHeaderValueSeen = false;
 }
 
 int QHttpConnection::Body(http_parser *parser, const char *at, size_t length)

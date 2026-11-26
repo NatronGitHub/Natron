@@ -53,6 +53,15 @@ QHttpResponse::~QHttpResponse()
 
 void QHttpResponse::setHeader(const QString &field, const QString &value)
 {
+    // Natron: a CR or LF would end the header and let the rest of the value inject headers or a body
+    // (response splitting)
+    if (field.contains(QLatin1Char('\r')) || field.contains(QLatin1Char('\n')) ||
+        value.contains(QLatin1Char('\r')) || value.contains(QLatin1Char('\n'))) {
+#ifdef DEBUG
+        qWarning() << "QHttpResponse::setHeader() Ignoring a header with a CR or LF.";
+#endif
+        return;
+    }
     if (!m_finished)
         m_headers[field] = value;
     else {

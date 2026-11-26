@@ -56,6 +56,7 @@ private Q_SLOTS:
 
 private:
     void rejectMalformedRequest();
+    void insertCurrentHeader();
 
     static int MessageBegin(http_parser *parser);
     static int Url(http_parser *parser, const char *at, size_t length);
@@ -78,6 +79,8 @@ private:
     HeaderHash m_currentHeaders;
     QString m_currentHeaderField;
     QString m_currentHeaderValue;
+    // Natron: whether http-parser gave (a part of) m_currentHeaderField's value, which may be empty
+    bool m_currentHeaderValueSeen;
 
     // Natron: whether the current request was given to the newRequest() handler (it then answers it)
     bool m_currentRequestEmitted;
