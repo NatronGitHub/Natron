@@ -34,6 +34,7 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QEvent>
 #include <QtCore/QEventLoop>
+#include <QtCore/QMetaEnum>
 #include <QtCore/QString>
 #include <QtCore/QTimer>
 #include <QtNetwork/QHostAddress>
@@ -353,4 +354,13 @@ TEST(QHttpServer, ServerPortIsZeroWhenNotListening)
     QHttpServer second; // the port is in use
     EXPECT_FALSE( second.listen( QHostAddress::LocalHost, static_cast<quint16>(port) ) );
     EXPECT_EQ( 0, second.serverPort() );
+}
+
+// QHttpRequest::HttpMethod is registered with the meta-object system (Q_ENUM: QHttpRequest::methodString())
+TEST(QHttpServer, MethodNames)
+{
+    const QMetaEnum methods = QMetaEnum::fromType<QHttpRequest::HttpMethod>();
+    ASSERT_TRUE( methods.isValid() );
+    EXPECT_STREQ( "HTTP_GET", methods.valueToKey(QHttpRequest::HTTP_GET) );
+    EXPECT_STREQ( "HTTP_SOURCE", methods.valueToKey(QHttpRequest::HTTP_SOURCE) );
 }

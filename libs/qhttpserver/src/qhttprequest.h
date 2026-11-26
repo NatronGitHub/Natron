@@ -51,8 +51,6 @@ class QHTTPSERVER_API QHttpRequest : public QObject
     Q_PROPERTY(QString path READ path)
     Q_PROPERTY(QString httpVersion READ httpVersion)
 
-    Q_ENUMS(HttpMethod)
-
     /// @cond nodoc
     friend class QHttpConnection;
     /// @endcond
@@ -106,6 +104,8 @@ public:
         // icecast
         HTTP_SOURCE
     };
+    // Natron: Q_ENUM (Qt 5.5) replaces the obsolete Q_ENUMS
+    Q_ENUM(HttpMethod)
 
     /// The method used for the request.
     HttpMethod method() const;
