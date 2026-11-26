@@ -154,6 +154,61 @@ run by ``NatronRenderer -t`` and registered as ``headless.<name>`` with the ``he
 uses the helpers of ``natronheadless.py`` (which only import ``NatronEngine``), and runs in CI on
 every platform.
 
+Testing plug-ins with a Natron build
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The CI of a plug-in repository can run its own headless tests (``NatronRenderer -t``) and GUI tests
+(``Natron --test``, under ``xvfb-run``) with a recent Natron build: the public pre-release
+`natron_testing <https://github.com/NatronGitHub/Natron/releases/tag/natron_testing>`_ of Natron,
+which needs no token, has these assets:
+
+- ``https://github.com/NatronGitHub/Natron/releases/download/natron_testing/Natron-RB-2.6-Linux-x86_64.tar.xz``
+- ``https://github.com/NatronGitHub/Natron/releases/download/natron_testing/Natron-RB-2.6-Linux-aarch64.tar.xz``
+- ``https://github.com/NatronGitHub/Natron/releases/download/natron_testing/natron_testing-commit.txt``:
+  the Natron commit the archives were built from (one line).
+- ``https://github.com/NatronGitHub/Natron/releases/download/natron_testing/Natron-RB-2.6-Linux-x86_64-commits.txt``
+  and ``Natron-RB-2.6-Linux-aarch64-commits.txt``: the commits that each archive was built from,
+  one ``<repository> <commit>`` line each, for ``Natron`` and the bundled plug-ins (``openfx-io``,
+  ``openfx-misc``, ``openfx-arena``, ``openfx-gmic``), as shown in Natron's About dialog. The two
+  archives have the same Natron commit, but the plug-ins are built from their moving branches, so
+  their commits may differ between the archives.
+
+They are the Linux portable archives of the RB-2.6 branch, built in the Rocky Linux 9 SDK: they need
+the system libraries listed in "Runtime requirements of the Linux binaries" in ``INSTALL_LINUX.md``,
+and bundle the official plug-ins in ``Plugins/OFX/Natron`` (remove the bundled copy of the plug-in
+under test, so that Natron loads the one on ``OFX_PLUGIN_PATH``). Each archive has one top-level
+directory (``Natron-RB-2.6-<date>-<commit>-Linux-<arch>-no-installer``), with the ``Natron`` and
+``NatronRenderer`` launchers.
+
+The ``Linux packages`` workflow (``.github/workflows/linux_packages.yml``) replaces these assets in
+place, under the same names, on its weekly run (Sunday) and when it is run on demand on RB-2.6, only
+if both archives were built and passed Natron-Tests (known failures excepted). If either archive
+fails, none of the assets is updated, so that they always come from the same Natron commit: a run
+that fails before the upload leaves the previous assets. Pull requests, tags and other branches never update them. An
+update deletes each asset before uploading its replacement, so during an update (a few minutes) a
+download may fail or get files from two builds, and an asset may stay missing until the next run if
+the upload fails: retry the download, and compare ``natron_testing-commit.txt`` before and after.
+
+The test helpers, ``natronheadless.py`` and ``natrontest.py``, are not in the archives: fetch them
+from ``Tests/gui`` at the published commit, so that they match the build::
+
+    base=https://github.com/NatronGitHub/Natron/releases/download/natron_testing
+    curl -fsSL -o natron.tar.xz "$base/Natron-RB-2.6-Linux-x86_64.tar.xz"
+    commit=$(curl -fsSL "$base/natron_testing-commit.txt")
+    mkdir natron && tar -xJf natron.tar.xz -C natron --strip-components=1
+    for f in natronheadless.py natrontest.py; do
+        curl -fsSL -o "tests/$f" "https://raw.githubusercontent.com/NatronGitHub/Natron/$commit/Tests/gui/$f"
+    done
+    # the bundled copy would be loaded instead of the one under test ("Prefer bundled plug-ins")
+    rm -rf natron/Plugins/OFX/Natron/MyPlugin.ofx.bundle
+    export OFX_PLUGIN_PATH=$PWD/build/plugins
+    natron/NatronRenderer -t tests/headless_myplugin.py
+    # in CI (CI set, as on GitHub Actions), Natron --test skips unless NATRON_GUI_TESTS=1
+    NATRON_GUI_TESTS=1 xvfb-run -a natron/Natron --test tests/test_myplugin.py
+
+Both commands exit with status 0 if the test passed, 77 if it was skipped (e.g. a plug-in it needs
+is missing, or no OpenGL context), and another status if it failed (see `Test mode`_).
+
 Test mode
 ~~~~~~~~~
 

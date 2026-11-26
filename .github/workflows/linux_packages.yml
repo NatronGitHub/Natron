@@ -12,7 +12,9 @@ name: Linux packages
 #    (tools/docker/natron-test.sh): <name>-tests.txt, <name>-unit_tests_failures.zip.
 # Weekly (Sunday), on demand, and on pre-release tags (v2.6.0-rc1, -beta1, -alpha.1, ...), whose release gets the
 # archives and the test results; never on pull requests. The archives and the test results are
-# kept 14 days as workflow artifacts. Never skipped: the plug-ins are built from their moving
+# kept 14 days as workflow artifacts. On RB-2.6, the weekly and on-demand runs whose packages and
+# Natron-Tests all passed also replace the archives of the rolling natron_testing pre-release, for
+# the plug-ins' CI (#1925, see the natron_testing job). Never skipped: the plug-ins are built from their moving
 # branches (Global/plugin-branches.sh). GPL only (no COMMERCIAL build, see tools/jenkins/README.md).
 on:
   workflow_dispatch:
@@ -202,6 +204,7 @@ jobs:
     - name: Build Natron, the plug-ins and the portable archive
       env:
         SDK_IMAGE: ${{ needs.sdk_check.outputs.image }}:${{ needs.sdk_check.outputs.hash }}-${{ matrix.docker_arch }}
+        ARCH: ${{ matrix.arch }}
       run: |
         work="$RUNNER_TEMP/natron-build"
         mkdir -p "$work/builds" "$work/tmp"
@@ -239,11 +242,31 @@ jobs:
         mkdir -p dist
         # cp: the build directories belong to root (the container)
         cp "$archive" dist/
+        # the commits that the build used, as build-natron.sh gives them to the About dialog
+        # (GitVersion.h): OPENFX_<P>_GIT_COMMIT, or else OPENFX_<P>_GIT_BRANCH, which
+        # checkoutRepository sets to the commit it checked out. One "<repository> <commit>" line
+        # each, for the natron_testing release (natron_testing job)
+        options="$(dirname "$archive")/buildOptions.sh"
+        if [ -f "$options" ]; then
+            option() { sed -n "s/^$1=//p" "$options" | tail -1 | tr -d "\"'"; }
+            {
+                echo "Natron $(option NATRON_GIT_COMMIT)"
+                for p in IO MISC ARENA GMIC; do
+                    commit=$(option "OPENFX_${p}_GIT_COMMIT")
+                    echo "openfx-${p,,} ${commit:-$(option "OPENFX_${p}_GIT_BRANCH")}"
+                done
+            } > "dist/Natron-Linux-$ARCH-commits.txt"
+            cat "dist/Natron-Linux-$ARCH-commits.txt"
+        else
+            echo "::warning::no $options: no commits file"
+        fi
         ls -l dist
     - uses: actions/upload-artifact@v4
       with:
         name: Natron-Linux-${{ matrix.arch }}
-        path: dist/*.tar.xz
+        path: |
+          dist/*.tar.xz
+          dist/*-commits.txt
         compression-level: 0
         retention-days: 14
         if-no-files-found: error
@@ -315,3 +338,56 @@ jobs:
         ls -l dist/*.tar.xz
         shopt -s nullglob
         .github/workflows/attach_to_prerelease.sh "$GITHUB_REF_NAME" dist/*.tar.xz dist/*-tests.txt dist/*-tests-summary.txt dist/*-unit_tests_failures.zip
+
+  # RB-2.6, weekly and on demand only (never pull requests, tags or other branches): replace the
+  # assets of the rolling public pre-release natron_testing, which the plug-in repositories' CI
+  # downloads without a token (#1925; Documentation/source/devel/guitesting.rst):
+  # Natron-RB-2.6-Linux-<arch>.tar.xz (the portable archive, renamed), natron_testing-commit.txt
+  # (the Natron commit they were built from, whose Tests/gui/natronheadless.py and natrontest.py
+  # the plug-in tests use) and Natron-RB-2.6-Linux-<arch>-commits.txt (the commits of Natron and of
+  # the bundled plug-ins, per arch: the plug-ins are built from moving branches). The release and its tag are created at the first run; later runs only
+  # replace the assets (the tag doesn't move: the commit is in natron_testing-commit.txt).
+  natron_testing:
+    needs: [package, test]
+    # all or nothing, so that both archives match natron_testing-commit.txt: the result of a matrix
+    # job is success only if every arch succeeded (package: built and checked, test: Natron-Tests
+    # passed, known failures excepted)
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/RB-2.6' && needs.package.result == 'success' && needs.test.result == 'success' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: Natron-Linux-x86_64
+        path: dist/x86_64
+    - uses: actions/download-artifact@v4
+      with:
+        name: Natron-Linux-aarch64
+        path: dist/aarch64
+    - name: Replace the natron_testing assets
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_REPO: ${{ github.repository }}
+      run: |
+        assets=()
+        for arch in x86_64 aarch64; do
+            src=(dist/"$arch"/*.tar.xz)
+            [ ${#src[@]} = 1 ] && [ -f "${src[0]}" ] || { echo "Error: expected one archive in dist/$arch"; ls -l "dist/$arch"; exit 1; }
+            dst="dist/Natron-$GITHUB_REF_NAME-Linux-$arch.tar.xz"
+            mv "${src[0]}" "$dst"
+            assets+=("$dst")
+            commits=(dist/"$arch"/*-commits.txt)
+            [ ${#commits[@]} = 1 ] && [ -f "${commits[0]}" ] || { echo "Error: expected one commits file in dist/$arch"; ls -l "dist/$arch"; exit 1; }
+            dst="dist/Natron-$GITHUB_REF_NAME-Linux-$arch-commits.txt"
+            mv "${commits[0]}" "$dst"
+            assets+=("$dst")
+        done
+        # first and only line: the Natron commit (the per-arch commits files also have it)
+        echo "$GITHUB_SHA" > dist/natron_testing-commit.txt
+        ls -l "${assets[@]}" dist/natron_testing-commit.txt
+        gh release view natron_testing > /dev/null 2>&1 ||
+            gh release create natron_testing --prerelease --target "$GITHUB_SHA" \
+                --title "Natron $GITHUB_REF_NAME builds for automated testing" \
+                --notes "Rolling builds of Natron $GITHUB_REF_NAME for the plug-ins' CI, not releases: the Linux portable archives, replaced by the weekly and on-demand runs of the Linux packages workflow (.github/workflows/linux_packages.yml) whose packages and Natron-Tests passed. natron_testing-commit.txt is the Natron commit they were built from (the natron_testing tag doesn't move), and Natron-$GITHUB_REF_NAME-Linux-<arch>-commits.txt the commits of Natron and of the bundled plug-ins. See \"Testing plug-ins with a Natron build\" in Documentation/source/devel/guitesting.rst."
+        gh release upload natron_testing --clobber "${assets[@]}" dist/natron_testing-commit.txt
