@@ -19,9 +19,8 @@
 
 """Headless test: a Write node writes its files only when it is rendered itself (#815).
 
-Run by NatronRenderer -t. It exits with natron.quit(status): 0 on success, 1 on failure, 77 if
-skipped (it needs the PNG reader and writer of openfx-io: set OFX_PLUGIN_PATH; the writer needs an
-OpenColorIO configuration: set OCIO).
+Skipped without the PNG reader and writer of openfx-io (set OFX_PLUGIN_PATH), or without an
+OpenColorIO configuration for the writer (set OCIO).
 
     Read plate.####.png -> WriteB b.####.png -> WriteS s.png -> Dot -> WriteA a.####.png
 
@@ -33,28 +32,14 @@ colour of a file tells which frame of the sequence it holds.
 """
 
 import os
-import shutil
 import struct
-import sys
 import tempfile
-import traceback
 import zlib
 
-from NatronEngine import natron
+import natronheadless
 
-SKIP = 77
 FRAMES = (11, 12, 13)  # the frames of the sequence, all rendered
 NEEDED = ("fr.inria.openfx.ReadPNG", "fr.inria.openfx.WritePNG")
-
-
-class Skipped(Exception):
-    """The test cannot run here."""
-
-
-def check(condition, message=""):
-    """Like assert, but not removed by python -O."""
-    if not condition:
-        raise AssertionError(message)
 
 
 def write_png(path, frame, width=8, height=4):
@@ -75,13 +60,13 @@ def png_frame(path):
     """Returns the frame of the sequence that a PNG file written by Natron holds: its first red, divided by 10."""
     with open(path, "rb") as f:
         data = f.read()
-    check(data[:8] == b"\x89PNG\r\n\x1a\n", path + " is not a PNG file")
+    natronheadless.check(data[:8] == b"\x89PNG\r\n\x1a\n", path + " is not a PNG file")
     pos, idat = 8, b""
     while pos < len(data):
         length, tag = struct.unpack(">I4s", data[pos:pos + 8])
         if tag == b"IHDR":
             depth = data[pos + 16]
-            check(depth == 8, "%s: %d bits per channel, expected 8" % (path, depth))
+            natronheadless.check(depth == 8, "%s: %d bits per channel, expected 8" % (path, depth))
         elif tag == b"IDAT":
             idat += data[pos + 8:pos + 8 + length]
         pos += 12 + length
@@ -108,52 +93,47 @@ def render(app, write, first, last, out):
         The names of the files written, sorted.
 
     Raises:
-        Skipped: nothing was written, and OCIO is not an OpenColorIO configuration.
+        natronheadless.Skipped: nothing was written, and OCIO is not an OpenColorIO configuration.
     """
     remove_written(out)
     app.render(write, first, last)
     files = written(out)
     if not files and not os.path.isfile(os.environ.get("OCIO", "")):
         # the writers of openfx-io fail without an OpenColorIO configuration
-        raise Skipped("nothing was rendered and there is no OpenColorIO configuration: set OCIO")
+        raise natronheadless.Skipped("nothing was rendered and there is no OpenColorIO configuration: set OCIO")
     return files
 
 
 def connect(node, input_node):
     """Connects input_node to the input 0 of node; fails if it cannot."""
     connected = node.connectInput(0, input_node)
-    check(connected, "%s cannot be connected to %s" % (node.getScriptName(), input_node.getScriptName()))
+    natronheadless.check(connected, "%s cannot be connected to %s" % (node.getScriptName(), input_node.getScriptName()))
 
 
 def create_writer(app, path, name):
     """Returns a new Write node named name that writes path."""
     write = app.createWriter(path)
-    check(write is not None, "no Write node for " + path)
+    natronheadless.check(write is not None, "no Write node for " + path)
     write.setScriptName(name)
     return write
 
 
-def main():
-    """Runs the test, then exits with natron.quit(): 0 on success, 1 on failure, 77 if skipped."""
-    status = 1
-    out = None
-    try:
-        ids = natron.getPluginIDs()
-        if not all(any(i.startswith(needed) for i in ids) for needed in NEEDED):
-            raise Skipped("needs %s (set OFX_PLUGIN_PATH to openfx-io)" % ", ".join(NEEDED))
-        app = natron.getInstance(0)
-        out = tempfile.mkdtemp(prefix="natron_writer_pass_through_").replace("\\", "/")
+def main(app):
+    """Renders WriteA, then WriteB and WriteS, and checks the files each one writes."""
+    natronheadless.require_plugins(*NEEDED)
+    with tempfile.TemporaryDirectory(prefix="natron_writer_pass_through_", ignore_cleanup_errors=True) as tmp:
+        out = tmp.replace("\\", "/")
         for frame in FRAMES:
             write_png("%s/plate.%04d.png" % (out, frame), frame)
 
         read = app.createReader(out + "/plate.####.png")
-        check(read is not None, "no Read node")
+        natronheadless.check(read is not None, "no Read node")
         write_b = create_writer(app, out + "/b.####.png", "WriteB")
         connect(write_b, read)
         write_s = create_writer(app, out + "/s.png", "WriteS")
         connect(write_s, write_b)
         dot = app.createNode("fr.inria.built-in.Dot")
-        check(dot is not None, "no Dot node")
+        natronheadless.check(dot is not None, "no Dot node")
         connect(dot, write_s)
         write_a = create_writer(app, out + "/a.####.png", "WriteA")
         connect(write_a, dot)
@@ -161,29 +141,21 @@ def main():
         first, last = FRAMES[0], FRAMES[-1]
         files = render(app, write_a, first, last, out)
         expected = ["a.%04d.png" % f for f in FRAMES]
-        check(files == expected, "rendering WriteA wrote %r, expected %r: WriteB and WriteS must not write their files "
-              "when WriteA pulls images through them" % (files, expected))
+        natronheadless.check(files == expected,
+                             "rendering WriteA wrote %r, expected %r: WriteB and WriteS must not write their files "
+                             "when WriteA pulls images through them" % (files, expected))
         frames = [png_frame("%s/a.%04d.png" % (out, f)) for f in FRAMES]
-        check(frames == list(FRAMES), "WriteA wrote frames %r of the sequence, expected %r" % (frames, list(FRAMES)))
+        natronheadless.check(frames == list(FRAMES),
+                             "WriteA wrote frames %r of the sequence, expected %r" % (frames, list(FRAMES)))
 
         files = render(app, write_b, first, last, out)
         expected = ["b.%04d.png" % f for f in FRAMES]
-        check(files == expected, "rendering WriteB wrote %r, expected %r" % (files, expected))
+        natronheadless.check(files == expected, "rendering WriteB wrote %r, expected %r" % (files, expected))
 
         files = render(app, write_s, 12, 12, out)
-        check(files == ["s.png"], "rendering WriteS at frame 12 wrote %r, expected ['s.png']" % (files,))
-        check(png_frame(out + "/s.png") == 12, "WriteS wrote frame %d of the sequence, expected 12" %
-              png_frame(out + "/s.png"))
-        status = 0
-    except Skipped as e:
-        sys.stdout.write("SKIP: %s\n" % e)
-        sys.stdout.flush()
-        status = SKIP
-    except BaseException:  # any failure must still reach natron.quit()
-        traceback.print_exc()
-    if out is not None:
-        shutil.rmtree(out, ignore_errors=True)
-    natron.quit(status)
+        natronheadless.check(files == ["s.png"], "rendering WriteS at frame 12 wrote %r, expected ['s.png']" % (files,))
+        natronheadless.check(png_frame(out + "/s.png") == 12,
+                             "WriteS wrote frame %d of the sequence, expected 12" % png_frame(out + "/s.png"))
 
 
-main()
+natronheadless.run(main)

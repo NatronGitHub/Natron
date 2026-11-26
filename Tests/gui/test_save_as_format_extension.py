@@ -10,10 +10,7 @@ import NatronEngine
 import NatronGuiTest
 from natrontest import *
 
-try:
-    from PySide2 import QtCore, QtGui, QtWidgets
-except ImportError:
-    from PySide6 import QtCore, QtGui, QtWidgets
+QtCore, QtGui, QtWidgets = qt_modules()
 
 FORMATS = NatronEngine.Natron.ProjectFileFormatEnum
 BINARY, PYTHON = "Binary", "Python script"  # entries of the "File format" menu of the dialog
