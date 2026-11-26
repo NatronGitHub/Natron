@@ -34,6 +34,8 @@
 #include "Engine/GPUContextPool.h"
 #include "Engine/Settings.h"
 
+#include "TestUtils.h"
+
 NATRON_NAMESPACE_USING
 
 #if defined(__NATRON_WIN32__) && !defined(__NATRON_MINGW__)
@@ -50,8 +52,7 @@ std::ostream& operator<<(std::ostream& os, const std::nullptr_t p) {
 TEST(OSGLContext, Basic)
 {
     if (!appPTR->isOpenGLLoaded()) {
-        // TODO: Convert to GTEST_SKIP() when gtest updated.
-        std::cerr << "Skipping test because OpenGL loading failed." << std::endl;
+        NatronTest::skip("OpenGL loading failed");
         return;
     }
 
@@ -80,8 +81,7 @@ TEST(OSGLContext, Basic)
 
 TEST(GPUContextPool, Basic) {
     if (!appPTR->isOpenGLLoaded()) {
-        /// TODO: Convert to GTEST_SKIP() when gtest updated.
-        std::cerr << "Skipping test because OpenGL loading failed." << std::endl;
+        NatronTest::skip("OpenGL loading failed");
         return;
     }
 
@@ -128,7 +128,7 @@ TEST(OSGLContext, GetGPUInfosRestoresCurrentContext)
     // e.g. on the Linux CI (Xvfb, Mesa llvmpipe), OSGLContext_x11::getGPUInfos() skips the renderers that are not
     // accelerated before creating a context.
     if ( !appPTR->isOpenGLLoaded() || appPTR->getOpenGLRenderers().empty() ) {
-        std::cerr << "[  SKIPPED ] OSGLContext.GetGPUInfosRestoresCurrentContext: no OpenGL renderer that getGPUInfos() uses" << std::endl;
+        NatronTest::skip("no OpenGL renderer that getGPUInfos() uses");
 
         return;
     }

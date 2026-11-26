@@ -230,14 +230,13 @@ bool
 drawSuiteGLAvailable()
 {
     if ( !appPTR->isOpenGLLoaded() ) {
-        // TODO: Convert to GTEST_SKIP() when gtest updated.
-        std::cerr << "Skipping test because OpenGL loading failed." << std::endl;
+        NatronTest::skip("OpenGL loading failed");
 
         return false;
     }
     if ( !GL::isComplete( OfxDrawSuiteGL::natronGLFunctions() ) ) {
-        std::cerr << "Skipping test because the OpenGL function table of the DrawSuite is incomplete "
-                  << "(an OpenGL without the 1.1 compatibility functions)." << std::endl;
+        NatronTest::skip("the OpenGL function table of the DrawSuite is incomplete "
+                         "(an OpenGL without the 1.1 compatibility functions)");
 
         return false;
     }
@@ -618,7 +617,7 @@ TEST(OfxDrawSuite, OpenGLDrawing)
     const int W = 64, H = 64;
     OffscreenFramebuffer fb(W, H);
     if (!fb.ok) {
-        std::cerr << "Skipping test because no offscreen framebuffer could be created." << std::endl;
+        NatronTest::skip("no offscreen framebuffer could be created");
         return;
     }
     // canonical coordinates are the framebuffer's pixels, as Natron's viewer at zoom 1
@@ -797,7 +796,7 @@ TEST(OfxDrawSuite, OverlayPlugins)
     const int W = 64, H = 64;
     OffscreenFramebuffer fb(W, H); // the overlays draw in a current OpenGL context
     if (!fb.ok) {
-        std::cerr << "Skipping test because no offscreen framebuffer could be created." << std::endl;
+        NatronTest::skip("no offscreen framebuffer could be created");
 
         return;
     }
