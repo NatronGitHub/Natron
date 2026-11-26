@@ -325,12 +325,12 @@ Bezier::bezierPointBboxUpdate(const Point & p0,
 
 // A perspective transform (e.g. the extra matrix of the shape) may send points to or beyond the line at
 // infinity (z <= 0 once transformed): such a point has no finite image, or is on the other side of the
-// horizon. The shape is the image of its control points only if they are all on the same side of the line at
-// infinity (the same sign of z), with finite images: then every point of every segment is too (z(t) is a
-// convex combination of the z of the control points). Otherwise the shape crosses the line at infinity: like
-// Transform::transformRegionFromPoints(), which gives an infinite region in that case, we don't try to give
-// it a finite image. Bezier::hasFiniteImageAtTime() is false, and the evaluation and bounding box functions
-// below give no points for it.
+// horizon. The curves are evaluated as Bezier curves of the transformed control points, which are finite
+// when all the control points have finite images. We also require the control points to be on the same side
+// of the line at infinity (the same sign of z): otherwise the shape crosses it, and its true image is not a
+// closed bounded curve. Like Transform::transformRegionFromPoints(), which gives an infinite region in that
+// case, we don't try to give such a shape a finite image: the evaluation and bounding box functions below give
+// no points for it, and Bezier::hasFiniteImageAtTime() (control and feather points together) is false.
 // zSign: the sign of z of the points already checked (e.g. the control points before the feather points), or 0.
 static bool
 controlPointsHaveFiniteImage(bool useGuiCurves,
@@ -854,7 +854,9 @@ bezierSegmentEval(bool useGuiCurves,
         double length = std::sqrt(dx1 * dx1 + dy1 * dy1) +
                         std::sqrt(dx2 * dx2 + dy2 * dy2) +
                         std::sqrt(dx3 * dx3 + dy3 * dy3);
-        nbPointsPerSegment = (int)std::max(length * 0.25, 2.);
+        // at most 100000 points: a segment that long is far outside any image (e.g. near the line at infinity of a
+        // perspective transform), and the conversion to int must not overflow
+        nbPointsPerSegment = (int)std::min(std::max(length * 0.25, 2.), 100000.);
     }
 
     double incr = 1. / (double)(nbPointsPerSegment - 1);
@@ -2991,10 +2993,18 @@ Bezier::getBoundingBox(double time) const
         getTransformAtTime(t, &transform);
 
         QMutexLocker l(&itemMutex);
+        const bool useFeather = useFeatherPoints() && !_imp->isOpenBezier;
+        int zSign = 0;
+        if ( !controlPointsHaveFiniteImage(false, _imp->points, t, ViewIdx(0), transform, &zSign) ||
+             ( useFeather && !controlPointsHaveFiniteImage(false, _imp->featherPoints, t, ViewIdx(0), transform, &zSign) ) ) {
+            // the shape crosses the line at infinity at this time: it is not rendered, and adds nothing to the
+            // bounding box (which stays empty if it is never rendered)
+            continue;
+        }
         bezierSegmentListBboxUpdate(false, _imp->points, _imp->finished, _imp->isOpenBezier, t, ViewIdx(0), 0, transform, &subBbox);
 
 
-        if (useFeatherPoints() && !_imp->isOpenBezier) {
+        if (useFeather) {
             bezierSegmentListBboxUpdate(false, _imp->featherPoints, _imp->finished, _imp->isOpenBezier, t, ViewIdx(0), 0, transform, &subBbox);
             // EDIT: Partial fix, just pad the BBOX by the feather distance. This might not be accurate but gives at least something
             // enclosing the real bbox and close enough

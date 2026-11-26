@@ -271,7 +271,8 @@ void matApply(const Matrix3x3 & m, double* x, double *y, double *z);
 /**
  * @brief The perspective divide: the Euclidean point (p.x / p.z, p.y / p.z) of the homogeneous point p.
  * Returns false, without dividing, if p is on the line at infinity (p.z == 0), or so close to it that
- * a quotient would overflow: p has no Euclidean image, and *x and *y are left unchanged.
+ * a quotient would be DBL_MAX / 2 or more (which leaves room for rounding): p has no usable Euclidean image,
+ * and *x and *y are left unchanged.
  **/
 bool toEuclidean(const Point3D & p, double* x, double* y) WARN_UNUSED_RETURN;
 

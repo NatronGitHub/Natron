@@ -3390,9 +3390,13 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,
 #endif
                                        &bezierPolygon, NULL);
 
-    bool clockWise = bezier->isFeatherPolygonClockwiseOriented(false, time);
+    if ( featherPolygon.empty() || bezierPolygon.empty() ) {
+        // e.g. the shape crosses the line at infinity of a perspective transform (see Bezier::hasFiniteImageAtTime()),
+        // which may have changed since renderBezier() checked it
+        return;
+    }
 
-    assert( !featherPolygon.empty() && !bezierPolygon.empty() );
+    bool clockWise = bezier->isFeatherPolygonClockwiseOriented(false, time);
 
 
     std::list<Point> featherContour;
@@ -3881,7 +3885,12 @@ RotoContextPrivate::computeTriangles(const Bezier * bezier, double time, unsigne
 
 
     // First compute the mesh composed of triangles of the feather
-    assert( !featherPolygon.empty() && !bezierPolygon.empty() && featherPolygon.size() == bezierPolygon.size());
+    if ( featherPolygon.empty() || bezierPolygon.empty() ) {
+        // e.g. the shape crosses the line at infinity of a perspective transform (see Bezier::hasFiniteImageAtTime()),
+        // which may have changed since renderBezier() checked it
+        return;
+    }
+    assert( featherPolygon.size() == bezierPolygon.size() );
 
     std::list<std::list<ParametricPoint> >::const_iterator fIt = featherPolygon.begin();
     for (std::list<std::list<ParametricPoint> > ::const_iterator it = bezierPolygon.begin(); it != bezierPolygon.end(); ++it, ++fIt) {

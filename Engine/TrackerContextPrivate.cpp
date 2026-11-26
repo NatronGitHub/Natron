@@ -1987,14 +1987,23 @@ struct CornerPinPoints
 };
 
 /// The images of the corners from by the homography h. Returns false if h sends one of them to the line at
-/// infinity (see applyHomography()).
+/// infinity (see applyHomography()), or the corners to both sides of it (the signs of z differ): the
+/// corner pin would then be folded across the horizon, as Bezier.cpp also refuses for Roto shapes.
 static bool
 applyHomography(const CornerPinPoints& from,
                 const Transform::Matrix3x3& h,
                 CornerPinPoints* to)
 {
+    int zSign = 0;
     for (int c = 0; c < 4; ++c) {
-        if ( !applyHomography(from.pts[c], h, &to->pts[c]) ) {
+        const Transform::Point3D p = Transform::matApply( h, euclideanToHomogenous(from.pts[c]) );
+        if ( !Transform::toEuclidean(p, &to->pts[c].x, &to->pts[c].y) ) {
+            return false;
+        }
+        const int sign = p.z > 0. ? 1 : -1;
+        if (zSign == 0) {
+            zSign = sign;
+        } else if (sign != zSign) {
             return false;
         }
     }
@@ -2288,8 +2297,9 @@ TrackerContextPrivate::computeCornerParamsFromTracksEnd(double refTime,
         refFrom.pts[c].y = fromPointsKnob[c]->getValueAtTime(refTime, 1);
     }
 
-    // A homography that sends a reference corner to the line at infinity gives it no image: drop the result
-    // at that time, as if the fit had failed. The corner pin is then interpolated from the other times.
+    // A homography that sends a reference corner to the line at infinity gives it no image, and one that sends
+    // the corners to both sides of it folds the corner pin: drop the result at that time, as if the fit had failed.
+    // The corner pin is then interpolated from the other times.
     for (QList<CornerPinData>::iterator it = validResults.begin(); it != validResults.end();) {
         CornerPinPoints to;
         if ( applyHomography(refFrom, it->h, &to) ) {

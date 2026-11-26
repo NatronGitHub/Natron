@@ -855,8 +855,8 @@ TEST(NaNGuards, PerspectiveDivide)
     // a small z gives a large, finite point
     EXPECT_TRUE( Transform::toEuclidean(Transform::Point3D(1., -1., 1e-300), &x, &y) );
     EXPECT_TRUE( MathUtils::isFinite(x) && MathUtils::isFinite(y) );
-    EXPECT_EQ(1e300, x);
-    EXPECT_EQ(-1e300, y);
+    EXPECT_DOUBLE_EQ(1e300, x);
+    EXPECT_DOUBLE_EQ(-1e300, y);
     EXPECT_TRUE( Transform::toEuclidean(Transform::Point3D(1e307, 0., 1.), &x, &y) );
     EXPECT_EQ(1e307, x);
 
