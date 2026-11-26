@@ -62,9 +62,12 @@ public:
             _lastHeaders = req->headers();
             _lastBody.clear();
             QObject::connect( req, &QHttpRequest::data, [this](const QByteArray& data) { _lastBody += data; } );
-            QObject::connect( req, &QHttpRequest::end, [req, resp]() {
+            QObject::connect( req, &QHttpRequest::end, [this, req, resp]() {
                 if ( req->successful() ) {
                     const bool keepAlive = req->header( QString::fromUtf8("connection") ) == QString::fromUtf8("keep-alive");
+                    if ( !_extraHeaderValue.isEmpty() ) {
+                        resp->setHeader(QString::fromUtf8("X-Extra"), _extraHeaderValue);
+                    }
                     resp->setHeader( QString::fromUtf8("Content-Length"), QString::fromUtf8("2") );
                     resp->setHeader( QString::fromUtf8("Connection"), QString::fromUtf8(keepAlive ? "keep-alive" : "close") );
                     resp->writeHead(200);
@@ -78,6 +81,9 @@ public:
     }
 
     bool listening() const { return _listening; }
+
+    // The value of an "X-Extra" header in the responses
+    void setExtraHeaderValue(const QString& value) { _extraHeaderValue = value; }
 
     int requests() const { return _requests; }
 
@@ -127,6 +133,7 @@ private:
     int _requests;
     HeaderHash _lastHeaders;
     QByteArray _lastBody;
+    QString _extraHeaderValue;
 };
 
 bool
@@ -270,4 +277,52 @@ TEST(QHttpServer, PipelinedRequestOutlivesDeletedRequest)
     EXPECT_EQ( 2, reply.count("HTTP/1.1 200 OK") ) << reply.constData();
     EXPECT_EQ( 2, server.requests() );
     EXPECT_EQ( QByteArray("abcd"), server.lastBody() );
+}
+
+// A header with an empty value was not stored, and the next header name was appended to its name.
+TEST(QHttpServer, KeepsHeaderAfterEmptyHeader)
+{
+    LoopbackHttpServer server;
+    ASSERT_TRUE( server.listening() );
+
+    EXPECT_TRUE( isStatus(server.exchange("GET / HTTP/1.1\r\nX-Empty:\r\nHost: localhost\r\n\r\n"), 200) );
+    EXPECT_EQ( QString::fromUtf8("localhost"), server.lastHeaders().value( QString::fromUtf8("host") ) );
+    EXPECT_TRUE( server.lastHeaders().contains( QString::fromUtf8("x-empty") ) );
+    EXPECT_EQ( 2, server.lastHeaders().size() );
+}
+
+// The last header of a request was added to the next request on the same connection.
+TEST(QHttpServer, DoesNotCarryHeadersToNextRequest)
+{
+    LoopbackHttpServer server;
+    ASSERT_TRUE( server.listening() );
+
+    const QByteArray reply = server.exchange("GET /1 HTTP/1.1\r\nHost: localhost\r\nConnection: keep-alive\r\n\r\n"
+                                             "GET /2 HTTP/1.1\r\nHost: localhost\r\n\r\n", QByteArray(), 2000);
+    EXPECT_EQ( 2, reply.count("HTTP/1.1 200 OK") ) << reply.constData();
+    // the second response closes the connection (the first one keeps it open)
+    EXPECT_TRUE( reply.contains("Connection: close") ) << reply.constData();
+    EXPECT_FALSE( server.lastHeaders().contains( QString::fromUtf8("connection") ) );
+}
+
+// A repeated header is one comma-separated value (RFC 7230 section 3.2.2), not the last value only.
+TEST(QHttpServer, CombinesRepeatedHeaders)
+{
+    LoopbackHttpServer server;
+    ASSERT_TRUE( server.listening() );
+
+    EXPECT_TRUE( isStatus(server.exchange("GET / HTTP/1.1\r\nHost: localhost\r\nHost: example.com\r\n\r\n"), 200) );
+    EXPECT_EQ( QString::fromUtf8("localhost, example.com"), server.lastHeaders().value( QString::fromUtf8("host") ) );
+}
+
+// A CR or LF in a response header value would split the response.
+TEST(QHttpServer, RefusesResponseHeaderWithNewline)
+{
+    LoopbackHttpServer server;
+    ASSERT_TRUE( server.listening() );
+
+    server.setExtraHeaderValue( QString::fromUtf8("a\r\nX-Injected: 1") );
+    const QByteArray reply = server.exchange("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    EXPECT_TRUE( isStatus(reply, 200) ) << reply.constData();
+    EXPECT_FALSE( reply.contains("X-Injected") ) << reply.constData();
 }
