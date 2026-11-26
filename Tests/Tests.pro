@@ -30,10 +30,10 @@ CONFIG += openmvg-flags glad-flags
 
 CONFIG += expat
 
-INCLUDEPATH += google-test/include
-INCLUDEPATH += google-test
-INCLUDEPATH += google-mock/include
-INCLUDEPATH += google-mock
+INCLUDEPATH += googletest/googletest/include
+INCLUDEPATH += googletest/googletest
+INCLUDEPATH += googletest/googlemock/include
+INCLUDEPATH += googletest/googlemock
 
 
 # ofxPluginLog.txt: the debug log of the OpenFX Support library; ofxTestLog.txt: its name before openfx 47634333
@@ -49,8 +49,8 @@ DEFINES += NATRON_MAIN_THREAD_STACK_SIZE=$$NATRON_MAIN_THREAD_STACK_SIZE
 
 # bundled third-party code: see warnings.pri
 NATRON_THIRD_PARTY_SOURCES += \
-    google-test/src/gtest-all.cc \
-    google-mock/src/gmock-all.cc
+    googletest/googletest/src/gtest-all.cc \
+    googletest/googlemock/src/gmock-all.cc
 
 # NaNGuards_FastMath.cpp is compiled with -ffast-math by the CMake build only (qmake can't set
 # per-file flags); here it runs the same tests without -ffast-math.
