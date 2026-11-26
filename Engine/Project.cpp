@@ -719,8 +719,9 @@ Project::loadProjectInternal(const QString & path,
         std::shared_ptr<ProjectGuiSerialization> guiDataWithoutGui;
         if ( !bgProject && getApp()->isBackground() ) {
             // Without a GUI, keep the GUI data, to save them with the project. A file flagged as saved by the GUI
-            // but without them loaded in background mode before, which didn't read them: it still does, but
-            // saving would lose them. A damaged ProjectGui part is a damaged file, as with the GUI.
+            // but without a ProjectGui part loaded in background mode before (which didn't read that part): it
+            // still loads, but saving would lose the GUI data. A damaged ProjectGui part is a damaged file, as
+            // with the GUI.
             if ( guiPartFollows() ) {
                 guiDataWithoutGui = std::make_shared<ProjectGuiSerialization>();
                 iArchive >> boost::serialization::make_nvp("ProjectGui", *guiDataWithoutGui);

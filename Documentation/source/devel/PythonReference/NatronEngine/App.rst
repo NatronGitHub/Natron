@@ -680,7 +680,8 @@ inform the user of various information, warnings or errors.
     saved by them has the positions, sizes and colours, but no Viewer nodes (and the Python format
     never has viewer settings or a window layout). The window layout of a project saved by Natron
     1.x is not saved back. The nodes inside a PyPlug instance are placed by the PyPlug: their
-    positions are not GUI data.
+    positions are not GUI data. Since they read the GUI data, they can't load a project whose GUI
+    data are damaged, or were saved by a more recent version of Natron, as with the GUI.
 
     .. versionadded:: 2.6
 
