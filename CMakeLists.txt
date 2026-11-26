@@ -445,7 +445,7 @@ if(NATRON_USE_OPENMP)
     endif()
 endif()
 
-# Bundled third-party code (libs/*, Tests/googletest) is
+# Bundled third-party code (libs/*) is
 # compiled without warnings: they are not ours to fix, and they hid Natron's
 # own warnings. Use as a PRIVATE target option or a per-source COMPILE_OPTIONS.
 # The bundled include directories are also SYSTEM, so that their headers don't

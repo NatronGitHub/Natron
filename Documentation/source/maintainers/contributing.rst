@@ -113,7 +113,7 @@ are conventions, not suggestions.
 Tests
 -----
 
-The ``Tests`` module (Google Test / Google Mock) covers focused pieces of the
+The ``Tests`` module (Google Test) covers focused pieces of the
 engine: curves, LUT/color, images, hashing, tracking, the file-system model and
 GL contexts. Build and run the suite before opening a pull request. When you fix
 a bug that is unit-testable — anything in the color, image, curve, hashing or

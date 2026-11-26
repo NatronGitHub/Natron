@@ -292,8 +292,10 @@ clang++-mp-$CLANG -stdlib=libc++ -std=c++17 -DREQUIRED_CPLUSPLUS=201703L -fopenm
 
 ```Shell
 sudo port -v -N install gsed gawk coreutils findutils keychain tmux gzip bash wget bison flex doxygen \
-    texinfo meson ninja help2man unzip tcl expect
+    texinfo meson ninja help2man unzip tcl expect gtest
 ```
+
+(`gtest` is Google Test, required to build the unit tests: a static library, linked into the `Tests` program only, so not part of the DMG.)
 
 #### 7. Libraries
 

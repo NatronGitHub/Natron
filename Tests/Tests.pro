@@ -30,10 +30,10 @@ CONFIG += openmvg-flags libmv-flags glad-flags
 
 CONFIG += expat
 
-INCLUDEPATH += googletest/googletest/include
-INCLUDEPATH += googletest/googletest
-INCLUDEPATH += googletest/googlemock/include
-INCLUDEPATH += googletest/googlemock
+# Google Test: the installed googletest (pkg-config gtest), as in the CMake build. Google Mock is
+# not used by any test.
+CONFIG += link_pkgconfig
+PKGCONFIG += gtest
 # http_parser.h (QHttpServer_Test.cpp); static-gui gives the qhttpserver library and its src/ headers
 INCLUDEPATH += $$PWD/../libs/qhttpserver/http-parser
 
@@ -48,11 +48,6 @@ win32-g++: QMAKE_LFLAGS += -Wl,--stack,$$NATRON_MAIN_THREAD_STACK_SIZE
 win32-msvc*: QMAKE_LFLAGS += /STACK:$$NATRON_MAIN_THREAD_STACK_SIZE
 # and the test that checks the stack sizes (DeepGraphRender_Test.cpp) needs it
 DEFINES += NATRON_MAIN_THREAD_STACK_SIZE=$$NATRON_MAIN_THREAD_STACK_SIZE
-
-# bundled third-party code: see warnings.pri
-NATRON_THIRD_PARTY_SOURCES += \
-    googletest/googletest/src/gtest-all.cc \
-    googletest/googlemock/src/gmock-all.cc
 
 # NaNGuards_FastMath.cpp is compiled with -ffast-math by the CMake build only (qmake can't set
 # per-file flags); here it runs the same tests without -ffast-math.

@@ -7,6 +7,3 @@
 [submodule "libs/google-breakpad"]
 	path = libs/google-breakpad
 	url = https://github.com/NatronGitHub/google-breakpad.git
-[submodule "Tests/googletest"]
-	path = Tests/googletest
-	url = https://github.com/google/googletest.git

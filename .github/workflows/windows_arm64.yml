@@ -76,7 +76,7 @@ jobs:
           pacboy: >-
             cc:p cmake:p ninja:p pkgconf:p wget:p
             boost:p cairo:p fontconfig:p expat:p python:p
-            qt5-base:p pyside2:p shiboken2:p python-qtpy:p clang:p llvm-tools:p llvm-openmp:p
+            qt5-base:p pyside2:p shiboken2:p python-qtpy:p clang:p llvm-tools:p llvm-openmp:p gtest:p
             openimageio:p opencolorio:p openexr:p libraw:p ffmpeg:p seexpr:p libpng:p fmt:p
 
       - name: Check the environment

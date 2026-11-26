@@ -461,10 +461,26 @@ the authoritative formatter used by the hook.
 Verifying a build
 -----------------
 
-The ``Tests`` module builds a Google Test / Google Mock suite
+The ``Tests`` module builds a Google Test suite
 (``Curve_Test``, ``Lut_Test``, ``Image_Test``, ``Hash64_Test``,
 ``KnobFile_Test``, ``Tracker_Test``, ``FileSystemModel_Test``,
 ``OSGLContext_Test``). With CMake,
 tests are registered with CTest (``enable_testing()``) and built unless you pass
 ``-DNATRON_BUILD_TESTS=OFF``. Run them after building to confirm your toolchain
 and your change are sane before opening a pull request.
+
+The tests need an installed Google Test: googletest 1.14 or later, with its
+CMake config (``find_package(GTest 1.14 CONFIG)``; the qmake build uses
+``pkg-config gtest``). The packages are ``gtest`` on macOS (MacPorts),
+``mingw-w64-ucrt-x86_64-gtest`` on Windows (MSYS2 UCRT64;
+``mingw-w64-clang-aarch64-gtest`` on CLANGARM64), ``libgtest-dev`` on Ubuntu
+24.04 or later, ``gtest-devel`` on Fedora/RHEL, ``gtest`` on Arch Linux and
+``googletest`` on FreeBSD; the Rocky Linux 9 SDK builds it (static). Ubuntu
+22.04 (1.11) and Debian 12 (1.12) are too old. Without a usable googletest,
+configuring stops with an error that names these packages: install one (or add
+its prefix to ``CMAKE_PREFIX_PATH``), or configure with
+``-DNATRON_BUILD_TESTS=OFF``. The configure log says which one is used
+(``Tests: Google Test 1.18.0 (<prefix>/lib/cmake/GTest)``). Only Google Test is
+linked, not Google Mock, which no test uses. The release scripts don't ship it:
+it is a static library on macOS and in the Linux SDK, and the Windows installer
+removes ``libgtest.dll`` with ``Tests.exe``.

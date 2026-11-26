@@ -62,6 +62,6 @@ for(kind, $$list(third_party bindings)) {
 # code stay -I (INCLUDEPATH), not -isystem: -isystem directories are searched
 # after every -I directory, and some SDK directories (-I/opt/local/include,
 # -I/opt/Natron-sdk/include) only reach INCPATH after this file is read (e.g.
-# from pkg-config), so an SDK with glog, gflags or gtest headers would replace the
+# from pkg-config), so an SDK with glog or gflags headers would replace the
 # bundled headers while the bundled libraries are linked. Giving a directory both
 # -I and -isystem doesn't help: GCC and clang then ignore the -I.

@@ -67,7 +67,7 @@ Top-level directories
     ``google-breakpad`` (crash reporting).
 
 ``Tests/``
-    Google Test / Google Mock unit tests.
+    Google Test unit tests.
 
 ``CrashReporter/``, ``CrashReporterCLI/``, ``BreakpadClient/``
     The out-of-process crash reporter (built on Google Breakpad) and its GUI/CLI

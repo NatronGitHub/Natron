@@ -100,10 +100,10 @@ Natron is built with CMake and Ninja, in an MSYS2 **UCRT64** shell. The Windows 
       mingw-w64-ucrt-x86_64-boost mingw-w64-ucrt-x86_64-cairo mingw-w64-ucrt-x86_64-fontconfig \
       mingw-w64-ucrt-x86_64-expat mingw-w64-ucrt-x86_64-python \
       mingw-w64-ucrt-x86_64-qt5-base mingw-w64-ucrt-x86_64-pyside2 mingw-w64-ucrt-x86_64-shiboken2 \
-      mingw-w64-ucrt-x86_64-python-qtpy \
+      mingw-w64-ucrt-x86_64-python-qtpy mingw-w64-ucrt-x86_64-gtest \
       mingw-w64-ucrt-x86_64-clang mingw-w64-ucrt-x86_64-llvm-tools
 
-(shiboken2 needs clang and llvm-tools.) For a Qt 6 build (`-DNATRON_QT6=ON`), install the Qt 6 and PySide6 packages instead of `qt5-base`, `pyside2` and `shiboken2`:
+(shiboken2 needs clang and llvm-tools; `gtest` is Google Test, required to build the unit tests; without it, configure CMake with `-DNATRON_BUILD_TESTS=OFF`.) For a Qt 6 build (`-DNATRON_QT6=ON`), install the Qt 6 and PySide6 packages instead of `qt5-base`, `pyside2` and `shiboken2`:
 
     pacman -S --needed mingw-w64-ucrt-x86_64-qt6-base \
       mingw-w64-ucrt-x86_64-pyside6 mingw-w64-ucrt-x86_64-shiboken6

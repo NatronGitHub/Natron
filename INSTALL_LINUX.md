@@ -258,7 +258,7 @@ Useful options (add them to the first `cmake` command):
 
 - `-DCMAKE_BUILD_TYPE=Debug`, `Release` or `RelWithDebInfo` (the default).
 - `-DNATRON_QT6=ON` builds with Qt 6 and PySide6 instead of Qt 5 and PySide2, as C++20 (Qt 5 builds are C++17). See [Debian-based](#debian-based) and [Arch Linux](#arch-linux) for the Qt 6 packages.
-- `-DNATRON_BUILD_TESTS=OFF` skips the unit tests.
+- `-DNATRON_BUILD_TESTS=OFF` skips the unit tests. They need Google Test 1.14 or later (googletest, with its CMake config): `libgtest-dev` on Ubuntu 24.04 or later, `gtest-devel` on Fedora/RHEL, `gtest` on Arch Linux. Ubuntu 22.04 (1.11) and Debian 12 (1.12) are too old: build without the tests, or install a newer googletest from source and add its prefix to `CMAKE_PREFIX_PATH`.
 - `-DNATRON_SYSTEM_LIBS=ON` uses the system copies of the libraries that Natron otherwise builds from `libs/`.
 - `-DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang` builds with Clang.
 
@@ -332,8 +332,10 @@ sudo pacman -S expat boost-libs gcc
 You will also need additional Boost libraries, cairo, and Qt5 (provided by PySide2). They can be installed with the following command:
 
 ```
-sudo pacman -S cmake boost cairo pyside2 python-pyqt
+sudo pacman -S cmake boost cairo pyside2 python-pyqt gtest
 ```
+
+(`gtest` is Google Test, required to build the unit tests.)
 
 For a Qt 6 build (`-DNATRON_QT6=ON`), install `qt6-base pyside6 shiboken6 python-qtpy` instead of `pyside2 python-pyqt`.
 
@@ -408,10 +410,10 @@ sudo apt install build-essential cmake libboost-serialization-dev libboost-syste
   qt5-qmake qtbase5-dev qtdeclarative5-dev \
   python3-dev libshiboken2-dev libpyside2-dev python3-pyside2.qtwidgets python3-qtpy \
   libwayland-dev libwayland-client0 libwayland-egl1 \
-  extra-cmake-modules clang
+  extra-cmake-modules clang libgtest-dev
 ```
 
-(`qt5-qmake` is only needed for the deprecated qmake build.)
+(`qt5-qmake` is only needed for the deprecated qmake build. `libgtest-dev` is Google Test, required to build the unit tests; without it, configure CMake with `-DNATRON_BUILD_TESTS=OFF`.)
 
 For a Qt 6 build (`-DNATRON_QT6=ON`), replace the Qt 5 and PySide2 packages with the Qt 6 and PySide6 ones. Ubuntu 24.04 has no PySide6/Shiboken6 packages: they start with Ubuntu 26.04. On Ubuntu 26.04 (no `libboost-system-dev` there: Boost.System is header-only since Boost 1.89):
 
@@ -420,16 +422,16 @@ sudo apt install build-essential cmake libboost-serialization-dev libexpat1-dev 
   qt6-base-dev \
   python3-dev libshiboken6-dev shiboken6 libpyside6-dev python3-pyside6.qtwidgets python3-qtpy \
   libwayland-dev libwayland-client0 libwayland-egl1 \
-  extra-cmake-modules clang
+  extra-cmake-modules clang libgtest-dev
 ```
 
-For Ubuntu 22.04 using Python 3.10 and Qt 5.15, install the required dependencies:
+For Ubuntu 22.04 using Python 3.10 and Qt 5.15, install the required dependencies (its googletest is too old for the unit tests: configure with `-DNATRON_BUILD_TESTS=OFF`, see [Build](#build)):
 
 ```
 sudo apt install build-essential cmake libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev qt5-qmake qtbase5-dev python3-dev libshiboken2-dev libpyside2-dev python3-pyside2.qtwidgets python3-qtpy
 ```
 
-For Debian 12, install the following packages instead:
+For Debian 12, install the following packages instead (its googletest is too old for the unit tests: configure with `-DNATRON_BUILD_TESTS=OFF`, see [Build](#build)):
 
 ```
 sudo apt install build-essential cmake qtbase5-dev libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev python3-dev python3-pyside2.qtcore libpyside2-dev libshiboken2-dev
@@ -438,7 +440,7 @@ sudo apt install build-essential cmake qtbase5-dev libboost-serialization-dev li
 For most Debian/Ubuntu-based systems, install the required packages:
 
 ```
-sudo apt install build-essential cmake qtbase5-dev libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev python3-dev python3-pyside2 libpyside2-dev libshiboken2-dev
+sudo apt install build-essential cmake qtbase5-dev libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev python3-dev python3-pyside2 libpyside2-dev libshiboken2-dev libgtest-dev
 ```
 
 Get Natron:
@@ -471,11 +473,11 @@ On RHEL and derivative distributions you need the EPEL repository:
 Install required packages:
 
 ```
-yum install cmake fontconfig-devel gcc-c++ expat-devel python-pyside2-devel shiboken2-devel qt5-qtbase-devel boost-devel pixman-devel cairo-devel
+yum install cmake fontconfig-devel gcc-c++ expat-devel python-pyside2-devel shiboken2-devel qt5-qtbase-devel boost-devel pixman-devel cairo-devel gtest-devel
 ```
 or
 ```
-dnf install cmake fontconfig-devel gcc-c++ expat-devel python-pyside2-devel shiboken2-devel qt5-qtbase-devel boost-devel pixman-devel cairo-devel
+dnf install cmake fontconfig-devel gcc-c++ expat-devel python-pyside2-devel shiboken2-devel qt5-qtbase-devel boost-devel pixman-devel cairo-devel gtest-devel
 ```
 
 Then build with CMake, as described in [Build](#build).
