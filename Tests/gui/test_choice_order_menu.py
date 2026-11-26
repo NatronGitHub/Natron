@@ -7,13 +7,7 @@
 import NatronGuiTest
 from natrontest import *
 
-try:
-    from PySide2 import QtCore, QtWidgets
-except ImportError:
-    try:
-        from PySide6 import QtCore, QtWidgets
-    except ImportError:
-        NatronGuiTest.skip("PySide2/PySide6 not available")
+QtCore, QtGui, QtWidgets = qt_modules()
 
 CHOICE_ORDER = "net.natron.test.ChoiceOrder"
 require_plugin(CHOICE_ORDER)
@@ -46,10 +40,7 @@ def select_menu_item(selector, index):
 
 node = app.createNode(CHOICE_ORDER)
 check(node is not None, "createNode(%s) failed" % CHOICE_ORDER)
-app.clearSelection()
-app.selectNode(node, True)
-NatronGuiTest.sendKey("NodeGraph", "Return")  # open its settings panel
-wait_idle()
+open_settings_panel(node)
 
 ordered = node.getParam("ordered")
 selector = MenuSelector(find_combobox("ordered"))
