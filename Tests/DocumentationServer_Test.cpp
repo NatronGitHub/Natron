@@ -66,6 +66,9 @@ TEST(DocumentationServer, ResolvesFilesInDocDir)
                DocumentationServer::resolveDocumentationFile( s(kDocDir), s("plugins/fr.inria.built-in.Read.html") ) );
     // ".." that stays inside docDir
     EXPECT_EQ( root() + s("/index.html"), DocumentationServer::resolveDocumentationFile( s(kDocDir), s("plugins/../index.html") ) );
+    // not device names
+    EXPECT_EQ( root() + s("/_static/console.txt"), DocumentationServer::resolveDocumentationFile( s(kDocDir), s("_static/console.txt") ) );
+    EXPECT_EQ( root() + s("/com10.png"), DocumentationServer::resolveDocumentationFile( s(kDocDir), s("com10.png") ) );
     // more slashes (QDir::cleanPath() removes them)
     EXPECT_EQ( root() + s("/etc/hosts.txt"), DocumentationServer::resolveDocumentationFile( s(kDocDir), s("//etc/hosts.txt") ) );
     EXPECT_EQ( s("/opt/Natron/Resources/docs/html"), root().mid( root().indexOf( s("/opt/") ) ) );
@@ -83,6 +86,11 @@ TEST(DocumentationServer, RefusesFilesOutsideDocDir)
         "C:/Windows/win.ini.txt",
         "C:secret.txt",
         "index.html::$DATA", // Windows alternate data stream
+        "_static/CON.txt", // Windows device names
+        "nul.html",
+        "plugins/com1.png",
+        "LPT9.tar.css",
+        "aux/index.html",
         "",
     };
 

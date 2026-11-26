@@ -64,7 +64,8 @@ bool isCrossSiteRequest(const QString& secFetchSite);
  * docDir.
  *
  * The path is resolved lexically: a ".." segment that leaves docDir is refused, as are backslashes,
- * colons (drive letters, Windows alternate data streams) and NUL characters. Symbolic links inside
+ * colons (drive letters, Windows alternate data streams), NUL characters and Windows device names
+ * (CON, NUL, COM1, ... with any extension). Symbolic links inside
  * docDir are followed: they are part of the installed documentation.
  **/
 QString resolveDocumentationFile(const QString& docDir, const QString& page);
