@@ -69,8 +69,8 @@ protected:
         args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
         _node = app->createNode(args);
 
-        // the variables of a user script
-        std::string script;
+        // the variables of a user script; the names of __main__ before them, for TearDown
+        std::string script = "natronTestGlobalsBefore = set( globals() )\n";
         for (std::size_t i = 0; i < sizeof(kUserVariables) / sizeof(kUserVariables[0]); ++i) {
             script += std::string(kUserVariables[i]) + " = 'user " + kUserVariables[i] + "'\n";
         }
@@ -87,21 +87,33 @@ protected:
 
     virtual void TearDown() OVERRIDE
     {
-        if (!_variablesSet) {
-            return;
-        }
-        std::string script;
-        for (std::size_t i = 0; i < sizeof(kUserVariables) / sizeof(kUserVariables[0]); ++i) {
-            script += std::string("del ") + kUserVariables[i] + "\n";
-        }
+        // the name of the node, which SetUp declared in __main__ too
+        const std::string nodeName = _node ? _node->getScriptName_mt_safe() : std::string();
+
         if (_node) {
-            script += "globals().pop('" + _node->getScriptName_mt_safe() + "', None)\n";
             _node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
             _node.reset();
         }
-        script += "del natronTestTwice\ndel natronTestAppId\n";
-        // the variables of SetUp are all removed, so that they don't stay in __main__ for the next tests
-        script += "assert 'user node' not in globals().values(), 'a variable of the test is left in __main__'\n";
+        if (!_variablesSet) {
+            return;
+        }
+        // remove the variables of SetUp, so that they don't stay in __main__ for the next tests
+        std::string names;
+        for (std::size_t i = 0; i < sizeof(kUserVariables) / sizeof(kUserVariables[0]); ++i) {
+            names += std::string("'") + kUserVariables[i] + "', ";
+        }
+        if ( !nodeName.empty() ) {
+            names += "'" + nodeName + "', ";
+        }
+        names += "'natronTestTwice', 'natronTestAppId'";
+        const std::string script =
+            "for natronTestName in (" + names + "):\n"
+            "    globals().pop(natronTestName, None)\n"
+            "natronTestLeft = set( globals() ) - natronTestGlobalsBefore - {'natronTestGlobalsBefore', 'natronTestName'}\n"
+            "del natronTestGlobalsBefore, natronTestName\n"
+            "if natronTestLeft:\n"
+            "    raise AssertionError( 'variables of the test left in __main__: %s' % sorted(natronTestLeft) )\n"
+            "del natronTestLeft\n";
         std::string error;
         EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, 0) ) << error;
     }
