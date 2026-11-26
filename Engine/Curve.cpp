@@ -866,6 +866,34 @@ periodOfRange(double xMin,
     return max - xMin;
 }
 
+/// Bring t back into the half-open period [firstKeyTime, firstKeyTime + period), which starts
+/// at the first keyframe of a periodic curve (period > 0).
+/// The period must be half-open: a keyframe at firstKeyTime + period is the same point as the
+/// first keyframe, and t = firstKeyTime + period must not use the zero-width segment between
+/// them (see #1267).
+static double
+wrapIntoPeriod(double t,
+               double firstKeyTime,
+               double period)
+{
+    assert(period > 0.);
+    if (t < firstKeyTime || t >= firstKeyTime + period) {
+        // This brings t into firstKeyTime - period < t < firstKeyTime + period
+        t = std::fmod(t - firstKeyTime, period ) + firstKeyTime;
+        if (t < firstKeyTime) {
+            t += period;
+        }
+        if (t >= firstKeyTime + period) {
+            // rounding error in the line above
+            t = firstKeyTime;
+        }
+        // (with large times, firstKeyTime + period may round to firstKeyTime)
+        assert( t >= firstKeyTime && (t < firstKeyTime + period || firstKeyTime + period == firstKeyTime) );
+    }
+
+    return t;
+}
+
 /// compute interpolation parameters from keyframes and an iterator
 /// to the next keyframe (the first with time > t)
 static void
@@ -892,26 +920,9 @@ interParams(const KeyFrameSet &keyFrames,
         isPeriodic = false;
     }
     if (isPeriodic) {
-        // If the curve is periodic, bring t back into the half-open period
-        // [minKeyFrameX, minKeyFrameX + period), which starts at the first keyframe.
-        // The period must be half-open: a keyframe at minKeyFrameX + period is the same
-        // point as the first keyframe, and t = minKeyFrameX + period must not use the
-        // zero-width segment between them (see #1267).
-        double minKeyFrameX = keyFrames.begin()->getTime();
+        // If the curve is periodic, bring t back into the period that starts at the first keyframe.
         assert(xMin < xMax);
-        if (*t < minKeyFrameX || *t >= minKeyFrameX + period) {
-            // This brings t into minKeyFrameX - period < t < minKeyFrameX + period
-            *t = std::fmod(*t - minKeyFrameX, period ) + minKeyFrameX;
-            if (*t < minKeyFrameX) {
-                *t += period;
-            }
-            if (*t >= minKeyFrameX + period) {
-                // rounding error in the line above
-                *t = minKeyFrameX;
-            }
-            // (with large times, minKeyFrameX + period may round to minKeyFrameX)
-            assert( *t >= minKeyFrameX && (*t < minKeyFrameX + period || minKeyFrameX + period == minKeyFrameX) );
-        }
+        *t = wrapIntoPeriod(*t, keyFrames.begin()->getTime(), period);
         itup = keyFrames.upper_bound(KeyFrame(*t, 0.));
     }
     if ( itup == keyFrames.begin() ) {
@@ -1186,65 +1197,27 @@ Curve::getIntegrateFromTo(double t1,
     }
     assert(_imp->type == CurvePrivate::eCurveTypeDouble); // only real-valued curves can be derived
 
-    // even when there is only one keyframe, there may be tangents!
-    //if (_imp->keyFrames.size() == 1) {
-    //    //if there's only 1 keyframe, don't bother interpolating
-    //    return (*_imp->keyFrames.begin()).getValue();
-    //}
-    double tcur, tnext;
-    double vcurDerivRight, vnextDerivLeft, vcur, vnext;
-    KeyframeTypeEnum interp, interpNext;
-    KeyFrame k(t1, 0.);
-    // find the first keyframe with time strictly greater than t1
-    KeyFrameSet::const_iterator itup;
-    itup = _imp->keyFrames.upper_bound(k);
-    interParams(_imp->keyFrames,
-                _imp->isPeriodic,
-                _imp->xMin,
-                _imp->xMax,
-                &t1,
-                itup,
-                &tcur,
-                &vcur,
-                &vcurDerivRight,
-                &interp,
-                &tnext,
-                &vnext,
-                &vnextDerivLeft,
-                &interpNext);
-
-    double sum = 0.;
-
-    // while there are still keyframes after the current time, add to the total sum and advance
-    while (itup != _imp->keyFrames.end() && itup->getTime() < t2) {
-        // add integral from t1 to itup->getTime() to sum
-        if ( mustClamp() ) {
-            Curve::YRange minmax = getCurveYRange();
-            sum += Interpolation::integrate_clamp(tcur, vcur,
-                                                  vcurDerivRight,
-                                                  vnextDerivLeft,
-                                                  tnext, vnext,
-                                                  t1, itup->getTime(),
-                                                  minmax.min, minmax.max,
-                                                  interp,
-                                                  interpNext);
-        } else {
-            sum += Interpolation::integrate(tcur, vcur,
-                                            vcurDerivRight,
-                                            vnextDerivLeft,
-                                            tnext, vnext,
-                                            t1, itup->getTime(),
-                                            interp,
-                                            interpNext);
+    // The integral from a to b (a <= b), segment by segment. interParams() brings the times
+    // into the period of a periodic curve, but the segments that follow are those of that
+    // period: [a, b] must not cross the end of the period, firstKeyTime + period.
+    auto integrateWithinPeriod = [this](double a,
+                                        double b) -> double
+    {
+        if (a == b) {
+            // a may be the end of the period, which interParams() would bring back to its start
+            return 0.;
         }
-        // advance
-        t1 = itup->getTime();
-        ++itup;
+        // even when there is only one keyframe, there may be tangents!
+        double tcur, tnext;
+        double vcurDerivRight, vnextDerivLeft, vcur, vnext;
+        KeyframeTypeEnum interp, interpNext;
+        // find the first keyframe with time strictly greater than a
+        KeyFrameSet::const_iterator itup = _imp->keyFrames.upper_bound( KeyFrame(a, 0.) );
         interParams(_imp->keyFrames,
                     _imp->isPeriodic,
                     _imp->xMin,
                     _imp->xMax,
-                    &t1,
+                    &a,
                     itup,
                     &tcur,
                     &vcur,
@@ -1254,28 +1227,87 @@ Curve::getIntegrateFromTo(double t1,
                     &vnext,
                     &vnextDerivLeft,
                     &interpNext);
-    }
 
-    assert( itup == _imp->keyFrames.end() || t2 <= itup->getTime() );
-    // add integral from t1 to t2 to sum
-    if ( mustClamp() ) {
-        Curve::YRange minmax = getCurveYRange();
-        sum += Interpolation::integrate_clamp(tcur, vcur,
-                                              vcurDerivRight,
-                                              vnextDerivLeft,
-                                              tnext, vnext,
-                                              t1, t2,
-                                              minmax.min, minmax.max,
-                                              interp,
-                                              interpNext);
+        // the integral from "from" to "to" on the current segment
+        auto integrateSegment = [&](double from,
+                                    double to) -> double
+        {
+            if ( mustClamp() ) {
+                Curve::YRange minmax = getCurveYRange();
+
+                return Interpolation::integrate_clamp(tcur, vcur,
+                                                      vcurDerivRight,
+                                                      vnextDerivLeft,
+                                                      tnext, vnext,
+                                                      from, to,
+                                                      minmax.min, minmax.max,
+                                                      interp,
+                                                      interpNext);
+            }
+
+            return Interpolation::integrate(tcur, vcur,
+                                            vcurDerivRight,
+                                            vnextDerivLeft,
+                                            tnext, vnext,
+                                            from, to,
+                                            interp,
+                                            interpNext);
+        };
+
+        double sum = 0.;
+
+        // while there are still keyframes before b, add the integral up to the keyframe and advance
+        while (itup != _imp->keyFrames.end() && itup->getTime() < b) {
+            sum += integrateSegment( a, itup->getTime() );
+            // advance
+            a = itup->getTime();
+            ++itup;
+            interParams(_imp->keyFrames,
+                        _imp->isPeriodic,
+                        _imp->xMin,
+                        _imp->xMax,
+                        &a,
+                        itup,
+                        &tcur,
+                        &vcur,
+                        &vcurDerivRight,
+                        &interp,
+                        &tnext,
+                        &vnext,
+                        &vnextDerivLeft,
+                        &interpNext);
+        }
+
+        assert( itup == _imp->keyFrames.end() || b <= itup->getTime() );
+
+        // add the integral from the last keyframe before b to b
+        return sum + integrateSegment(a, b);
+    };
+
+    const double period = periodOfRange(_imp->xMin, _imp->xMax);
+    double sum;
+    if ( !_imp->isPeriodic || (period == 0.) ) {
+        sum = integrateWithinPeriod(t1, t2);
     } else {
-        sum += Interpolation::integrate(tcur, vcur,
-                                        vcurDerivRight,
-                                        vnextDerivLeft,
-                                        tnext, vnext,
-                                        t1, t2,
-                                        interp,
-                                        interpNext);
+        // Bring t1 into the period [firstKeyTime, periodEnd), shift t2 by the same number of
+        // periods, and split [t1, t2] at the period ends: the rest of the first period, whole
+        // periods, and the beginning of the last period.
+        const double firstKeyTime = _imp->keyFrames.begin()->getTime();
+        const double periodEnd = firstKeyTime + period;
+        const double t1InPeriod = wrapIntoPeriod(t1, firstKeyTime, period);
+        const double t2Shifted = t2 + (t1InPeriod - t1);
+        if (t2Shifted <= periodEnd) {
+            sum = integrateWithinPeriod(t1InPeriod, std::max(t1InPeriod, t2Shifted));
+        } else {
+            sum = integrateWithinPeriod(t1InPeriod, periodEnd);
+            const double rest = t2Shifted - periodEnd; // > 0
+            const double restInPeriod = std::fmod(rest, period); // exact, in [0, period)
+            const double wholePeriods = (rest - restInPeriod) / period;
+            if (wholePeriods > 0.) {
+                sum += wholePeriods * integrateWithinPeriod(firstKeyTime, periodEnd);
+            }
+            sum += integrateWithinPeriod(firstKeyTime, std::min(firstKeyTime + restInPeriod, periodEnd));
+        }
     }
 
     return opposite ? -sum : sum;
