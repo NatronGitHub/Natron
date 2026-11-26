@@ -179,6 +179,11 @@ public:
         _colorWasFound = true;
     }
 
+    void setPreviewEnabled(bool enabled)
+    {
+        _previewEnabled = enabled;
+    }
+
     void setChildren(const std::list<NodeGuiSerializationPtr>& children)
     {
         _children = children;

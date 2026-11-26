@@ -492,6 +492,13 @@ NodeCollection::addViewerWithoutGui(const NodeSerializationPtr& viewer)
 void
 NodeCollection::connectViewersWithoutGui()
 {
+    {
+        // with a GUI, there are none
+        QMutexLocker l(&_imp->nodesMutex);
+        if ( _imp->viewersWithoutGui.empty() ) {
+            return;
+        }
+    }
     // the names of the nodes are read without the nodesMutex (Node::setScriptName() reads the nodes of the group)
     const NodesList nodes = getNodes();
     std::map<std::string, NodePtr> nodesByName;

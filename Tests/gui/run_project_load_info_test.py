@@ -29,7 +29,7 @@ and variants of it, written by this test:
 - "gui": Tests/data/ProjectGuiData.ntp, saved by the GUI.
 - "nogui": flagged as saved by the GUI (Background_project=0), but without
   the ProjectGui part that follows: the background app, which keeps the GUI
-  data, can't read them, and saving would lose them.
+  data, warns, and the load has errors (saving would lose the GUI data).
 - "missingplugin", "missingingroup": a node whose plug-in does not exist, at
   the top level and in a Group.
 - "missinginput": a connection to an input that the node doesn't have.
@@ -194,7 +194,7 @@ EXPECTED = [
 # Printed by the "majorversion" load, which doesn't change the getters
 MAJOR_VERSION_MESSAGE = "was found in the script but was loaded with version"
 # Printed by the "nogui" load (Project::loadProjectInternal())
-NO_GUI_MESSAGE = "could not be read, and will not be saved"
+NO_GUI_MESSAGE = "has no GUI data (node positions"
 
 
 def _variants(data, gui_data):

@@ -474,6 +474,8 @@ getNodesGuiDataWithoutGui(const NodeCollection& collection)
         NodeGuiSerializationPtr data = (*it)->getGuiDataWithoutGui();
         if (data) {
             data->setFullySpecifiedName( (*it)->getFullyQualifiedName() );
+            // the GUI saves the current state (NodeGuiSerialization::initialize()), and sets it from the file
+            data->setPreviewEnabled( (*it)->isPreviewEnabled() );
             if ( !data->colorWasFound() ) {
                 // the file always has a colour, which the GUI sets if it isn't the default one
                 double r, g, b;
@@ -701,7 +703,8 @@ Project::loadProjectInternal(const QString & path,
     bool hasGuiData = false;
 
     // Same contents for both formats, so that they go through the same serialize() functions and versions.
-    auto loadFromArchive = [&](auto & iArchive) {
+    // guiPartFollows: whether the ProjectGui part follows the Project part (see below)
+    auto loadFromArchive = [&](auto & iArchive, const std::function<bool()>& guiPartFollows) {
         bool bgProject;
         {
             FlagSetter __raii_loadingProjectInternal__(true, &_imp->isLoadingProjectInternal, &_imp->isLoadingProjectMutex);
@@ -715,14 +718,14 @@ Project::loadProjectInternal(const QString & path,
         hasGuiData = !bgProject;
         std::shared_ptr<ProjectGuiSerialization> guiDataWithoutGui;
         if ( !bgProject && getApp()->isBackground() ) {
-            // without a GUI, keep the GUI data, to save them with the project
-            guiDataWithoutGui = std::make_shared<ProjectGuiSerialization>();
-            try {
+            // Without a GUI, keep the GUI data, to save them with the project. A file flagged as saved by the GUI
+            // but without them loaded in background mode before, which didn't read them: it still does, but
+            // saving would lose them. A damaged ProjectGui part is a damaged file, as with the GUI.
+            if ( guiPartFollows() ) {
+                guiDataWithoutGui = std::make_shared<ProjectGuiSerialization>();
                 iArchive >> boost::serialization::make_nvp("ProjectGui", *guiDataWithoutGui);
-            } catch (const std::exception& e) {
-                // The nodes were loaded, which is all that background mode reads: saving would lose the GUI data
-                std::cerr << tr("Warning: the GUI data (node positions, viewer settings, window layout) of %1 could not be read, and will not be saved: %2").arg( filePath, QString::fromUtf8( e.what() ) ).toStdString() << std::endl;
-                guiDataWithoutGui.reset();
+            } else {
+                std::cerr << tr("Warning: %1 has no GUI data (node positions, viewer settings, window layout), but it is flagged as saved by the GUI.").arg(filePath).toStdString() << std::endl;
                 ret.dataLost = true;
             }
             if (guiDataWithoutGui) {
@@ -749,7 +752,18 @@ Project::loadProjectInternal(const QString & path,
                 throw std::runtime_error( tr("Failed to open %1").arg(filePath).toStdString() );
             }
             boost::archive::xml_iarchive iArchive(ifile);
-            loadFromArchive(iArchive);
+            loadFromArchive(iArchive, [&ifile]() {
+                // the next element, after white space, which the archive skips too (reading it from an archive
+                // that doesn't have it would leave the archive in a state that its destructor can't close)
+                ifile >> std::ws;
+                const std::streampos pos = ifile.tellg();
+                char tag[sizeof("<ProjectGui") - 1];
+                const bool found = ifile.read( tag, sizeof(tag) ) && ( std::memcmp( tag, "<ProjectGui", sizeof(tag) ) == 0 );
+                ifile.clear();
+                ifile.seekg(pos);
+
+                return found;
+            });
             if (isUntitledAutosave) {
                 // an auto-save of a new project, by Natron 2.5 or earlier: the format will be chosen when it is saved
                 projectFormat = eProjectFileFormatNone;
@@ -768,7 +782,10 @@ Project::loadProjectInternal(const QString & path,
             }
             int originalFormat;
             iArchive >> boost::serialization::make_nvp("Project_file_format", originalFormat);
-            loadFromArchive(iArchive);
+            // a binary file ends with the ProjectGui part: if it is missing, reading it fails
+            loadFromArchive(iArchive, [&ifile]() {
+                return ifile.peek() != std::char_traits<char>::eof();
+            });
             if (isAutoSave) {
                 // auto-saves are always binary, but "Save" must write the format of the original project
                 projectFormat = ( (originalFormat == eProjectFileFormatText) ? eProjectFileFormatText :

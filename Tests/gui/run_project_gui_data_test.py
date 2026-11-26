@@ -61,6 +61,7 @@ EXPECTED_NODES = {
 VIEWER_PLUGIN_TAG = b"<Plugin_id>fr.inria.built-in.Viewer</Plugin_id>"
 # in edited.ntp, only the Viewer has Renamed (Dot2) as input
 VIEWER_INPUT_TAG = b"<second>Renamed</second>"
+OLD_VIEWER_INPUT_TAG = b"<second>Dot2</second>"
 
 # Run by NatronRenderer -t: writes, for each project it loads, [label,
 # hasGuiData, loadedWithErrors, nodes] to NATRON_TEST_OUTPUT (JSON).
@@ -278,7 +279,8 @@ def _check_files(tmp_dir):
         ok = False
     with open(path, "rb") as f:
         data = f.read()
-    if VIEWER_PLUGIN_TAG not in data or VIEWER_INPUT_TAG not in data:
+    if (VIEWER_PLUGIN_TAG not in data or VIEWER_INPUT_TAG not in data
+            or OLD_VIEWER_INPUT_TAG in data):
         print("FAILED: edited.ntp: no Viewer connected to Renamed")
         ok = False
     return ok
