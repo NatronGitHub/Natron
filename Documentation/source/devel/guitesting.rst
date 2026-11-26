@@ -166,6 +166,12 @@ which needs no token, has these assets:
 - ``https://github.com/NatronGitHub/Natron/releases/download/natron_testing/Natron-RB-2.6-Linux-aarch64.tar.xz``
 - ``https://github.com/NatronGitHub/Natron/releases/download/natron_testing/natron_testing-commit.txt``:
   the Natron commit the archives were built from (one line).
+- ``https://github.com/NatronGitHub/Natron/releases/download/natron_testing/Natron-RB-2.6-Linux-x86_64-commits.txt``
+  and ``Natron-RB-2.6-Linux-aarch64-commits.txt``: the commits that each archive was built from,
+  one ``<repository> <commit>`` line each, for ``Natron`` and the bundled plug-ins (``openfx-io``,
+  ``openfx-misc``, ``openfx-arena``, ``openfx-gmic``), as shown in Natron's About dialog. The two
+  archives have the same Natron commit, but the plug-ins are built from their moving branches, so
+  their commits may differ between the archives.
 
 They are the Linux portable archives of the RB-2.6 branch, built in the Rocky Linux 9 SDK: they need
 the system libraries listed in "Runtime requirements of the Linux binaries" in ``INSTALL_LINUX.md``,
@@ -176,8 +182,9 @@ directory (``Natron-RB-2.6-<date>-<commit>-Linux-<arch>-no-installer``), with th
 
 The ``Linux packages`` workflow (``.github/workflows/linux_packages.yml``) replaces these assets in
 place, under the same names, on its weekly run (Sunday) and when it is run on demand on RB-2.6, only
-if both archives were built and passed Natron-Tests (known failures excepted): a run that fails before the
-upload leaves the previous assets. Pull requests, tags and other branches never update them. An
+if both archives were built and passed Natron-Tests (known failures excepted). If either archive
+fails, none of the assets is updated, so that they always come from the same Natron commit: a run
+that fails before the upload leaves the previous assets. Pull requests, tags and other branches never update them. An
 update deletes each asset before uploading its replacement, so during an update (a few minutes) a
 download may fail or get files from two builds, and an asset may stay missing until the next run if
 the upload fails: retry the download, and compare ``natron_testing-commit.txt`` before and after.
