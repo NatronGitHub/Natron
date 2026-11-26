@@ -20,8 +20,11 @@
 // (kOfxParamPropChoiceOrder, OFX 1.5). Params:
 // - ordered: options OptA, OptB, OptC, NewOpt with the order 0, 10, 30, 20 (the example of ofxParameter.rst,
 //   with values that are not consecutive): displayed as OptA, OptB, NewOpt, OptC;
-// - natural: options X, Y, Z, without an order;
-// - partialOrder: options P, Q, R, with only two order values (the property must have one per option).
+// - natural: options X, Y, Z, without an order (OFX 1.5.1's default: 0, 1, 2);
+// - partialOrder: options P, Q, R, with only two order values, 5 and 1 (HostSupport completes the others
+//   with their index: 5, 1, 2);
+// - duplicate: options A, B, C, and 0 set as the order of C (0, 1, 0: the same value twice, undefined
+//   behaviour; the host must not crash).
 // Counters ("ChoiceOrder.*"): orderSet / orderFailed (the status of propSetInt for the order of "ordered":
 // "To query whether a host supports this, a plugin should attempt to set the property and check the return
 // status").
@@ -100,8 +103,9 @@ defineClips(OfxImageEffectHandle effect)
     return kOfxStatOK;
 }
 
-// a Choice param with the given options and, if nOrder > 0, the first nOrder values of order
-void
+// a Choice param with the given options and, if nOrder > 0, the first nOrder values of order; its properties
+// (0 if paramDefine failed)
+OfxPropertySetHandle
 defineChoice(OfxParamSetHandle paramSet,
              const char* name,
              const char* const* options,
@@ -112,7 +116,7 @@ defineChoice(OfxParamSetHandle paramSet,
     OfxPropertySetHandle props = 0;
 
     if ( (gParamSuite->paramDefine(paramSet, kOfxParamTypeChoice, name, &props) != kOfxStatOK) || !props ) {
-        return;
+        return 0;
     }
     for (int i = 0; i < nOptions; ++i) {
         gPropSuite->propSetString(props, kOfxParamPropChoiceOption, i, options[i]);
@@ -124,6 +128,8 @@ defineChoice(OfxParamSetHandle paramSet,
     if ( std::strcmp(name, "ordered") == 0 ) {
         natronTestIncrementCounter(orderSet ? "ChoiceOrder.orderSet" : "ChoiceOrder.orderFailed");
     }
+
+    return props;
 }
 
 OfxStatus
@@ -147,6 +153,11 @@ describeInContextChoiceOrder(OfxImageEffectHandle effect)
     const char* const partial[] = { "P", "Q", "R" };
     const int partialOrder[] = { 5, 1 };
     defineChoice(paramSet, "partialOrder", partial, 3, partialOrder, 2);
+    const char* const duplicate[] = { "A", "B", "C" };
+    OfxPropertySetHandle duplicateProps = defineChoice(paramSet, "duplicate", duplicate, 3, 0, 0);
+    if (duplicateProps) {
+        gPropSuite->propSetInt(duplicateProps, kOfxParamPropChoiceOrder, 2, 0);
+    }
 
     return kOfxStatOK;
 }

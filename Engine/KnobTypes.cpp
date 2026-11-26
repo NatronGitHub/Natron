@@ -705,11 +705,19 @@ KnobChoice::validDisplayOrder(const std::vector<int>& displayOrder,
         return std::vector<int>();
     }
     std::vector<bool> seen(nEntries, false);
-    for (int index : displayOrder) {
+    bool identity = true;
+    for (std::size_t k = 0; k < nEntries; ++k) {
+        const int index = displayOrder[k];
         if ( (index < 0) || ( index >= (int)nEntries ) || seen[index] ) {
             return std::vector<int>();
         }
         seen[index] = true;
+        identity = identity && (index == (int)k);
+    }
+    if (identity) {
+        // the natural order: OFX 1.5.1's default kOfxParamPropChoiceOrder, 0..n-1, is not an order set by
+        // the plug-in (#1898)
+        return std::vector<int>();
     }
 
     return displayOrder;
