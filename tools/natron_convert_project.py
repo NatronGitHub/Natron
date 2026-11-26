@@ -45,11 +45,9 @@ cannot be imported in NatronRenderer, e.g. those that import NatronGui or
 PySide: convert those projects with "File > Save As..." in Natron.
 
 The Python format does not save everything (see "Limitations" in "Projects
-as Python scripts"): for example, the tracks of the Tracker nodes and the
-paint strokes of the RotoPaint nodes, which Natron lists in a warning before
-it converts the project without them. A Python project is converted by
-running it and writing the project it builds, not by copying it: its
-comments and its other code (e.g. helper functions) are not kept.
+as Python scripts"). A Python project is converted by running it and writing
+the project it builds, not by copying it: its comments and its other code
+(e.g. helper functions) are not kept.
 
 NatronRenderer does not read the GUI data of a project (node positions and
 colours, viewer settings, window layout...), and saves projects without them.

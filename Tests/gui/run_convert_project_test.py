@@ -41,9 +41,7 @@ project is not replaced. A copy with GUI data, of the .ntp project and of the
 Python one (a Viewer, a node position, size or colour), is converted only
 with discard_gui=True, and a copy with a node whose plug-in is missing (.ntp
 or .py) is not converted (exit status 1, no output file). The other load
-errors are tested by run_project_load_info_test.py. The data that the Python
-format does not save are not tested: a Tracker needs the openfx-misc
-plug-ins, and the Python API cannot create paint strokes.
+errors are tested by run_project_load_info_test.py.
 
 Exit status: 0 on success, 1 on failure, 2 on a usage error.
 --debugger runs NatronRenderer under natron-lldb.sh, or set
