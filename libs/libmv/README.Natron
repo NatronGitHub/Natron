@@ -7,3 +7,5 @@ Local modifications:
 * patches/0002-libmv-predict-Natron.patch
 * patches/0003-libmv-mingw32.patch
 * patches/0004-libmv-sum-or-dynamic.patch
+* patches/0005-libmv-ceres-miniglog.patch (Ceres 2.2 with its miniglog: no
+  google::LogMessageVoidify, LG already defined, wingdi.h ERROR macro)

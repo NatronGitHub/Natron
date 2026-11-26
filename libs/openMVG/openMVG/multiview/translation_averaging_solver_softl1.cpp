@@ -180,7 +180,6 @@ bool solve_translations_problem_softl1
   ceres::Solver::Options options;
   options.minimizer_progress_to_stdout = false;
   if (ceres::IsSparseLinearAlgebraLibraryTypeAvailable(ceres::SUITE_SPARSE) ||
-      ceres::IsSparseLinearAlgebraLibraryTypeAvailable(ceres::CX_SPARSE) ||
       ceres::IsSparseLinearAlgebraLibraryTypeAvailable(ceres::EIGEN_SPARSE))
   {
     options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
@@ -194,7 +193,6 @@ bool solve_translations_problem_softl1
   options.logging_type = ceres::SILENT;
 #ifdef OPENMVG_USE_OPENMP
   options.num_threads = omp_get_max_threads();
-  options.num_linear_solver_threads = omp_get_max_threads();
 #endif // OPENMVG_USE_OPENMP
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);

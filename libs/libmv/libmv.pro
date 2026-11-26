@@ -8,7 +8,7 @@ TEMPLATE = lib
 CONFIG += staticlib
 CONFIG -= qt
 
-CONFIG += libmv-flags gflags-flags
+CONFIG += libmv-flags
 
 include(../../global.pri)
 include(../../libs.pri)
