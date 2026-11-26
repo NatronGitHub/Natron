@@ -89,8 +89,11 @@ QHttpConnection::~QHttpConnection()
 
 void QHttpConnection::socketDisconnected()
 {
-    deleteLater();
     invalidateRequest();
+    // Natron (from upstream qhttpserver 30ac571): the socket belongs to the QTcpServer, which kept
+    // every closed socket until the server was destroyed.
+    m_socket->deleteLater();
+    deleteLater();
 }
 
 void QHttpConnection::invalidateRequest()
@@ -100,6 +103,16 @@ void QHttpConnection::invalidateRequest()
     }
 
     m_request = NULL;
+}
+
+// Natron: the handler owns the request and may delete it at any time, also after the next pipelined
+// request began (m_request is then that one): only forget the request that was destroyed, and don't
+// touch it (it is being destroyed).
+void QHttpConnection::requestDestroyed(QObject *request)
+{
+    if (m_request == request) {
+        m_request = NULL;
+    }
 }
 
 void QHttpConnection::updateWriteCount(qint64 count)
@@ -169,7 +182,9 @@ void QHttpConnection::waitForBytesWritten()
 void QHttpConnection::responseDone()
 {
     QHttpResponse *response = qobject_cast<QHttpResponse *>(QObject::sender());
-    if (response->m_last)
+    // Natron: m_socket is NULL if this is called from ~QHttpConnection() (through the destroyed() signal
+    // and QHttpResponse::connectionClosed())
+    if (m_socket && response->m_last)
         m_socket->disconnectFromHost();
 }
 
@@ -228,7 +243,7 @@ int QHttpConnection::MessageBegin(http_parser *parser)
 
     // Invalidate the request when it is deleted to prevent keep-alive requests
     // from calling a signal on a deleted object.
-    connect(theConnection->m_request, SIGNAL(destroyed(QObject*)), theConnection, SLOT(invalidateRequest()));
+    connect(theConnection->m_request, SIGNAL(destroyed(QObject*)), theConnection, SLOT(requestDestroyed(QObject*)));
 
     return 0;
 }
@@ -285,10 +300,11 @@ int QHttpConnection::MessageComplete(http_parser *parser)
 {
     // TODO: do cleanup and prepare for next request
     QHttpConnection *theConnection = static_cast<QHttpConnection *>(parser->data);
-    Q_ASSERT(theConnection->m_request);
-
-    theConnection->m_request->setSuccessful(true);
-    Q_EMIT theConnection->m_request->end();
+    // Natron: the handler may have deleted the request before its end
+    if (theConnection->m_request) {
+        theConnection->m_request->setSuccessful(true);
+        Q_EMIT theConnection->m_request->end();
+    }
     theConnection->m_currentRequestEmitted = false;
     return 0;
 }
@@ -339,7 +355,9 @@ int QHttpConnection::HeaderValue(http_parser *parser, const char *at, size_t len
 int QHttpConnection::Body(http_parser *parser, const char *at, size_t length)
 {
     QHttpConnection *theConnection = static_cast<QHttpConnection *>(parser->data);
-    Q_ASSERT(theConnection->m_request);
+    // Natron: the handler may have deleted the request before its end: drop the rest of its body
+    if (!theConnection->m_request)
+        return 0;
 
     Q_EMIT theConnection->m_request->data(QByteArray(at, length));
     return 0;
