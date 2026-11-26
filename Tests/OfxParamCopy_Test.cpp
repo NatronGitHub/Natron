@@ -342,24 +342,29 @@ TEST_F(OfxParamCopyTest, DifferentTypes)
 }
 
 // The position and the size of a Natron rectangle (kNatronOfxParamPropTypeRectangle) are two parameters on
-// the dimensions 0-1 and 2-3 of one knob: paramCopy(size, position) copies the position to the size. The
-// integer rectangle copied the whole knob onto itself (the dimensions were lost when paramCopy was rewritten).
+// the dimensions 0-1 and 2-3 of one knob: paramCopy(<rect2>_position, <rect>_size) copies only the size of the
+// first one to the position of the second one. The integer rectangle copied the whole knob (the dimensions
+// were lost when paramCopy was rewritten).
 TEST_F(OfxParamCopyTest, Rectangles)
 {
     if ( skipped() ) {
         return;
     }
     for (const char* rect : { "intRect", "doubleRect" }) {
-        const std::string name(rect);
-        KnobIPtr k = knob(name);
-        ASSERT_TRUE( k && (k->getDimension() == 4) ) << name;
+        const std::string from(rect);
+        const std::string to = from + '2';
+        KnobIPtr f = knob(from);
+        KnobIPtr t = knob(to);
+        ASSERT_TRUE( f && t && (f->getDimension() == 4) && (t->getDimension() == 4) ) << from;
         for (int dim = 0; dim < 4; ++dim) {
-            setValue(k, dim, dim < 2 ? 1 : 2, 1., false); // position 1+dim(+0.5), size 2+dim(+0.5)
+            setValue(f, dim, dim < 2 ? 1 : 2, 1., false); // position 1+dim(+0.5), size 2+dim(+0.5)
+            setValue(t, dim, 0, 1., false);
         }
-        const std::string position = valueAt(k, 0, 1.) + ' ' + valueAt(k, 1, 1.);
+        const std::string size = valueAt(f, 2, 1.) + ' ' + valueAt(f, 3, 1.);
+        const std::string toSize = valueAt(t, 2, 1.) + ' ' + valueAt(t, 3, 1.);
 
-        EXPECT_EQ( kOfxStatOK, paramCopy(name + "_size", name + "_position", 0., NULL) ) << name;
-        EXPECT_EQ( position, valueAt(k, 2, 1.) + ' ' + valueAt(k, 3, 1.) ) << name;
-        EXPECT_EQ( position, valueAt(k, 0, 1.) + ' ' + valueAt(k, 1, 1.) ) << name;
+        EXPECT_EQ( kOfxStatOK, paramCopy(to + "_position", from + "_size", 0., NULL) ) << from;
+        EXPECT_EQ( size, valueAt(t, 0, 1.) + ' ' + valueAt(t, 1, 1.) ) << from;
+        EXPECT_EQ( toSize, valueAt(t, 2, 1.) + ' ' + valueAt(t, 3, 1.) ) << from; // the size of the target is unchanged
     }
 }
