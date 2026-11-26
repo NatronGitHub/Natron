@@ -25,7 +25,9 @@
 // the glog of an installed Ceres (NATRON_SYSTEM_LIBS).
 #if defined(_WIN32) && defined(ERROR)
 // wingdi.h (from windows.h) defines ERROR as 0, and miniglog declares a global
-// constant named ERROR: hide the macro while miniglog is read.
+// constant named ERROR: hide the macro while miniglog is read. After it, ERROR
+// is 0 again, so LOG(ERROR) would mean LOG(INFO) with miniglog (and wouldn't
+// compile with glog): libmv code read after windows.h must not use LOG(ERROR).
 #pragma push_macro("ERROR")
 #undef ERROR
 #include <glog/logging.h>

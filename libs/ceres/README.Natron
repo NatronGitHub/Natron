@@ -20,7 +20,8 @@ Local modifications: none. Files:
   internal/ceres/CMakeLists.txt (CERES_EXPORTED_SRCS, ceres_internal, the
   generated/*_d_d_d.cc Schur specializations, miniglog/glog/logging.cc), and
   the private headers they include.
-- MAX_LOG_LEVEL=-2 (CMakeLists.txt, libs.pri): miniglog only prints errors.
+- MAX_LOG_LEVEL=0 (CMakeLists.txt, libs.pri): miniglog prints LOG(INFO) and
+  above to stderr, not VLOG(1) and above, as the glog Natron bundled before.
 
 To update: unpack the new release, copy the files listed above (the header
 list can be made with "c++ -MM" on the sources), compare cmake/config.h.in

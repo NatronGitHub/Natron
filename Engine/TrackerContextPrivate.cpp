@@ -27,12 +27,6 @@
 
 #include <sstream> // stringstream
 
-#if defined(CERES_USE_OPENMP) && defined(_OPENMP)
-#include <omp.h>
-#endif
-
-#include <QThreadPool>
-
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/Curve.h"
@@ -1032,12 +1026,6 @@ TrackerContextPrivate::trackStepLibMV(int trackIndex,
                                       int trackTime)
 {
     assert( trackIndex >= 0 && trackIndex < args.getNumTracks() );
-
-#if defined(CERES_USE_OPENMP) && defined(_OPENMP)
-    // Set the number of threads Ceres may use
-    QThreadPool* tp = QThreadPool::globalInstance();
-    omp_set_num_threads(tp->maxThreadCount() - tp->activeThreadCount() - 1);
-#endif
 
     const std::vector<TrackMarkerAndOptionsPtr>& tracks = args.getTracks();
     const TrackMarkerAndOptionsPtr& track = tracks[trackIndex];

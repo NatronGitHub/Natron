@@ -333,10 +333,11 @@ target_include_directories(ceres SYSTEM
 )
 target_compile_options(ceres PRIVATE ${NATRON_THIRD_PARTY_NO_WARNINGS})
 # MAX_LOG_LEVEL: miniglog prints LOG(n) and VLOG(n) for n <= MAX_LOG_LEVEL
-# (FATAL=-3, ERROR=-2, WARNING=-1, INFO=0, VLOG(1)...). -2 prints errors only,
-# like the glog defaults (stderrthreshold=ERROR, VLOG off). It is PUBLIC,
+# (FATAL=-3, ERROR=-2, WARNING=-1, INFO=0, VLOG(1)...). 0 prints LOG(INFO) and
+# above, but not VLOG(1) and above, as the bundled glog did: Natron never called
+# InitGoogleLogging(), so glog wrote to stderr, with verbosity 0. It is PUBLIC,
 # since the macros are expanded in libmv too.
-target_compile_definitions(ceres PUBLIC MAX_LOG_LEVEL=-2)
+target_compile_definitions(ceres PUBLIC MAX_LOG_LEVEL=0)
 # Ceres runs its multi-threaded parts with std::thread.
 find_package(Threads REQUIRED)
 target_link_libraries(ceres PUBLIC Threads::Threads)
