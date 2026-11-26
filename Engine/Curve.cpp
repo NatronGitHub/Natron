@@ -994,6 +994,25 @@ interParams(const KeyFrameSet &keyFrames,
     }
 }
 
+Curve::Segment
+Curve::segmentAt(const KeyFrameSet& keys,
+                 bool isPeriodic,
+                 double xMin,
+                 double xMax,
+                 double t)
+{
+    if ( keys.empty() ) {
+        throw std::invalid_argument("Curve::segmentAt: no keyframes");
+    }
+    Segment s;
+    s.t = t;
+    interParams(keys, isPeriodic, xMin, xMax, &s.t, keys.upper_bound( KeyFrame(t, 0.) ),
+                &s.tcur, &s.vcur, &s.vcurDerivRight, &s.interp,
+                &s.tnext, &s.vnext, &s.vnextDerivLeft, &s.interpNext);
+
+    return s;
+}
+
 /// index of the last keyframe at or before time, or -1
 static int
 keyFramesAround(const KeyFrameSet& keyFrames,

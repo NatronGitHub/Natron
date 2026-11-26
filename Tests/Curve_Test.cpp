@@ -28,11 +28,14 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
+#include <limits>
+#include <stdexcept>
 
 #include <QString>
 #include <QDir>
 
 #include "Engine/Curve.h"
+#include "Engine/Interpolation.h"
 
 NATRON_NAMESPACE_USING
 
@@ -192,4 +195,70 @@ TEST(Curve, IntegratePeriodicMatchesValues)
             }
         }
     }
+}
+
+// #1308: the curve editor draws a curve segment by segment with Curve::segmentAt(): for a periodic
+// curve, the segment must contain the time brought into the period, and its keyframes (shifted by a
+// period at the ends) must be the ones getValueAt() interpolates between.
+TEST(Curve, SegmentAtPeriodic)
+{
+    const double period = 6.;
+    const KeyframeTypeEnum types[] = { eKeyframeTypeSmooth, eKeyframeTypeLinear };
+
+    for (KeyframeTypeEnum type : types) {
+        for (int keyAtPeriod = 0; keyAtPeriod < 2; ++keyAtPeriod) {
+            // the first keyframe is after the start of the X range [0, 6]
+            Curve c;
+            c.setXRange(0., period);
+            c.setPeriodic(true);
+            EXPECT_TRUE( c.addKeyFrame( KeyFrame(1., 0.2, 0., 0., type) ) );
+            EXPECT_TRUE( c.addKeyFrame( KeyFrame(2.5, 1., 0., 0., type) ) );
+            EXPECT_TRUE( c.addKeyFrame( KeyFrame(4., 0.3, 0., 0., type) ) );
+            if (keyAtPeriod) {
+                EXPECT_TRUE( c.addKeyFrame( KeyFrame(1. + period, 0.2, 0., 0., type) ) );
+            }
+            const KeyFrameSet keys = c.getKeyFrames_mt_safe();
+            for (double x = -13.; x <= 13.; x += 0.125) {
+                const Curve::Segment s = Curve::segmentAt(keys, true, 0., period, x);
+                // x brought into the period that starts at the first keyframe
+                EXPECT_GE(s.t, 1.) << "x=" << x;
+                EXPECT_LT(s.t, 1. + period) << "x=" << x;
+                EXPECT_NEAR( 0., std::remainder(s.t - x, period), 1e-9 ) << "x=" << x;
+                // the segment contains it
+                EXPECT_LE(s.tcur, s.t) << "x=" << x;
+                EXPECT_LT(s.t, s.tnext) << "x=" << x;
+                // and gives the curve's value
+                EXPECT_NEAR( c.getValueAt(x),
+                             Interpolation::interpolate(s.tcur, s.vcur, s.vcurDerivRight, s.vnextDerivLeft, s.tnext, s.vnext, s.t, s.interp, s.interpNext),
+                             1e-9 ) << "x=" << x;
+                // the next keyframe, as the curve editor places it (x + (tnext - t)), is a keyframe of the curve
+                const double xNext = x + (s.tnext - s.t);
+                EXPECT_NEAR( s.vnext, c.getValueAt(xNext), 1e-9 ) << "x=" << x;
+                // the keyframe before, too
+                const double xPrev = x + (s.tcur - s.t);
+                EXPECT_NEAR( s.vcur, c.getValueAt(xPrev), 1e-9 ) << "x=" << x;
+            }
+        }
+    }
+}
+
+// The segments of a non-periodic curve are the keyframes around the time, unchanged.
+TEST(Curve, SegmentAtNonPeriodic)
+{
+    Curve c;
+
+    EXPECT_TRUE( c.addKeyFrame( KeyFrame(1., 0.2, 0., 0., eKeyframeTypeLinear) ) );
+    EXPECT_TRUE( c.addKeyFrame( KeyFrame(3., 1., 0., 0., eKeyframeTypeLinear) ) );
+    const KeyFrameSet keys = c.getKeyFrames_mt_safe();
+    const Curve::Segment s = Curve::segmentAt(keys, false, 0., 6., 2.);
+    EXPECT_EQ(2., s.t);
+    EXPECT_EQ(1., s.tcur);
+    EXPECT_EQ(0.2, s.vcur);
+    EXPECT_EQ(3., s.tnext);
+    EXPECT_EQ(1., s.vnext);
+    // a periodic curve with an unbounded X range is not wrapped
+    const Curve::Segment u = Curve::segmentAt(keys, true, std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max(), 13.);
+    EXPECT_EQ(13., u.t);
+    EXPECT_EQ(3., u.tcur);
+    EXPECT_THROW( (void)Curve::segmentAt(KeyFrameSet(), false, 0., 6., 2.), std::invalid_argument );
 }

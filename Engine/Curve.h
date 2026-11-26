@@ -365,6 +365,23 @@ public:
 
     static KeyFrameSet::const_iterator findWithTime(const KeyFrameSet& keys, double time);
 
+    /// The interpolation segment of keyframes that contains a time, as getValueAt() uses it.
+    struct Segment
+    {
+        double t; ///< the time, brought into the period [first keyframe, first keyframe + period) of a periodic curve
+        double tcur, vcur, vcurDerivRight; ///< the keyframe at or before t (for a periodic curve, maybe the last one shifted by -period)
+        KeyframeTypeEnum interp;
+        double tnext, vnext, vnextDerivLeft; ///< the keyframe after t (for a periodic curve, maybe the first one shifted by +period)
+        KeyframeTypeEnum interpNext;
+    };
+
+    /**
+     * @brief The segment of the keyframes keys (not empty) that contains t, for a curve with the X range
+     * [xMin, xMax], periodic or not. Before the first or after the last keyframe of a non-periodic curve,
+     * the segment is the one getValueAt() extrapolates with.
+     **/
+    static Segment segmentAt(const KeyFrameSet& keys, bool isPeriodic, double xMin, double xMax, double t) WARN_UNUSED_RETURN;
+
     /**
      * @brief Smooth the curve.
      * @param range, if non null the curve will only be smoothed over the given range (intersected to the keyframes range)
