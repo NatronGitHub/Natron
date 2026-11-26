@@ -32,9 +32,13 @@
 
 #include "Global/Macros.h"
 
+#include <cmath>
+#include <cstdio>
 #include <iostream>
+#include <list>
 #include <set>
 #include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -45,6 +49,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/CreateNodeArgs.h"
+#include "Engine/Format.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/Plugin.h"
@@ -66,9 +71,13 @@
 #define kTrackerParamTransformType "transformType"
 #define kTrackerParamReferenceFrame "referenceFrame"
 #define kTransformParamTranslate "translate"
+#define kTransformParamRotate "rotate"
+#define kTransformParamScale "scale"
 #define kTransformParamCenter "center"
+#define kTrackerParamMotionModel "motionModel" // Engine/TrackMarker.h
 const int kMotionTypeMatchMove = 2; // eTrackerMotionTypeMatchMove
 const int kTransformTypeTransform = 0; // eTrackerTransformNodeTransform
+const int kTransformTypeCornerPin = 1; // eTrackerTransformNodeCornerPin
 
 NATRON_NAMESPACE_USING
 
@@ -259,4 +268,199 @@ TEST_F(TrackerHeadlessTest, SolveAfterTrackingWithoutViewer)
     EXPECT_NEAR( 256., transformCenter->getValue(1), 1e-6 ) << "the transform was not solved after the tracking";
     // and the solve ended: it enables the solver parameters again
     EXPECT_TRUE( motionType->isEnabled(0) ) << "the solve after the tracking did not end";
+}
+
+namespace {
+// The motion of the synthetic sequence of TracksAKnownMotion: a Transform centered on the image, which moves it by
+// (3, -2) pixels, rotates it by 1 degree and scales it by 1% per frame from frame 1, where it is the identity.
+const int kKnownMotionFirstFrame = 1;
+const int kKnownMotionLastFrame = 6;
+
+void
+knownMotion(int frame,
+            double* tx,
+            double* ty,
+            double* rotateDegrees,
+            double* scale)
+{
+    const int t = frame - kKnownMotionFirstFrame;
+
+    *tx = 3. * t;
+    *ty = -2. * t;
+    *rotateDegrees = 1. * t;
+    *scale = 1. + 0.01 * t;
+}
+
+// Where the known motion around (centerX, centerY) takes the point (x, y) of the first frame
+void
+knownMotionPoint(int frame,
+                 double centerX,
+                 double centerY,
+                 double x,
+                 double y,
+                 double* xOut,
+                 double* yOut)
+{
+    double tx, ty, rotateDegrees, scale;
+
+    knownMotion(frame, &tx, &ty, &rotateDegrees, &scale);
+    const double a = rotateDegrees * std::atan(1.) / 45.;
+    const double dx = scale * (x - centerX);
+    const double dy = scale * (y - centerY);
+    *xOut = centerX + tx + std::cos(a) * dx - std::sin(a) * dy;
+    *yOut = centerY + ty + std::sin(a) * dx + std::cos(a) * dy;
+}
+
+// Records a value with all its digits in the test's XML output (--gtest_output=xml), to compare two builds exactly
+void
+recordValue(const std::string& key,
+            double value)
+{
+    char buf[64];
+
+    std::snprintf(buf, sizeof(buf), "%.17g", value);
+    ::testing::Test::RecordProperty(key, buf);
+}
+} // anonymous namespace
+
+// Tracks four corners of a CheckerBoard moved by a known Transform animation with each motion model, then solves a
+// Transform and a CornerPin from the tracks. The tracks and the solved parameters must follow the known motion.
+TEST_F(TrackerHeadlessTest, TracksAKnownMotion)
+{
+    if ( skipped() || !NatronTest::requirePlugins({ PLUGINID_OFX_CHECKERBOARD }, "openfx-misc") ) {
+        return;
+    }
+    ASSERT_TRUE(_tracker && _context && _track);
+    // only the tracks created below are solved
+    _context->removeMarker(_track);
+    _track.reset();
+
+    NodePtr checkerBoard = createNode(PLUGINID_OFX_CHECKERBOARD);
+    ASSERT_TRUE( bool(checkerBoard) );
+    NodePtr transform = createNode(PLUGINID_OFX_TRANSFORM);
+    ASSERT_TRUE( bool(transform) );
+    ASSERT_TRUE( transform->connectInput(checkerBoard, 0) );
+    ASSERT_TRUE( _tracker->connectInput(transform, 0) );
+    KnobDoublePtr translate = std::dynamic_pointer_cast<KnobDouble>( transform->getKnobByName(kTransformParamTranslate) );
+    KnobDoublePtr rotate = std::dynamic_pointer_cast<KnobDouble>( transform->getKnobByName(kTransformParamRotate) );
+    KnobDoublePtr scale = std::dynamic_pointer_cast<KnobDouble>( transform->getKnobByName(kTransformParamScale) );
+    KnobDoublePtr center = std::dynamic_pointer_cast<KnobDouble>( transform->getKnobByName(kTransformParamCenter) );
+    ASSERT_TRUE(translate && rotate && scale && center);
+    // the CheckerBoard covers the project format, and its 64x64 boxes start from its center
+    Format format;
+    _tracker->getApp()->getProject()->getProjectDefaultFormat(&format);
+    const double centerX = (format.x1 + format.x2) / 2.;
+    const double centerY = (format.y1 + format.y2) / 2.;
+    center->setValue(centerX, ViewSpec::all(), 0);
+    center->setValue(centerY, ViewSpec::all(), 1);
+    for (int f = kKnownMotionFirstFrame; f <= kKnownMotionLastFrame; ++f) {
+        double tx, ty, rotateDegrees, s;
+        knownMotion(f, &tx, &ty, &rotateDegrees, &s);
+        translate->setValueAtTime(f, tx, ViewSpec::all(), 0);
+        translate->setValueAtTime(f, ty, ViewSpec::all(), 1);
+        rotate->setValueAtTime(f, rotateDegrees, ViewSpec::all(), 0);
+        scale->setValueAtTime(f, s, ViewSpec::all(), 0);
+        scale->setValueAtTime(f, s, ViewSpec::all(), 1);
+    }
+
+    // corners of boxes of the CheckerBoard, around the center of the Transform (also the center of the tracks)
+    const double corners[4][2] = {
+        { centerX - 192., centerY - 128. }, { centerX + 192., centerY - 128. },
+        { centerX + 192., centerY + 128. }, { centerX - 192., centerY + 128. }
+    };
+    std::vector<ChoiceOption> models;
+    TrackerContext::getMotionModelsAndHelps(true, &models);
+    ASSERT_EQ( 6u, models.size() );
+    std::list<TrackMarkerPtr> tracks;
+    for (std::size_t m = 0; m < models.size(); ++m) {
+        SCOPED_TRACE(models[m].id);
+        for (TrackMarkerPtr& track : tracks) {
+            _context->removeMarker(track);
+        }
+        tracks.clear();
+        for (int i = 0; i < 4; ++i) {
+            TrackMarkerPtr track = _context->createMarker();
+            ASSERT_TRUE( bool(track) );
+            KnobChoicePtr motionModel = std::dynamic_pointer_cast<KnobChoice>( track->getKnobByName(kTrackerParamMotionModel) );
+            ASSERT_TRUE( bool(motionModel) );
+            motionModel->setValue( (int)m );
+            track->getCenterKnob()->setValueAtTime(kKnownMotionFirstFrame, corners[i][0], ViewSpec::all(), 0);
+            track->getCenterKnob()->setValueAtTime(kKnownMotionFirstFrame, corners[i][1], ViewSpec::all(), 1);
+            tracks.push_back(track);
+        }
+        _tracker->getApp()->getTimeLine()->seekFrame(kKnownMotionFirstFrame, false, 0, eTimelineChangeReasonOtherSeek);
+        // the last frame is excluded
+        _context->trackMarkers(tracks, kKnownMotionFirstFrame, kKnownMotionLastFrame + 1, 1, 0);
+        // the tracking runs in its own thread, which may not have started yet
+        const int frameCount = kKnownMotionLastFrame - kKnownMotionFirstFrame + 1;
+        KnobDoublePtr lastTrackCenter = tracks.back()->getCenterKnob();
+        QElapsedTimer timer;
+        timer.start();
+        while ( ( (lastTrackCenter->getKeyFramesCount(ViewSpec::all(), 0) < frameCount) || _context->isCurrentlyTracking() ) &&
+                (timer.elapsed() < 60000) ) {
+            QCoreApplication::processEvents();
+            QThread::msleep(10);
+        }
+        QCoreApplication::processEvents();
+        ASSERT_FALSE( _context->isCurrentlyTracking() ) << "the tracking did not end";
+
+        int i = 0;
+        for (const TrackMarkerPtr& track : tracks) {
+            KnobDoublePtr trackCenter = track->getCenterKnob();
+            EXPECT_EQ( frameCount, trackCenter->getKeyFramesCount(ViewSpec::all(), 0) );
+            for (int f = kKnownMotionFirstFrame + 1; f <= kKnownMotionLastFrame; ++f) {
+                double x, y;
+                knownMotionPoint(f, centerX, centerY, corners[i][0], corners[i][1], &x, &y);
+                const double trackedX = trackCenter->getValueAtTime(f, 0);
+                const double trackedY = trackCenter->getValueAtTime(f, 1);
+                const std::string key = "model" + std::to_string(m) + "_track" + std::to_string(i) + "_frame" + std::to_string(f);
+                recordValue(key + "_x", trackedX);
+                recordValue(key + "_y", trackedY);
+                EXPECT_NEAR(x, trackedX, 0.25) << key;
+                EXPECT_NEAR(y, trackedY, 0.25) << key;
+            }
+            ++i;
+        }
+
+        // solve a Transform, then a CornerPin, from the tracks
+        knob<KnobChoice>(kTrackerParamMotionType)->setValue(kMotionTypeMatchMove);
+        knob<KnobInt>(kTrackerParamReferenceFrame)->setValue(kKnownMotionFirstFrame);
+        knob<KnobChoice>(kTrackerParamTransformType)->setValue(kTransformTypeTransform);
+        _context->solveTransformParams();
+        KnobDoublePtr solvedTranslate = knob<KnobDouble>(kTransformParamTranslate);
+        KnobDoublePtr solvedRotate = knob<KnobDouble>(kTransformParamRotate);
+        KnobDoublePtr solvedScale = knob<KnobDouble>(kTransformParamScale);
+        ASSERT_TRUE(solvedTranslate && solvedRotate && solvedScale);
+        for (int f = kKnownMotionFirstFrame + 1; f <= kKnownMotionLastFrame; ++f) {
+            double tx, ty, rotateDegrees, s;
+            knownMotion(f, &tx, &ty, &rotateDegrees, &s);
+            const std::string key = "model" + std::to_string(m) + "_transform_frame" + std::to_string(f);
+            recordValue( key + "_tx", solvedTranslate->getValueAtTime(f, 0) );
+            recordValue( key + "_ty", solvedTranslate->getValueAtTime(f, 1) );
+            recordValue( key + "_rotate", solvedRotate->getValueAtTime(f, 0) );
+            recordValue( key + "_scale", solvedScale->getValueAtTime(f, 0) );
+            EXPECT_NEAR(tx, solvedTranslate->getValueAtTime(f, 0), 0.25) << key;
+            EXPECT_NEAR(ty, solvedTranslate->getValueAtTime(f, 1), 0.25) << key;
+            EXPECT_NEAR(rotateDegrees, solvedRotate->getValueAtTime(f, 0), 0.05) << key;
+            EXPECT_NEAR(s, solvedScale->getValueAtTime(f, 0), 0.001) << key;
+        }
+
+        knob<KnobChoice>(kTrackerParamTransformType)->setValue(kTransformTypeCornerPin);
+        _context->solveTransformParams();
+        for (int c = 0; c < 4; ++c) {
+            KnobDoublePtr to = knob<KnobDouble>( "to" + std::to_string(c + 1) );
+            ASSERT_TRUE( bool(to) );
+            for (int f = kKnownMotionFirstFrame + 1; f <= kKnownMotionLastFrame; ++f) {
+                const std::string key = "model" + std::to_string(m) + "_cornerpin_to" + std::to_string(c + 1) + "_frame" + std::to_string(f);
+                recordValue( key + "_x", to->getValueAtTime(f, 0) );
+                recordValue( key + "_y", to->getValueAtTime(f, 1) );
+            }
+        }
+    }
+    for (TrackMarkerPtr& track : tracks) {
+        _context->removeMarker(track);
+    }
+    _context->abortTracking_blocking();
+    transform->destroyNode(true, false);
+    checkerBoard->destroyNode(true, false);
 }
