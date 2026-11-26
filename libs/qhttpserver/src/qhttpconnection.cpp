@@ -52,6 +52,7 @@ QHttpConnection::QHttpConnection(QTcpSocket *socket, QObject *parent)
       m_parser(0),
       m_parserSettings(0),
       m_request(0),
+      m_currentRequestEmitted(false),
       m_transmitLen(0),
       m_transmitPos(0)
 {
@@ -122,7 +123,31 @@ void QHttpConnection::parseRequest()
     while (m_socket->bytesAvailable()) {
         QByteArray arr = m_socket->readAll();
         http_parser_execute(m_parser, m_parserSettings, arr.constData(), arr.size());
+        // Natron: after a malformed request, http-parser stays in its error state and ignores any
+        // further data, which left the connection open forever and the client waiting.
+        if (HTTP_PARSER_ERRNO(m_parser) != HPE_OK) {
+            rejectMalformedRequest();
+            return;
+        }
     }
+}
+
+// Natron: answers "400 Bad Request" (unless the newRequest() handler already got the request and
+// answered it) and closes the connection once the pending data is written.
+void QHttpConnection::rejectMalformedRequest()
+{
+    disconnect(m_socket, SIGNAL(readyRead()), this, SLOT(parseRequest()));
+    if (!m_currentRequestEmitted) {
+        // nobody else knows about this request
+        QHttpRequest *request = m_request;
+        m_request = NULL;
+        delete request;
+        write("HTTP/1.1 400 Bad Request\r\n"
+              "Connection: close\r\n"
+              "Content-Length: 0\r\n"
+              "\r\n");
+    }
+    m_socket->disconnectFromHost();
 }
 
 void QHttpConnection::write(const QByteArray &data)
@@ -195,6 +220,7 @@ int QHttpConnection::MessageBegin(http_parser *parser)
     theConnection->m_currentHeaders.clear();
     theConnection->m_currentUrl.clear();
     theConnection->m_currentUrl.reserve(128);
+    theConnection->m_currentRequestEmitted = false;
 
     // The QHttpRequest should not be parented to this, since it's memory
     // management is the responsibility of the user of the library.
@@ -225,8 +251,11 @@ int QHttpConnection::HeadersComplete(http_parser *parser)
     int r = http_parser_parse_url(theConnection->m_currentUrl.constData(),
                                   theConnection->m_currentUrl.size(),
                                   parser->method == HTTP_CONNECT, &urlInfo);
-    Q_ASSERT(r == 0);
-    Q_UNUSED(r);
+    if (r != 0) {
+        // Natron: a URL that http-parser accepted while parsing but can't split (e.g. CONNECT
+        // without host:port); urlInfo is not valid: fail with HPE_CB_headers_complete (400).
+        return -1;
+    }
 
     theConnection->m_request->setUrl(createUrl(theConnection->m_currentUrl.constData(), urlInfo));
 
@@ -247,6 +276,7 @@ int QHttpConnection::HeadersComplete(http_parser *parser)
     connect(response, SIGNAL(done()), theConnection, SLOT(responseDone()));
 
     // we are good to go!
+    theConnection->m_currentRequestEmitted = true;
     Q_EMIT theConnection->newRequest(theConnection->m_request, response);
     return 0;
 }
@@ -259,6 +289,7 @@ int QHttpConnection::MessageComplete(http_parser *parser)
 
     theConnection->m_request->setSuccessful(true);
     Q_EMIT theConnection->m_request->end();
+    theConnection->m_currentRequestEmitted = false;
     return 0;
 }
 
