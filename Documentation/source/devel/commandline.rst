@@ -500,8 +500,8 @@ without rendering anything::
 ``to`` (``"text"``, ``"binary"`` or ``"python"``) as ``dst``, then quits. ``dst`` must have the
 extension of the format (``.ntp`` for text and binary, ``.py`` for Python): a mismatch is
 refused. Without ``dst``, the project is saved as ``src`` with that extension: ``src`` itself if
-it has it, else a file next to it (``in.ntp`` converted to Python is saved as ``in.py``). The
-exit status is 0 if the project was converted, 1 otherwise, with the reason printed. In a
+it has it, else a file next to it (``in.ntp`` converted to Python is saved as ``in.py``), which
+must not exist: pass ``dst`` to replace a file. The exit status is 0 if the project was converted, 1 otherwise, with the reason printed. In a
 script, ``convert()`` takes the same arguments, raises an exception instead, and doesn't quit;
 end the script with ``natron.quit(status)``, with a non-zero status if a conversion failed:
 without ``natron.quit()``, the prompt starts and exits with status 0. The project is not
@@ -509,7 +509,13 @@ converted if it loads with errors (see :meth:`App.projectLoadedWithErrors<Natron
 has GUI data (see :meth:`App.projectFileHasGuiData<NatronEngine.App.projectFileHasGuiData>`),
 which NatronRenderer would drop, unless ``discard_gui=True``: convert those projects with
 *Save Project As..* in Natron. In a Python project, the GUI data are its Viewers and the node
-positions, sizes and colours. The Python format doesn't save the tracks of Tracker nodes and the
-paint strokes of RotoPaint nodes (see :ref:`pythonProjects`): a conversion to it prints a warning
-that lists them, and the project is converted without them. See the docstring of ``tools/natron_convert_project.py`` for
-the details.
+positions, sizes and colours, which the module finds in the file itself, as Natron writes them
+(``App.projectFileHasGuiData()`` is *False* for a Python project).
+
+The Python format doesn't save everything (see the limitations in :ref:`pythonProjects`): for
+example, the tracks of Tracker nodes and the paint strokes of RotoPaint nodes, which a
+conversion to it lists in a warning before it converts the project without them. A Python
+project is converted by running it, which builds the project, then saving that project: its
+comments and its other code are not kept. Loading a Python project runs it, as any Python
+script: convert only the files you trust. See the docstring of
+``tools/natron_convert_project.py`` for the details.

@@ -34,11 +34,16 @@ text -> binary -> text, and text -> python -> text, then the Python project
 to binary with the default destination (its name with the .ntp extension).
 Each file must have the requested format, and load with the same nodes, links
 and parameter values (keyframes, expressions) as the original. A destination
-whose extension is not the one of the format is refused. A copy with GUI data,
-of the .ntp project and of the Python one (a node position), is converted
-only with discard_gui=True, and a copy with a node whose plug-in is missing is
-not converted (exit status 1, no output file). The other load errors are
-tested by run_project_load_info_test.py.
+whose extension is not the one of the format is refused; extensions are
+case-insensitive; a Python project converted to Python without a destination
+is saved in place; without a destination, an existing file next to the
+project is not replaced. A copy with GUI data, of the .ntp project and of the
+Python one (a Viewer, a node position, size or colour), is converted only
+with discard_gui=True, and a copy with a node whose plug-in is missing (.ntp
+or .py) is not converted (exit status 1, no output file). The other load
+errors are tested by run_project_load_info_test.py. The data that the Python
+format does not save are not tested: a Tracker needs the openfx-misc
+plug-ins, and the Python API cannot create paint strokes.
 
 Exit status: 0 on success, 1 on failure, 2 on a usage error.
 --debugger runs NatronRenderer under natron-lldb.sh, or set
@@ -316,29 +321,102 @@ class ConvertProjectTest:
             self.check("the GUI data of %s are not converted" % with_gui
                        in result[1], "discard_gui=True: no warning")
 
-    def test_python_gui_data(self):
-        """The same, for a Python project with a node position."""
+    def python_project(self):
+        """Returns the Python project written by test_chains(), or None."""
         python = self.path("3.py")
         if not self.check(file_format(python) == "python",
-                          "%s was not written by test_chains" % python):
-            return
+                          "%s was not written by test_chains()" % python):
+            return None
         with open(python, "rb") as f:
-            data = f.read()
-        # NatronRenderer writes no positions: add one, as the GUI writes it
+            return f.read()
+
+    def test_extension_rules(self):
+        """Extensions in upper case, in-place and existing destinations.
+
+        Needs the Python project of test_chains().
+        """
+        dst = self.path("upper.NTP")
+        self.check_converted(self.runner.convert(self.src, dst, "binary"),
+                             dst, "binary", "binary to upper.NTP")
+        data = self.python_project()
+        if data is None:
+            return
+        # in place: the project is rebuilt, and saved again in the same file
+        in_place = self.path("inplace.py")
+        with open(in_place, "wb") as f:
+            f.write(data)
+        if self.check_converted(self.runner.convert(in_place, to="python"),
+                                in_place, "python", "python in place"):
+            self.check(self.dump(in_place) == self.reference,
+                       "%s does not have the nodes and values of the original"
+                       % in_place)
+        # the file next to the project that dst=None stands for is kept
+        src = self.path("exists.ntp")
+        shutil.copyfile(self.src, src)
+        script = self.path("exists.py")
+        script_data = b"print('a script, not a project')\n"
+        with open(script, "wb") as f:
+            f.write(script_data)
+        status, out = self.runner.convert(src, to="python")
+        what = "python next to an existing script"
+        self.check(status == 1, "%s: exit status %d, expected 1"
+                   % (what, status))
+        self.check("FileExistsError: %s exists" % script in out,
+                   "%s: no FileExistsError" % what)
+        with open(script, "rb") as f:
+            self.check(f.read() == script_data,
+                       "%s: %s was replaced" % (what, script))
+
+    def test_python_gui_data(self):
+        """The same, for Python projects with GUI data, as Natron writes them.
+
+        Needs the Python project of test_chains().
+        """
+        data = self.python_project()
+        if data is None:
+            return
+        # NatronRenderer writes none: add them before a line of a node
         label = b"    lastNode.setLabel("
-        with_gui = self.path("withgui.py")
-        write_variant(data, label, b"    lastNode.setPosition(10, 20)\n" +
-                      label, with_gui)
-        dst = self.path("withgui.py.ntp")
-        self.check_refused(self.runner.convert(with_gui, dst, "text"), dst,
-                           "RuntimeError: %s has GUI data" % with_gui,
-                           "a Python project with GUI data")
+        viewer = (b"    # Viewer Viewer1\n"
+                  b"    groupViewer1 = app.createNode("
+                  b"\"fr.inria.built-in.Viewer\", 1, group)\n"
+                  b"    if groupViewer1 is not None:\n"
+                  b"        groupViewer1.setScriptName(\"Viewer1\")\n")
+        variants = (("position", b"    lastNode.setPosition(10, 20)\n"),
+                    ("size", b"    lastNode.setSize(80, 30)\n"),
+                    ("colour", b"    lastNode.setColor(0.7, 0.7, 0.7)\n"),
+                    ("viewer", viewer))
+        for name, lines in variants:
+            with_gui = self.path("withgui-%s.py" % name)
+            write_variant(data, label, lines + label, with_gui)
+            dst = self.path("withgui-%s.py.ntp" % name)
+            self.check_refused(self.runner.convert(with_gui, dst, "text"),
+                               dst, "RuntimeError: %s has GUI data" % with_gui,
+                               "a Python project with a %s" % name)
+        with_gui = self.path("withgui-position.py")
+        dst = self.path("withgui-position.py.ntp")
         result = self.runner.convert(with_gui, dst, "text", discard_gui=True)
         if self.check_converted(result, dst, "text",
                                 "Python project, discard_gui=True"):
             self.check("the GUI data of %s are not converted" % with_gui
                        in result[1],
                        "Python project, discard_gui=True: no warning")
+
+    def test_python_load_error(self):
+        """A Python project with a missing plug-in is not loaded.
+
+        Needs the Python project of test_chains().
+        """
+        data = self.python_project()
+        if data is None:
+            return
+        missing = self.path("missingplugin.py")
+        write_variant(data, b'"fr.inria.built-in.Dot"',
+                      b'"fr.inria.built-in.NoSuchPlugin"', missing)
+        dst = self.path("missingplugin.py.ntp")
+        self.check_refused(self.runner.convert(missing, dst, "binary"), dst,
+                           "RuntimeError: %s could not be loaded" % missing,
+                           "a Python project with a missing plug-in")
 
     def test_load_error(self):
         """A project that loads with errors (a missing plug-in) is refused."""
@@ -364,7 +442,9 @@ def main(argv):
         test.test_chains()
         test.test_extension_mismatch()
         test.test_gui_data()
+        test.test_extension_rules()
         test.test_python_gui_data()
+        test.test_python_load_error()
         test.test_load_error()
         if test.failures:
             print("%d failure(s)" % len(test.failures))

@@ -31,7 +31,8 @@ raises the same exceptions and does not quit.
 The formats are "binary" and "text" (.ntp files), and "python" (a .py file
 that rebuilds the project, see "Projects as Python scripts" in the Natron
 documentation). The name of the converted project must have the extension of
-its format.
+its format. Loading a Python project runs it: convert only the files you
+trust.
 
 The project is loaded and saved, as with "File > Save As..." in Natron:
 nothing is rendered, and the file is the project that this version of Natron
@@ -41,17 +42,22 @@ installed: a project that loads with errors (e.g. a node that cannot be
 created, or a PyPlug that cannot be found or imported, whose node would be
 saved as a plain Group) is not converted. This includes the PyPlugs that
 cannot be imported in NatronRenderer, e.g. those that import NatronGui or
-PySide: convert those projects with "File > Save As..." in Natron. The Python
-format does not save the tracks of the Tracker nodes or the paint strokes of
-the RotoPaint nodes: Natron prints a warning that lists them, and the project
-is converted without them.
+PySide: convert those projects with "File > Save As..." in Natron.
+
+The Python format does not save everything (see "Limitations" in "Projects
+as Python scripts"): for example, the tracks of the Tracker nodes and the
+paint strokes of the RotoPaint nodes, which Natron lists in a warning before
+it converts the project without them. A Python project is converted by
+running it and writing the project it builds, not by copying it: its
+comments and its other code (e.g. helper functions) are not kept.
 
 NatronRenderer does not read the GUI data of a project (node positions and
 colours, viewer settings, window layout...), and saves projects without them.
 A project saved by the Natron GUI has GUI data, so it is not converted, unless
 discard_gui is True. In a Python project, the GUI data are the Viewers and
-the calls that set the position, size or colour of a node. Convert such a
-project in Natron with "File > Save As...", which has a "File format" choice.
+the calls that set the position, size or colour of a node, found in the file
+as Natron writes them (see _PYTHON_GUI_DATA). Convert such a project in
+Natron with "File > Save As...", which has a "File format" choice.
 """
 
 import os
@@ -68,9 +74,13 @@ _FORMATS = {
     "binary": (_FORMAT_ENUM.eProjectFileFormatBinary, ".ntp"),
     "python": (_FORMAT_ENUM.eProjectFileFormatPython, ".py"),
 }
-# The GUI data of a Python project (see Project::exportToPython()): a Viewer
+# The GUI data of a Python project, as Natron writes them (see
+# NodeCollection::exportGroupInternal() in Engine/NodeGroup.cpp): a Viewer
 # (which only the GUI has), or a call that sets the position, size or colour
-# of a node, which NatronRenderer ignores
+# of a node, which NatronRenderer ignores. In a project written by hand, it
+# may miss some (e.g. app.getNode("A").setPosition(...)) or match calls that
+# are not GUI data (e.g. the setColor() of a Roto shape): the error message
+# gives the line, and discard_gui=True converts the project anyway.
 _PYTHON_GUI_DATA = re.compile(
     rb"^[ \t]*(?:# Viewer |[\w.]+\.set(?:Position|Size|Color)\()",
     re.MULTILINE)
@@ -90,7 +100,7 @@ def convert(src: str, dst: str | None = None, to: str = "text",
             case-insensitively). None (the default) is src with that
             extension: src itself if it has it (the project is first written
             to a temporary file, as with every save in Natron), else a file
-            next to it, which is replaced if it exists.
+            next to it, which must not exist (pass dst to replace a file).
         to: "text" (XML, readable by Natron 2.5 and earlier), "binary", or
             "python" (a Python script, readable by Natron 2.6 and later).
         discard_gui: If False (the default), a project that has GUI data
@@ -102,6 +112,8 @@ def convert(src: str, dst: str | None = None, to: str = "text",
         ValueError: to is not "text", "binary" or "python", or the extension
             of dst is not the one of its format.
         FileNotFoundError: src is not a file.
+        FileExistsError: dst is None, and the file next to src that it
+            stands for exists.
         IsADirectoryError: dst is a directory.
         RuntimeError: Natron is not in background mode; the project could
             not be loaded, or loaded with errors; it has GUI data and
@@ -119,6 +131,11 @@ def convert(src: str, dst: str | None = None, to: str = "text",
         raise FileNotFoundError("%s: no such file" % src)
     if dst is None:
         dst = _with_extension(src, ext)
+        if dst != src and os.path.lexists(dst):
+            # e.g. a script next to the project, or the current project next
+            # to a backup: replace it only if asked
+            raise FileExistsError("%s exists: pass it as dst to replace it"
+                                  % dst)
     else:
         dst = os.path.abspath(os.path.expanduser(dst))
         if not _has_extension(dst, ext):
@@ -141,37 +158,68 @@ def convert(src: str, dst: str | None = None, to: str = "text",
         raise
 
 
-def _has_extension(path, ext):
-    """Whether path ends with ext, case-insensitively (as in Natron)."""
-    return os.path.splitext(path)[1].lower() == ext
+def _extension(path: str) -> str:
+    """Returns the extension of path in lower case, with its dot, or "".
+
+    As QFileInfo.suffix() in Natron: the text after the last dot of the file
+    name, also for a name that starts with it (".py").
+    """
+    name = os.path.basename(path)
+    dot = name.rfind(".")
+    return name[dot:].lower() if dot != -1 else ""
 
 
-def _with_extension(path, ext):
+def _has_extension(path: str, ext: str) -> bool:
+    """Returns whether path ends with ext, case-insensitively."""
+    return _extension(path) == ext
+
+
+def _with_extension(path: str, ext: str) -> str:
     """Returns path if it ends with ext, else path with its extension ext."""
     if _has_extension(path, ext):
         return path
-    return os.path.splitext(path)[0] + ext
+    return path[:len(path) - len(_extension(path))] + ext
 
 
-def _python_project_has_gui_data(path):
-    """Whether the Python project path has GUI data (see _PYTHON_GUI_DATA)."""
+def _python_gui_data_line(path: str) -> int | None:
+    """Returns the first line of GUI data of the Python project path, or None.
+
+    See _PYTHON_GUI_DATA.
+    """
     with open(path, "rb") as f:
-        return _PYTHON_GUI_DATA.search(f.read()) is not None
+        data = f.read()
+    match = _PYTHON_GUI_DATA.search(data)
+    return None if match is None else data.count(b"\n", 0, match.start()) + 1
 
 
-def _has_gui_data(app, src):
-    """Whether the project loaded from src has GUI data.
+def _gui_data(app, src: str) -> str | None:
+    """Returns the GUI data of the project loaded from src, or None.
 
     App.projectFileHasGuiData() is False for a Python project: its GUI data
     are calls that NatronRenderer ignores, found in the file itself.
+
+    Returns:
+        A description of the GUI data, for the messages, or None if the
+        project has none.
     """
     if app.getProjectFormat() == _FORMAT_ENUM.eProjectFileFormatPython:
-        return _python_project_has_gui_data(src)
-    return app.projectFileHasGuiData()
+        line = _python_gui_data_line(src)
+        if line is None:
+            return None
+        return ("a Viewer, or node positions, sizes or colours, from line %d"
+                % line)
+    if app.projectFileHasGuiData():
+        return "node positions, viewer settings, window layout..."
+    return None
 
 
-def _check_and_save(app, src, dst, file_format, discard_gui):
-    """Saves the project loaded from src as dst, unless it would lose data.
+def _check_and_save(app, src: str, dst: str, file_format,
+                    discard_gui: bool) -> None:
+    """Saves the project loaded from src as dst, after the checks of convert().
+
+    A project that loaded with errors is not saved, nor one with GUI data
+    unless discard_gui. The data that the format of dst does not save (see
+    the module docstring) are dropped.
 
     Raises:
         RuntimeError: See convert().
@@ -181,13 +229,14 @@ def _check_and_save(app, src, dst, file_format, discard_gui):
         raise RuntimeError("there were errors while loading %s (see the "
                            "messages above; are all its plug-ins and PyPlugs "
                            "installed?): it is not converted" % src)
-    if _has_gui_data(app, src):
+    gui_data = _gui_data(app, src)
+    if gui_data is not None:
         if not discard_gui:
             raise RuntimeError(
-                "%s has GUI data (node positions, viewer settings, window "
-                "layout...), which NatronRenderer does not save: convert it "
-                'in Natron with "File > Save As...", or pass '
-                "discard_gui=True to convert it without them" % src)
+                "%s has GUI data (%s), which NatronRenderer does not save: "
+                'convert it in Natron with "File > Save As...", or pass '
+                "discard_gui=True to convert it without them"
+                % (src, gui_data))
         sys.stderr.write("natron_convert_project: warning: the GUI data of "
                          "%s are not converted\n" % src)
         sys.stderr.flush()
