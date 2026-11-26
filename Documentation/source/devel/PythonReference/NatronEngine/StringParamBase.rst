@@ -39,6 +39,14 @@ Much like keyframes for value parameters (like :doc:`IntParam` or :doc:`DoublePa
 keyframes can be set on string params, though the interpolation will remain constant
 always.
 
+.. _stringBaseProjectPath:
+
+For a :doc:`FileParam` or an :doc:`OutputFileParam`, the setters of this class (:func:`set()<NatronEngine.StringParamBase.set>`,
+:func:`setValue()<NatronEngine.StringParamBase.setValue>`, :func:`setValueAtTime()<NatronEngine.StringParamBase.setValueAtTime>`
+and :func:`setDefaultValue()<NatronEngine.StringParamBase.setDefaultValue>`) raise :class:`ValueError` and keep the
+value if it uses the ``[Project]`` path while the project has never been saved, so that ``[Project]`` has no value:
+save the project first. The script of a PyPlug, or of a project being loaded, is not checked.
+
 
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^

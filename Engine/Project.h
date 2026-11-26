@@ -446,6 +446,15 @@ public:
      **/
     void makeRelativeToProject(std::string& str);
 
+    /**
+     * @brief Returns true if filePath starts with the [Project] path, directly or through another project path
+     * (e.g. [Shots] = [Project]/shots), while [Project] has no value, which is the case until the project is
+     * saved: the path would then be in the root folder of the file system. File parameters refuse such a path
+     * (#1539); unsetProjectPathMessage() is the message to show.
+     **/
+    bool usesUnsetProjectPath(const std::string& filePath) const WARN_UNUSED_RETURN;
+    static QString unsetProjectPathMessage(const std::string& filePath) WARN_UNUSED_RETURN;
+
     bool fixFilePath(const std::string& projectPathName, const std::string& newProjectPath,
                      std::string& filePath);
 

@@ -3756,6 +3756,34 @@ Project::makeRelativeToProject(std::string& str)
     }
 }
 
+bool
+Project::usesUnsetProjectPath(const std::string& filePath) const
+{
+    std::map<std::string, std::string> envvar;
+
+    getEnvironmentVariables(envvar);
+    std::map<std::string, std::string>::iterator found = envvar.find(NATRON_PROJECT_ENV_VAR_NAME);
+    if ( found != envvar.end() ) {
+        if ( !found->second.empty() ) {
+            return false;
+        }
+        envvar.erase(found);
+    }
+    // Expand the other project paths first: one of them may start with [Project]
+    std::string path = filePath;
+    expandVariable(envvar, path);
+
+    return expandVariable(NATRON_PROJECT_ENV_VAR_NAME, std::string(), path);
+}
+
+QString
+Project::unsetProjectPathMessage(const std::string& filePath)
+{
+    return tr("The file path \"%1\" uses the [%2] path, the folder of the project file, which has no value until "
+              "the project is saved. Save the project first, then set the file path again.")
+           .arg( QString::fromUtf8( filePath.c_str() ), QString::fromUtf8(NATRON_PROJECT_ENV_VAR_NAME) );
+}
+
 void
 Project::onOCIOConfigPathChanged(const std::string& path,
                                  bool block)
