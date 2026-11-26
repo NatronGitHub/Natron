@@ -166,13 +166,22 @@ private:
     QList<QPointer<QHttpRequest> > _keptRequests;
 };
 
-// Runs the event loop for ms milliseconds
-void
-processEventsFor(int ms)
+// Runs the event loop (deleting what was scheduled for deletion) until condition() is true, for at
+// most timeoutMs; returns condition()
+template <typename Condition>
+bool
+processEventsUntil(Condition condition, int timeoutMs = 5000)
 {
-    QEventLoop loop;
-    QTimer::singleShot( ms, &loop, &QEventLoop::quit );
-    loop.exec();
+    QElapsedTimer timer;
+    timer.start();
+    while ( !condition() && (timer.elapsed() < timeoutMs) ) {
+        QEventLoop loop;
+        QTimer::singleShot( 10, &loop, &QEventLoop::quit );
+        loop.exec();
+        QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    }
+
+    return condition();
 }
 
 bool
@@ -273,12 +282,16 @@ TEST(QHttpServer, RejectsMalformedRequest)
     reply = server.exchange("POST / HTTP/1.1\r\nHost: localhost\r\nContent-Length: 1 2\r\n\r\n");
     EXPECT_TRUE( isStatus(reply, 400) ) << reply.constData();
 
-    // The server closes the connection while unread data remains, so the TCP stack may reset it and drop
-    // the 400 (Windows): check that the server closed the connection long before the timeout.
+    // The server closes the connection while unread data remains: on Windows, the TCP stack may reset it
+    // and drop the 400. Check that the server closed the connection long before the timeout.
     QElapsedTimer timer;
     timer.start();
     reply = server.exchange("GET / HTTP/1.1\r\nHost: localhost\r\nX-Big: " + QByteArray(100 * 1024, 'a') + "\r\n\r\n");
+#ifdef Q_OS_WIN
     EXPECT_TRUE( reply.isEmpty() || isStatus(reply, 400) ) << reply.constData();
+#else
+    EXPECT_TRUE( isStatus(reply, 400) ) << reply.constData();
+#endif
     EXPECT_LT( timer.elapsed(), 5000 );
 
     EXPECT_EQ( 0, server.requests() );
@@ -417,13 +430,10 @@ TEST(QHttpServer, DeletesRequestOfClosedConnection)
     socket.connectToHost(QHostAddress::LocalHost, server.port());
     ASSERT_TRUE( socket.waitForConnected(10000) );
     socket.write("GET / HTTP/1.1\r\nHost: localh");
-    processEventsFor(200);
-    EXPECT_EQ( 1, server.ownedRequests() );
+    EXPECT_TRUE( processEventsUntil([&server]() { return server.ownedRequests() == 1; }) );
 
     socket.abort();
-    processEventsFor(200);
-    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
-    EXPECT_EQ( 0, server.ownedRequests() );
+    EXPECT_TRUE( processEventsUntil([&server]() { return server.ownedRequests() == 0; }) );
     EXPECT_EQ( 0, server.requests() );
 }
 
