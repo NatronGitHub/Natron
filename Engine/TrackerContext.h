@@ -149,7 +149,10 @@ public:
 
     bool isTrackerPMEnabled() const;
 
+    // A new track, which uses pattern matching if the node's parameter says so (isTrackerPMEnabled())
     TrackMarkerPtr createMarker();
+    // A new track, which uses pattern matching (TrackMarkerPM) or not (TrackMarker)
+    TrackMarkerPtr createMarker(bool usePatternMatching);
 
     int getMarkerIndex(const TrackMarkerPtr& marker) const;
 
@@ -329,6 +332,8 @@ public:
 
     void s_trackCloned(const TrackMarkerPtr& marker) { Q_EMIT trackCloned(marker); }
 
+    void s_trackLabelChanged(const TrackMarkerPtr& marker) { Q_EMIT trackLabelChanged(marker); }
+
     void s_centerKnobValueChanged(const TrackMarkerPtr& marker,
                                   int dimension,
                                   int reason) { Q_EMIT centerKnobValueChanged(marker, dimension, reason); }
@@ -387,6 +392,8 @@ Q_SIGNALS:
 
     void trackAboutToClone(TrackMarkerPtr marker);
     void trackCloned(TrackMarkerPtr marker);
+    // TrackMarker::setLabel(), e.g. from Python (the tracks table shows the label)
+    void trackLabelChanged(TrackMarkerPtr marker);
 
     //reason is of type TrackSelectionReason
     void selectionChanged(int reason);

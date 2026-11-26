@@ -1256,7 +1256,7 @@ Gui::saveProjectAs(ProjectFileFormatEnum defaultFormat)
     const QString binaryHint = tr("Binary: faster to save and to parse, and smaller. Needs %1 2.6 or later.").arg(appName);
     const QString textHint = tr("Text (XML): compatible with %1 2.5 and earlier, readable and diffable.").arg(appName);
     const QString pythonHint = tr("Python script (.py): a script that rebuilds the project, easy to read, diff and generate. "
-                                  "It has no GUI data (window layout, viewer settings), no Tracker tracks, no paint strokes and no "
+                                  "It has no GUI data (window layout, viewer settings) and no "
                                   "keyframe tangents (they are computed again). Needs %1 2.6 or later.").arg(appName);
     // the entries, in the order of the menu
     struct FormatEntry

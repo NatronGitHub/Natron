@@ -25,6 +25,12 @@
 
 #include "PyTracker.h"
 
+#include <set>
+#include <stdexcept>
+#include <string>
+
+#include "Engine/AppInstance.h"
+#include "Engine/Node.h"
 #include "Engine/PyNode.h"
 #include "Engine/TrackMarker.h"
 #include "Engine/TrackerContext.h"
@@ -98,6 +104,59 @@ Track::getParams() const
     }
 
     return ret;
+}
+
+void
+Track::setLabel(const QString& label)
+{
+    TrackMarkerPtr marker = getInternalMarker();
+    if (!marker) {
+        return;
+    }
+    marker->setLabel( label.toStdString() );
+}
+
+QString
+Track::getLabel() const
+{
+    TrackMarkerPtr marker = getInternalMarker();
+    if (!marker) {
+        return QString();
+    }
+
+    return QString::fromUtf8( marker->getLabel().c_str() );
+}
+
+void
+Track::getUserKeyframes(std::list<int>* frames) const
+{
+    TrackMarkerPtr marker = getInternalMarker();
+    if (!marker) {
+        return;
+    }
+    std::set<int> keys;
+    marker->getUserKeyframes(&keys);
+    frames->assign( keys.begin(), keys.end() );
+}
+
+void
+Track::setUserKeyframe(int frame)
+{
+    TrackMarkerPtr marker = getInternalMarker();
+    if (!marker) {
+        return;
+    }
+    marker->setUserKeyframe(frame);
+}
+
+void
+Track::removeUserKeyframe(int frame)
+{
+    TrackMarkerPtr marker = getInternalMarker();
+    if (!marker) {
+        return;
+    }
+    marker->removeUserKeyframe(frame);
 }
 
 void
@@ -194,18 +253,46 @@ Tracker::getSelectedTracks(std::list<Track*>* tracks) const
     }
 }
 
+// A pattern-matching track needs a TrackerPM node, whose creation throws if its plug-in is missing: a C++
+// exception must not go through the Python interpreter (see makeShape() in PyRoto.cpp). Print the error and
+// return null (None).
+template <typename MakeMarker>
+static Track*
+newTrack(const TrackerContextPtr& ctx,
+         MakeMarker make)
+{
+    if (!ctx) {
+        return 0;
+    }
+    std::string error;
+    try {
+        TrackMarkerPtr track = make();
+
+        return track ? new Track(track) : 0;
+    } catch (const std::exception& e) {
+        error = e.what();
+    } catch (...) {
+        error = "Unknown error while creating the track";
+    }
+    ctx->getNode()->getApp()->appendPlainTextToScriptEditor(error);
+
+    return 0;
+}
+
 Track*
 Tracker::createTrack()
 {
     TrackerContextPtr ctx = getInternalContext();
-    if (!ctx) {
-        return 0;
-    }
-    TrackMarkerPtr track = ctx->createMarker();
-    if (!track) {
-        return 0;
-    }
-    return new Track(track);
+
+    return newTrack(ctx, [&] { return ctx->createMarker(); });
+}
+
+Track*
+Tracker::createTrack(bool usePatternMatching)
+{
+    TrackerContextPtr ctx = getInternalContext();
+
+    return newTrack(ctx, [&] { return ctx->createMarker(usePatternMatching); });
 }
 
 NATRON_PYTHON_NAMESPACE_EXIT

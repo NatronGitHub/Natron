@@ -16,6 +16,11 @@ Functions
 
 - def :meth:`setScriptName<NatronEngine.Track.setScriptName>` (scriptName)
 - def :meth:`getScriptName<NatronEngine.Track.getScriptName>` ()
+- def :meth:`setLabel<NatronEngine.Track.setLabel>` (label)
+- def :meth:`getLabel<NatronEngine.Track.getLabel>` ()
+- def :meth:`getUserKeyframes<NatronEngine.Track.getUserKeyframes>` ()
+- def :meth:`setUserKeyframe<NatronEngine.Track.setUserKeyframe>` (frame)
+- def :meth:`removeUserKeyframe<NatronEngine.Track.removeUserKeyframe>` (frame)
 - def :meth:`getParam<NatronEngine.Track.getParam>` (paramScriptName)
 - def :meth:`getParams<NatronEngine.Track.getParams>` ()
 - def :meth:`reset<NatronEngine.Track.reset>` ()
@@ -83,6 +88,49 @@ Set the script-name of the track. It will then be accessible via a Python script
     :rtype: :class:`str`
 
     Get the script-name of the track
+
+.. method:: Track.setLabel(label)
+
+    :param label: :class:`str`
+
+    Set the label of the track, shown in the tracks table and in the viewer.
+
+    .. versionadded:: 2.6
+
+.. method:: Track.getLabel()
+
+    :rtype: :class:`str`
+
+    Get the label of the track.
+
+    .. versionadded:: 2.6
+
+.. method:: Track.getUserKeyframes()
+
+    :rtype: :class:`sequence`
+
+    Returns the frames (:class:`int`) of the keyframes that the user set on the track's pattern
+    (the reference frames of the pattern when tracking), in increasing order.
+
+    .. versionadded:: 2.6
+
+.. method:: Track.setUserKeyframe(frame)
+
+    :param frame: :class:`int`
+
+    Marks *frame* as a keyframe set by the user (see
+    :meth:`getUserKeyframes<NatronEngine.Track.getUserKeyframes>`). It doesn't change the
+    parameters of the track.
+
+    .. versionadded:: 2.6
+
+.. method:: Track.removeUserKeyframe(frame)
+
+    :param frame: :class:`int`
+
+    Removes the user keyframe at *frame*, if there is one.
+
+    .. versionadded:: 2.6
 
 .. method:: Track.getParam(paramScriptName)
 

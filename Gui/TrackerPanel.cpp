@@ -332,6 +332,8 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     QObject::connect( context.get(), SIGNAL(trackRemoved(TrackMarkerPtr)), this, SLOT(onTrackRemoved(TrackMarkerPtr)) );
     QObject::connect( context.get(), SIGNAL(trackCloned(TrackMarkerPtr)),
                       this, SLOT(onTrackCloned(TrackMarkerPtr)) );
+    QObject::connect( context.get(), SIGNAL(trackLabelChanged(TrackMarkerPtr)),
+                      this, SLOT(onTrackLabelChanged(TrackMarkerPtr)) );
     QObject::connect( context.get(), SIGNAL(trackAboutToClone(TrackMarkerPtr)),
                       this, SLOT(onTrackAboutToClone(TrackMarkerPtr)) );
     QObject::connect( context.get(), SIGNAL(keyframeSetOnTrack(TrackMarkerPtr,int)),
@@ -1872,6 +1874,22 @@ TrackerPanel::onErrorKnobValueChanged(const TrackMarkerPtr &marker,
     }
     ++_imp->itemDataChangedRecursion;
     item->setData( Qt::DisplayRole, marker->getErrorKnob()->getValue(0) );
+    --_imp->itemDataChangedRecursion;
+}
+
+// A label set from Python (Track.setLabel(), e.g. by a Python project): the table showed the one the track had
+// when it was inserted. An edit in the table sets it too (onItemDataChanged()), with the same text.
+void
+TrackerPanel::onTrackLabelChanged(const TrackMarkerPtr& marker)
+{
+    TableItem* item = getItemAt(marker, COL_LABEL);
+
+    if (!item) {
+        return;
+    }
+    ++_imp->itemDataChangedRecursion;
+    item->setText( QString::fromUtf8( marker->getLabel().c_str() ) );
+    item->setToolTip( labelToolTipFromScriptName(*marker) );
     --_imp->itemDataChangedRecursion;
 }
 

@@ -5,12 +5,12 @@ ItemBase
 ********
 
 
-**Inherited by:** :doc:`BezierCurve`, :doc:`Layer`
+**Inherited by:** :doc:`BezierCurve`, :doc:`Layer`, :doc:`StrokeItem`
 
 Synopsis
 --------
 
-This is an abstract class that serves as a base class for both :doc:`Layer` and :doc:`BezierCurve`.
+This is an abstract class that serves as a base class for :doc:`Layer`, :doc:`BezierCurve` and :doc:`StrokeItem`.
 See :ref:`detailed<itemBase.details>` description...
 
 Functions

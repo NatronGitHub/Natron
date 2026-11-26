@@ -90,12 +90,9 @@
 #include "Engine/ProjectSerialization.h"
 #include "Engine/RectDSerialization.h"
 #include "Engine/RectISerialization.h"
-#include "Engine/RotoContext.h"
 #include "Engine/RotoLayer.h"
-#include "Engine/RotoStrokeItem.h"
 #include "Engine/Settings.h"
 #include "Engine/StandardPaths.h"
-#include "Engine/TrackerContext.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewIdx.h"
 
@@ -1222,42 +1219,6 @@ callSaveCommitHookForTesting()
     return !hook || hook();
 }
 
-// What the Python format doesn't save (see exportToPython()), that a save in that format loses: one line per node
-static QStringList
-notSavedInPython(const NodesList& nodes)
-{
-    QStringList ret;
-
-    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        // the nodes of a PyPlug instance are created by the PyPlug
-        NodeGroup* parentGroup = dynamic_cast<NodeGroup*>( (*it)->getGroup().get() );
-        if ( parentGroup && parentGroup->getNode()->isPyPlug() ) {
-            continue;
-        }
-        const QString name = QString::fromUtf8( (*it)->getFullyQualifiedName().c_str() );
-        TrackerContextPtr tracker = (*it)->getTrackerContext();
-        std::vector<TrackMarkerPtr> markers;
-        if (tracker) {
-            tracker->getAllMarkers(&markers);
-        }
-        if ( !markers.empty() ) {
-            ret.append( Project::tr("%1: its tracks").arg(name) );
-        }
-        RotoContextPtr roto = (*it)->getRotoContext();
-        if (roto) {
-            const std::list<RotoDrawableItemPtr> items = roto->getCurvesByRenderOrder(false);
-            for (std::list<RotoDrawableItemPtr>::const_iterator item = items.begin(); item != items.end(); ++item) {
-                if ( std::dynamic_pointer_cast<RotoStrokeItem>(*item) ) {
-                    ret.append( Project::tr("%1: its paint strokes").arg(name) );
-                    break;
-                }
-            }
-        }
-    }
-
-    return ret;
-}
-
 QString
 Project::saveProjectInternal(const QString & path,
                              const QString & name,
@@ -1402,15 +1363,6 @@ Project::saveProjectInternal(const QString & path,
             std::ostream ofile(&streamBuf);
             if (fileFormat == eProjectFileFormatPython) {
                 // a script that rebuilds the project (see exportToPython()), in UTF-8, the same on every system
-                if (warnings && (attempt == 1) ) {
-                    NodesList nodes;
-                    getNodes_recursive(nodes, true);
-                    const QStringList notSaved = notSavedInPython(nodes);
-                    if ( !notSaved.isEmpty() ) {
-                        warnings->append( tr("The Python format doesn't save these, which are not in %1:").arg(filePath) );
-                        *warnings += notSaved;
-                    }
-                }
                 const QByteArray utf8 = exportToPython().toUtf8();
                 ofile.write( utf8.constData(), utf8.size() );
             } else if (fileFormat == eProjectFileFormatText) {
