@@ -33,7 +33,10 @@
 #include <QtCore/QByteArray>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QEvent>
+#include <QtCore/QElapsedTimer>
 #include <QtCore/QEventLoop>
+#include <QtCore/QList>
+#include <QtCore/QPointer>
 #include <QtCore/QMetaEnum>
 #include <QtCore/QString>
 #include <QtCore/QTimer>
@@ -58,6 +61,7 @@ class LoopbackHttpServer
 public:
     LoopbackHttpServer()
         : _requests(0)
+        , _keepRequests(false)
     {
         QObject::connect( &_server, &QHttpServer::newRequest, [this](QHttpRequest* req, QHttpResponse* resp) {
             ++_requests;
@@ -76,7 +80,11 @@ public:
                     resp->end("ok");
                 }
                 // the request belongs to the handler (see QHttpServer::newRequest())
-                req->deleteLater();
+                if (_keepRequests) {
+                    _keptRequests.push_back(req);
+                } else {
+                    req->deleteLater();
+                }
             } );
         } );
         _listening = _server.listen(QHostAddress::LocalHost, 0);
@@ -86,6 +94,24 @@ public:
 
     // The value of an "X-Extra" header in the responses
     void setExtraHeaderValue(const QString& value) { _extraHeaderValue = value; }
+
+    // Keep the requests instead of deleting them once received (a handler may keep them)
+    void setKeepRequests(bool keep) { _keepRequests = keep; }
+
+    // The requests kept (NULL once deleted)
+    const QList<QPointer<QHttpRequest> >& keptRequests() const { return _keptRequests; }
+
+    ~LoopbackHttpServer()
+    {
+        for (const QPointer<QHttpRequest>& req : _keptRequests) {
+            delete req.data();
+        }
+    }
+
+    // The requests that the server still owns (those it didn't give to the handler)
+    int ownedRequests() const { return _server.findChildren<QHttpRequest*>().size(); }
+
+    quint16 port() { return static_cast<quint16>( _server.serverPort() ); }
 
     int requests() const { return _requests; }
 
@@ -136,7 +162,18 @@ private:
     HeaderHash _lastHeaders;
     QByteArray _lastBody;
     QString _extraHeaderValue;
+    bool _keepRequests;
+    QList<QPointer<QHttpRequest> > _keptRequests;
 };
+
+// Runs the event loop for ms milliseconds
+void
+processEventsFor(int ms)
+{
+    QEventLoop loop;
+    QTimer::singleShot( ms, &loop, &QEventLoop::quit );
+    loop.exec();
+}
 
 bool
 isStatus(const QByteArray& reply, int status)
@@ -236,8 +273,13 @@ TEST(QHttpServer, RejectsMalformedRequest)
     reply = server.exchange("POST / HTTP/1.1\r\nHost: localhost\r\nContent-Length: 1 2\r\n\r\n");
     EXPECT_TRUE( isStatus(reply, 400) ) << reply.constData();
 
+    // The server closes the connection while unread data remains, so the TCP stack may reset it and drop
+    // the 400 (Windows): check that the server closed the connection long before the timeout.
+    QElapsedTimer timer;
+    timer.start();
     reply = server.exchange("GET / HTTP/1.1\r\nHost: localhost\r\nX-Big: " + QByteArray(100 * 1024, 'a') + "\r\n\r\n");
-    EXPECT_TRUE( isStatus(reply, 400) ) << reply.constData();
+    EXPECT_TRUE( reply.isEmpty() || isStatus(reply, 400) ) << reply.constData();
+    EXPECT_LT( timer.elapsed(), 5000 );
 
     EXPECT_EQ( 0, server.requests() );
 }
@@ -363,4 +405,37 @@ TEST(QHttpServer, MethodNames)
     ASSERT_TRUE( methods.isValid() );
     EXPECT_STREQ( "HTTP_GET", methods.valueToKey(QHttpRequest::HTTP_GET) );
     EXPECT_STREQ( "HTTP_SOURCE", methods.valueToKey(QHttpRequest::HTTP_SOURCE) );
+}
+
+// A request that the handler never got (the client left before the end of the headers) leaked.
+TEST(QHttpServer, DeletesRequestOfClosedConnection)
+{
+    LoopbackHttpServer server;
+    ASSERT_TRUE( server.listening() );
+
+    QTcpSocket socket;
+    socket.connectToHost(QHostAddress::LocalHost, server.port());
+    ASSERT_TRUE( socket.waitForConnected(10000) );
+    socket.write("GET / HTTP/1.1\r\nHost: localh");
+    processEventsFor(200);
+    EXPECT_EQ( 1, server.ownedRequests() );
+
+    socket.abort();
+    processEventsFor(200);
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    EXPECT_EQ( 0, server.ownedRequests() );
+    EXPECT_EQ( 0, server.requests() );
+}
+
+// A parse error after a complete request (here "X") deleted that request, which is the handler's.
+TEST(QHttpServer, KeepsHandlerRequestAfterParseError)
+{
+    LoopbackHttpServer server;
+    ASSERT_TRUE( server.listening() );
+
+    server.setKeepRequests(true);
+    const QByteArray reply = server.exchange("GET / HTTP/1.1\r\nHost: localhost\r\nConnection: keep-alive\r\n\r\nX");
+    EXPECT_TRUE( isStatus(reply, 200) ) << reply.constData();
+    ASSERT_EQ( 1, server.keptRequests().size() );
+    EXPECT_FALSE( server.keptRequests().first().isNull() );
 }

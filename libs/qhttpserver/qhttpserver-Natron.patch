@@ -1,6 +1,6 @@
 diff -ur qhttpserver/qhttpserver.pro Natron/libs/qhttpserver/qhttpserver.pro
 --- qhttpserver/qhttpserver.pro	2016-01-27 00:33:50
-+++ Natron/libs/qhttpserver/qhttpserver.pro	2026-11-26 09:16:00
++++ Natron/libs/qhttpserver/qhttpserver.pro	2026-11-26 09:41:03
 @@ -1,8 +1,2 @@
 -CONFIG += ordered
 -
@@ -13,7 +13,7 @@ diff -ur qhttpserver/qhttpserver.pro Natron/libs/qhttpserver/qhttpserver.pro
 +SUBDIRS += src
 diff -ur qhttpserver/src/qhttpconnection.cpp Natron/libs/qhttpserver/src/qhttpconnection.cpp
 --- qhttpserver/src/qhttpconnection.cpp	2016-01-27 00:33:50
-+++ Natron/libs/qhttpserver/src/qhttpconnection.cpp	2026-11-26 09:16:00
++++ Natron/libs/qhttpserver/src/qhttpconnection.cpp	2026-11-26 09:41:03
 @@ -22,6 +22,7 @@
  
  #include "qhttpconnection.h"
@@ -51,16 +51,21 @@ diff -ur qhttpserver/src/qhttpconnection.cpp Natron/libs/qhttpserver/src/qhttpco
        m_transmitLen(0),
        m_transmitPos(0)
  {
-@@ -61,7 +78,7 @@
+@@ -61,7 +78,12 @@
  
  QHttpConnection::~QHttpConnection()
  {
 -    delete m_socket;
++    // Natron: a request that the handler never got belongs to the connection (see MessageBegin());
++    // delete it here, before ~QObject() deletes the children and the destroyed() slots run on this
++    // partially destroyed object
++    deleteUnemittedRequest();
++
 +    //delete m_socket;
      m_socket = 0;
  
      free(m_parser);
-@@ -73,8 +90,11 @@
+@@ -73,12 +95,19 @@
  
  void QHttpConnection::socketDisconnected()
  {
@@ -73,10 +78,28 @@ diff -ur qhttpserver/src/qhttpconnection.cpp Natron/libs/qhttpserver/src/qhttpco
  }
  
  void QHttpConnection::invalidateRequest()
-@@ -86,6 +106,16 @@
+ {
++    // Natron: a request that the handler never got (the client disconnected before the end of the
++    // headers) has nobody to receive end(): delete it (it leaked)
++    deleteUnemittedRequest();
++
+     if (m_request && !m_request->successful()) {
+         Q_EMIT m_request->end();
+     }
+@@ -86,6 +115,26 @@
      m_request = NULL;
  }
  
++// Natron: deletes the current request if the newRequest() handler didn't get it
++void QHttpConnection::deleteUnemittedRequest()
++{
++    if (m_request && !m_currentRequestEmitted) {
++        QHttpRequest *request = m_request;
++        m_request = NULL;
++        delete request;
++    }
++}
++
 +// Natron: the handler owns the request and may delete it at any time, also after the next pipelined
 +// request began (m_request is then that one): only forget the request that was destroyed, and don't
 +// touch it (it is being destroyed).
@@ -90,7 +113,7 @@ diff -ur qhttpserver/src/qhttpconnection.cpp Natron/libs/qhttpserver/src/qhttpco
  void QHttpConnection::updateWriteCount(qint64 count)
  {
      Q_ASSERT(m_transmitPos + count <= m_transmitLen);
-@@ -107,9 +137,33 @@
+@@ -107,9 +156,31 @@
      while (m_socket->bytesAvailable()) {
          QByteArray arr = m_socket->readAll();
          http_parser_execute(m_parser, m_parserSettings, arr.constData(), arr.size());
@@ -110,9 +133,7 @@ diff -ur qhttpserver/src/qhttpconnection.cpp Natron/libs/qhttpserver/src/qhttpco
 +    disconnect(m_socket, SIGNAL(readyRead()), this, SLOT(parseRequest()));
 +    if (!m_currentRequestEmitted) {
 +        // nobody else knows about this request
-+        QHttpRequest *request = m_request;
-+        m_request = NULL;
-+        delete request;
++        deleteUnemittedRequest();
 +        write("HTTP/1.1 400 Bad Request\r\n"
 +              "Connection: close\r\n"
 +              "Content-Length: 0\r\n"
@@ -124,18 +145,18 @@ diff -ur qhttpserver/src/qhttpconnection.cpp Natron/libs/qhttpserver/src/qhttpco
  void QHttpConnection::write(const QByteArray &data)
  {
      m_socket->write(data);
-@@ -129,7 +183,9 @@
+@@ -129,7 +200,9 @@
  void QHttpConnection::responseDone()
  {
      QHttpResponse *response = qobject_cast<QHttpResponse *>(QObject::sender());
 -    if (response->m_last)
-+    // Natron: m_socket is NULL if this is called from ~QHttpConnection() (through the destroyed() signal
-+    // and QHttpResponse::connectionClosed())
++    // Natron: defensive; QHttpResponse::connectionClosed() no longer emits done() from
++    // ~QHttpConnection() (m_socket is NULL then)
 +    if (m_socket && response->m_last)
          m_socket->disconnectFromHost();
  }
  
-@@ -178,8 +234,13 @@
+@@ -178,16 +251,23 @@
  {
      QHttpConnection *theConnection = static_cast<QHttpConnection *>(parser->data);
      theConnection->m_currentHeaders.clear();
@@ -149,7 +170,10 @@ diff -ur qhttpserver/src/qhttpconnection.cpp Natron/libs/qhttpserver/src/qhttpco
  
      // The QHttpRequest should not be parented to this, since it's memory
      // management is the responsibility of the user of the library.
-@@ -187,7 +248,7 @@
+-    theConnection->m_request = new QHttpRequest(theConnection);
++    // Natron: parented to the connection until HeadersComplete() gives it to the handler, so that it
++    // can't leak before
++    theConnection->m_request = new QHttpRequest(theConnection, theConnection);
  
      // Invalidate the request when it is deleted to prevent keep-alive requests
      // from calling a signal on a deleted object.
@@ -158,7 +182,7 @@ diff -ur qhttpserver/src/qhttpconnection.cpp Natron/libs/qhttpserver/src/qhttpco
  
      return 0;
  }
-@@ -202,21 +263,24 @@
+@@ -202,21 +282,24 @@
  
      /** set version **/
      theConnection->m_request->setVersion(
@@ -188,15 +212,16 @@ diff -ur qhttpserver/src/qhttpconnection.cpp Natron/libs/qhttpserver/src/qhttpco
      theConnection->m_request->setHeaders(theConnection->m_currentHeaders);
  
      /** set client information **/
-@@ -231,6 +295,7 @@
+@@ -231,6 +314,8 @@
      connect(response, SIGNAL(done()), theConnection, SLOT(responseDone()));
  
      // we are good to go!
 +    theConnection->m_currentRequestEmitted = true;
++    theConnection->m_request->setParent(NULL); // the handler's from now on
      Q_EMIT theConnection->newRequest(theConnection->m_request, response);
      return 0;
  }
-@@ -239,10 +304,12 @@
+@@ -239,10 +324,15 @@
  {
      // TODO: do cleanup and prepare for next request
      QHttpConnection *theConnection = static_cast<QHttpConnection *>(parser->data);
@@ -209,11 +234,14 @@ diff -ur qhttpserver/src/qhttpconnection.cpp Natron/libs/qhttpserver/src/qhttpco
 +        theConnection->m_request->setSuccessful(true);
 +        Q_EMIT theConnection->m_request->end();
 +    }
++    // Natron: the request is complete and the handler's: forget it (deleteUnemittedRequest() must not
++    // delete it, e.g. on a parse error before the next request)
++    theConnection->m_request = NULL;
 +    theConnection->m_currentRequestEmitted = false;
      return 0;
  }
  
-@@ -262,16 +329,10 @@
+@@ -262,16 +352,10 @@
  
      // insert the header we parsed previously
      // into the header map
@@ -234,7 +262,7 @@ diff -ur qhttpserver/src/qhttpconnection.cpp Natron/libs/qhttpserver/src/qhttpco
      }
  
      QString fieldSuffix = QString::fromLatin1(at, length);
-@@ -286,13 +347,35 @@
+@@ -286,13 +370,35 @@
  
      QString valueSuffix = QString::fromLatin1(at, length);
      theConnection->m_currentHeaderValue += valueSuffix;
@@ -273,8 +301,8 @@ diff -ur qhttpserver/src/qhttpconnection.cpp Natron/libs/qhttpserver/src/qhttpco
      return 0;
 diff -ur qhttpserver/src/qhttpconnection.h Natron/libs/qhttpserver/src/qhttpconnection.h
 --- qhttpserver/src/qhttpconnection.h	2016-01-27 00:33:50
-+++ Natron/libs/qhttpserver/src/qhttpconnection.h	2026-11-26 09:16:00
-@@ -51,9 +51,13 @@
++++ Natron/libs/qhttpserver/src/qhttpconnection.h	2026-11-26 09:41:03
+@@ -51,9 +51,14 @@
      void responseDone();
      void socketDisconnected();
      void invalidateRequest();
@@ -283,12 +311,13 @@ diff -ur qhttpserver/src/qhttpconnection.h Natron/libs/qhttpserver/src/qhttpconn
  
  private:
 +    void rejectMalformedRequest();
++    void deleteUnemittedRequest();
 +    void insertCurrentHeader();
 +
      static int MessageBegin(http_parser *parser);
      static int Url(http_parser *parser, const char *at, size_t length);
      static int HeaderField(http_parser *parser, const char *at, size_t length);
-@@ -75,6 +79,11 @@
+@@ -75,6 +80,11 @@
      HeaderHash m_currentHeaders;
      QString m_currentHeaderField;
      QString m_currentHeaderValue;
@@ -302,7 +331,7 @@ diff -ur qhttpserver/src/qhttpconnection.h Natron/libs/qhttpserver/src/qhttpconn
      qint64 m_transmitLen;
 diff -ur qhttpserver/src/qhttprequest.cpp Natron/libs/qhttpserver/src/qhttprequest.cpp
 --- qhttpserver/src/qhttprequest.cpp	2016-01-27 00:33:50
-+++ Natron/libs/qhttpserver/src/qhttprequest.cpp	2026-11-26 09:16:00
++++ Natron/libs/qhttpserver/src/qhttprequest.cpp	2026-11-26 09:41:03
 @@ -25,7 +25,7 @@
  #include "qhttpconnection.h"
  
@@ -332,7 +361,7 @@ diff -ur qhttpserver/src/qhttprequest.cpp Natron/libs/qhttpserver/src/qhttpreque
  void QHttpRequest::appendBody(const QByteArray &body)
 diff -ur qhttpserver/src/qhttprequest.h Natron/libs/qhttpserver/src/qhttprequest.h
 --- qhttpserver/src/qhttprequest.h	2016-01-27 00:33:50
-+++ Natron/libs/qhttpserver/src/qhttprequest.h	2026-11-26 09:16:00
++++ Natron/libs/qhttpserver/src/qhttprequest.h	2026-11-26 09:41:03
 @@ -46,13 +46,11 @@
      Q_PROPERTY(HeaderHash headers READ headers)
      Q_PROPERTY(QString remoteAddress READ remoteAddress)
@@ -380,7 +409,7 @@ diff -ur qhttpserver/src/qhttprequest.h Natron/libs/qhttpserver/src/qhttprequest
      HttpMethod method() const;
 diff -ur qhttpserver/src/qhttpresponse.cpp Natron/libs/qhttpserver/src/qhttpresponse.cpp
 --- qhttpserver/src/qhttpresponse.cpp	2016-01-27 00:33:50
-+++ Natron/libs/qhttpserver/src/qhttpresponse.cpp	2026-11-26 09:16:00
++++ Natron/libs/qhttpserver/src/qhttpresponse.cpp	2026-11-26 09:41:03
 @@ -28,6 +28,8 @@
  #include "qhttpserver.h"
  #include "qhttpconnection.h"
@@ -533,18 +562,18 @@ diff -ur qhttpserver/src/qhttpresponse.cpp Natron/libs/qhttpserver/src/qhttpresp
      m_connection->write(data);
  }
  
-+// Natron: m_connection may be deleted once the response is finished (see connectionClosed())
++// Natron: the connection may be deleted (see connectionClosed())
  void QHttpResponse::flush()
  {
 -    m_connection->flush();
-+    if (!m_finished)
++    if (m_connection)
 +        m_connection->flush();
  }
  
  void QHttpResponse::waitForBytesWritten()
  {
 -    m_connection->waitForBytesWritten();
-+    if (!m_finished)
++    if (m_connection)
 +        m_connection->waitForBytesWritten();
  }
  
@@ -557,9 +586,50 @@ diff -ur qhttpserver/src/qhttpresponse.cpp Natron/libs/qhttpserver/src/qhttpresp
          return;
      }
  
+@@ -191,6 +219,7 @@
+ void QHttpResponse::connectionClosed()
+ {
+     m_finished = true;
+-    Q_EMIT done();
++    // Natron: no done(): this runs from ~QHttpConnection() (its destroyed() signal), and done()'s
++    // receiver is that connection (QHttpConnection::responseDone()), already destroyed
+     deleteLater();
+ }
+diff -ur qhttpserver/src/qhttpresponse.h Natron/libs/qhttpserver/src/qhttpresponse.h
+--- qhttpserver/src/qhttpresponse.h	2016-01-27 00:33:50
++++ Natron/libs/qhttpserver/src/qhttpresponse.h	2026-11-26 09:41:03
+@@ -27,6 +27,7 @@
+ #include "qhttpserverfwd.h"
+ 
+ #include <QObject>
++#include <QPointer>
+ 
+ /// The QHttpResponse class handles sending data back to the client as a response to a request.
+ /** The steps to respond correctly are
+@@ -142,7 +143,9 @@
+     /// Emitted when the response is finished.
+     /** You should <b>not</b> interact with this object
+         after done() has been emitted as the object
+-        has already been scheduled for deletion. */
++        has already been scheduled for deletion.
++        (Natron: not emitted if the connection is deleted before end(); the
++        response is then scheduled for deletion too.) */
+     void done();
+ 
+ private:
+@@ -151,7 +154,8 @@
+     void writeHeaders();
+     void writeHeader(const char *field, const QString &value);
+ 
+-    QHttpConnection *m_connection;
++    // Natron: QPointer, NULL once the connection is deleted (flush(), waitForBytesWritten())
++    QPointer<QHttpConnection> m_connection;
+ 
+     HeaderHash m_headers;
+ 
 diff -ur qhttpserver/src/qhttpserver.cpp Natron/libs/qhttpserver/src/qhttpserver.cpp
 --- qhttpserver/src/qhttpserver.cpp	2016-01-27 00:33:50
-+++ Natron/libs/qhttpserver/src/qhttpserver.cpp	2026-11-26 09:16:00
++++ Natron/libs/qhttpserver/src/qhttpserver.cpp	2026-11-26 09:41:03
 @@ -33,7 +33,7 @@
  
  QHttpServer::QHttpServer(QObject *parent) : QObject(parent), m_tcpServer(0)
@@ -596,7 +666,7 @@ diff -ur qhttpserver/src/qhttpserver.cpp Natron/libs/qhttpserver/src/qhttpserver
  void QHttpServer::close()
 diff -ur qhttpserver/src/qhttpserver.h Natron/libs/qhttpserver/src/qhttpserver.h
 --- qhttpserver/src/qhttpserver.h	2016-01-27 00:33:50
-+++ Natron/libs/qhttpserver/src/qhttpserver.h	2026-11-26 09:16:00
++++ Natron/libs/qhttpserver/src/qhttpserver.h	2026-11-26 09:41:03
 @@ -66,19 +66,24 @@
  
      /// Start the server by bounding to the given @c address and @c port.
@@ -639,7 +709,7 @@ diff -ur qhttpserver/src/qhttpserver.h Natron/libs/qhttpserver/src/qhttpserver.h
      void newConnection();
 diff -ur qhttpserver/src/qhttpserverapi.h Natron/libs/qhttpserver/src/qhttpserverapi.h
 --- qhttpserver/src/qhttpserverapi.h	2016-01-27 00:33:50
-+++ Natron/libs/qhttpserver/src/qhttpserverapi.h	2026-11-26 09:16:00
++++ Natron/libs/qhttpserver/src/qhttpserverapi.h	2026-11-26 09:41:03
 @@ -25,32 +25,19 @@
  
  #include <QtGlobal>
@@ -689,7 +759,7 @@ diff -ur qhttpserver/src/qhttpserverapi.h Natron/libs/qhttpserver/src/qhttpserve
 +#endif // Q_HTTP_SERVER_API
 diff -ur qhttpserver/src/src.pro Natron/libs/qhttpserver/src/src.pro
 --- qhttpserver/src/src.pro	2016-01-27 00:33:50
-+++ Natron/libs/qhttpserver/src/src.pro	2026-11-26 09:16:00
++++ Natron/libs/qhttpserver/src/src.pro	2026-11-26 09:41:03
 @@ -1,7 +1,6 @@
 -include(../qhttpserver.pri)
 -
