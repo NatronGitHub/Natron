@@ -248,9 +248,7 @@ Documentation/source/devel/openfx/
 Engine.xcodeproj/
 Gui.xcodeproj/
 HostSupport.xcodeproj/
-Natron-bin.xcodeproj/
 Natron.xcodeproj/
-NatronRenderer-bin.xcodeproj/
 NatronRenderer.xcodeproj/
 Project.xcodeproj/
 PythonBin/natron-python

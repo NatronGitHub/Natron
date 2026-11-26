@@ -38,11 +38,9 @@ resilience:
   Autosave is triggered on inactivity and after significant edits. On startup
   Natron detects a leftover autosave and offers to recover it
   (``loadProject(..., attemptToLoadAutosave)``).
-- ``ExistenceCheckerThread`` implements a liveness ping between cooperating
-  processes; it emits ``otherProcessUnreachable()`` when the peer disappears.
-  Combined with rendering in a separate process (``ProcessHandler``,
-  ``ProcessInputChannel``), this is how a crash in a render process does not
-  take the GUI down with it, and vice-versa.
+- Rendering in a separate process (``ProcessHandler``,
+  ``ProcessInputChannel``) is how a crash in a render process does not take
+  the GUI down with it.
 
 If you change the project model or the save path, verify that autosave and
 recovery still round-trip — this is a data-safety feature.

@@ -50,14 +50,10 @@ if [ "$FAIL" = "0" ]; then
     if [ "$PKGOS" = "Windows" ] && [ "${BITS}" = "64" ]; then
         # On windows, we clean up dangling NatronRenderer processes first
         # sometimes NatronRenderer just hangs. Try taskkill first, then tskill if it fails because of a message like:
-        # $ taskkill -f -im NatronRenderer-bin.exe -t
+        # $ taskkill -f -im NatronRenderer.exe -t
         # ERROR: The process with PID 3260 (child process of PID 3816) could not be terminated.
         # Reason: There is no running instance of the task.
         # mapfile use: see https://github.com/koalaman/shellcheck/wiki/SC2207
-        mapfile -t processes < <(taskkill -f -im NatronRenderer-bin.exe -t 2>&1 |grep "ERROR: The process with PID"| awk '{print $6}' || true)
-        for p in "${processes[@]}"; do
-            tskill "$p" || true
-        done
         mapfile -t processes < <(taskkill -f -im NatronRenderer.exe -t 2>&1 |grep "ERROR: The process with PID"| awk '{print $6}' || true)
         for p in "${processes[@]}"; do
             tskill "$p" || true
@@ -79,12 +75,9 @@ if [ "$FAIL" = "0" ]; then
         if [ ! -f "$ocio" ]; then
             printStatusMessage "*** Error: OCIO file $ocio is missing"
         fi
-        bin="$TMP_PORTABLE_DIR/bin/NatronRenderer-bin"
+        bin="$TMP_PORTABLE_DIR/bin/NatronRenderer"
         if [ ! -f "$bin" ]; then
-            bin="$TMP_PORTABLE_DIR/bin/NatronRenderer"
-            if [ ! -f "$bin" ]; then
-                printStatusMessage "*** Error: NatronRenderer binary $bin is missing"
-            fi
+            printStatusMessage "*** Error: NatronRenderer binary $bin is missing"
         fi
         env SRCDIR="$SRC_PATH" OCIO="$ocio" FFMPEG="$TMP_PORTABLE_DIR/bin/ffmpeg" COMPARE="$TMP_PORTABLE_DIR/bin/idiff"  $TIMEOUT -s KILL 7200 bash runTests.sh "$bin" || FAIL=$?
         #FAIL=0
@@ -96,23 +89,16 @@ if [ "$FAIL" = "0" ]; then
         if [ ! -f "$ocio" ]; then
             echo "*** Error: OCIO file $ocio is missing"
         fi
-        bin="$TMP_PORTABLE_DIR/bin/NatronRenderer-bin.exe"
+        bin="$TMP_PORTABLE_DIR/bin/NatronRenderer.exe"
         if [ ! -f "$bin" ]; then
-            bin="$TMP_PORTABLE_DIR/bin/NatronRenderer.exe"
-            if [ ! -f "$bin" ]; then
-                echo "*** Error: NatronRenderer binary $bin is missing" >> "$ULOG"
-            fi
+            echo "*** Error: NatronRenderer binary $bin is missing" >> "$ULOG"
         fi
         env SRCDIR="$SRC_PATH" OCIO="$ocio" FFMPEG="$TMP_PORTABLE_DIR/bin/ffmpeg.exe" COMPARE="$TMP_PORTABLE_DIR/bin/idiff.exe" $TIMEOUT -s KILL 7200 bash runTests.sh "$bin" || FAIL=$?
         # sometimes NatronRenderer just hangs. Try taskkill first, then tskill if it fails because of a message like:
-        # $ taskkill -f -im NatronRenderer-bin.exe -t
+        # $ taskkill -f -im NatronRenderer.exe -t
         # ERROR: The process with PID 3260 (child process of PID 3816) could not be terminated.
         # Reason: There is no running instance of the task.
         # mapfile use: see https://github.com/koalaman/shellcheck/wiki/SC2207
-        mapfile -t processes < <(taskkill -f -im NatronRenderer-bin.exe -t 2>&1 |grep "ERROR: The process with PID"| awk '{print $6}' || true)
-        for p in "${processes[@]}"; do
-            tskill "$p" || true
-        done
         mapfile -t processes < <(taskkill -f -im NatronRenderer.exe -t 2>&1 |grep "ERROR: The process with PID"| awk '{print $6}' || true)
         for p in "${processes[@]}"; do
             tskill "$p" || true
@@ -125,12 +111,9 @@ if [ "$FAIL" = "0" ]; then
         if [ ! -f "$ocio" ]; then
             echo "*** Error: OCIO file $ocio is missing"
         fi
-        bin="${TMP_PORTABLE_DIR}.app/Contents/MacOS/NatronRenderer-bin"
+        bin="${TMP_PORTABLE_DIR}.app/Contents/MacOS/NatronRenderer"
         if [ ! -f "$bin" ]; then
-            bin="${TMP_PORTABLE_DIR}.app/Contents/MacOS/NatronRenderer"
-            if [ ! -f "$bin" ]; then
-                echo "*** Error: NatronRenderer binary $bin is missing"
-            fi
+            echo "*** Error: NatronRenderer binary $bin is missing"
         fi
         env SRCDIR="$SRC_PATH" OCIO="$ocio" FFMPEG="${TMP_PORTABLE_DIR}.app/Contents/MacOS/ffmpeg" COMPARE="${TMP_PORTABLE_DIR}.app/Contents/MacOS/idiff" $TIMEOUT -s KILL 7200 bash runTests.sh "$bin" || FAIL=$?
         #FAIL=0
