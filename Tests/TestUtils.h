@@ -98,7 +98,7 @@ isPluginAvailable(const std::string& pluginID)
 
 // false, and the test is skipped, if one of the plug-ins was not loaded. bundle says where they come
 // from, e.g. "openfx-misc".
-inline bool
+[[nodiscard]] inline bool
 requirePlugins(std::initializer_list<const char*> pluginIDs,
                const char* bundle)
 {
@@ -205,7 +205,7 @@ struct ProjectResetScope
 // that can render: e.g. on the Linux CI (Xvfb, Mesa llvmpipe), OSGLContext_x11::getGPUInfos() skips the
 // renderers that are not accelerated, so the "OpenGL Rendering" preference is hidden and
 // Settings::isOpenGLRenderingEnabled() is always false.
-inline bool
+[[nodiscard]] inline bool
 requireOpenGLRendering()
 {
     if ( !NATRON_NAMESPACE::appPTR->isOpenGLLoaded() ) {
