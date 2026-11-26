@@ -501,8 +501,8 @@ without rendering anything::
 extension of the format (``.ntp`` for text and binary, ``.py`` for Python): a mismatch is
 refused. Without ``dst``, the project is saved as ``src`` with that extension: ``src`` itself if
 it has it, else a file next to it (``in.ntp`` converted to Python is saved as ``in.py``), which
-must not exist: pass ``dst`` to replace a file. The exit status is 0 if the project was converted, 1 otherwise, with the reason printed. In a
-script, ``convert()`` takes the same arguments, raises an exception instead, and doesn't quit;
+must not exist: pass ``dst`` to replace a file. The exit status is 0 if the project was
+converted, 1 otherwise, with the reason printed. In a script, ``convert()`` takes the same arguments, raises an exception instead, and doesn't quit;
 end the script with ``natron.quit(status)``, with a non-zero status if a conversion failed:
 without ``natron.quit()``, the prompt starts and exits with status 0. The project is not
 converted if it loads with errors (see :meth:`App.projectLoadedWithErrors<NatronEngine.App.projectLoadedWithErrors>`), or if it

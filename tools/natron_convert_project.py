@@ -113,7 +113,7 @@ def convert(src: str, dst: str | None = None, to: str = "text",
             of dst is not the one of its format.
         FileNotFoundError: src is not a file.
         FileExistsError: dst is None, and the file next to src that it
-            stands for exists.
+            stands for exists (a file or a directory).
         IsADirectoryError: dst is a directory.
         RuntimeError: Natron is not in background mode; the project could
             not be loaded, or loaded with errors; it has GUI data and
@@ -260,8 +260,8 @@ def convert_and_quit(src: str, dst: str | None = None, to: str = "text",
         discard_gui: See convert().
 
     Raises:
-        ValueError, FileNotFoundError, IsADirectoryError, RuntimeError: See
-            convert().
+        ValueError, FileNotFoundError, FileExistsError, IsADirectoryError,
+            RuntimeError: See convert().
     """
     convert(src, dst, to, discard_gui)
     natron.quit(0)
