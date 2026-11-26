@@ -148,6 +148,8 @@ jobs:
           TEST_RESULTS_NAME="${INSTALLER_NAME}-tests"
           echo "TEST_RESULTS_NAME=${TEST_RESULTS_NAME}" >> $GITHUB_OUTPUT
           echo "TEST_RESULTS_FILE=$(cygpath -m ${TEST_RESULTS_FILE})" >> $GITHUB_OUTPUT
+          # runTests.sh's summary.txt (the counts and RESULT: PASS or FAIL)
+          echo "TEST_SUMMARY_FILE=$(cygpath -m ${ARCHIVE_DIR}/${INSTALLER_NAME}-tests-summary.txt)" >> $GITHUB_OUTPUT
 
           # runUnitTests.sh zips the failed tests' outputs (only if a test failed)
           TEST_FAILURES_ZIP="${ARCHIVE_DIR}/${INSTALLER_NAME}-unit_tests_failures.zip"
@@ -223,7 +225,9 @@ jobs:
         uses: actions/upload-artifact@v4.3.1
         with:
           name:  ${{ steps.build.outputs.TEST_RESULTS_NAME }}
-          path:  ${{ steps.build.outputs.TEST_RESULTS_FILE }}
+          path: |
+            ${{ steps.build.outputs.TEST_RESULTS_FILE }}
+            ${{ steps.build.outputs.TEST_SUMMARY_FILE }}
           retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
 
       - name: Upload test failures
@@ -233,26 +237,6 @@ jobs:
           path:  ${{ steps.build.outputs.TEST_FAILURES_ZIP }}
           if-no-files-found: ignore
           retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
-
-      - name: Report the Natron-Tests results
-        # launchBuildMain.sh doesn't fail the build when Natron-Tests fails (the Windows known
-        # failures aren't checked with 2.6 yet, #1629): show the counts in the job summary, an
-        # error annotation for each known failure that passed (UNEXPECTED PASS: update
-        # Natron-Tests' known_failures/) and a warning for each other failure
-        run: |
-          RESULTS=$(cygpath -u '${{ steps.build.outputs.TEST_RESULTS_FILE }}')
-          if [ ! -f "${RESULTS}" ]; then echo "::warning::no Natron-Tests results (${RESULTS})"; exit 0; fi
-          count() { grep -c " : $1\$" "${RESULTS}" || true; }
-          {
-            echo "## Natron-Tests (${{ matrix.msystem }})"
-            echo "PASS: $(count PASS), FAIL: $(count FAIL), KNOWN FAIL: $(count 'KNOWN FAIL'), UNEXPECTED PASS: $(count 'UNEXPECTED PASS')"
-          } >> $GITHUB_STEP_SUMMARY
-          sed -n -e 's/ : UNEXPECTED PASS$//p' "${RESULTS}" | while IFS= read -r t; do
-            echo "::error::Natron-Tests: $t is a known failure that passed (UNEXPECTED PASS): remove it from Natron-Tests' known_failures/"
-          done
-          sed -n -e 's/ : FAIL$//p' "${RESULTS}" | while IFS= read -r t; do
-            echo "::warning::Natron-Tests: $t failed and isn't a known failure"
-          done
 
       - name: Verify plugin loading
         run: |
@@ -434,9 +418,36 @@ jobs:
           path: |
             ${{ steps.build.outputs.INSTALLER_ZIP }}
             ${{ steps.build.outputs.TEST_RESULTS_FILE }}
+            ${{ steps.build.outputs.TEST_SUMMARY_FILE }}
             ${{ steps.build.outputs.TEST_FAILURES_ZIP }}
           compression-level: 0
           retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+
+      - name: Check the Natron-Tests results
+        # Last, so that every other check and upload runs first. launchBuildMain.sh doesn't fail the
+        # build when Natron-Tests fails. A known failure that passed (UNEXPECTED PASS) fails the job:
+        # Natron-Tests' known_failures/ lists must be updated. Other failures are only warnings, as
+        # long as the Windows known failures aren't checked against a 2.6 run (#1629).
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: |
+          RESULTS=$(cygpath -u '${{ steps.build.outputs.TEST_RESULTS_FILE }}')
+          SUMMARY=$(cygpath -u '${{ steps.build.outputs.TEST_SUMMARY_FILE }}')
+          # summary.txt is written last: without it, runTests.sh did not finish (killed by its
+          # timeout, for example) and result.txt has the raw PASS/FAIL lines, known failures included
+          if [ ! -f "${SUMMARY}" ]; then echo "::error::no Natron-Tests summary (${SUMMARY}): Natron-Tests did not finish"; exit 1; fi
+          {
+            echo "## Natron-Tests (${{ matrix.msystem }})"
+            echo '```'
+            cat "${SUMMARY}"
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
+          sed -n -e 's/ : FAIL$//p' "${RESULTS}" | while IFS= read -r t; do
+            echo "::warning::Natron-Tests: $t failed and isn't a known failure"
+          done
+          sed -n -e 's/ : UNEXPECTED PASS$//p' "${RESULTS}" | while IFS= read -r t; do
+            echo "::error::Natron-Tests: $t is a known failure that passed (UNEXPECTED PASS): remove it from Natron-Tests' known_failures/"
+          done
+          ! grep -q '^UNEXPECTED PASS: [1-9]' "${SUMMARY}"
 
   # pre-release tags only (v*-alpha*, -beta*, -rc*, -RC*, as linux_packages.yml and macos_x86_64.yml):
   # attach the portable zip (with Setup.exe) and the test results to the GitHub pre-release
@@ -468,4 +479,4 @@ jobs:
         run: |
           ls -l assets
           shopt -s nullglob
-          .github/workflows/attach_to_prerelease.sh "$GITHUB_REF_NAME" assets/*.zip assets/*-tests.txt
+          .github/workflows/attach_to_prerelease.sh "$GITHUB_REF_NAME" assets/*.zip assets/*-tests.txt assets/*-tests-summary.txt

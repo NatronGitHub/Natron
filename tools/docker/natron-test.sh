@@ -13,10 +13,10 @@
 # DOCKER (default: docker) can be set to podman. TEST=TestFoo or TESTCUSTOM=TestBar run a single
 # test (see runTests.sh); the results are then named <name>-partial-<test>-*.
 # runTests.sh reports the tests listed in Natron-Tests' known_failures/common.txt and linux.txt as
-# "KNOWN FAIL", and those of them that passed as "UNEXPECTED PASS".
+# "KNOWN FAIL", and those of them that passed as "UNEXPECTED PASS" (also arm64.txt or x86_64.txt).
 # Exit status: 0 if every test passed or is a known failure, 1 otherwise: a test failed that isn't
-# a known failure, a known failure passed (UNEXPECTED PASS), or the suite did not run. Results, named after the archive (<name> is the archive name without -no-installer.tar.xz),
-# as in the Natron release assets:
+# a known failure, a known failure passed (UNEXPECTED PASS), or the suite did not run.
+# Results, named after the archive (<name> is the archive name without -no-installer.tar.xz):
 #   <name>-tests.txt                  runTests.sh's result.txt
 #   <name>-unit_tests_failures.zip    the failed tests' outputs and references
 #   <name>-tests.log                  runTests.sh's output
