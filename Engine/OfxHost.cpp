@@ -644,17 +644,8 @@ OfxHost::vmessage(const char* msgtype,
 
             return kOfxStatFailed;
         }
-        switch ( Dialogs::questionDialog(NATRON_APPLICATION_NAME, message, false) ) {
-        case eStandardButtonYes:
-
-            return kOfxStatReplyYes;
-        case eStandardButtonNo:
-
-            return kOfxStatReplyNo;
-        default:
-
-            return kOfxStatFailed;
-        }
+        // as Node::question(): any reply but yes (no, the dialog dismissed) is no
+        return Dialogs::questionDialog(NATRON_APPLICATION_NAME, message, false) == eStandardButtonYes ? kOfxStatReplyYes : kOfxStatReplyNo;
     } else {
         // not one of the kOfxMessage* types: "kOfxStatFailed - if the message could not be posted for
         // some reason" (ofxMessage.h)
