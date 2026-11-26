@@ -254,8 +254,9 @@ TEST_F(OfxChoiceOrderTest, NaturalOrder)
     EXPECT_EQ( Order(expected, expected + 3), orderProperty( paramProperties(_node, "natural") ) );
 }
 
-// With fewer values than options, the order is completed with the indices of the other options: 5, 1 for P, Q, R
-// is 5, 1, 2, displayed as Q, R, P.
+// The plug-in sets the order of only some options (5 and 1 on P and Q of P, Q, R): the others keep their index
+// (5, 1, 2), displayed as Q, R, P. An instance order with fewer values than options (5, 1) is completed the same
+// way.
 TEST_F(OfxChoiceOrderTest, PartialOrder)
 {
     SKIP_IF_NO_PLUGIN();
@@ -267,6 +268,18 @@ TEST_F(OfxChoiceOrderTest, PartialOrder)
     EXPECT_EQ( Order(expected, expected + 3), partial->getExplicitDisplayOrder_mt_safe() );
     const char* const labels[] = { "Q", "R", "P" };
     EXPECT_EQ( strings(labels, 3), displayedLabels(partial) );
+
+    // the natural param's instance, with a short order
+    KnobChoicePtr natural = choiceKnob(_node, "natural");
+    ASSERT_TRUE( bool(natural) );
+    OfxPropertySetHandle props = paramProperties(_node, "natural");
+    ASSERT_TRUE(props != 0);
+    const int shortOrder[] = { 5, 1 };
+    ASSERT_EQ( kOfxStatOK, NatronTestPlugin::propertySuite()->propSetIntN(props, kOfxParamPropChoiceOrder, 2, shortOrder) );
+    EXPECT_EQ( Order(values, values + 3), orderProperty(props) );
+    EXPECT_EQ( Order(expected, expected + 3), natural->getExplicitDisplayOrder_mt_safe() );
+    const char* const naturalLabels[] = { "Y", "Z", "X" };
+    EXPECT_EQ( strings(naturalLabels, 3), displayedLabels(natural) );
 }
 
 // The same value twice (0, 1, 0: the plug-in set 0 as the order of C) is undefined behaviour: Natron keeps the
@@ -383,6 +396,35 @@ TEST_F(OfxChoiceOrderTest, Reset)
     EXPECT_TRUE( orderProperty(_orderedProps).empty() );
     EXPECT_TRUE( _ordered->getEntries_mt_safe().empty() );
     EXPECT_TRUE( _ordered->getDisplayOrder_mt_safe().empty() );
+}
+
+// A copy of a param (KnobI::createDuplicateOnHolder(), e.g. a param exported to a group) takes its explicit display
+// order: none for a param without an order (0..n-1), the plug-in's order otherwise.
+TEST_F(OfxChoiceOrderTest, CopyTakesExplicitOrder)
+{
+    SKIP_IF_NO_PLUGIN();
+    NodePtr other = createChoiceOrderNode();
+    ASSERT_TRUE( bool(other) );
+    KnobChoicePtr natural = choiceKnob(_node, "natural");
+    ASSERT_TRUE( bool(natural) );
+    KnobChoicePtr naturalCopy = std::dynamic_pointer_cast<KnobChoice>(
+        natural->createDuplicateOnHolder(other->getEffectInstance().get(), KnobPagePtr(), KnobGroupPtr(), -1,
+                                         false /*makeAlias*/, "naturalCopy", "naturalCopy", std::string(),
+                                         true /*refreshParams*/, true /*isUserKnob*/) );
+    ASSERT_TRUE( bool(naturalCopy) );
+    EXPECT_TRUE( naturalCopy->getExplicitDisplayOrder_mt_safe().empty() );
+    EXPECT_EQ( displayedLabels(natural), displayedLabels(naturalCopy) );
+    KnobChoicePtr orderedCopy = std::dynamic_pointer_cast<KnobChoice>(
+        _ordered->createDuplicateOnHolder(other->getEffectInstance().get(), KnobPagePtr(), KnobGroupPtr(), -1,
+                                          false /*makeAlias*/, "orderedCopy", "orderedCopy", std::string(),
+                                          true /*refreshParams*/, true /*isUserKnob*/) );
+    ASSERT_TRUE( bool(orderedCopy) );
+    const int expected[] = { 0, 1, 3, 2 };
+    EXPECT_EQ( Order(expected, expected + 4), orderedCopy->getExplicitDisplayOrder_mt_safe() );
+    EXPECT_EQ( displayedLabels(_ordered), displayedLabels(orderedCopy) );
+    naturalCopy.reset();
+    orderedCopy.reset();
+    destroy(other);
 }
 
 // The display order doesn't change what the project stores (the index and the option string), and a project

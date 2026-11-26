@@ -21,8 +21,8 @@
 // - ordered: options OptA, OptB, OptC, NewOpt with the order 0, 10, 30, 20 (the example of ofxParameter.rst,
 //   with values that are not consecutive): displayed as OptA, OptB, NewOpt, OptC;
 // - natural: options X, Y, Z, without an order (OFX 1.5.1's default: 0, 1, 2);
-// - partialOrder: options P, Q, R, with only two order values, 5 and 1 (HostSupport completes the others
-//   with their index: 5, 1, 2);
+// - partialOrder: options P, Q, R, then the order values 5 and 1 set on the first two options (the third
+//   keeps its index: 5, 1, 2);
 // - duplicate: options A, B, C, and 0 set as the order of C (0, 1, 0: the same value twice, undefined
 //   behaviour; the host must not crash).
 // Counters ("ChoiceOrder.*"): orderSet / orderFailed (the status of propSetInt for the order of "ordered":

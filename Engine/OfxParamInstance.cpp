@@ -1795,7 +1795,7 @@ OfxChoiceInstance::setOption(int num)
     assert(num == dim - 1 || num == dim);
 
     if ( num == (dim - 1) ) {
-        // displayed last; the plug-in may set its kOfxParamPropChoiceOrder next (notify())
+        // HostSupport then gives the new option its index as kOfxParamPropChoiceOrder (notify())
         knob->appendChoice( choiceOptionFromProperties(getProperties(), num) );
     } else if (num == dim) {
         assert(getProperties().getDimension(kOfxParamPropChoiceLabelOption) == 0 || getProperties().getDimension(kOfxParamPropChoiceLabelOption) == dim);
