@@ -1247,26 +1247,26 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     return getRoDAndLookupCache(true, viewerHash, rotoPaintNode, stats, outArgs);
 }
 
-// Auto contrast: the gain and offset that map [vmin, vmax], the range of the displayed channels, to [0, 1].
-// vmin > vmax: the RoI is empty, no range was found.
-static void
-setAutoContrastGainOffset(double vmin,
-                          double vmax,
-                          UpdateViewerParams* updateParams)
+AutoContrastGainOffset
+autoContrastGainOffset(const MinMaxVal& range)
 {
-    if (vmin > vmax) {
-        vmin = 0.;
-        vmax = 1.;
-    } else if (vmin == vmax) {
-        vmin = vmax - 1.;
+    AutoContrastGainOffset ret = { 1., 0. }; // an empty RoI (min > max): no range was found
+    if (range.min == range.max) {
+        // a constant image: shown white if it is positive, black otherwise
+        if (range.max > 0) {
+            ret.gain = 1.;
+            ret.offset = 1. - range.max;
+        } else {
+            ret.gain = 0.;
+            ret.offset = 0.;
+        }
+    } else if (range.min < range.max) {
+        // the full range of the image, whatever its sign
+        ret.gain = 1. / (range.max - range.min);
+        ret.offset = -range.min / (range.max - range.min);
     }
-    if (vmax <= 0) {
-        updateParams->gain = 0;
-        updateParams->offset = 0;
-    } else {
-        updateParams->gain = 1 / (vmax - vmin);
-        updateParams->offset = -vmin / (vmax - vmin);
-    }
+
+    return ret;
 }
 
 ViewerInstance::ViewerRenderRetCode
@@ -1798,7 +1798,9 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         if (singleThreaded) {
             if (inArgs.autoContrast && !inArgs.isDoingPartialUpdates) {
                 const MinMaxVal vMinMax = findAutoContrastVminVmax(colorImage, lutFromColorspace(srcColorSpace), inArgs.channels, alphaChannelIndex, viewerRenderRoI);
-                setAutoContrastGainOffset(vMinMax.min, vMinMax.max, updateParams.get());
+                const AutoContrastGainOffset go = autoContrastGainOffset(vMinMax);
+                updateParams->gain = go.gain;
+                updateParams->offset = go.offset;
             }
 
             const RenderViewerArgs args(colorImage,
@@ -1856,7 +1858,9 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                     }
                 } // runInCurrentThread
 
-                setAutoContrastGainOffset(vmin, vmax, updateParams.get());
+                const AutoContrastGainOffset go = autoContrastGainOffset( MinMaxVal(vmin, vmax) );
+                updateParams->gain = go.gain;
+                updateParams->offset = go.offset;
             }
 
             const RenderViewerArgs args(colorImage,

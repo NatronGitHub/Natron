@@ -418,3 +418,29 @@ TEST(ProjectLut, ChoiceIndexToColorSpace)
         lut->setValue(oldValue);
     }
 }
+
+// Auto contrast shows the full range of the image, even if it is negative; only a constant non-positive image is
+// shown black (the multi-threaded path blackened every image whose maximum is <= 0, e.g. motion vectors).
+TEST(ViewerTexture, AutoContrastGainOffset)
+{
+    // an all-negative ramp: -3 -> 0, -1 -> 1
+    AutoContrastGainOffset go = autoContrastGainOffset( MinMaxVal(-3., -1.) );
+    EXPECT_DOUBLE_EQ( 0., -3. * go.gain + go.offset );
+    EXPECT_DOUBLE_EQ( 1., -1. * go.gain + go.offset );
+    // a range across 0
+    go = autoContrastGainOffset( MinMaxVal(-1., 3.) );
+    EXPECT_DOUBLE_EQ( 0., -1. * go.gain + go.offset );
+    EXPECT_DOUBLE_EQ( 1., 3. * go.gain + go.offset );
+    // constant images: black if <= 0, white if positive
+    go = autoContrastGainOffset( MinMaxVal(-2., -2.) );
+    EXPECT_DOUBLE_EQ( 0., -2. * go.gain + go.offset );
+    go = autoContrastGainOffset( MinMaxVal(0., 0.) );
+    EXPECT_DOUBLE_EQ( 0., go.gain );
+    EXPECT_DOUBLE_EQ( 0., go.offset );
+    go = autoContrastGainOffset( MinMaxVal(2., 2.) );
+    EXPECT_DOUBLE_EQ( 1., 2. * go.gain + go.offset );
+    // an empty RoI: no change
+    go = autoContrastGainOffset( MinMaxVal() );
+    EXPECT_DOUBLE_EQ( 1., go.gain );
+    EXPECT_DOUBLE_EQ( 0., go.offset );
+}
