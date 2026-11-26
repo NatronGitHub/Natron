@@ -667,13 +667,20 @@ inform the user of various information, warnings or errors.
     :rtype: :class:`bool`
 
     Returns whether the project file this project was loaded from has GUI data: node positions,
-    colours and sizes, viewer settings, the window layout... A project saved by the Natron GUI has
-    them, a project saved by NatronRenderer or ``Natron -b`` doesn't. *False* for a new project.
-    It describes the file that was loaded: saving the project doesn't change it.
+    colours and sizes, Viewer nodes, viewer settings, the window layout... A project saved by the
+    Natron GUI has them. In a Python project (see :ref:`pythonProjects`), the GUI data are the
+    calls that set the position, size or colour of a node, and the Viewer nodes. *False* for a new
+    project. It describes the file that was loaded: saving the project doesn't change it.
 
-    NatronRenderer and ``Natron -b`` don't read the GUI data and don't create the Viewer nodes, and
-    save projects without them: a script run by them that saves a project with GUI data loses them.
-    Such a script can use this function to refuse to save the project, or to warn.
+    NatronRenderer and ``Natron -b`` have no Viewer nodes, viewer settings or window layout, but
+    they keep those of a *.ntp* file, with the positions, sizes and colours of the nodes (also those
+    set by :meth:`Effect.setPosition()<NatronEngine.Effect.setPosition>`,
+    :meth:`Effect.setSize()<NatronEngine.Effect.setSize>` and
+    :meth:`Effect.setColor()<NatronEngine.Effect.setColor>`), and save them back. A Python project
+    saved by them has the positions, sizes and colours, but no Viewer nodes (and the Python format
+    never has viewer settings or a window layout). The window layout of a project saved by Natron
+    1.x is not saved back. The nodes inside a PyPlug instance are placed by the PyPlug: their
+    positions are not GUI data.
 
     .. versionadded:: 2.6
 

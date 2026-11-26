@@ -26,9 +26,10 @@ NatronRenderer -t loads, one after the other,
 Tests/data/ProjectFileFormat-2.5.ntp (saved in background mode, no error)
 and variants of it, written by this test:
 
-- "gui": flagged as saved by the GUI (Background_project=0). It is
-  synthetic: the flag is flipped, but the file has no ProjectGui part. The
-  background app doesn't read that part anyway.
+- "gui": Tests/data/ProjectGuiData.ntp, saved by the GUI.
+- "nogui": flagged as saved by the GUI (Background_project=0), but without
+  the ProjectGui part that follows: the background app, which keeps the GUI
+  data, can't read them, and saving would lose them.
 - "missingplugin", "missingingroup": a node whose plug-in does not exist, at
   the top level and in a Group.
 - "missinginput": a connection to an input that the node doesn't have.
@@ -39,12 +40,14 @@ and variants of it, written by this test:
 - "pyplug": a Group saved as a PyPlug that is found in the PyPlug search path
   (NATRON_PLUGIN_PATH), not at its saved path: nothing is lost.
 - "callback": in a Group, a node whose plug-in does not exist, flagged as saved
-  by the GUI, with an afterProjectLoad callback that reads both getters.
+  by the GUI (as "nogui"), with an afterProjectLoad callback that reads both
+  getters.
 
 It reads both getters for a new project, after each load (also a clean load,
 "aftererrors", right after one that lost data), in the afterProjectLoad
 callback and after app.resetProject(). The "majorversion" case has no
-effect on the getters, so the test also checks that its warning is printed.
+effect on the getters, so the test also checks that its warning is printed, as
+for "nogui".
 Only the text (XML) format is tested: both formats are read by the same code
 once the archive is open.
 
@@ -124,7 +127,7 @@ CALLBACK_KNOB = (b"""\t<item>
 """ % CALLBACK.encode())
 
 # The projects that the script loads, in this order (NATRON_TEST_<LABEL>).
-LOADS = ("background", "gui", "missingplugin", "aftererrors",
+LOADS = ("background", "gui", "nogui", "missingplugin", "aftererrors",
          "missingingroup", "missinginput", "majorversion", "missingpyplug",
          "pyplug", "callback")
 
@@ -175,6 +178,7 @@ EXPECTED = [
     ["new", False, False],
     ["background", False, False],
     ["gui", True, False],
+    ["nogui", True, True],
     ["missingplugin", False, True],
     ["aftererrors", False, False],
     ["missingingroup", False, True],
@@ -189,9 +193,11 @@ EXPECTED = [
 
 # Printed by the "majorversion" load, which doesn't change the getters
 MAJOR_VERSION_MESSAGE = "was found in the script but was loaded with version"
+# Printed by the "nogui" load (Project::loadProjectInternal())
+NO_GUI_MESSAGE = "could not be read, and will not be saved"
 
 
-def _variants(data):
+def _variants(data, gui_data):
     """Returns the test projects, by label (see LOADS).
 
     Raises:
@@ -208,7 +214,8 @@ def _variants(data):
     callback = replace(callback, FORMATS_TAG, CALLBACK_KNOB + FORMATS_TAG)
     return {
         "background": data,
-        "gui": replace(data, background, gui),
+        "gui": gui_data,
+        "nogui": replace(data, background, gui),
         "missingplugin": replace(data, dot, missing),
         "aftererrors": data,
         "missingingroup": missing_in_group,
@@ -239,7 +246,9 @@ def _write_test_files(tmp_dir, env):
     """
     with open(natronrunner.TEST_PROJECT, "rb") as f:
         data = f.read()
-    for label, contents in _variants(data).items():
+    with open(natronrunner.GUI_TEST_PROJECT, "rb") as f:
+        gui_data = f.read()
+    for label, contents in _variants(data, gui_data).items():
         path = os.path.join(tmp_dir, label + ".ntp")
         with open(path, "wb") as f:
             f.write(contents)
@@ -290,10 +299,11 @@ def _check(steps, output):
     if len(steps) != len(EXPECTED):
         print("FAILED: %d steps, expected %d" % (len(steps), len(EXPECTED)))
         ok = False
-    if MAJOR_VERSION_MESSAGE not in output:
-        print("FAILED: majorversion: no %r in the output"
-              % MAJOR_VERSION_MESSAGE)
-        ok = False
+    for label, message in (("majorversion", MAJOR_VERSION_MESSAGE),
+                           ("nogui", NO_GUI_MESSAGE)):
+        if message not in output:
+            print("FAILED: %s: no %r in the output" % (label, message))
+            ok = False
     return ok
 
 

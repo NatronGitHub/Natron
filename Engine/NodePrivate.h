@@ -457,6 +457,10 @@ public:
     int persistentMessageType;
     mutable QMutex persistentMessageMutex;
     NodeGuiIWPtr guiPointer;
+    // Without a NodeGui (an application without a GUI), the GUI data of the node, null if it has none (see
+    // Node::getGuiDataWithoutGui()). Protected by guiDataMutex.
+    NodeGuiSerializationPtr guiDataWithoutGui;
+    mutable QMutex guiDataMutex;
     std::list<HostOverlayKnobsPtr> nativeOverlays;
     bool nodeCreated;
     bool wasCreatedSilently;

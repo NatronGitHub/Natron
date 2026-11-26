@@ -149,6 +149,41 @@ public:
         return _children;
     }
 
+    // Without a GUI, the data are kept and saved by the Engine (see Node::getGuiDataWithoutGui())
+    void setFullySpecifiedName(const std::string& name)
+    {
+        _nodeName = name;
+    }
+
+    void setPosition(double x,
+                     double y)
+    {
+        _posX = x;
+        _posY = y;
+    }
+
+    void setSize(double w,
+                 double h)
+    {
+        _width = w;
+        _height = h;
+    }
+
+    void setColor(float r,
+                  float g,
+                  float b)
+    {
+        _r = r;
+        _g = g;
+        _b = b;
+        _colorWasFound = true;
+    }
+
+    void setChildren(const std::list<NodeGuiSerializationPtr>& children)
+    {
+        _children = children;
+    }
+
 private:
 
     std::string _nodeName;

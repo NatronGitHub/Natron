@@ -186,6 +186,10 @@ def write_png(path, width=320, height=240):
 
 # The 2.5 text project of the ProjectFileFormat tests, and XML fragments of it that the drivers replace
 TEST_PROJECT = os.path.join(os.path.dirname(HERE), "data", "ProjectFileFormat-2.5.ntp")
+# Saved by the Natron GUI, with GUI data: node positions, sizes and colours, a Backdrop, a Group, a Viewer (see
+# run_project_gui_data_test.py), and the same project saved as Python
+GUI_TEST_PROJECT = os.path.join(os.path.dirname(HERE), "data", "ProjectGuiData.ntp")
+GUI_TEST_PYTHON_PROJECT = os.path.join(os.path.dirname(HERE), "data", "ProjectGuiData.py")
 BACKGROUND_TAG = b"<Background_project>1</Background_project>"
 GUI_TAG = b"<Background_project>0</Background_project>"  # saved by the GUI
 DOT_PLUGIN_TAG = b"<Plugin_id>fr.inria.built-in.Dot</Plugin_id>"

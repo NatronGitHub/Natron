@@ -72,6 +72,15 @@ public:
     bool hasProjectBeenSavedByUser; //< has this project ever been saved by the user?
     ProjectFileFormatEnum fileFormat; //< see Project::getFileFormat(), protected by projectLock
     bool fileHasGuiData = false; //< see Project::fileHasGuiData(), protected by projectLock
+    // While a Python project runs (see Project::onGuiDataSet()). Atomic: nodes set them without the projectLock
+    std::atomic<bool> runningPythonProjectScript{false};
+    std::atomic<bool> pythonProjectSetGuiData{false};
+    // In background mode, the ProjectGui part of the loaded file (window layout, viewer settings...) without the
+    // GUI data of the nodes, which they keep (Node::getGuiDataWithoutGui()) or, for the Viewers, their group
+    // (NodeCollection::getViewersWithoutGuiData()): a save writes them back (see Project::saveProjectInternal()).
+    // Null if the file had none. Main thread only (background mode has no auto-save): saves don't run
+    // concurrently, nor during a load.
+    std::shared_ptr<ProjectGuiSerialization> guiDataWithoutGui;
     bool fileLoadedWithErrors = false; //< see Project::fileLoadedWithErrors(), protected by projectLock
     QDateTime ageSinceLastSave; //< the last time the user saved
     QDateTime lastAutoSave; //< the last time since autosave

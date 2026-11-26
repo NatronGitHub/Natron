@@ -149,7 +149,8 @@ Limitations
   node parameters are saved).
 - The GUI data: the window layout, the viewer settings and the node graph zoom
   (see :meth:`App.projectFileHasGuiData()<NatronEngine.App.projectFileHasGuiData>`). A project saved
-  by NatronRenderer has no node positions, as in a *.ntp* file.
+  by NatronRenderer keeps the positions, sizes and colours of the nodes that it loaded, but not its
+  Viewer nodes, which NatronRenderer doesn't create.
 - The nodes added or removed from Python inside a PyPlug instance that was never edited: the instance
   is saved as a reference to its PyPlug, which must be installed, with its parameters and the
   parameters of its nodes (editing a PyPlug instance converts it to a Group, which is saved with its

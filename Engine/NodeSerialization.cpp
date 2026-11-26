@@ -183,6 +183,9 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
                     _children.push_back(state);
                 }
             }
+            // its Viewers, in background mode (see NodeCollection::addViewerWithoutGui())
+            const std::list<NodeSerializationPtr> viewers = isGrp->getViewersWithoutGui();
+            _children.insert( _children.end(), viewers.begin(), viewers.end() );
         }
 
         _multiInstanceParentName = n->getParentMultiInstanceName();

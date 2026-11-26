@@ -602,6 +602,10 @@ public:
     {
     }
 
+    // it owns its windows
+    GuiLayoutSerialization(const GuiLayoutSerialization&) = delete;
+    GuiLayoutSerialization& operator=(const GuiLayoutSerialization&) = delete;
+
     ~GuiLayoutSerialization()
     {
         for (std::list<ApplicationWindowSerialization*>::iterator it = _windows.begin(); it != _windows.end(); ++it) {
@@ -777,6 +781,12 @@ public:
     const std::list<NodeGuiSerialization > & getSerializedNodesGui() const
     {
         return _serializedNodes;
+    }
+
+    // Without a GUI, the nodes keep their data, which are set back before a save (see Project::saveProjectInternal())
+    void setSerializedNodesGui(const std::list<NodeGuiSerialization>& nodes)
+    {
+        _serializedNodes = nodes;
     }
 
     const GuiLayoutSerialization & getGuiLayout() const
