@@ -190,6 +190,16 @@ TEST_PROJECT = os.path.join(os.path.dirname(HERE), "data", "ProjectFileFormat-2.
 # run_project_gui_data_test.py), and the same project saved as Python
 GUI_TEST_PROJECT = os.path.join(os.path.dirname(HERE), "data", "ProjectGuiData.ntp")
 GUI_TEST_PYTHON_PROJECT = os.path.join(os.path.dirname(HERE), "data", "ProjectGuiData.py")
+# The nodes of the GUI test projects but their Viewer, by fully qualified name: [position, size, colour]
+GUI_TEST_NODES = {
+    "Dot1": [[100, 200], [16, 16], [0.8, 0.2, 0.1]],
+    "Dot2": [[100, 320], [16, 16], [0.7, 0.7, 0.7]],
+    "Backdrop1": [[40, 150], [300, 260], [0.2, 0.4, 0.6]],
+    "Group1": [[420, 200], [104, 30], [0.5, 0.3, 0.7]],
+    "Group1.Dot3": [[10, 20], [16, 16], [0.1, 0.9, 0.3]],
+}
+VIEWER_PLUGIN_ID = b"fr.inria.built-in.Viewer"
+VIEWER_PLUGIN_TAG = b"<Plugin_id>" + VIEWER_PLUGIN_ID + b"</Plugin_id>"
 BACKGROUND_TAG = b"<Background_project>1</Background_project>"
 GUI_TAG = b"<Background_project>0</Background_project>"  # saved by the GUI
 DOT_PLUGIN_TAG = b"<Plugin_id>fr.inria.built-in.Dot</Plugin_id>"

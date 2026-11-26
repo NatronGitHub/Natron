@@ -483,26 +483,39 @@ with the following changes to the script::
 
 .. _natron-convert-project:
 
-Example: converting a project between the binary and text formats
-------------------------------------------------------------------
+Example: converting a project between the binary, text and Python formats
+--------------------------------------------------------------------------
 
-Projects are saved in a binary format, or in a text (XML) format that Natron 2.5 and earlier
-can read (see :meth:`App.getProjectFormat<NatronEngine.App.getProjectFormat>`). The
+Projects are saved in a binary format, in a text (XML) format that Natron 2.5 and earlier
+can read (both are ``.ntp`` files, see :meth:`App.getProjectFormat<NatronEngine.App.getProjectFormat>`),
+or as a Python script (a ``.py`` file, see :ref:`pythonProjects`). The
 ``natron_convert_project`` Python module, installed in the ``Plugins`` directory of Natron
 (``Natron.app/Contents/Plugins`` on macOS, ``/usr/share/Natron/Plugins`` in a Linux
-distribution), which is on its Python path, converts a project from one format to the other
+distribution), which is on its Python path, converts a project from one format to another
 without rendering anything::
 
     NatronRenderer -t -c "import natron_convert_project as c; c.convert_and_quit('/path/to/in.ntp', '/path/to/out.ntp', 'text')"
 
 ``convert_and_quit(src, dst=None, to="text", discard_gui=False)`` saves ``src`` in the format
-``to`` (``"text"`` or ``"binary"``) as ``dst`` (``src`` itself without ``dst``), then quits: the
-exit status is 0 if the project was converted, 1 otherwise, with the reason printed. In a
-script, ``convert()`` takes the same arguments, raises an exception instead, and doesn't quit;
-end the script with ``natron.quit(status)``, with a non-zero status if a conversion failed:
-without ``natron.quit()``, the prompt starts and exits with status 0. The project is not
-converted if it loads with errors (see :meth:`App.projectLoadedWithErrors<NatronEngine.App.projectLoadedWithErrors>`), or if it
-has GUI data (see :meth:`App.projectFileHasGuiData<NatronEngine.App.projectFileHasGuiData>`),
-which NatronRenderer would drop, unless ``discard_gui=True``: convert those projects with
-*Save Project As..* in Natron. See the docstring of ``tools/natron_convert_project.py`` for
-the details.
+``to`` (``"text"``, ``"binary"`` or ``"python"``) as ``dst``, then quits. ``dst`` must have the
+extension of the format (``.ntp`` for text and binary, ``.py`` for Python): a mismatch is
+refused. Without ``dst``, the project is saved as ``src`` with that extension: ``src`` itself if
+it has it, else a file next to it (``in.ntp`` converted to Python is saved as ``in.py``), which
+must not exist: pass ``dst`` to replace a file. The exit status is 0 if the project was
+converted, 1 otherwise, with the reason printed. In a script, ``convert()`` takes the same
+arguments, raises an exception instead, and doesn't quit; end the script with
+``natron.quit(status)``, with a non-zero status if a conversion failed: without
+``natron.quit()``, the prompt starts and exits with status 0. The project is not
+converted if it loads with errors (see :meth:`App.projectLoadedWithErrors<NatronEngine.App.projectLoadedWithErrors>`).
+NatronRenderer keeps the GUI data of the project (see
+:meth:`App.projectFileHasGuiData<NatronEngine.App.projectFileHasGuiData>`) that the destination
+format can hold, except its Viewer nodes in a conversion to or from the Python format (which has
+no viewer settings or window layout): a project with Viewers is not converted to or from the
+Python format, unless ``discard_gui=True``; convert those projects with *Save Project As..* in
+Natron. The module finds the Viewers in the project file, by their plug-in ID.
+
+The Python format doesn't save everything (see the limitations in :ref:`pythonProjects`). A
+Python project is converted by running it, which builds the project, then saving that project:
+its comments and its other code are not kept. Loading a Python project runs it, as any Python
+script: convert only the files you trust. See the docstring of
+``tools/natron_convert_project.py`` for the details.
