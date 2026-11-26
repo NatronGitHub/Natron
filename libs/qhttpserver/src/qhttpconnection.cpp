@@ -193,7 +193,9 @@ void QHttpConnection::updateWriteCount(qint64 count)
     }
 
     // Natron: resume reading the requests that backpressure held back
-    if (!m_parsing && HTTP_PARSER_ERRNO(m_parser) == HPE_OK && m_socket->bytesAvailable() &&
+    if (!m_parsing &&
+        (HTTP_PARSER_ERRNO(m_parser) == HPE_OK || HTTP_PARSER_ERRNO(m_parser) == HPE_PAUSED) &&
+        (!m_pendingInput.isEmpty() || m_socket->bytesAvailable()) &&
         m_socket->bytesToWrite() <= kMaxBytesToWrite)
         parseRequest();
 }
@@ -211,11 +213,25 @@ void QHttpConnection::parseRequest()
         m_idleTimer->start(); // restart
 
     m_parsing = true;
-    // Natron: backpressure (see kMaxBytesToWrite); updateWriteCount() resumes
-    while (m_socket->bytesAvailable() && m_socket->bytesToWrite() <= kMaxBytesToWrite &&
-           !m_disconnectedWhileParsing) {
-        QByteArray arr = m_socket->readAll();
-        http_parser_execute(m_parser, m_parserSettings, arr.constData(), arr.size());
+    // Natron: backpressure (see kMaxBytesToWrite): MessageComplete() pauses the parser after a request
+    // when too much waits to be sent; the rest of the data is kept in m_pendingInput, and
+    // updateWriteCount() resumes
+    while (!m_disconnectedWhileParsing && m_socket->bytesToWrite() <= kMaxBytesToWrite) {
+        QByteArray arr;
+        if (!m_pendingInput.isEmpty()) {
+            arr.swap(m_pendingInput);
+        } else if (m_socket->bytesAvailable()) {
+            arr = m_socket->readAll();
+        } else {
+            break;
+        }
+        if (HTTP_PARSER_ERRNO(m_parser) == HPE_PAUSED)
+            http_parser_pause(m_parser, 0);
+        const size_t parsed = http_parser_execute(m_parser, m_parserSettings, arr.constData(), arr.size());
+        if (HTTP_PARSER_ERRNO(m_parser) == HPE_PAUSED) {
+            m_pendingInput = arr.mid(static_cast<int>(parsed));
+            continue;
+        }
         // Natron: after a malformed request, http-parser stays in its error state and ignores any
         // further data, which left the connection open forever and the client waiting.
         if (HTTP_PARSER_ERRNO(m_parser) != HPE_OK)
@@ -228,7 +244,7 @@ void QHttpConnection::parseRequest()
         socketDisconnected();
         return;
     }
-    if (HTTP_PARSER_ERRNO(m_parser) != HPE_OK)
+    if (HTTP_PARSER_ERRNO(m_parser) != HPE_OK && HTTP_PARSER_ERRNO(m_parser) != HPE_PAUSED)
         rejectMalformedRequest();
 }
 
@@ -400,6 +416,9 @@ int QHttpConnection::MessageComplete(http_parser *parser)
     // delete it, e.g. on a parse error before the next request)
     theConnection->m_request = NULL;
     theConnection->m_currentRequestEmitted = false;
+    // Natron: backpressure, per request (a single read may hold many pipelined requests)
+    if (theConnection->m_socket->bytesToWrite() > kMaxBytesToWrite)
+        http_parser_pause(parser, 1);
     return 0;
 }
 

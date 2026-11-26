@@ -26,6 +26,7 @@
 #include "qhttpserverapi.h"
 #include "qhttpserverfwd.h"
 
+#include <QByteArray>
 #include <QObject>
 
 class QTimer;
@@ -82,6 +83,8 @@ private:
     // nested event loop, e.g. a modal dialog): the connection must not be deleted meanwhile
     bool m_parsing;
     bool m_disconnectedWhileParsing;
+    // Natron: the data received after the request at which the parser was paused (backpressure)
+    QByteArray m_pendingInput;
     http_parser *m_parser;
     http_parser_settings *m_parserSettings;
 

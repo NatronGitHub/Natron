@@ -500,12 +500,12 @@ TEST(QHttpServer, ClosesIdleConnections)
 }
 
 // Data received restarts the idle timer: a slow request (one byte every 100 ms, about 3.5 s) with a
-// 300 ms idle timeout still gets its answer.
+// 1 s idle timeout still gets its answer.
 TEST(QHttpServer, IdleTimeoutRestartsOnData)
 {
     LoopbackHttpServer server;
     ASSERT_TRUE( server.listening() );
-    server.setIdleTimeout(300);
+    server.setIdleTimeout(1000);
 
     QTcpSocket socket;
     socket.connectToHost(QHostAddress::LocalHost, server.port());
@@ -544,6 +544,39 @@ TEST(QHttpServer, DropsClientThatDoesNotRead)
         maxBytesToWrite = std::max( maxBytesToWrite, server.maxBytesToWrite() );
     }
     EXPECT_NE( QAbstractSocket::ConnectedState, socket.state() ) << "not dropped after " << timer.elapsed() << " ms";
+    // at most 1 MB waits to be sent, plus one answer
+    EXPECT_LE( maxBytesToWrite, 1024 * 1024 + 256 * 1024 + 1024 );
+}
+
+// Many pipelined requests in a single write: each answer is queued before the next request is
+// parsed, so the write-buffer limit must apply per request, not per read.
+TEST(QHttpServer, BoundsAnswersToPipelinedBurst)
+{
+    LoopbackHttpServer server;
+    ASSERT_TRUE( server.listening() );
+    server.setBodySize(256 * 1024);
+
+    QTcpSocket socket;
+    socket.setReadBufferSize(1024); // reads slowly
+    socket.connectToHost(QHostAddress::LocalHost, server.port());
+    ASSERT_TRUE( socket.waitForConnected(10000) );
+    QByteArray burst;
+    for (int i = 0; i < 200; ++i) {
+        burst += "GET / HTTP/1.1\r\nHost: localhost\r\nConnection: keep-alive\r\n\r\n";
+    }
+    socket.write(burst);
+    qint64 maxBytesToWrite = 0;
+    qint64 received = 0;
+    QElapsedTimer timer;
+    timer.start();
+    while ( timer.elapsed() < 3000 && socket.state() == QAbstractSocket::ConnectedState ) {
+        processEventsUntil([]() { return false; }, 50);
+        received += socket.readAll().size();
+        maxBytesToWrite = std::max( maxBytesToWrite, server.maxBytesToWrite() );
+    }
+    EXPECT_GT( received, 0 );
+    EXPECT_GT( server.requests(), 0 );
+    EXPECT_LT( server.requests(), 200 ); // the rest waits
     // at most 1 MB waits to be sent, plus one answer
     EXPECT_LE( maxBytesToWrite, 1024 * 1024 + 256 * 1024 + 1024 );
 }

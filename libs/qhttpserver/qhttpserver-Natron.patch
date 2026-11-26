@@ -1,6 +1,6 @@
 diff -ur qhttpserver/qhttpserver.pro Natron/libs/qhttpserver/qhttpserver.pro
 --- qhttpserver/qhttpserver.pro	2016-01-27 00:33:50
-+++ Natron/libs/qhttpserver/qhttpserver.pro	2026-11-26 12:29:19
++++ Natron/libs/qhttpserver/qhttpserver.pro	2026-11-26 12:34:01
 @@ -1,8 +1,2 @@
 -CONFIG += ordered
 -
@@ -13,7 +13,7 @@ diff -ur qhttpserver/qhttpserver.pro Natron/libs/qhttpserver/qhttpserver.pro
 +SUBDIRS += src
 diff -ur qhttpserver/src/qhttpconnection.cpp Natron/libs/qhttpserver/src/qhttpconnection.cpp
 --- qhttpserver/src/qhttpconnection.cpp	2016-01-27 00:33:50
-+++ Natron/libs/qhttpserver/src/qhttpconnection.cpp	2026-11-26 12:29:19
++++ Natron/libs/qhttpserver/src/qhttpconnection.cpp	2026-11-26 12:34:01
 @@ -22,8 +22,10 @@
  
  #include "qhttpconnection.h"
@@ -165,13 +165,15 @@ diff -ur qhttpserver/src/qhttpconnection.cpp Natron/libs/qhttpserver/src/qhttpco
      Q_ASSERT(m_transmitPos + count <= m_transmitLen);
  
      m_transmitPos += count;
-@@ -98,18 +191,63 @@
+@@ -98,18 +191,79 @@
          m_transmitPos = 0;
          Q_EMIT allBytesWritten();
      }
 +
 +    // Natron: resume reading the requests that backpressure held back
-+    if (!m_parsing && HTTP_PARSER_ERRNO(m_parser) == HPE_OK && m_socket->bytesAvailable() &&
++    if (!m_parsing &&
++        (HTTP_PARSER_ERRNO(m_parser) == HPE_OK || HTTP_PARSER_ERRNO(m_parser) == HPE_PAUSED) &&
++        (!m_pendingInput.isEmpty() || m_socket->bytesAvailable()) &&
 +        m_socket->bytesToWrite() <= kMaxBytesToWrite)
 +        parseRequest();
  }
@@ -181,6 +183,8 @@ diff -ur qhttpserver/src/qhttpconnection.cpp Natron/libs/qhttpserver/src/qhttpco
      Q_ASSERT(m_parser);
  
 -    while (m_socket->bytesAvailable()) {
+-        QByteArray arr = m_socket->readAll();
+-        http_parser_execute(m_parser, m_parserSettings, arr.constData(), arr.size());
 +    // Natron: called again from a nested event loop of the handler: the outer call reads the new data
 +    if (m_parsing)
 +        return;
@@ -190,11 +194,25 @@ diff -ur qhttpserver/src/qhttpconnection.cpp Natron/libs/qhttpserver/src/qhttpco
 +        m_idleTimer->start(); // restart
 +
 +    m_parsing = true;
-+    // Natron: backpressure (see kMaxBytesToWrite); updateWriteCount() resumes
-+    while (m_socket->bytesAvailable() && m_socket->bytesToWrite() <= kMaxBytesToWrite &&
-+           !m_disconnectedWhileParsing) {
-         QByteArray arr = m_socket->readAll();
-         http_parser_execute(m_parser, m_parserSettings, arr.constData(), arr.size());
++    // Natron: backpressure (see kMaxBytesToWrite): MessageComplete() pauses the parser after a request
++    // when too much waits to be sent; the rest of the data is kept in m_pendingInput, and
++    // updateWriteCount() resumes
++    while (!m_disconnectedWhileParsing && m_socket->bytesToWrite() <= kMaxBytesToWrite) {
++        QByteArray arr;
++        if (!m_pendingInput.isEmpty()) {
++            arr.swap(m_pendingInput);
++        } else if (m_socket->bytesAvailable()) {
++            arr = m_socket->readAll();
++        } else {
++            break;
++        }
++        if (HTTP_PARSER_ERRNO(m_parser) == HPE_PAUSED)
++            http_parser_pause(m_parser, 0);
++        const size_t parsed = http_parser_execute(m_parser, m_parserSettings, arr.constData(), arr.size());
++        if (HTTP_PARSER_ERRNO(m_parser) == HPE_PAUSED) {
++            m_pendingInput = arr.mid(static_cast<int>(parsed));
++            continue;
++        }
 +        // Natron: after a malformed request, http-parser stays in its error state and ignores any
 +        // further data, which left the connection open forever and the client waiting.
 +        if (HTTP_PARSER_ERRNO(m_parser) != HPE_OK)
@@ -207,7 +225,7 @@ diff -ur qhttpserver/src/qhttpconnection.cpp Natron/libs/qhttpserver/src/qhttpco
 +        socketDisconnected();
 +        return;
 +    }
-+    if (HTTP_PARSER_ERRNO(m_parser) != HPE_OK)
++    if (HTTP_PARSER_ERRNO(m_parser) != HPE_OK && HTTP_PARSER_ERRNO(m_parser) != HPE_PAUSED)
 +        rejectMalformedRequest();
  }
  
@@ -230,7 +248,7 @@ diff -ur qhttpserver/src/qhttpconnection.cpp Natron/libs/qhttpserver/src/qhttpco
  void QHttpConnection::write(const QByteArray &data)
  {
      m_socket->write(data);
-@@ -129,7 +267,9 @@
+@@ -129,7 +283,9 @@
  void QHttpConnection::responseDone()
  {
      QHttpResponse *response = qobject_cast<QHttpResponse *>(QObject::sender());
@@ -241,7 +259,7 @@ diff -ur qhttpserver/src/qhttpconnection.cpp Natron/libs/qhttpserver/src/qhttpco
          m_socket->disconnectFromHost();
  }
  
-@@ -178,16 +318,23 @@
+@@ -178,16 +334,23 @@
  {
      QHttpConnection *theConnection = static_cast<QHttpConnection *>(parser->data);
      theConnection->m_currentHeaders.clear();
@@ -267,7 +285,7 @@ diff -ur qhttpserver/src/qhttpconnection.cpp Natron/libs/qhttpserver/src/qhttpco
  
      return 0;
  }
-@@ -202,21 +349,24 @@
+@@ -202,21 +365,24 @@
  
      /** set version **/
      theConnection->m_request->setVersion(
@@ -297,7 +315,7 @@ diff -ur qhttpserver/src/qhttpconnection.cpp Natron/libs/qhttpserver/src/qhttpco
      theConnection->m_request->setHeaders(theConnection->m_currentHeaders);
  
      /** set client information **/
-@@ -231,6 +381,8 @@
+@@ -231,6 +397,8 @@
      connect(response, SIGNAL(done()), theConnection, SLOT(responseDone()));
  
      // we are good to go!
@@ -306,7 +324,7 @@ diff -ur qhttpserver/src/qhttpconnection.cpp Natron/libs/qhttpserver/src/qhttpco
      Q_EMIT theConnection->newRequest(theConnection->m_request, response);
      return 0;
  }
-@@ -239,10 +391,15 @@
+@@ -239,10 +407,18 @@
  {
      // TODO: do cleanup and prepare for next request
      QHttpConnection *theConnection = static_cast<QHttpConnection *>(parser->data);
@@ -323,10 +341,13 @@ diff -ur qhttpserver/src/qhttpconnection.cpp Natron/libs/qhttpserver/src/qhttpco
 +    // delete it, e.g. on a parse error before the next request)
 +    theConnection->m_request = NULL;
 +    theConnection->m_currentRequestEmitted = false;
++    // Natron: backpressure, per request (a single read may hold many pipelined requests)
++    if (theConnection->m_socket->bytesToWrite() > kMaxBytesToWrite)
++        http_parser_pause(parser, 1);
      return 0;
  }
  
-@@ -262,16 +419,10 @@
+@@ -262,16 +438,10 @@
  
      // insert the header we parsed previously
      // into the header map
@@ -347,7 +368,7 @@ diff -ur qhttpserver/src/qhttpconnection.cpp Natron/libs/qhttpserver/src/qhttpco
      }
  
      QString fieldSuffix = QString::fromLatin1(at, length);
-@@ -286,13 +437,35 @@
+@@ -286,13 +456,35 @@
  
      QString valueSuffix = QString::fromLatin1(at, length);
      theConnection->m_currentHeaderValue += valueSuffix;
@@ -386,9 +407,12 @@ diff -ur qhttpserver/src/qhttpconnection.cpp Natron/libs/qhttpserver/src/qhttpco
      return 0;
 diff -ur qhttpserver/src/qhttpconnection.h Natron/libs/qhttpserver/src/qhttpconnection.h
 --- qhttpserver/src/qhttpconnection.h	2016-01-27 00:33:50
-+++ Natron/libs/qhttpserver/src/qhttpconnection.h	2026-11-26 12:29:19
-@@ -28,6 +28,8 @@
++++ Natron/libs/qhttpserver/src/qhttpconnection.h	2026-11-26 12:34:01
+@@ -26,8 +26,11 @@
+ #include "qhttpserverapi.h"
+ #include "qhttpserverfwd.h"
  
++#include <QByteArray>
  #include <QObject>
  
 +class QTimer;
@@ -396,7 +420,7 @@ diff -ur qhttpserver/src/qhttpconnection.h Natron/libs/qhttpserver/src/qhttpconn
  /// @cond nodoc
  
  class QHTTPSERVER_API QHttpConnection : public QObject
-@@ -42,6 +44,9 @@
+@@ -42,6 +45,9 @@
      void flush();
      void waitForBytesWritten();
  
@@ -406,7 +430,7 @@ diff -ur qhttpserver/src/qhttpconnection.h Natron/libs/qhttpserver/src/qhttpconn
  Q_SIGNALS:
      void newRequest(QHttpRequest *, QHttpResponse *);
      void allBytesWritten();
-@@ -51,9 +56,15 @@
+@@ -51,9 +57,15 @@
      void responseDone();
      void socketDisconnected();
      void invalidateRequest();
@@ -422,7 +446,7 @@ diff -ur qhttpserver/src/qhttpconnection.h Natron/libs/qhttpserver/src/qhttpconn
      static int MessageBegin(http_parser *parser);
      static int Url(http_parser *parser, const char *at, size_t length);
      static int HeaderField(http_parser *parser, const char *at, size_t length);
-@@ -64,6 +75,13 @@
+@@ -64,6 +76,15 @@
  
  private:
      QTcpSocket *m_socket;
@@ -433,10 +457,12 @@ diff -ur qhttpserver/src/qhttpconnection.h Natron/libs/qhttpserver/src/qhttpconn
 +    // nested event loop, e.g. a modal dialog): the connection must not be deleted meanwhile
 +    bool m_parsing;
 +    bool m_disconnectedWhileParsing;
++    // Natron: the data received after the request at which the parser was paused (backpressure)
++    QByteArray m_pendingInput;
      http_parser *m_parser;
      http_parser_settings *m_parserSettings;
  
-@@ -75,6 +93,11 @@
+@@ -75,6 +96,11 @@
      HeaderHash m_currentHeaders;
      QString m_currentHeaderField;
      QString m_currentHeaderValue;
@@ -450,7 +476,7 @@ diff -ur qhttpserver/src/qhttpconnection.h Natron/libs/qhttpserver/src/qhttpconn
      qint64 m_transmitLen;
 diff -ur qhttpserver/src/qhttprequest.cpp Natron/libs/qhttpserver/src/qhttprequest.cpp
 --- qhttpserver/src/qhttprequest.cpp	2016-01-27 00:33:50
-+++ Natron/libs/qhttpserver/src/qhttprequest.cpp	2026-11-26 12:29:19
++++ Natron/libs/qhttpserver/src/qhttprequest.cpp	2026-11-26 12:34:01
 @@ -25,7 +25,7 @@
  #include "qhttpconnection.h"
  
@@ -480,7 +506,7 @@ diff -ur qhttpserver/src/qhttprequest.cpp Natron/libs/qhttpserver/src/qhttpreque
  void QHttpRequest::appendBody(const QByteArray &body)
 diff -ur qhttpserver/src/qhttprequest.h Natron/libs/qhttpserver/src/qhttprequest.h
 --- qhttpserver/src/qhttprequest.h	2016-01-27 00:33:50
-+++ Natron/libs/qhttpserver/src/qhttprequest.h	2026-11-26 12:29:19
++++ Natron/libs/qhttpserver/src/qhttprequest.h	2026-11-26 12:34:01
 @@ -46,13 +46,11 @@
      Q_PROPERTY(HeaderHash headers READ headers)
      Q_PROPERTY(QString remoteAddress READ remoteAddress)
@@ -528,7 +554,7 @@ diff -ur qhttpserver/src/qhttprequest.h Natron/libs/qhttpserver/src/qhttprequest
      HttpMethod method() const;
 diff -ur qhttpserver/src/qhttpresponse.cpp Natron/libs/qhttpserver/src/qhttpresponse.cpp
 --- qhttpserver/src/qhttpresponse.cpp	2016-01-27 00:33:50
-+++ Natron/libs/qhttpserver/src/qhttpresponse.cpp	2026-11-26 12:29:19
++++ Natron/libs/qhttpserver/src/qhttpresponse.cpp	2026-11-26 12:34:01
 @@ -28,6 +28,8 @@
  #include "qhttpserver.h"
  #include "qhttpconnection.h"
@@ -716,7 +742,7 @@ diff -ur qhttpserver/src/qhttpresponse.cpp Natron/libs/qhttpserver/src/qhttpresp
  }
 diff -ur qhttpserver/src/qhttpresponse.h Natron/libs/qhttpserver/src/qhttpresponse.h
 --- qhttpserver/src/qhttpresponse.h	2016-01-27 00:33:50
-+++ Natron/libs/qhttpserver/src/qhttpresponse.h	2026-11-26 12:29:19
++++ Natron/libs/qhttpserver/src/qhttpresponse.h	2026-11-26 12:34:01
 @@ -27,6 +27,7 @@
  #include "qhttpserverfwd.h"
  
@@ -748,7 +774,7 @@ diff -ur qhttpserver/src/qhttpresponse.h Natron/libs/qhttpserver/src/qhttprespon
  
 diff -ur qhttpserver/src/qhttpserver.cpp Natron/libs/qhttpserver/src/qhttpserver.cpp
 --- qhttpserver/src/qhttpserver.cpp	2016-01-27 00:33:50
-+++ Natron/libs/qhttpserver/src/qhttpserver.cpp	2026-11-26 12:29:19
++++ Natron/libs/qhttpserver/src/qhttpserver.cpp	2026-11-26 12:34:01
 @@ -31,9 +31,9 @@
  
  QHash<int, QString> STATUS_CODES;
@@ -818,7 +844,7 @@ diff -ur qhttpserver/src/qhttpserver.cpp Natron/libs/qhttpserver/src/qhttpserver
  void QHttpServer::close()
 diff -ur qhttpserver/src/qhttpserver.h Natron/libs/qhttpserver/src/qhttpserver.h
 --- qhttpserver/src/qhttpserver.h	2016-01-27 00:33:50
-+++ Natron/libs/qhttpserver/src/qhttpserver.h	2026-11-26 12:29:19
++++ Natron/libs/qhttpserver/src/qhttpserver.h	2026-11-26 12:34:01
 @@ -66,21 +66,34 @@
  
      /// Start the server by bounding to the given @c address and @c port.
@@ -879,7 +905,7 @@ diff -ur qhttpserver/src/qhttpserver.h Natron/libs/qhttpserver/src/qhttpserver.h
  #endif
 diff -ur qhttpserver/src/qhttpserverapi.h Natron/libs/qhttpserver/src/qhttpserverapi.h
 --- qhttpserver/src/qhttpserverapi.h	2016-01-27 00:33:50
-+++ Natron/libs/qhttpserver/src/qhttpserverapi.h	2026-11-26 12:29:19
++++ Natron/libs/qhttpserver/src/qhttpserverapi.h	2026-11-26 12:34:01
 @@ -25,32 +25,19 @@
  
  #include <QtGlobal>
@@ -929,7 +955,7 @@ diff -ur qhttpserver/src/qhttpserverapi.h Natron/libs/qhttpserver/src/qhttpserve
 +#endif // Q_HTTP_SERVER_API
 diff -ur qhttpserver/src/src.pro Natron/libs/qhttpserver/src/src.pro
 --- qhttpserver/src/src.pro	2016-01-27 00:33:50
-+++ Natron/libs/qhttpserver/src/src.pro	2026-11-26 12:29:19
++++ Natron/libs/qhttpserver/src/src.pro	2026-11-26 12:34:01
 @@ -1,7 +1,6 @@
 -include(../qhttpserver.pri)
 -
