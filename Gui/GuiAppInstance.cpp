@@ -1340,10 +1340,8 @@ GuiAppInstance::newProject()
 void
 GuiAppInstance::handleFileOpenEvent(const std::string &filename)
 {
-    QString fileCopy( QString::fromUtf8( filename.c_str() ) );
-
-    fileCopy.replace( QLatin1Char('\\'), QLatin1Char('/') );
-    if ( Project::isProjectFile(fileCopy) ) {
+    // the file as given: Project::isProjectFile() may read it (a .py file)
+    if ( Project::isProjectFile( QString::fromUtf8( filename.c_str() ) ) ) {
         AppInstancePtr app = getGui()->openProject(filename);
         if (!app) {
             Dialogs::errorDialog(tr("Project").toStdString(), tr("Failed to open project").toStdString() + ' ' + filename);
