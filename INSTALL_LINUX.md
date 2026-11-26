@@ -258,7 +258,7 @@ Useful options (add them to the first `cmake` command):
 
 - `-DCMAKE_BUILD_TYPE=Debug`, `Release` or `RelWithDebInfo` (the default).
 - `-DNATRON_QT6=ON` builds with Qt 6 and PySide6 instead of Qt 5 and PySide2, as C++20 (Qt 5 builds are C++17). See [Debian-based](#debian-based) and [Arch Linux](#arch-linux) for the Qt 6 packages.
-- `-DNATRON_BUILD_TESTS=OFF` skips the unit tests. They need Google Test 1.14 or later (googletest, with its CMake config): `libgtest-dev` on Ubuntu 24.04 or later, `gtest-devel` on Fedora/RHEL, `gtest` on Arch Linux. Ubuntu 22.04 (1.11) and Debian 12 (1.12) are too old: build without the tests, or install a newer googletest from source and add its prefix to `CMAKE_PREFIX_PATH`.
+- `-DNATRON_BUILD_TESTS=OFF` skips the unit tests. They need Google Test 1.14 or later (googletest, with its CMake config): `libgtest-dev` on Ubuntu 24.04 or later, `gtest-devel` on Fedora and RHEL 10 (EPEL), `gtest` on Arch Linux. Ubuntu 22.04 (1.11), Debian 12 (1.12) and RHEL 9 (EPEL: 1.11) are too old: build without the tests, or install a newer googletest from source and add its prefix to `CMAKE_PREFIX_PATH`.
 - `-DNATRON_SYSTEM_LIBS=ON` uses the system copies of the libraries that Natron otherwise builds from `libs/`.
 - `-DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang` builds with Clang.
 
@@ -480,7 +480,7 @@ or
 dnf install cmake fontconfig-devel gcc-c++ expat-devel python-pyside2-devel shiboken2-devel qt5-qtbase-devel boost-devel pixman-devel cairo-devel gtest-devel
 ```
 
-Then build with CMake, as described in [Build](#build).
+Then build with CMake, as described in [Build](#build). On RHEL 9 and derivatives, EPEL's googletest (1.11) is too old for the unit tests: configure with `-DNATRON_BUILD_TESTS=OFF`.
 
 # Generating Python bindings
 

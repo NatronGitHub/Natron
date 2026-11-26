@@ -474,9 +474,9 @@ CMake config (``find_package(GTest 1.14 CONFIG)``; the qmake build uses
 ``pkg-config gtest``). The packages are ``gtest`` on macOS (MacPorts),
 ``mingw-w64-ucrt-x86_64-gtest`` on Windows (MSYS2 UCRT64;
 ``mingw-w64-clang-aarch64-gtest`` on CLANGARM64), ``libgtest-dev`` on Ubuntu
-24.04 or later, ``gtest-devel`` on Fedora/RHEL, ``gtest`` on Arch Linux and
+24.04 or later, ``gtest-devel`` on Fedora and RHEL 10 (EPEL), ``gtest`` on Arch Linux and
 ``googletest`` on FreeBSD; the Rocky Linux 9 SDK builds it (static). Ubuntu
-22.04 (1.11) and Debian 12 (1.12) are too old. Without a usable googletest,
+22.04 (1.11), Debian 12 (1.12) and RHEL 9 (EPEL: 1.11) are too old. Without a usable googletest,
 configuring stops with an error that names these packages: install one (or add
 its prefix to ``CMAKE_PREFIX_PATH``), or configure with
 ``-DNATRON_BUILD_TESTS=OFF``. The configure log says which one is used

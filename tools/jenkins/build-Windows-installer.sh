@@ -401,7 +401,8 @@ if ! $TIMEOUT -s KILL 300 env PATH="$BUNDLE_PATH" "${TMP_PORTABLE_DIR}/bin/Tests
     exit 1
 fi
 $TIMEOUT -s KILL 1800 env PATH="$BUNDLE_PATH" "${TMP_PORTABLE_DIR}/bin/Tests.exe" || true
-# MSYS2's Google Test is a DLL, which genDllVersions.sh bundled for Tests.exe only: remove it too
+# MSYS2's Google Test is a DLL, which genDllVersions.sh bundled for Tests.exe only: remove it too (it
+# stays listed in the <installer>-dlls.txt report, copied above)
 rm -f "${TMP_PORTABLE_DIR}/bin/Tests.exe" "${TMP_PORTABLE_DIR}"/bin/libgtest*.dll
 echo "Done"
 

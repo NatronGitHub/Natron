@@ -165,7 +165,7 @@ if(NOT GTest_FOUND)
         set(_natron_gtest_found " (found ${GTest_CONSIDERED_VERSIONS}: older, or for another architecture)")
     endif()
     message(FATAL_ERROR "Tests: Google Test 1.14 or later (googletest, with its CMake config) was not found${_natron_gtest_found}. "
-        "Install it (Debian/Ubuntu: libgtest-dev; Fedora/RHEL: gtest-devel; macOS: the MacPorts port gtest; "
+        "Install it (Debian/Ubuntu: libgtest-dev; Fedora, RHEL 10 (EPEL): gtest-devel; macOS: the MacPorts port gtest; "
         "MSYS2: mingw-w64-ucrt-x86_64-gtest, or mingw-w64-clang-aarch64-gtest on CLANGARM64; FreeBSD: googletest), "
         "add its prefix to CMAKE_PREFIX_PATH or set GTest_DIR, or configure with -DNATRON_BUILD_TESTS=OFF.")
 endif()
