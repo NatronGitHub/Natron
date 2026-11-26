@@ -412,6 +412,6 @@ endforeach()
 # thousands of nodes; several renders
 set_tests_properties(headless.node_naming headless.layer_passthrough headless.writer_pass_through PROPERTIES
     TIMEOUT 300)
-# the PyPlug of the test
-set_property(TEST headless.pyplug_rebound_app APPEND PROPERTY ENVIRONMENT
+# the PyPlugs of the tests
+set_property(TEST headless.pyplug_rebound_app headless.unsaved_project_path APPEND PROPERTY ENVIRONMENT
     "NATRON_PLUGIN_PATH=${CMAKE_CURRENT_SOURCE_DIR}/data/pyplugs;PYTHONDONTWRITEBYTECODE=1")

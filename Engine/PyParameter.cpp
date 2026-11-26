@@ -30,7 +30,9 @@
 
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
+#include "Engine/Project.h"
 #include "Engine/AppInstance.h"
+#include "Engine/KnobFile.h"
 #include "Engine/KnobSerialization.h"
 #include "Engine/Curve.h"
 #include "Engine/ViewIdx.h"
@@ -2198,6 +2200,28 @@ StringParamBase::get(double frame) const
     return QString::fromUtf8( knob->getValueAtTime(frame, 0).c_str() );
 }
 
+// A file parameter refuses a path that uses [Project] before the project is saved, when [Project] has no value
+// (#1539): it raises ValueError and returns false. Not while Natron itself runs Python to create nodes: the script of a
+// PyPlug (also pasted or duplicated) or of a project being loaded sets the values it was saved with.
+static bool
+checkProjectPathIsSet(const KnobStringBasePtr& knob,
+                      const QString& value)
+{
+    if ( !std::dynamic_pointer_cast<KnobFile>(knob) && !std::dynamic_pointer_cast<KnobOutputFile>(knob) ) {
+        return true;
+    }
+    KnobHolder* holder = knob->getHolder();
+    AppInstancePtr app = holder ? holder->getApp() : AppInstancePtr();
+    const std::string path = value.toStdString();
+    if ( !app || app->isCreatingPythonGroup() || app->getProject()->isLoadingProject() ||
+         !app->getProject()->usesUnsetProjectPath(path) ) {
+        return true;
+    }
+    PyErr_SetString( PyExc_ValueError, Project::unsetProjectPathMessage(path).toStdString().c_str() );
+
+    return false;
+}
+
 void
 StringParamBase::set(const QString& x)
 {
@@ -2206,6 +2230,9 @@ StringParamBase::set(const QString& x)
         return;
     }
 
+    if ( !checkProjectPathIsSet(knob, x) ) {
+        return;
+    }
     recordForUndoGroup(knob);
     knob->setValue(x.toStdString(), ViewSpec::current(), 0);
 }
@@ -2219,6 +2246,9 @@ StringParamBase::set(const QString& x,
         return;
     }
 
+    if ( !checkProjectPathIsSet(knob, x) ) {
+        return;
+    }
     recordForUndoGroup(knob);
     knob->setValueAtTime(frame, x.toStdString(), ViewSpec::current(), 0);
 }
@@ -2242,6 +2272,9 @@ StringParamBase::setValue(const QString& value)
         return;
     }
 
+    if ( !checkProjectPathIsSet(knob, value) ) {
+        return;
+    }
     recordForUndoGroup(knob);
     knob->setValue(value.toStdString(), ViewSpec::current(), 0);
 }
@@ -2266,6 +2299,9 @@ StringParamBase::setValueAtTime(const QString& value,
         return;
     }
 
+    if ( !checkProjectPathIsSet(knob, value) ) {
+        return;
+    }
     recordForUndoGroup(knob);
     knob->setValueAtTime(time, value.toStdString(), ViewSpec::current(), 0);
 }
@@ -2275,6 +2311,9 @@ StringParamBase::setDefaultValue(const QString& value)
 {
     KnobStringBasePtr knob = _stringKnob.lock();
     if (!knob) {
+        return;
+    }
+    if ( !checkProjectPathIsSet(knob, value) ) {
         return;
     }
 

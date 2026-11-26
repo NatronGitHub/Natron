@@ -379,6 +379,9 @@ according to the settings in the Preferences of Natron.
 If however you need a specific decoder to decode the file format, you can use
 the :func:`getSettings()<NatronEngine.App.createNode>` function with the exact plug-in ID.
 
+If *filename* uses the ``[Project]`` path while the project has never been saved (``[Project]``
+has no value), no node is created and :class:`ValueError` is raised: save the project first.
+
 
 .. method:: App.createWriter(filename[, group=None] [, properties=None])
 
@@ -396,6 +399,9 @@ write .pfm files, internally Natron picks the "best" OpenFX plug-in to encode th
 according to the settings in the Preferences of Natron.
 If however you need a specific decoder to encode the file format, you can use
 the :func:`getSettings()<NatronEngine.App.createNode>` function with the exact plug-in ID.
+
+If *filename* uses the ``[Project]`` path while the project has never been saved (``[Project]``
+has no value), no node is created and :class:`ValueError` is raised: save the project first.
 
 .. method:: App.getAppID()
 

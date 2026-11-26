@@ -840,7 +840,10 @@
             </modify-argument>
             <inject-code class="target" position="beginning">
                 %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1,%2, %3);
-                %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
+                // don't convert the result when an error is set (a refused file name, #1539)
+                if ( !PyErr_Occurred() ) {
+                    %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
+                }
             </inject-code>
         </modify-function>
         <modify-function signature="createWriter(QString,Group*, std::map&lt;QString, NodeCreationProperty* &gt;)const">
@@ -849,7 +852,10 @@
             </modify-argument>
             <inject-code class="target" position="beginning">
                 %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1,%2, %3);
-                %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
+                // don't convert the result when an error is set (a refused file name, #1539)
+                if ( !PyErr_Occurred() ) {
+                    %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
+                }
             </inject-code>
         </modify-function>
         <modify-function signature="getProjectParam(QString)const">

@@ -180,11 +180,30 @@ App::createNode(const QString& pluginID,
     }
 }
 
+// App.createReader() and App.createWriter() refuse a file name that uses [Project] before the project is saved, as
+// FileParam.setValue() does (#1539): ValueError, and no node is created.
+static bool
+checkProjectPathIsSet(const AppInstancePtr& app,
+                      const QString& filename)
+{
+    const std::string path = filename.toStdString();
+
+    if ( app->isCreatingPythonGroup() || app->getProject()->isLoadingProject() || !app->getProject()->usesUnsetProjectPath(path) ) {
+        return true;
+    }
+    PyErr_SetString( PyExc_ValueError, Project::unsetProjectPathMessage(path).toStdString().c_str() );
+
+    return false;
+}
+
 Effect*
 App::createReader(const QString& filename,
                   Group* group,
                   const NodeCreationPropertyMap& props) const
 {
+    if ( !checkProjectPathIsSet(getInternalApp(), filename) ) {
+        return NULL;
+    }
     NodeCollectionPtr collection = getCollectionFromGroup(group);
 
     assert(collection);
@@ -207,6 +226,9 @@ App::createWriter(const QString& filename,
                   Group* group,
                   const NodeCreationPropertyMap& props) const
 {
+    if ( !checkProjectPathIsSet(getInternalApp(), filename) ) {
+        return NULL;
+    }
     NodeCollectionPtr collection = getCollectionFromGroup(group);
 
     assert(collection);
