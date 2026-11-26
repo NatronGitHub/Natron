@@ -67,8 +67,9 @@ ceres-flags {
 # Ceres Solver 2.2.0: its configuration (no LAPACK, no sparse libraries, only
 # the dynamic Schur eliminator) is in libs/ceres/config/ceres/internal/config.h.
 # Ceres' miniglog (libs/ceres/internal/ceres/miniglog) provides glog/logging.h;
-# MAX_LOG_LEVEL=-2: miniglog prints errors only (see libs/ceres/CMakeLists.txt).
-DEFINES += MAX_LOG_LEVEL=-2
+# MAX_LOG_LEVEL=0: miniglog prints LOG(INFO) and above, not VLOG(1) and above,
+# as the bundled glog did (see libs/ceres/CMakeLists.txt).
+DEFINES += MAX_LOG_LEVEL=0
 DEFINES += WITH_LIBMV_GUARDED_ALLOC LIBMV_NO_FAST_DETECTOR=
 
 INCLUDEPATH += $$PWD/libs/ceres/config

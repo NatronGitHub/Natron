@@ -1,6 +1,6 @@
 --- libmv/logging/logging.h
 +++ libmv/logging/logging.h
-@@ -21,7 +21,18 @@
+@@ -21,7 +21,20 @@
  #ifndef LIBMV_LOGGING_LOGGING_H
  #define LIBMV_LOGGING_LOGGING_H
  
@@ -8,7 +8,9 @@
 +// the glog of an installed Ceres (NATRON_SYSTEM_LIBS).
 +#if defined(_WIN32) && defined(ERROR)
 +// wingdi.h (from windows.h) defines ERROR as 0, and miniglog declares a global
-+// constant named ERROR: hide the macro while miniglog is read.
++// constant named ERROR: hide the macro while miniglog is read. After it, ERROR
++// is 0 again, so LOG(ERROR) would mean LOG(INFO) with miniglog (and wouldn't
++// compile with glog): libmv code read after windows.h must not use LOG(ERROR).
 +#pragma push_macro("ERROR")
 +#undef ERROR
  #include <glog/logging.h>
@@ -19,7 +21,7 @@
  
  #ifdef DEBUG
  //#define TRACE_LIB_MV 1
-@@ -30,10 +41,13 @@
+@@ -30,10 +43,13 @@
  #ifdef TRACE_LIB_MV
  #define LIBMV_LOG(severity) DLOG(severity)
  #else
