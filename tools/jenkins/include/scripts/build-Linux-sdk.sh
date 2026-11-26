@@ -776,6 +776,10 @@ checkpoint
 
 build pyside2
 
+checkpoint
+
+build googletest # (static, for Natron's Tests program only: nothing to bundle)
+
 if dobuild; then
     # make sure all libs are user-writable and executable
     for subdir in . ffmpeg-gpl2 ffmpeg-lgpl libraw-gpl2 libraw-lgpl; do
