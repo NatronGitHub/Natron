@@ -36,9 +36,29 @@ NATRON_NAMESPACE_ENTER
 /**
  * @brief The request checks of the local documentation server (Gui/DocumentationManager.cpp).
  *
- * Pure functions, so that they can be tested without a server.
+ * The server listens on 127.0.0.1 only, and its pages are only meant for the user's browser, opened by
+ * Natron (Help menu, "?" buttons of the node panels and of the preferences). Pure functions, so that
+ * they can be tested without a server.
  **/
 namespace DocumentationServer {
+/**
+ * @brief Whether hostHeader, the Host header of a request, names this loopback server: "localhost",
+ * "127.0.0.1" or "[::1]", optionally followed by ":serverPort".
+ *
+ * Any other name is refused: a web page whose host name resolves to 127.0.0.1 (DNS rebinding) would
+ * otherwise read the server's answers with the page's own origin.
+ **/
+bool isLoopbackHost(const QString& hostHeader, int serverPort);
+
+/**
+ * @brief Whether a request with this Sec-Fetch-Site header comes from another site ("cross-site", or
+ * "same-site": another port or another subdomain of localhost).
+ *
+ * The browser sends "none" when the user (or Natron) opens a URL, and "same-origin" from the
+ * documentation pages themselves. Browsers without Fetch Metadata send no header (empty value).
+ **/
+bool isCrossSiteRequest(const QString& secFetchSite);
+
 /**
  * @brief The file that serves page (a path relative to docDir), or an empty string if it is outside
  * docDir.

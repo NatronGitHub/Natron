@@ -114,3 +114,49 @@ TEST(DocumentationServer, ResolvesOnlyAllowedLocalFiles)
     EXPECT_EQ( QString(), DocumentationServer::resolveLocalFile( QString(), icons ) );
     EXPECT_EQ( QString(), DocumentationServer::resolveLocalFile( s("/opt/plugins/icon.png"), QStringList() ) );
 }
+
+// DNS rebinding: a web page whose host name resolves to 127.0.0.1 sends its own host name
+TEST(DocumentationServer, AcceptsOnlyLoopbackHostHeaders)
+{
+    const int port = 49152;
+
+    EXPECT_TRUE( DocumentationServer::isLoopbackHost(s("localhost:49152"), port) );
+    EXPECT_TRUE( DocumentationServer::isLoopbackHost(s("localhost"), port) );
+    EXPECT_TRUE( DocumentationServer::isLoopbackHost(s("LocalHost:49152"), port) );
+    EXPECT_TRUE( DocumentationServer::isLoopbackHost(s("127.0.0.1:49152"), port) );
+    EXPECT_TRUE( DocumentationServer::isLoopbackHost(s("[::1]:49152"), port) );
+    EXPECT_TRUE( DocumentationServer::isLoopbackHost(s(" localhost:49152 "), port) );
+
+    const char* const refused[] = {
+        "", // HTTP/1.1 requires a Host header
+        "evil.example.com:49152",
+        "evil.example.com",
+        "localhost.evil.example.com:49152",
+        "127.0.0.1.nip.io:49152",
+        "localhost:8080", // another port
+        "localhost:",
+        "localhost:+49152",
+        "localhost:49152abc",
+        "localhost:49152:1",
+        "localhost, evil.example.com", // two Host headers (QHttpRequest joins them)
+        "[::1",
+        "[::1]x",
+        "[::2]:49152",
+        "0.0.0.0:49152",
+        "192.168.1.2:49152",
+        "user@localhost:49152",
+    };
+    for (const char* host : refused) {
+        EXPECT_FALSE( DocumentationServer::isLoopbackHost(s(host), port) ) << host;
+    }
+}
+
+// Fetch Metadata: requests made by other sites
+TEST(DocumentationServer, DetectsCrossSiteRequests)
+{
+    EXPECT_TRUE( DocumentationServer::isCrossSiteRequest( s("cross-site") ) );
+    EXPECT_TRUE( DocumentationServer::isCrossSiteRequest( s("same-site") ) ); // e.g. localhost:8080
+    EXPECT_FALSE( DocumentationServer::isCrossSiteRequest( s("same-origin") ) ); // links of the documentation
+    EXPECT_FALSE( DocumentationServer::isCrossSiteRequest( s("none") ) ); // opened by the user (or Natron)
+    EXPECT_FALSE( DocumentationServer::isCrossSiteRequest( QString() ) ); // browsers without Fetch Metadata
+}

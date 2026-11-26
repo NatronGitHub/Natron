@@ -32,6 +32,55 @@
 NATRON_NAMESPACE_ENTER
 
 namespace DocumentationServer {
+bool
+isLoopbackHost(const QString& hostHeader,
+               int serverPort)
+{
+    const QString host = hostHeader.trimmed().toLower();
+    QString name;
+    QString port;
+
+    if ( host.startsWith( QLatin1Char('[') ) ) {
+        // IPv6 literal: "[::1]" or "[::1]:port"
+        const int end = host.indexOf( QLatin1Char(']') );
+        if (end < 0) {
+            return false;
+        }
+        name = host.left(end + 1);
+        port = host.mid(end + 1);
+    } else {
+        const int colon = host.indexOf( QLatin1Char(':') );
+        name = (colon < 0) ? host : host.left(colon);
+        port = (colon < 0) ? QString() : host.mid(colon);
+    }
+    if ( !port.isEmpty() ) {
+        // ":" followed by the server's port, in decimal digits only (QString::toInt() would also take a sign)
+        if ( ( port.size() < 2 ) || ( port.at(0) != QLatin1Char(':') ) ) {
+            return false;
+        }
+        for (int i = 1; i < port.size(); ++i) {
+            if ( ( port.at(i) < QLatin1Char('0') ) || ( port.at(i) > QLatin1Char('9') ) ) {
+                return false;
+            }
+        }
+        bool ok = false;
+        const int value = port.mid(1).toInt(&ok);
+        if ( !ok || (value != serverPort) ) {
+            return false;
+        }
+    }
+
+    return name == QLatin1String("localhost") || name == QLatin1String("127.0.0.1") || name == QLatin1String("[::1]");
+}
+
+bool
+isCrossSiteRequest(const QString& secFetchSite)
+{
+    const QString site = secFetchSite.trimmed().toLower();
+
+    return site == QLatin1String("cross-site") || site == QLatin1String("same-site");
+}
+
 QString
 resolveDocumentationFile(const QString& docDir,
                          const QString& page)
