@@ -2969,7 +2969,10 @@ exportGroupInternal(int indentLevel,
 
     QString groupName = upperLevelGroupName + QString::fromUtf8("group");
 
-    if (isGroup) {
+    // The group of a PyPlug (the top level, which the script doesn't create). A Group inside it, or in a project,
+    // had its parameters exported with the nodes of its parent group: exporting them again created its user
+    // parameters and the tracks of a Tracker (a NodeGroup) twice.
+    if ( isGroup && upperLevelGroupName.isEmpty() ) {
         WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Create the parameters of the group node the same way we did for all internal nodes");
         WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("lastNode = ") + groupName);
         double r, g, b;
