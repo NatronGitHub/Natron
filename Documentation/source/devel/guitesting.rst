@@ -171,15 +171,16 @@ They are the Linux portable archives of the RB-2.6 branch, built in the Rocky Li
 the system libraries listed in "Runtime requirements of the Linux binaries" in ``INSTALL_LINUX.md``,
 and bundle the official plug-ins in ``Plugins/OFX/Natron`` (remove the bundled copy of the plug-in
 under test, so that Natron loads the one on ``OFX_PLUGIN_PATH``). Each archive has one top-level
-directory, ``Natron-<version>-Linux-<arch>-no-installer``, with the ``Natron`` and
+directory (``Natron-RB-2.6-<date>-<commit>-Linux-<arch>-no-installer``), with the ``Natron`` and
 ``NatronRenderer`` launchers.
 
 The ``Linux packages`` workflow (``.github/workflows/linux_packages.yml``) replaces these assets in
 place, under the same names, on its weekly run (Sunday) and when it is run on demand on RB-2.6, only
-if both archives were built and passed Natron-Tests (known failures excepted): after a failed run,
-the previous assets stay. Pull requests, tags and other branches never update them. The assets are
-replaced one after the other, so a download during an update may get the archive of one build and
-the commit of the other.
+if both archives were built and passed Natron-Tests (known failures excepted): a run that fails before the
+upload leaves the previous assets. Pull requests, tags and other branches never update them. An
+update deletes each asset before uploading its replacement, so during an update (a few minutes) a
+download may fail or get files from two builds, and an asset may stay missing until the next run if
+the upload fails: retry the download, and compare ``natron_testing-commit.txt`` before and after.
 
 The test helpers, ``natronheadless.py`` and ``natrontest.py``, are not in the archives: fetch them
 from ``Tests/gui`` at the published commit, so that they match the build::
