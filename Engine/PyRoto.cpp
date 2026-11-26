@@ -664,7 +664,8 @@ StrokeItem::addStroke(const std::list<std::vector<double> >& points)
     std::vector<RotoPoint> rotoPoints;
 
     for (std::list<std::vector<double> >::const_iterator it = points.begin(); it != points.end(); ++it) {
-        if (it->size() != 4) {
+        // a point with the timestamp of the previous one would replace it (a keyframe at the same time)
+        if ( (it->size() != 4) || ( !rotoPoints.empty() && ( (*it)[3] <= rotoPoints.back().timestamp() ) ) ) {
             return false;
         }
         rotoPoints.push_back( RotoPoint( (*it)[0], (*it)[1], (*it)[2], (*it)[3] ) );

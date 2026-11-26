@@ -145,6 +145,8 @@ Writing a project by hand:
 Limitations
 -----------
 
+- The expressions and links of the parameters of Roto shapes, paint strokes and tracks (those of the
+  node parameters are saved).
 - The GUI data: the window layout, the viewer settings and the node graph zoom
   (see :meth:`App.projectFileHasGuiData()<NatronEngine.App.projectFileHasGuiData>`). A project saved
   by NatronRenderer has no node positions, as in a *.ntp* file.

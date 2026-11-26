@@ -43,9 +43,11 @@ Member functions description
     :param points: :class:`sequence`
     :rtype: :class:`bool`
 
-Adds a line made of *points*, a sequence of ``(x, y, pressure, timestamp)`` sequences, with
-increasing timestamps. The line is interpolated between the points as a line painted in the viewer.
-Returns False, and adds nothing, if *points* is empty or a point doesn't have 4 items.
+Adds a line made of *points*, a sequence of ``(x, y, pressure, timestamp)`` sequences of numbers
+(a :class:`TypeError` otherwise), with increasing timestamps. The line is interpolated between the
+points as a line painted in the viewer. Returns False, and adds nothing, if *points* is empty or
+its timestamps don't increase. As when a stroke is painted, the *center* parameter of the stroke
+(the center of its transform) is then set to the center of the stroke, and loses its animation.
 
 .. method:: StrokeItem.getBrushType()
 

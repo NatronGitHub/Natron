@@ -192,7 +192,8 @@ public:
     void getPoints(int index, std::list<std::vector<double> >* points) const;
 
     // Adds a line made of points (x, y, pressure, timestamp), interpolated as a painted line (Catmull-Rom).
-    // The timestamps are in seconds from the first point, in increasing order. False if points is empty.
+    // The timestamps are in seconds from the first point. False, and nothing added, if points is empty or its
+    // timestamps don't increase. Resets the center of the stroke (RotoStrokeItem::setStrokeFinished()).
     bool addStroke(const std::list<std::vector<double> >& points);
 
 private:

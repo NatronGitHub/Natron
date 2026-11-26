@@ -475,9 +475,17 @@ TrackMarker::getFullyQualifiedName() const
 void
 TrackMarker::setLabel(const std::string& label)
 {
-    QMutexLocker l(&_imp->trackMutex);
-
-    _imp->trackLabel = label;
+    {
+        QMutexLocker l(&_imp->trackMutex);
+        if (_imp->trackLabel == label) {
+            return;
+        }
+        _imp->trackLabel = label;
+    }
+    TrackerContextPtr context = getContext();
+    if (context) {
+        context->s_trackLabelChanged( shared_from_this() );
+    }
 }
 
 std::string
