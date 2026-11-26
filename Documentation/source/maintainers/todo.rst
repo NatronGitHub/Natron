@@ -92,8 +92,10 @@ good place to add defensive checks and clearer diagnostics in ``OSGLContext_*``.
 
 **Invest in the crash-reporting pipeline (P1).**
 A large tail of issues are "random crashes" with no stack trace
-(`#557 <https://github.com/NatronGitHub/Natron/issues/557>`_). Making the
-Breakpad reporter reliably deliver usable minidumps/symbols converts that tail
+(`#557 <https://github.com/NatronGitHub/Natron/issues/557>`_). A crash reporter
+that reliably delivers usable minidumps/symbols (sentry-native, replacing the
+removed Breakpad one:
+`#1183 <https://github.com/NatronGitHub/Natron/issues/1183>`_) converts that tail
 into fixable, evidence-backed bugs. High leverage.
 
 Robustness of critical subsystems

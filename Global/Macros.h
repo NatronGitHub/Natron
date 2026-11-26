@@ -209,25 +209,6 @@ namespace Python { }
 #define NATRON_DOCUMENTATION_ONLINE "http://natron.readthedocs.io"
 #endif
 
-#if defined(__NATRON_LINUX__) || defined(__NATRON_OSX__)
-/*
-   On Linux crash reporter MUST use fork() to spawn the Natron process because it needs to duplicate file descriptors for the pipe.
-   On Windows, fork() doesn't exist so we use QProcess.
-   OS X can use both because it doesn't require a file descriptor to be passed to Natron for the breakpad pipe.
- */
-#define NATRON_CRASH_REPORTER_USE_FORK 1
-#endif
-
-
-#define NATRON_BREAKPAD_PROCESS_EXEC "breakpad_process_exec"
-#define NATRON_BREAKPAD_PROCESS_PID "breakpad_process_pid"
-#define NATRON_BREAKPAD_CLIENT_FD_ARG "breakpad_client_fd"
-#define NATRON_BREAKPAD_PIPE_ARG "breakpad_pipe_path"
-#define NATRON_BREAKPAD_COM_PIPE_ARG "breakpad_com_pipe_path"
-
-#define NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK "-e"
-#define NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK_ACK "-eack"
-
 ///If set the version of Natron will no longer be displayed in the splashscreen but the name of the user
 ///Set this from qmake
 

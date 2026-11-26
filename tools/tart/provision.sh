@@ -866,7 +866,7 @@ step_build() {
     fi
     mkdir -p "$WORKSPACE"
     cd "$NATRON/tools/jenkins"
-    env NOUPDATE=1 WORKSPACE="$WORKSPACE" DISABLE_BREAKPAD=1 NATRON_MACOS_MIN="$macos_target" NATRON_LICENSE="${NATRON_LICENSE:-GPL}" \
+    env NOUPDATE=1 WORKSPACE="$WORKSPACE" NATRON_MACOS_MIN="$macos_target" NATRON_LICENSE="${NATRON_LICENSE:-GPL}" \
         GIT_URL=https://github.com/NatronGitHub/Natron.git GIT_BRANCH="${GIT_BRANCH:-RB-2.6}" \
         UNIT_TESTS="${UNIT_TESTS:-false}" BUILD_NAME=natron_github_RB2 BUILD_NUMBER=1 \
         COMPILE_TYPE=release MKJOBS="$JOBS" \

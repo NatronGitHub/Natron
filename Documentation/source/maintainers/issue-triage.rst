@@ -241,6 +241,6 @@ Maintenance recommendation
    against the current release and close the stale ones.
 3. **Close the loop on ``status:fix-commited`` / ``status:in-progress``.** Verify
    and close (e.g. ``#195``) or unblock stalled work.
-4. **Feed the crash reporter.** Prioritizing usable crash reports (``#557``)
-   turns the long tail of "random crash" issues into fixable, stack-trace-backed
+4. **Bring back a crash reporter.** Usable crash reports (``#557``, with
+   sentry-native in ``#1183``) would turn the long tail of "random crash" issues into fixable, stack-trace-backed
    bugs.

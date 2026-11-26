@@ -81,7 +81,7 @@ A local installer build runs the same command as `build_installer.yml`, from `to
 mkdir -p $HOME/natron-build
 WORKSPACE=$HOME/natron-build BUILD_NAME=natron BUILD_NUMBER=1 BITS=64 NATRON_LICENSE=GPL \
   GIT_URL=https://github.com/NatronGitHub/Natron.git GIT_URL_IS_NATRON=1 SNAPSHOT_BRANCH=RB-2.6 \
-  QT_VERSION_MAJOR=5 DISABLE_BREAKPAD=1 NOUPDATE=1 MKJOBS=$(nproc) UNIT_TESTS=true \
+  QT_VERSION_MAJOR=5 NOUPDATE=1 MKJOBS=$(nproc) UNIT_TESTS=true \
   ./launchBuildMain.sh
 ```
 

@@ -208,9 +208,9 @@ the consolidated list (several are referenced from the P0 leads in
 - **Logging.** Route diagnostics through ``Engine/Log`` (visible in the GUI
   ``LogWindow``) rather than raw ``std::cout`` so they appear in user bug
   reports (see :ref:`maint-subsystems`).
-- **Crashes in the field.** Usable Breakpad minidumps are the way to diagnose
-  the "random crash" tail; see the crash-reporting notes in
-  :ref:`maint-subsystems`.
+- **Crashes in the field.** Natron 2.6 has no crash reporter, so ask reporters
+  for a backtrace (debugger or system crash log); see the crash-reporting notes
+  in :ref:`maint-subsystems`.
 
 .. _maint-changelog:
 

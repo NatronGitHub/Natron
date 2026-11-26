@@ -25,7 +25,6 @@
 // ***** END PYTHON BLOCK *****
 
 #include "AppManager.h"
-//#include "AppManagerPrivate.h" // include breakpad after Engine, because it includes /usr/include/AssertMacros.h on OS X which defines a check(x) macro, which conflicts with boost
 
 #if defined(__APPLE__) && defined(_LIBCPP_VERSION)
 #include <AvailabilityMacros.h>
@@ -131,7 +130,6 @@
 #include "Engine/CLArgs.h"
 #include "Engine/DiskCacheNode.h"
 #include "Engine/Dot.h"
-#include "Engine/ExistenceCheckThread.h"
 #include "Engine/FileSystemModel.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
@@ -161,7 +159,7 @@
 
 #include "sbkversion.h" // shiboken/pyside version
 
-#include "AppManagerPrivate.h" // include breakpad after Engine, because it includes /usr/include/AssertMacros.h on OS X which defines a check(x) macro, which conflicts with boost
+#include "AppManagerPrivate.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -532,11 +530,6 @@ AppManager::~AppManager()
     _imp->destroying = true;
 #ifdef __NATRON_UNIX__
     disarmShutDownSignalPipe();
-#endif
-#ifdef NATRON_USE_BREAKPAD
-    if (_imp->breakpadAliveThread) {
-        _imp->breakpadAliveThread->quitThread();
-    }
 #endif
 
     bool appsEmpty;
@@ -910,34 +903,14 @@ AppManager::loadInternal(const CLArgs& cl)
     _imp->dialogsDisabled = cl.areDialogsDisabled();
 
     Log::instance(); //< enable logging
-    bool mustSetSignalsHandlers = true;
-#ifdef NATRON_USE_BREAKPAD
-    //Enabled breakpad only if the process was spawned from the crash reporter
-    const QString& breakpadProcessExec = cl.getBreakpadProcessExecutableFilePath();
-    if ( !breakpadProcessExec.isEmpty() && QFile::exists(breakpadProcessExec) ) {
-        _imp->breakpadProcessExecutableFilePath = breakpadProcessExec;
-        _imp->breakpadProcessPID = (Q_PID)cl.getBreakpadProcessPID();
-        const QString& breakpadPipePath = cl.getBreakpadPipeFilePath();
-        const QString& breakpadComPipePath = cl.getBreakpadComPipeFilePath();
-        int breakpad_client_fd = cl.getBreakpadClientFD();
-        _imp->initBreakpad(breakpadPipePath, breakpadComPipePath, breakpad_client_fd);
-        mustSetSignalsHandlers = false;
-    }
-#endif
-
 
 # ifdef __NATRON_UNIX__
-    if (mustSetSignalsHandlers) {
-        setUpShutDownSignalNotifier();
-        setShutDownSignal(SIGINT);   // shut down on ctrl-c
-        setShutDownSignal(SIGTERM);   // shut down on killall
-#     if defined(__NATRON_LINUX__) && !defined(__FreeBSD__)
-        //Catch SIGSEGV only when google-breakpad is not active
-        setSigSegvSignal();
-#     endif
-    }
-# else
-    Q_UNUSED(mustSetSignalsHandlers);
+    setUpShutDownSignalNotifier();
+    setShutDownSignal(SIGINT);   // shut down on ctrl-c
+    setShutDownSignal(SIGTERM);   // shut down on killall
+#   if defined(__NATRON_LINUX__) && !defined(__FreeBSD__)
+    setSigSegvSignal();
+#   endif
 # endif
 
 
@@ -999,18 +972,6 @@ const std::list<OpenGLRendererInfo>&
 AppManager::getOpenGLRenderers() const
 {
     return _imp->openGLRenderers;
-}
-
-bool
-AppManager::isSpawnedFromCrashReporter() const
-{
-#ifdef NATRON_USE_BREAKPAD
-
-    return _imp->breakpadHandler.get() != 0;
-#else
-
-    return false;
-#endif
 }
 
 void
@@ -3934,20 +3895,6 @@ AppManager::isProjectAlreadyOpened(const std::string& projectFilePath) const
     }
 
     return -1;
-}
-
-void
-AppManager::onCrashReporterNoLongerResponding()
-{
-#ifdef NATRON_USE_BREAKPAD
-    //Crash reporter seems to no longer exist, quit
-    QString error = tr("%1 has detected that the crash reporter process is no longer responding. "
-                       "This most likely indicates that it was killed or that the "
-                       "communication between the 2 processes is failing.")
-                    .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
-    std::cerr << error.toStdString() << std::endl;
-    writeToErrorLog_mt_safe(tr("Crash-Reporter"), QDateTime::currentDateTime(), error );
-#endif
 }
 
 void
