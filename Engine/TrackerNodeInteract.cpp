@@ -1358,8 +1358,12 @@ TrackerNodeInteract::onTrackImageRenderingFinished()
     QFutureWatcher<std::pair<ImagePtr, RectI> >* future = dynamic_cast<QFutureWatcher<std::pair<ImagePtr, RectI> >*>( sender() );
     assert(future);
     std::pair<ImagePtr, RectI> ret = future->result();
+    // No viewport when no viewer has drawn this Tracker's overlay, e.g. when no viewer shows the Tracker
+    // and its buttons are used from the settings panel (#1256): nothing to upload the texture to
     OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
-    assert(overlay);
+    if (!overlay) {
+        return;
+    }
     OpenGLViewerI* isOpenGLViewer = dynamic_cast<OpenGLViewerI*>(overlay);
     assert(isOpenGLViewer);
     if (!isOpenGLViewer) {
@@ -1391,43 +1395,50 @@ TrackerNodeInteract::onKeyFrameImageRenderingFinished()
     assert( QThread::currentThread() == qApp->thread() );
     TrackWatcher* future = dynamic_cast<TrackWatcher*>( sender() );
     assert(future);
+    // the request is done, whatever follows: take it out of the map (the watcher lives until we return)
+    TrackKeyframeRequests::iterator it = trackRequestsMap.begin();
+    while ( it != trackRequestsMap.end() && it->second.get() != future ) {
+        ++it;
+    }
+    assert( it != trackRequestsMap.end() );
+    if ( it == trackRequestsMap.end() ) {
+        return;
+    }
+    const TrackRequestKey key = it->first;
+    const TrackWatcherPtr watcher = it->second;
+    trackRequestsMap.erase(it);
+
     std::pair<ImagePtr, RectI> ret = future->result();
     if ( !ret.first || ret.second.isNull() ) {
         return;
     }
 
+    // no viewport when no viewer has drawn this Tracker's overlay (see onTrackImageRenderingFinished())
     OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
-    assert(overlay);
+    if (!overlay) {
+        return;
+    }
     OpenGLViewerI* isOpenGLViewer = dynamic_cast<OpenGLViewerI*>(overlay);
     assert(isOpenGLViewer);
     if (!isOpenGLViewer) {
         return;
     }
+    TrackMarkerPtr track = key.track.lock();
+    if (!track) {
+        return;
+    }
 
     isOpenGLViewer->makeOpenGLcontextCurrent();
 
-    for (TrackKeyframeRequests::iterator it = trackRequestsMap.begin(); it != trackRequestsMap.end(); ++it) {
-        if (it->second.get() == future) {
-            TrackMarkerPtr track = it->first.track.lock();
-            if (!track) {
-                return;
-            }
-            TrackerNodeInteract::KeyFrameTexIDs& keyTextures = trackTextures[track];
-            int format, internalFormat, glType;
-            Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
-            GLTexturePtr tex( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte,
-                                          format, internalFormat, glType) );
-            keyTextures[it->first.time] = tex;
-            convertImageTosRGBOpenGLTexture(ret.first, tex, ret.second);
+    TrackerNodeInteract::KeyFrameTexIDs& keyTextures = trackTextures[track];
+    int format, internalFormat, glType;
+    Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
+    GLTexturePtr tex( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte,
+                                  format, internalFormat, glType) );
+    keyTextures[key.time] = tex;
+    convertImageTosRGBOpenGLTexture(ret.first, tex, ret.second);
 
-            trackRequestsMap.erase(it);
-
-            _p->publicInterface->redrawOverlayInteract();
-
-            return;
-        }
-    }
-    assert(false);
+    _p->publicInterface->redrawOverlayInteract();
 }
 
 void
