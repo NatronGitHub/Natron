@@ -15,8 +15,8 @@
 # runTests.sh reports the known failures (Natron-Tests' known_failures/common.txt and macos.txt) as
 # "KNOWN FAIL" and the known failures that passed as "UNEXPECTED PASS" (the lists must then be
 # updated, through a Natron-Tests pull request); natron-test.sh needs a Natron-Tests with these lists.
-# Exit status: 0 if every test passed or is a known failure, 1 otherwise (or if the suite did
-# not run): a release gate. Unexpected passes are reported, and don't fail the run.
+# Exit status: 0 if every test passed or is a known failure, 1 otherwise: a test failed that isn't
+# a known failure, a known failure passed (UNEXPECTED PASS), or the suite did not run. A release gate.
 # Results, as in the Natron release assets (tools/jenkins/runUnitTests.sh):
 #   <dmg name>-tests.txt                  runTests.sh's result.txt (one "Test : PASS", "FAIL",
 #                                         "KNOWN FAIL" or "UNEXPECTED PASS" line per test)

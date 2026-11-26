@@ -14,8 +14,8 @@
 # test (see runTests.sh); the results are then named <name>-partial-<test>-*.
 # runTests.sh reports the tests listed in Natron-Tests' known_failures/common.txt and linux.txt as
 # "KNOWN FAIL", and those of them that passed as "UNEXPECTED PASS".
-# Exit status: 0 if every test passed or is a known failure, 1 otherwise (or if the suite did not
-# run). Results, named after the archive (<name> is the archive name without -no-installer.tar.xz),
+# Exit status: 0 if every test passed or is a known failure, 1 otherwise: a test failed that isn't
+# a known failure, a known failure passed (UNEXPECTED PASS), or the suite did not run. Results, named after the archive (<name> is the archive name without -no-installer.tar.xz),
 # as in the Natron release assets:
 #   <name>-tests.txt                  runTests.sh's result.txt
 #   <name>-unit_tests_failures.zip    the failed tests' outputs and references
@@ -151,10 +151,12 @@ echo "*** the test container exited with status $status"
 if [ -f "$OUT/$NAME-tests.txt" ] && [ -f "$OUT/$NAME-tests-summary.txt" ]; then
     echo "*** Natron-Tests ($OUT/$NAME-tests.txt):"
     cat "$OUT/$NAME-tests-summary.txt"
+    [ "$status" = 0 ] || echo "Error: status $status (a test failed that isn't a known failure, a known failure passed, a system library is missing, or the run failed)"
+    # also with a Natron-Tests whose runTests.sh doesn't fail on unexpected passes yet
     if grep -q '^UNEXPECTED PASS: [1-9]' "$OUT/$NAME-tests-summary.txt"; then
-        echo "Warning: known failures passed: remove them from Natron-Tests' known_failures/"
+        echo "Error: known failures passed (UNEXPECTED PASS): remove them from Natron-Tests' known_failures/"
+        status=1
     fi
-    [ "$status" = 0 ] || echo "Error: status $status (a test failed that isn't a known failure, a system library is missing, or the run failed)"
 elif [ -f "$OUT/$NAME-tests.txt" ]; then
     echo "Error: no summary.txt: runTests.sh did not finish (see $OUT/$NAME-tests.log)"
     status=1

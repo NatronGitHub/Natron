@@ -234,6 +234,26 @@ jobs:
           if-no-files-found: ignore
           retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
 
+      - name: Report the Natron-Tests results
+        # launchBuildMain.sh doesn't fail the build when Natron-Tests fails (the Windows known
+        # failures aren't checked with 2.6 yet, #1629): show the counts in the job summary, an
+        # error annotation for each known failure that passed (UNEXPECTED PASS: update
+        # Natron-Tests' known_failures/) and a warning for each other failure
+        run: |
+          RESULTS=$(cygpath -u '${{ steps.build.outputs.TEST_RESULTS_FILE }}')
+          if [ ! -f "${RESULTS}" ]; then echo "::warning::no Natron-Tests results (${RESULTS})"; exit 0; fi
+          count() { grep -c " : $1\$" "${RESULTS}" || true; }
+          {
+            echo "## Natron-Tests (${{ matrix.msystem }})"
+            echo "PASS: $(count PASS), FAIL: $(count FAIL), KNOWN FAIL: $(count 'KNOWN FAIL'), UNEXPECTED PASS: $(count 'UNEXPECTED PASS')"
+          } >> $GITHUB_STEP_SUMMARY
+          sed -n -e 's/ : UNEXPECTED PASS$//p' "${RESULTS}" | while IFS= read -r t; do
+            echo "::error::Natron-Tests: $t is a known failure that passed (UNEXPECTED PASS): remove it from Natron-Tests' known_failures/"
+          done
+          sed -n -e 's/ : FAIL$//p' "${RESULTS}" | while IFS= read -r t; do
+            echo "::warning::Natron-Tests: $t failed and isn't a known failure"
+          done
+
       - name: Verify plugin loading
         run: |
           INSTALLER_DIR=$(cygpath -u '${{ steps.build.outputs.INSTALLER_DIR }}')/${{ steps.build.outputs.INSTALLER_NAME }}

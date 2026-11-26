@@ -17,8 +17,8 @@
 #   NAME-unit_tests_failures.zip    the failed tests' outputs and references, in a
 #                                   NAME-unit_tests_failures/ directory (only if a test failed)
 #   NAME-tests.log                  runTests.sh's output
-# Exit status: 0 if every test passed or is a known failure, 1 otherwise (or if the suite did not
-# run). Unexpected passes are reported, and don't fail the run.
+# Exit status: 0 if every test passed or is a known failure, 1 otherwise: a test failed that isn't
+# a known failure, a known failure passed (UNEXPECTED PASS), or the suite did not run.
 set -euo pipefail
 
 [ $# = 4 ] || { sed -n 2,21p "$0"; exit 2; }
@@ -123,13 +123,16 @@ if [ -f "$TESTS/result.txt" ]; then
 fi
 
 if [ -f "$OUT/$NAME-tests.txt" ] && [ -f "$OUT/$NAME-tests-summary.txt" ]; then
-    # runTests.sh exits 1 when a test fails that isn't a known failure; summary.txt has the counts
+    # runTests.sh exits 1 when a test fails that isn't a known failure or a known failure passes;
+    # summary.txt has the counts
     log "Natron-Tests ($OUT/$NAME-tests.txt):"
     cat "$OUT/$NAME-tests-summary.txt"
+    [ "$status" = 0 ] || log "Error: runTests.sh exited with status $status (a test failed that isn't a known failure, a known failure passed, or the run failed)"
+    # also with a Natron-Tests whose runTests.sh doesn't fail on unexpected passes yet
     if grep -q '^UNEXPECTED PASS: [1-9]' "$OUT/$NAME-tests-summary.txt"; then
-        log "Warning: known failures passed: remove them from Natron-Tests' known_failures/"
+        log "Error: known failures passed (UNEXPECTED PASS): remove them from Natron-Tests' known_failures/"
+        status=1
     fi
-    [ "$status" = 0 ] || log "Error: runTests.sh exited with status $status (a test failed that isn't a known failure, or the run failed)"
 elif [ -f "$OUT/$NAME-tests.txt" ]; then
     log "Error: no summary.txt: runTests.sh did not finish (see $OUT/$NAME-tests.log)"
     status=1
