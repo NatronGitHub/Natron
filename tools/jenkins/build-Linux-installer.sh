@@ -614,6 +614,8 @@ function installPlugin() {
 
     # Copy plug-in bundle
     cp -a "${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle" "${TMP_PORTABLE_DIR}/Plugins/OFX/Natron/"
+    # without the caches of its PyPlugs, written by build-natron.sh's Tests run (#1923)
+    find "${TMP_PORTABLE_DIR}/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle" -type d -name __pycache__ -prune -exec rm -rf {} +
 
 }
 
