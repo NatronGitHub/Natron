@@ -12,7 +12,16 @@ that is, as the Ceres 1.11 that Natron bundled before: dense linear algebra
 only, with Eigen (libs/Eigen3). Ceres' miniglog provides glog/logging.h, so
 neither glog nor gflags is needed.
 
-Local modifications: none. Files:
+Local modifications (patches/, apply with patch -p0 from libs/ceres):
+- 0001-miniglog-cstdint.patch: miniglog includes <cstdint>, as glog's
+  logging.h does; Ceres uses int64_t without including it (file.cc,
+  array_utils.cc, ...), which fails with GCC 16 (MSYS2 UCRT64).
+- 0002-jet-bessel-mingw-strict-ansi.patch: with MinGW and __STRICT_ANSI__
+  (-std=c++17, as qmake uses), call _j0/_j1/_jn, since j0/j1/jn are not
+  declared (adapted from MSYS2's mingw-w64-ceres-solver
+  003-fix-deprecated-bessel.patch).
+
+Files:
 - include/ceres: the public headers, except manifold_test_utils.h (gtest).
 - config/ceres/internal/config.h and export.h: written by hand, they replace
   the headers that upstream's CMake build generates (see their comments).
