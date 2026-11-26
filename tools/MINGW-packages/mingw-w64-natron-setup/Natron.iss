@@ -369,11 +369,13 @@ begin
       Result := WizardForm.PrevAppDir <> '';
 end;
 
-// The folder page refuses the folder of an older Natron
+// The folder page refuses the folder of an older Natron. Not in a silent install, which also goes
+// through NextButtonClick: there, returning False aborts Setup with exit code 1, without a
+// message; PrepareToInstall refuses the folder instead, with exit code 7 and a line in the log.
 function NextButtonClick(CurPageID: Integer): Boolean;
 begin
   Result := True;
-  if (CurPageID = wpSelectDir) and IsOldNatronDir(WizardDirValue) then begin
+  if (CurPageID = wpSelectDir) and not WizardSilent and IsOldNatronDir(WizardDirValue) then begin
     SuppressibleMsgBox(OldNatronDirMessage(WizardDirValue), mbError, MB_OK, IDOK);
     Result := False;
   end;
