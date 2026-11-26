@@ -8,9 +8,10 @@
 # pkg-config could not resolve their "Requires.private: libzstd".
 ZSTD_VERSION=1.5.7
 ZSTD_TAR="zstd-${ZSTD_VERSION}.tar.gz"
+ZSTD_SHA256=eb33e51f49a15e023950cd7825ca74a4a2b43db8354825ac24fc1b7ee09e6fa3
 ZSTD_SITE="https://github.com/facebook/zstd/releases/download/v${ZSTD_VERSION}"
 if download_step; then
-    download "$ZSTD_SITE" "$ZSTD_TAR"
+    download "$ZSTD_SITE" "$ZSTD_TAR" "$ZSTD_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libzstd.pc" ] || [ "$(pkg-config --modversion libzstd)" != "$ZSTD_VERSION" ]; }; }; then
     start_build

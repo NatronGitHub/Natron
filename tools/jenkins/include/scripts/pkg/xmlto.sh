@@ -4,9 +4,10 @@
 # see http://www.linuxfromscratch.org/blfs/view/svn/pst/xmlto.html
 XMLTO_VERSION=0.0.28
 XMLTO_TAR="xmlto-${XMLTO_VERSION}.tar.bz2"
+XMLTO_SHA256=1130df3a7957eb9f6f0d29e4aa1c75732a7dfb6d639be013859b5c7ec5421276
 XMLTO_SITE="https://releases.pagure.org/xmlto"
 if download_step; then
-    download "$XMLTO_SITE" "$XMLTO_TAR"
+    download "$XMLTO_SITE" "$XMLTO_TAR" "$XMLTO_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/xmlto" ] || [ "$("${SDK_HOME}/bin/xmlto" --version)" != "xmlto version $XMLTO_VERSION" ] ; }; }; then
     start_build

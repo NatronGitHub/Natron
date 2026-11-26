@@ -4,9 +4,10 @@
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/yasm.html
 YASM_VERSION=1.3.0
 YASM_TAR="yasm-${YASM_VERSION}.tar.gz"
-YASM_SITE="http://www.tortall.net/projects/yasm/releases"
+YASM_SHA256=3dce6601b495f5b3d45b59f7d2492a340ee7e84b5beca17e48f862502bd5603f
+YASM_SITE="https://www.tortall.net/projects/yasm/releases"
 if download_step; then
-    download "$YASM_SITE" "$YASM_TAR"
+    download "$YASM_SITE" "$YASM_TAR" "$YASM_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/yasm" ]; }; }; then
     start_build

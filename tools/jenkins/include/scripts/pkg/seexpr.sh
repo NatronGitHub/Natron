@@ -4,9 +4,10 @@
 # see https://github.com/wdas/SeExpr/tags
 SEEXPR_VERSION=3.0.1
 SEEXPR_TAR="SeExpr-${SEEXPR_VERSION}.tar.gz"
+SEEXPR_SHA256=1e4cd35e6d63bd3443e1bffe723dbae91334c2c94a84cc590ea8f1886f96f84e
 SEEXPR_VERSION_PC=1.0.0
 if download_step; then
-    download_github wdas SeExpr "$SEEXPR_VERSION" v "$SEEXPR_TAR"
+    download_github wdas SeExpr "$SEEXPR_VERSION" v "$SEEXPR_TAR" "$SEEXPR_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/share/pkgconfig/seexpr2.pc" ]|| [ "$(pkg-config --modversion seexpr2)" != "$SEEXPR_VERSION_PC" ]; }; }; then
     start_build
