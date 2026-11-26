@@ -284,12 +284,17 @@ copyFrom(const OFX::Host::Param::Instance & fromParam,
     if (allDims) {
         nDims = std::min( from->getDimension(), to->getDimension() );
     }
+    // The two halves of a rectangle are one knob, which KnobI::clone() can't copy onto itself: copy from a snapshot
+    const KnobIPtr source = (from == to) ? createKnobCopy(from) : from;
+    if (!source) {
+        return kOfxStatFailed;
+    }
     to->beginChanges();
     if (allDims) {
-        to->clone(from, dstOffset, frameRange);
+        to->clone(source, dstOffset, frameRange);
     } else {
         for (int i = 0; i < nDims; ++i) {
-            to->clone(from, dstOffset, frameRange, toStartDim + i, fromStartDim + i);
+            to->clone(source, dstOffset, frameRange, toStartDim + i, fromStartDim + i);
         }
     }
     double curTime = to->getCurrentTime();

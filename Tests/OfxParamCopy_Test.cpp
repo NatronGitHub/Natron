@@ -343,8 +343,9 @@ TEST_F(OfxParamCopyTest, DifferentTypes)
 
 // The position and the size of a Natron rectangle (kNatronOfxParamPropTypeRectangle) are two parameters on
 // the dimensions 0-1 and 2-3 of one knob: paramCopy(<rect2>_position, <rect>_size) copies only the size of the
-// first one to the position of the second one. The integer rectangle copied the whole knob (the dimensions
-// were lost when paramCopy was rewritten).
+// first one to the position of the second one (the integer rectangle copied the whole knob: the dimensions
+// were lost when paramCopy was rewritten), and paramCopy(<rect>_size, <rect>_position) the position of a
+// rectangle to its own size (nothing was copied: a knob can't be cloned onto itself).
 TEST_F(OfxParamCopyTest, Rectangles)
 {
     if ( skipped() ) {
@@ -366,5 +367,11 @@ TEST_F(OfxParamCopyTest, Rectangles)
         EXPECT_EQ( kOfxStatOK, paramCopy(to + "_position", from + "_size", 0., NULL) ) << from;
         EXPECT_EQ( size, valueAt(t, 0, 1.) + ' ' + valueAt(t, 1, 1.) ) << from;
         EXPECT_EQ( toSize, valueAt(t, 2, 1.) + ' ' + valueAt(t, 3, 1.) ) << from; // the size of the target is unchanged
+
+        // within one rectangle
+        const std::string position = valueAt(f, 0, 1.) + ' ' + valueAt(f, 1, 1.);
+        EXPECT_EQ( kOfxStatOK, paramCopy(from + "_size", from + "_position", 0., NULL) ) << from;
+        EXPECT_EQ( position, valueAt(f, 2, 1.) + ' ' + valueAt(f, 3, 1.) ) << from;
+        EXPECT_EQ( position, valueAt(f, 0, 1.) + ' ' + valueAt(f, 1, 1.) ) << from;
     }
 }
