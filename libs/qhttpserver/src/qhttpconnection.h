@@ -28,6 +28,8 @@
 
 #include <QObject>
 
+class QTimer;
+
 /// @cond nodoc
 
 class QHTTPSERVER_API QHttpConnection : public QObject
@@ -42,6 +44,9 @@ public:
     void flush();
     void waitForBytesWritten();
 
+    // Natron: closes the connection after msecs without data received or sent (0: never)
+    void setIdleTimeout(int msecs);
+
 Q_SIGNALS:
     void newRequest(QHttpRequest *, QHttpResponse *);
     void allBytesWritten();
@@ -53,6 +58,7 @@ private Q_SLOTS:
     void invalidateRequest();
     void requestDestroyed(QObject *request);
     void updateWriteCount(qint64);
+    void idleTimeout();
 
 private:
     void rejectMalformedRequest();
@@ -69,6 +75,8 @@ private:
 
 private:
     QTcpSocket *m_socket;
+    // Natron: restarted by every data received or sent (a child of the connection)
+    QTimer *m_idleTimer;
     http_parser *m_parser;
     http_parser_settings *m_parserSettings;
 

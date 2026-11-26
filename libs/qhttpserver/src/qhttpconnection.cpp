@@ -25,6 +25,7 @@
 #include <stdlib.h> // malloc, free
 #include <QTcpSocket>
 #include <QHostAddress>
+#include <QTimer>
 
 #include "http_parser.h"
 #include "qhttprequest.h"
@@ -49,6 +50,7 @@ static_assert(static_cast<int>(QHttpRequest::HTTP_DELETE) == static_cast<int>(::
 QHttpConnection::QHttpConnection(QTcpSocket *socket, QObject *parent)
     : QObject(parent),
       m_socket(socket),
+      m_idleTimer(new QTimer(this)),
       m_parser(0),
       m_parserSettings(0),
       m_request(0),
@@ -74,6 +76,9 @@ QHttpConnection::QHttpConnection(QTcpSocket *socket, QObject *parent)
     connect(socket, SIGNAL(readyRead()), this, SLOT(parseRequest()));
     connect(socket, SIGNAL(disconnected()), this, SLOT(socketDisconnected()));
     connect(socket, SIGNAL(bytesWritten(qint64)), this, SLOT(updateWriteCount(qint64)));
+
+    m_idleTimer->setSingleShot(true);
+    connect(m_idleTimer, SIGNAL(timeout()), this, SLOT(idleTimeout()));
 }
 
 QHttpConnection::~QHttpConnection()
@@ -135,8 +140,27 @@ void QHttpConnection::requestDestroyed(QObject *request)
     }
 }
 
+void QHttpConnection::setIdleTimeout(int msecs)
+{
+    if (msecs > 0) {
+        m_idleTimer->start(msecs);
+    } else {
+        m_idleTimer->stop();
+    }
+}
+
+// Natron: nothing received or sent for the idle timeout: drop the connection (abort(): what is still
+// unsent is for a client that doesn't read)
+void QHttpConnection::idleTimeout()
+{
+    m_socket->abort();
+}
+
 void QHttpConnection::updateWriteCount(qint64 count)
 {
+    if (m_idleTimer->isActive())
+        m_idleTimer->start(); // restart
+
     Q_ASSERT(m_transmitPos + count <= m_transmitLen);
 
     m_transmitPos += count;
@@ -152,6 +176,9 @@ void QHttpConnection::updateWriteCount(qint64 count)
 void QHttpConnection::parseRequest()
 {
     Q_ASSERT(m_parser);
+
+    if (m_idleTimer->isActive())
+        m_idleTimer->start(); // restart
 
     while (m_socket->bytesAvailable()) {
         QByteArray arr = m_socket->readAll();

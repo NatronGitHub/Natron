@@ -95,6 +95,10 @@ public:
     // The value of an "X-Extra" header in the responses
     void setExtraHeaderValue(const QString& value) { _extraHeaderValue = value; }
 
+    void setIdleTimeout(int msecs) { _server.setIdleTimeout(msecs); }
+
+    void setMaxConnections(int maxConnections) { _server.setMaxConnections(maxConnections); }
+
     // Keep the requests instead of deleting them once received (a handler may keep them)
     void setKeepRequests(bool keep) { _keepRequests = keep; }
 
@@ -448,4 +452,42 @@ TEST(QHttpServer, KeepsHandlerRequestAfterParseError)
     EXPECT_TRUE( isStatus(reply, 200) ) << reply.constData();
     ASSERT_EQ( 1, server.keptRequests().size() );
     EXPECT_FALSE( server.keptRequests().first().isNull() );
+}
+
+// A connection without any data was kept forever: a local program could hold any number of them.
+TEST(QHttpServer, ClosesIdleConnections)
+{
+    LoopbackHttpServer server;
+    ASSERT_TRUE( server.listening() );
+    server.setIdleTimeout(200);
+
+    QTcpSocket idle;
+    idle.connectToHost(QHostAddress::LocalHost, server.port());
+    ASSERT_TRUE( idle.waitForConnected(10000) );
+    EXPECT_TRUE( processEventsUntil([&idle]() { return idle.state() == QAbstractSocket::UnconnectedState; }) );
+
+    // a request still gets its answer
+    EXPECT_TRUE( isStatus(server.exchange("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n"), 200) );
+}
+
+TEST(QHttpServer, LimitsConnections)
+{
+    LoopbackHttpServer server;
+    ASSERT_TRUE( server.listening() );
+    server.setMaxConnections(2);
+
+    QTcpSocket first, second, third;
+    for (QTcpSocket* socket : {&first, &second, &third}) {
+        socket->connectToHost(QHostAddress::LocalHost, server.port());
+        ASSERT_TRUE( socket->waitForConnected(10000) );
+        processEventsUntil([]() { return false; }, 100); // let the server accept it
+    }
+    EXPECT_TRUE( processEventsUntil([&third]() { return third.state() == QAbstractSocket::UnconnectedState; }) );
+    EXPECT_EQ( QAbstractSocket::ConnectedState, first.state() );
+    EXPECT_EQ( QAbstractSocket::ConnectedState, second.state() );
+
+    // once one closes, a new connection is answered
+    first.abort();
+    EXPECT_TRUE( processEventsUntil([&server]() { return server.sockets() == 1; }) );
+    EXPECT_TRUE( isStatus(server.exchange("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n"), 200) );
 }
