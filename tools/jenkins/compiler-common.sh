@@ -83,11 +83,13 @@ if [ "$PKGOS" = "OSX" ]; then
             ;;
     esac
 
-    # use a MacPorts clang (with OpenMP) if one not newer than clang_max is available
+    # use the newest MacPorts clang (with OpenMP) not newer than clang_max, if there is one
     clang_mp_found=0
-    for v in 22 21 20 19 18 17 16 15 14 13 12 11 10 9.0 8.0 7.0 6.0 5.0 4.0; do
+    clang_mp_version=
+    for v in 22 21 20 19 18 17 16 15 14 13 12 11 10 9.0; do
         if [ "${v%%.*}" -le "$clang_max" ] && command -v "clang-mp-$v" >/dev/null 2>&1; then
             clang_mp_found=1
+            clang_mp_version=$v
             break
         fi
     done
@@ -101,17 +103,7 @@ if [ "$PKGOS" = "OSX" ]; then
     fi
     if [ "$clang_mp_found" = 1 ]; then
         COMPILER=clang-omp
-        if grep -q "configure.optflags.*-Os" /opt/local/libexec/macports/lib/port1.0/portconfigure.tcl; then
-            true
-            #echo "Warning: clang-3.9.1 is known to generate wrong code with -Os on openexr, please edit /opt/local/libexec/macports/lib/port1.0/portconfigure.tcl and set configure.optflags to -O2"
-            #exit 1
-        fi
     fi
-    # clang path on homebrew (should always be the latest version)
-    if command -v /usr/local/opt/llvm@11/bin/clang >/dev/null 2>&1; then
-        COMPILER=clang-omp
-    fi
-    #COMPILER=clang-omp
     COMPILER=${COMPILER:-clang}
 
     # No GCC on macOS: Qt and the MacPorts libraries use libc++, and the macOS installer
@@ -129,47 +121,15 @@ if [ "$PKGOS" = "OSX" ]; then
         OBJECTIVE_CC=$CC
         OBJECTIVE_CXX=$CXX
     elif [ "$COMPILER" = "clang" ]; then
-        case "$macosx" in
-            9|10|11|12)
-                # GXX should be an openmp-capable compiler (to compile CImg.ofx)
-
-                # older version, using clang-5.0
-                CC=clang-mp-5.0
-                CXX="clang++-mp-5.0 -std=${CXXSTD}"
-                GXX=g++-mp-4.9
-                OBJECTIVE_CC=$CC
-                OBJECTIVE_CXX=$CXX
-                ;;
-            *)
-                # newer OS X / macOS version link with libc++ and can use the system clang
-                CC=clang
-                CXX="clang++ -std=${CXXSTD}"
-                OBJECTIVE_CC=$CC
-                OBJECTIVE_CXX=$CXX
-                ;;
-        esac
+        # the system clang, without OpenMP
+        CC=clang
+        CXX="clang++ -std=${CXXSTD}"
+        OBJECTIVE_CC=$CC
+        OBJECTIVE_CXX=$CXX
     elif [ "$COMPILER" = "clang-omp" ]; then
-        unset CC CXX  # chosen below; don't silently use a compiler from the environment
-        # newer version (testing) using clang
-        # if a recent clang-mp is available
-        if command -v clang-mp-6.0 >/dev/null 2>&1; then
-            CC=clang-mp-6.0
-            CXX="clang++-mp-6.0 -stdlib=libc++ -std=${CXXSTD}"
-        elif command -v clang-mp-5.0 >/dev/null 2>&1; then
-            CC=clang-mp-5.0
-            CXX="clang++-mp-5.0 -stdlib=libc++ -std=${CXXSTD}"
-        elif command -v /usr/local/opt/llvm@11/bin/clang >/dev/null 2>&1; then
-            CC=/usr/local/opt/llvm@11/bin/clang
-            CXX="/usr/local/opt/llvm@11/bin/clang++ -std=${CXXSTD}"
-        fi
-        # clang > 7.0 sometimes chokes on building Universal CImg.ofx, probably because of #pragma omp atomic
-        #Undefined symbols for architecture i386:
-        #"___atomic_load", referenced from:
-        #_.omp_outlined..468 in CImgExpression.o
-        #_.omp_outlined..608 in CImgExpression.o
-        #
         # The newest installed MacPorts clang up to the MacPorts default for the OS
-        # is used: clang-22 on macOS 26+ (Darwin >= 25), clang-18 on macOS 15, clang-17 before.
+        # (clang_max, found above): clang-22 on macOS 26+ (Darwin >= 25), clang-18 on macOS 15,
+        # clang-17 before.
         # Two former reasons to avoid clang >= 17 are resolved (verified on macOS 26):
         # - clang 17/18 with -fopenmp linked @rpath/libc++.1.dylib instead of
         #   /usr/lib/libc++.1.dylib; it now links /usr/lib/libc++.1.dylib.
@@ -177,55 +137,11 @@ if [ "$PKGOS" = "OSX" ]; then
         #   libomp is no longer pinned to 11.1.0 (see tools/MacPorts/lang/libomp).
         # Sanity check on a new OS/compiler:
         #   printf 'int main(){}\n' > t.cpp; clang++-mp-N -stdlib=libc++ -fopenmp t.cpp -o t && otool -L t
-        case "$osxver" in
-            #9.*|10.*)
-            #    true;;
-            *)
-                if [ "$clang_max" -ge 22 ] && command -v clang-mp-22 >/dev/null 2>&1; then
-                    CC=clang-mp-22
-                    CXX="clang++-mp-22 -stdlib=libc++ -std=${CXXSTD}"
-                elif [ "$clang_max" -ge 21 ] && command -v clang-mp-21 >/dev/null 2>&1; then
-                    CC=clang-mp-21
-                    CXX="clang++-mp-21 -stdlib=libc++ -std=${CXXSTD}"
-                elif [ "$clang_max" -ge 20 ] && command -v clang-mp-20 >/dev/null 2>&1; then
-                    CC=clang-mp-20
-                    CXX="clang++-mp-20 -stdlib=libc++ -std=${CXXSTD}"
-                elif [ "$clang_max" -ge 19 ] && command -v clang-mp-19 >/dev/null 2>&1; then
-                    CC=clang-mp-19
-                    CXX="clang++-mp-19 -stdlib=libc++ -std=${CXXSTD}"
-                elif [ "$clang_max" -ge 18 ] && command -v clang-mp-18 >/dev/null 2>&1; then
-                    CC=clang-mp-18
-                    CXX="clang++-mp-18 -stdlib=libc++ -std=${CXXSTD}"
-                elif command -v clang-mp-17 >/dev/null 2>&1; then
-                    CC=clang-mp-17
-                    CXX="clang++-mp-17 -stdlib=libc++ -std=${CXXSTD}"
-                elif command -v clang-mp-16 >/dev/null 2>&1; then
-                    CC=clang-mp-16
-                    CXX="clang++-mp-16 -stdlib=libc++ -std=${CXXSTD}"
-                elif command -v clang-mp-15 >/dev/null 2>&1; then
-                    CC=clang-mp-15
-                    CXX="clang++-mp-15 -stdlib=libc++ -std=${CXXSTD}"
-                elif command -v clang-mp-14 >/dev/null 2>&1; then
-                    CC=clang-mp-14
-                    CXX="clang++-mp-14 -stdlib=libc++ -std=${CXXSTD}"
-                elif command -v clang-mp-13 >/dev/null 2>&1; then
-                    CC=clang-mp-13
-                    CXX="clang++-mp-13 -stdlib=libc++ -std=${CXXSTD}"
-                elif command -v clang-mp-12 >/dev/null 2>&1; then
-                    CC=clang-mp-12
-                    CXX="clang++-mp-12 -stdlib=libc++ -std=${CXXSTD}"
-                elif command -v clang-mp-11 >/dev/null 2>&1; then
-                    CC=clang-mp-11
-                    CXX="clang++-mp-11 -stdlib=libc++ -std=${CXXSTD}"
-                elif command -v clang-mp-10 >/dev/null 2>&1; then
-                    CC=clang-mp-10
-                    CXX="clang++-mp-10 -stdlib=libc++ -std=${CXXSTD}"
-                elif command -v clang-mp-9.0 >/dev/null 2>&1; then
-                    CC=clang-mp-9.0
-                    CXX="clang++-mp-9.0 -stdlib=libc++ -std=${CXXSTD}"
-                fi
-                ;;
-        esac
+        unset CC CXX  # don't silently use a compiler from the environment
+        if [ -n "$clang_mp_version" ]; then
+            CC=clang-mp-$clang_mp_version
+            CXX="clang++-mp-$clang_mp_version -stdlib=libc++ -std=${CXXSTD}"
+        fi
         if [ -z "${CC:-}" ]; then
             echo "Error: no usable MacPorts clang-mp-N (N <= $clang_max) found" >&2
             exit 1
@@ -244,11 +160,6 @@ if [ "$PKGOS" = "OSX" ]; then
         esac
     fi
 
-    # SDK root was moved with Xcode 4.3
-    MACOSX_SDK_ROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs
-    case "$osxver" in
-        10.*) MACOSX_SDK_ROOT=/Developer/SDKs;;
-    esac
     # MACOSX_DEPLOYMENT_TARGET is normally set by common.sh (NATRON_MACOS_MIN, 14.0, for release
     # builds, the build Mac's macOS otherwise); the table below is only a fallback for scripts
     # that don't set it.
@@ -290,7 +201,6 @@ if [ "$PKGOS" = "OSX" ]; then
             ;;
    esac
     export MACOSX_DEPLOYMENT_TARGET
-    export MACOSX_SYSROOT="${MACOSX_SDK_ROOT}/MacOSX${MACOSX_DEPLOYMENT_TARGET}.sdk"
 
 
 elif [ "$PKGOS" = "Linux" ]; then
