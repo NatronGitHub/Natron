@@ -2,15 +2,11 @@
 
 # Install librsvg (without vala support)
 # see http://www.linuxfromscratch.org/blfs/view/systemd/general/librsvg.html
-if [ "${ROCKY:-0}" -ge 9 ]; then
-    # Rust comes from rust-toolset (see the Dockerfile generation in build-Linux-sdk.sh).
-    # 2.52 or later is needed by openfx-arena's ReadSVG for the exact document size
-    # (rsvg_handle_get_intrinsic_size_in_pixels). 2.58 is the last series built with autotools.
-    # Its tarball doesn't vendor the Rust crates: cargo downloads them.
-    LIBRSVG_VERSION=2.58.5
-else
-    LIBRSVG_VERSION=2.40.20 # 2.41 requires rust
-fi
+# Rust comes from rust-toolset (see the Dockerfile generation in build-Linux-sdk.sh).
+# 2.52 or later is needed by openfx-arena's ReadSVG for the exact document size
+# (rsvg_handle_get_intrinsic_size_in_pixels). 2.58 is the last series built with autotools.
+# Its tarball doesn't vendor the Rust crates: cargo downloads them.
+LIBRSVG_VERSION=2.58.5
 LIBRSVG_VERSION_SHORT=${LIBRSVG_VERSION%.*}
 LIBRSVG_TAR="librsvg-${LIBRSVG_VERSION}.tar.xz"
 LIBRSVG_SITE="https://download.gnome.org/sources/librsvg/${LIBRSVG_VERSION_SHORT}"

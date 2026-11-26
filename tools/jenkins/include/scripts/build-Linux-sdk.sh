@@ -36,8 +36,8 @@
 # TAR_SDK=1 : Make an archive of the SDK when building is done and store it in $SRC_PATH
 # UPLOAD_SDK=1 : Upload the SDK tar archive to $REPO_DEST if TAR_SDK=1
 #
-# ROCKY=9|8 : the Rocky Linux major version (default: 9, the Natron 2.6 baseline). The SDK is
-# built on Rocky Linux only (the CentOS and Ubuntu SDKs are in the RB-2.5 branch).
+# ROCKY=9 : the Rocky Linux major version (9, the Natron 2.6 baseline, is the only one). The SDK
+# is built on Rocky Linux only (the CentOS and Ubuntu SDKs are in the RB-2.5 branch).
 
 set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
@@ -47,8 +47,8 @@ PKGOS=Linux
 
 ROCKY="${ROCKY:-9}"
 case "$ROCKY" in
-    8|9) ;;
-    *) (>&2 echo "Error: unsupported ROCKY=$ROCKY (the SDK is built on Rocky Linux 8 or 9)"); exit 1 ;;
+    9) ;;
+    *) (>&2 echo "Error: unsupported ROCKY=$ROCKY (the SDK is built on Rocky Linux 9)"); exit 1 ;;
 esac
 
 #############################
@@ -57,23 +57,16 @@ esac
 # WITH_MARIADB=true|false build MariaDB/MySQL as well as the corresponding Qt and Python components
 WITH_MARIADB="${WITH_MARIADB:-true}"
 
-# GCC_TOOLSET=N gcc-toolset version used on Rocky Linux 8 and 9 (default: 14, i.e. GCC 14.2,
+# GCC_TOOLSET=N gcc-toolset version used on Rocky Linux 9 (default: 14, i.e. GCC 14.2,
 # as in the VFX Reference Platform CY2026/CY2027)
 GCC_TOOLSET="${GCC_TOOLSET:-14}"
 # libclang used by the shiboken2 generator on Rocky Linux (see the Dockerfile generation below).
 # Shiboken2 5.15.19, even with the libclang >= 16 patches, misparses some default arguments with
 # libclang 22 (e.g. QEvent::Type values resolved in the wrong class): use an older libclang.
-if [ "${ROCKY}" -ge 9 ]; then
-    # SHIBOKEN2_CLANG_VERSION=N: major version of EPEL's clangN-devel compat package
-    SHIBOKEN2_CLANG_VERSION="${SHIBOKEN2_CLANG_VERSION:-19}"
-    SHIBOKEN2_CLANG_PKGS="clang${SHIBOKEN2_CLANG_VERSION}-devel llvm${SHIBOKEN2_CLANG_VERSION}-devel"
-    SHIBOKEN2_LLVM_DIR="/usr/lib64/llvm${SHIBOKEN2_CLANG_VERSION}"
-else
-    # SHIBOKEN2_CLANG_VERSION=X.Y.Z: version of AppStream's clang-devel (as in MacPorts)
-    SHIBOKEN2_CLANG_VERSION="${SHIBOKEN2_CLANG_VERSION:-18.1.8}"
-    SHIBOKEN2_CLANG_PKGS="clang-devel-${SHIBOKEN2_CLANG_VERSION} llvm-devel-${SHIBOKEN2_CLANG_VERSION}"
-    SHIBOKEN2_LLVM_DIR="/usr"
-fi
+# SHIBOKEN2_CLANG_VERSION=N: major version of EPEL's clangN-devel compat package
+SHIBOKEN2_CLANG_VERSION="${SHIBOKEN2_CLANG_VERSION:-19}"
+SHIBOKEN2_CLANG_PKGS="clang${SHIBOKEN2_CLANG_VERSION}-devel llvm${SHIBOKEN2_CLANG_VERSION}-devel"
+SHIBOKEN2_LLVM_DIR="/usr/lib64/llvm${SHIBOKEN2_CLANG_VERSION}"
 if [ "${DOWNLOAD:-}" = "1" ] && [ -z "${GEN_DOCKERFILE+x}" ]; then
     echo "*** downloading all source distributions"
     if [ -z "${WORKSPACE+x}" ]; then
@@ -107,7 +100,7 @@ EOF
     LD_RUN_PATH=\"\$SDK/lib:\$QTDIR/lib:\$FFMPEG/lib:\$LIBRAW/lib\" \\
     CPATH=\"\$SDK/include:\$QTDIR/include:\$FFMPEG/include:\$LIBRAW/include:\$OSMESA/include\" \\
     PKG_CONFIG_PATH=\"\$SDK/lib/pkgconfig:\$OSMESA/lib/pkgconfig:\$QTDIR/lib/pkgconfig:\$FFMPEG/lib/pkgconfig:\$LIBRAW/lib/pkgconfig\" \\
-    PATH=\"\$SDK/bin:\$QTDIR/bin:\$FFMPEG/bin:\$LIBRAW_PATH:\$PATH\" \\
+    PATH=\"\$SDK/bin:\$QTDIR/bin:\$FFMPEG/bin:\$LIBRAW/bin:\$PATH\" \\
     WORKSPACE=/home \\
     GIT_URL=https://github.com/NatronGitHub/Natron.git \\
     GIT_BRANCH=RB-2.6 \\
@@ -137,56 +130,38 @@ EOF
     # architecture is the one of the image (docker build --platform),
     # and common.sh takes it from uname -m inside the container.
     DOCKER_BASE="rockylinux/rockylinux:${ROCKY}"
-    PREYUM=
-    ARCH=
-    DTSYUM=
-    DTSSDK=
-    # Enable powertools on Rocky Linux 8, CRB on Rocky Linux >= 9
-    # https://www.how2shout.com/linux/how-to-enable-powertools-repository-on-rocky-linux-8/
-    EL_DEVEL_REPO=powertools
-    if [ "${ROCKY}" -ge 9 ]; then
-        EL_DEVEL_REPO=crb
-    fi
-    DTSYUM+="dnf -y install dnf-plugins-core && dnf -y install epel-release && dnf config-manager --set-enabled ${EL_DEVEL_REPO} && dnf -y update && dnf -y groupinstall 'Development Tools' && "
-    # The system GCC of Rocky Linux 8 (8.5) has incomplete C++17 and no C++20 support,
-    # and the one of Rocky Linux 9 (11.5) has incomplete C++20 support: use the
+    # Enable EPEL and CRB (CodeReady Builder)
+    DTSYUM="dnf -y install dnf-plugins-core && dnf -y install epel-release && dnf config-manager --set-enabled crb && dnf -y update && dnf -y groupinstall 'Development Tools' && "
+    # The system GCC of Rocky Linux 9 (11.5) has incomplete C++20 support: use the
     # gcc-toolset (GCC 14.2, as in the VFX Reference Platform CY2026/CY2027),
     # available for x86_64 and aarch64.
     # libclang, for the shiboken2 generator (see pkg/pyside2.sh), which also needs
     # LLVM_INSTALL_DIR to find clang's builtin headers (see SHIBOKEN2_CLANG_VERSION).
     DTSYUM+="dnf -y install gcc-toolset-${GCC_TOOLSET} ${SHIBOKEN2_CLANG_PKGS} && "
-    if [ "${SHIBOKEN2_LLVM_DIR}" != /usr ]; then
-        # shiboken2 looks for the builtin headers in $LLVM_INSTALL_DIR/lib/clang/<version>/include,
-        # but EPEL's clangN-resource-filesystem puts them in /usr/lib/clang/N/include
-        DTSYUM+="ln -sfn /usr/lib/clang ${SHIBOKEN2_LLVM_DIR}/lib/clang && "
-    fi
+    # shiboken2 looks for the builtin headers in $LLVM_INSTALL_DIR/lib/clang/<version>/include,
+    # but EPEL's clangN-resource-filesystem puts them in /usr/lib/clang/N/include
+    DTSYUM+="ln -sfn /usr/lib/clang ${SHIBOKEN2_LLVM_DIR}/lib/clang && "
     DOCKER_ENV_TOOLSET="ENV PATH=\"/opt/rh/gcc-toolset-${GCC_TOOLSET}/root/usr/bin:\$PATH\" \\
     LLVM_INSTALL_DIR=${SHIBOKEN2_LLVM_DIR}"
-    # libXvMC was removed in EL9
-    YUM_XVMC=libXvMC-devel
-    if [ "${ROCKY}" -ge 9 ]; then
-        YUM_XVMC=
-        # Rust (cargo, rustc), to build librsvg >= 2.41 (see pkg/librsvg.sh)
-        DTSYUM+="dnf -y install rust-toolset && "
-        # doxygen (CRB): the Python bindings of libxml2 >= 2.14, needed by itstool, are
-        # generated from its doxygen XML (see pkg/libxml2.sh)
-        DTSYUM+="dnf -y install doxygen && "
-    fi
+    # Rust (cargo, rustc), to build librsvg >= 2.41 (see pkg/librsvg.sh)
+    DTSYUM+="dnf -y install rust-toolset && "
+    # doxygen (CRB): the Python bindings of libxml2 >= 2.14, needed by itstool, are
+    # generated from its doxygen XML (see pkg/libxml2.sh)
+    DTSYUM+="dnf -y install doxygen && "
     # The xcb platform plug-in of Qt 5.15 (pkg/qt5.sh) needs libxcb with its extensions
     # (randr, render, shape, shm, sync, xfixes, xinerama, xkb, xinput, glx), the xcb-util
     # libraries (icccm/wm, image, keysyms, renderutil), libX11-xcb and libxkbcommon-x11.
     YUM_XCB="libxcb-devel xcb-util-devel xcb-util-wm-devel xcb-util-image-devel xcb-util-keysyms-devel xcb-util-renderutil-devel libxkbcommon-x11-devel"
     # Note: perl-version was added for qt4webkit, see https://github.com/NatronGitHub/Natron/issues/351#issuecomment-524068232
     # perl-Encode and perl-Data-Dumper needed to build texinfo before perl
-    YUM_PKGS="ca-certificates make util-linux git tar bzip2 wget glibc-devel diffutils patch zip unzip alsa-lib-devel libX11-devel mesa-libGL-devel mesa-libEGL-devel mesa-libGLU-devel libXrender-devel libSM-devel libICE-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libXi-devel libXv-devel libXfixes-devel ${YUM_XVMC} libXxf86vm-devel libxkbcommon-devel ${YUM_XCB} libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXres-devel libXtst-devel xorg-x11-proto-devel libXxf86dga-devel libXpm-devel perl-Digest-MD5 perl-version perl-Encode perl-Data-Dumper"
-    SDKPREP="RUN ${PREYUM}${DTSYUM}yum -y install ${YUM_PKGS} && yum -y clean all"
+    YUM_PKGS="ca-certificates make util-linux git tar bzip2 wget glibc-devel diffutils patch zip unzip alsa-lib-devel libX11-devel mesa-libGL-devel mesa-libEGL-devel mesa-libGLU-devel libXrender-devel libSM-devel libICE-devel libXcursor-devel libXrandr-devel libXinerama-devel libXi-devel libXv-devel libXfixes-devel libXxf86vm-devel libxkbcommon-devel ${YUM_XCB} libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXres-devel libXtst-devel xorg-x11-proto-devel libXxf86dga-devel libXpm-devel perl-Digest-MD5 perl-version perl-Encode perl-Data-Dumper"
+    SDKPREP="RUN ${DTSYUM}yum -y install ${YUM_PKGS} && yum -y clean all"
     cat <<EOF
 FROM $DOCKER_BASE as intermediate
 MAINTAINER https://github.com/NatronGitHub/Natron
 WORKDIR /home
 ARG SDK=$SDK_HOME
-${ARCH:+ARG ARCH=$ARCH
-}RUN ${PREYUM}${DTSYUM}\\
+RUN ${DTSYUM}\\
     yum -y install gcc gcc-c++ ${YUM_PKGS} && \\
     yum clean all
 COPY include/patches/ include/patches/
@@ -344,8 +319,8 @@ if dobuild; then
             RHEL_MAJOR=$(tr -dc '0-9.'< /etc/redhat-release|cut -d \. -f1)
             RHEL_MINOR=$(tr -dc '0-9.'< /etc/redhat-release|cut -d \. -f2)
             RHEL_VERSION="${RHEL_MAJOR}.${RHEL_MINOR}"
-            if [ "${RHEL_MAJOR}" != "8" ] && [ "${RHEL_MAJOR}" != "9" ]; then
-                (>&2 echo "Warning: Wrong RHEL version (${RHEL_VERSION}): only Rocky Linux 8 and 9 are supported (the Natron 2.6 releases are built on Rocky Linux 9).")
+            if [ "${RHEL_MAJOR}" != "9" ]; then
+                (>&2 echo "Warning: Wrong RHEL version (${RHEL_VERSION}): only Rocky Linux 9 is supported (the Natron 2.6 baseline).")
             fi
         fi
     fi

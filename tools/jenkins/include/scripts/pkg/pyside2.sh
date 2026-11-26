@@ -10,8 +10,7 @@
 # installed, as before.
 # The source build needs libclang, installed by the Dockerfile: on Rocky Linux 9, EPEL's
 # clang19-devel/llvm19-devel (in /usr/lib64/llvm19), because AppStream's clang 22 is too
-# recent for shiboken2 5.15.19; on Rocky Linux 8, AppStream's clang-devel 18 (see
-# SHIBOKEN2_CLANG_VERSION in build-Linux-sdk.sh).
+# recent for shiboken2 5.15.19 (see SHIBOKEN2_CLANG_VERSION in build-Linux-sdk.sh).
 if [ -n "${ROCKY:-}" ] || [ "${ARCH:-x86_64}" != "x86_64" ]; then
     PYSIDE2_FROM_SOURCE=1
     # the latest open-source 5.15 release
