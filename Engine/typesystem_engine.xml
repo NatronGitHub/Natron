@@ -1844,7 +1844,9 @@
                 for (std::list&lt;std::vector&lt;double&gt; &gt;::const_iterator it = points.begin(); it != points.end(); ++it, ++idx) {
                     PyObject* point = PyTuple_New((int) it->size());
                     for (std::size_t j = 0; j &lt; it->size(); ++j) {
-                        PyTuple_SET_ITEM(point, j, %CONVERTTOPYTHON[double]((*it)[j]));
+                        // %CONVERTTOPYTHON takes a variable, not an expression
+                        const double value = (*it)[j];
+                        PyTuple_SET_ITEM(point, j, %CONVERTTOPYTHON[double](value));
                     }
                     PyList_SET_ITEM(ret, idx, point);
                 }
@@ -1901,7 +1903,8 @@
                 PyObject* ret = PyList_New((int) frames.size());
                 int idx = 0;
                 for (std::list&lt;int&gt;::const_iterator it = frames.begin(); it != frames.end(); ++it, ++idx) {
-                    PyList_SET_ITEM(ret, idx, %CONVERTTOPYTHON[int](*it));
+                    const int frame = *it;
+                    PyList_SET_ITEM(ret, idx, %CONVERTTOPYTHON[int](frame));
                 }
                 return ret;
             </inject-code>
