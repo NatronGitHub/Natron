@@ -30,6 +30,7 @@
 
 #include "Global/Macros.h"
 
+#include <exception>
 #include <initializer_list>
 #include <iostream>
 #include <map>
@@ -55,6 +56,15 @@
 #include "Engine/Settings.h"
 
 namespace NatronTest {
+// The name of the current test, "Suite.Name" (empty outside a test, e.g. in an environment set-up)
+inline std::string
+currentTestName()
+{
+    const testing::TestInfo* info = testing::UnitTest::GetInstance()->current_test_info();
+
+    return info ? std::string( info->test_case_name() ) + '.' + info->name() : std::string();
+}
+
 // Says that the current test did not run, and why. The bundled google-test (1.7) predates GTEST_SKIP():
 // the test then returns early and is reported as passed. Every skip prints this one line, so that the
 // skips can be counted in the output:
@@ -63,18 +73,14 @@ namespace NatronTest {
 inline void
 skip(const std::string& reason)
 {
-    const testing::TestInfo* info = testing::UnitTest::GetInstance()->current_test_info();
-
-    std::cerr << "[  SKIPPED ] " << info->test_case_name() << '.' << info->name() << ": " << reason << std::endl;
+    std::cerr << "[  SKIPPED ] " << currentTestName() << ": " << reason << std::endl;
 }
 
 // Says that a part of the current test did not run, and why; the rest of the test runs.
 inline void
 skipPart(const std::string& reason)
 {
-    const testing::TestInfo* info = testing::UnitTest::GetInstance()->current_test_info();
-
-    std::cerr << "[  PARTIAL  ] " << info->test_case_name() << '.' << info->name() << ": part not run: " << reason << std::endl;
+    std::cerr << "[  PARTIAL  ] " << currentTestName() << ": part not run: " << reason << std::endl;
 }
 
 // true if the host loaded a plug-in with that ID (any version)
@@ -107,11 +113,19 @@ requirePlugins(std::initializer_list<const char*> pluginIDs,
     return true;
 }
 
+// Whether a new Group node gets its Input and Output nodes, as in the GUI
+enum class GroupInitialNodes
+{
+    eCreate,
+    eNone
+};
+
 // Creates a node in group (by default, the project of the top-level app): without undo/redo command,
-// without connecting it and without opening its settings panel. A Group node gets no Input/Output node.
+// without connecting it and without opening its settings panel.
 inline NATRON_NAMESPACE::NodePtr
 createNode(const std::string& pluginID,
-           NATRON_NAMESPACE::NodeCollectionPtr group = NATRON_NAMESPACE::NodeCollectionPtr())
+           NATRON_NAMESPACE::NodeCollectionPtr group = NATRON_NAMESPACE::NodeCollectionPtr(),
+           GroupInitialNodes initialNodes = GroupInitialNodes::eCreate)
 {
     NATRON_NAMESPACE::AppInstancePtr app = NATRON_NAMESPACE::appPTR->getTopLevelInstance();
 
@@ -119,7 +133,7 @@ createNode(const std::string& pluginID,
         group = app->getProject();
     }
     NATRON_NAMESPACE::CreateNodeArgs args(pluginID, group);
-    args.setProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes, true);
+    args.setProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes, initialNodes == GroupInitialNodes::eNone);
     args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
     args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
     args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
@@ -136,10 +150,15 @@ public:
     NodeScope(const NodeScope&) = delete;
     NodeScope& operator=(const NodeScope&) = delete;
 
+    // a destructor must not throw (C.36): a failure is reported as a test failure
     ~NodeScope()
     {
         for (std::vector<NATRON_NAMESPACE::NodePtr>::reverse_iterator it = _nodes.rbegin(); it != _nodes.rend(); ++it) {
-            (*it)->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
+            try {
+                (*it)->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
+            } catch (const std::exception& e) {
+                ADD_FAILURE() << "destroying node " << (*it)->getScriptName_mt_safe() << ": " << e.what();
+            }
         }
     }
 
@@ -174,7 +193,11 @@ struct ProjectResetScope
 
     ~ProjectResetScope()
     {
-        NATRON_NAMESPACE::appPTR->getTopLevelInstance()->getProject()->resetProject();
+        try {
+            NATRON_NAMESPACE::appPTR->getTopLevelInstance()->getProject()->resetProject();
+        } catch (const std::exception& e) {
+            ADD_FAILURE() << "resetting the project: " << e.what();
+        }
     }
 };
 
@@ -234,7 +257,11 @@ public:
         if (!_knob) {
             return;
         }
-        _knob->setValue(_savedValue);
+        try {
+            _knob->setValue(_savedValue);
+        } catch (const std::exception& e) {
+            ADD_FAILURE() << "restoring the OpenGL rendering preference: " << e.what();
+        }
         if ( _ofxCacheFiles.empty() ) {
             return;
         }
