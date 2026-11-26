@@ -134,7 +134,7 @@
                 return 0;
             }
             for (Py_ssize_t j = 1; j &lt; taskSize; ++j) {
-                // PyNumber_Check() is what Shiboken's int conversion accepts (a complex then raises TypeError)
+                // PyNumber_Check(), as Shiboken's int conversion (which then raises for a value it can't convert, e.g. a complex)
                 if ( !PyNumber_Check( PySequence_Fast_GET_ITEM(task.object(), j) ) ) {
                     PyErr_SetString(PyExc_TypeError, "the frames of a task must be numbers.");
                     return 0;
