@@ -147,6 +147,30 @@ DocumentationManager::handler(QHttpRequest *req,
     // (it is not deleted with its connection, so every request leaked)
     connect( req, SIGNAL(end()), req, SLOT(deleteLater()) );
 
+    // Only answer the user's browser, opened by Natron, and the documentation pages themselves:
+    // - a Host header other than localhost:port means a web page whose host name resolves to 127.0.0.1
+    //   (DNS rebinding), which could then read the answers;
+    // - a request from another site (Fetch Metadata) can't read the answers, but would still create
+    //   the node of a "_plugin.html?id=" page;
+    // - nothing here accepts data (no POST, PUT, ...).
+    const bool isHead = req->method() == QHttpRequest::HTTP_HEAD;
+    int refusedStatus = 0;
+    if ( !DocumentationServer::isLoopbackHost( req->header( QString::fromUtf8("host") ), server->serverPort() ) ||
+         DocumentationServer::isCrossSiteRequest( req->header( QString::fromUtf8("sec-fetch-site") ) ) ) {
+        refusedStatus = 403; // Forbidden
+    } else if ( (req->method() != QHttpRequest::HTTP_GET) && !isHead ) {
+        refusedStatus = 405; // Method Not Allowed
+        resp->setHeader( QString::fromUtf8("Allow"), QString::fromUtf8("GET, HEAD") );
+    }
+    if (refusedStatus != 0) {
+        resp->setHeader( QString::fromUtf8("Content-Length"), QString::fromUtf8("0") );
+        resp->setHeader( QString::fromUtf8("Connection"), QString::fromUtf8("close") );
+        resp->writeHead(refusedStatus);
+        resp->end();
+
+        return;
+    }
+
     QString docDir = appPTR->getApplicationBinaryPath() + QString::fromUtf8("/../Resources/docs/html/");
     QString page = req->url().toString();
     QByteArray body;
@@ -245,6 +269,11 @@ DocumentationManager::handler(QHttpRequest *req,
             resp->setHeader(QString::fromUtf8("Connection"), QString::fromUtf8("keep-alive"));
             resp->setHeader(QString::fromUtf8("Content-Type"), QString::fromUtf8("text/html; charset=utf-8"));
             resp->writeHead(301); // Moved permanently
+            if (isHead) {
+                resp->end();
+
+                return;
+            }
             resp->end( QString::fromUtf8("<HTML><HEAD><meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">\n"
                                          "<TITLE>301 Moved</TITLE></HEAD><BODY>\n"
                                          "<H1>301 Moved</H1>\n"
@@ -580,9 +609,9 @@ DocumentationManager::handler(QHttpRequest *req,
         resp->setHeader( QString::fromUtf8("Content-Type"), QString::fromUtf8("text/plain; charset=utf-8") );
     }
 
-    // return result
+    // return result (a HEAD request gets the headers only, Content-Length included)
     resp->writeHead(status);
-    resp->end(body);
+    resp->end( isHead ? QByteArray() : body );
 }                                             // DocumentationManager::handler
 
 QString
