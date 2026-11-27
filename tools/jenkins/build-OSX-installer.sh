@@ -208,6 +208,9 @@ cp -a "${TMP_BINARIES_PATH}/PyPlugs" "${package}/Contents/Plugins/"
 # a Python module: Contents/Plugins is on the Python path
 cp "${TMP_BINARIES_PATH}/natron_convert_project.py" "${package}/Contents/Plugins/"
 cp -a "${TMP_BINARIES_PATH}/Resources" "${package}/Contents/"
+# The Tests run of build-natron.sh imported the PyPlugs of PyPlugs/ and of the OFX bundles
+# (Contents/Resources/PyPlugs, #1854): their __pycache__ must not be packaged (#1923)
+find "${package}/Contents/Plugins" -type d -name __pycache__ -prune -exec rm -rf {} +
 
 NATRON_BIN_VERSION="${NATRON_VERSION_SHORT}"
 if [ "${NATRON_BIN_VERSION}" = "" ]; then
@@ -1210,10 +1213,10 @@ fi
 #  "${package}/Contents/MacOS"/*
 
 # The Tests below (and the plug-in documentation generator, when gen-natron-doc.sh runs it) run
-# Natron from the package, which imports the PyPlugs of Plugins/PyPlugs and of the OFX bundles
-# (Contents/Resources/PyPlugs, #1854): no __pycache__ may be written into the package (the bytecode
-# of the build machine; on macOS it would also break the signature of the OFX bundles, which are
-# signed before)
+# Natron from the package, which imports the PyPlugs of Contents/Plugins/PyPlugs and of the OFX
+# bundles (Contents/Resources/PyPlugs, #1854): no __pycache__ may be written into the package
+# (#1923). The OFX bundles are signed above and not again, so a __pycache__ in them would also make
+# the final codesign --verify --deep --strict fail.
 export PYTHONDONTWRITEBYTECODE=1
 # Generate documentation
 cd "${CWD}"
