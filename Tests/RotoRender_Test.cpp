@@ -349,8 +349,9 @@ TEST_F(RotoRenderTest, InwardFeatherFallOffMirrorsOutward)
     EXPECT_GT( std::abs( inwardAlpha.at(125, y) - featherRamp(25., 50.) ), 0.05 );
 }
 
-// #157: on a self-intersecting shape, a bow tie whose two lobes turn opposite ways, feather points pulled outward
-// are outward on both lobes: the two lobes render the same, mirrored.
+// #157: on a self-intersecting shape, a bow tie whose two lobes turn opposite ways (and have different areas, so that
+// the orientation of the whole shape is that of the larger lobe), feather points pulled 20 px outward are outward on
+// both lobes.
 TEST_F(RotoRenderTest, BowTieOutwardFeather)
 {
     if (!_havePlugins) {
@@ -358,20 +359,21 @@ TEST_F(RotoRenderTest, BowTieOutwardFeather)
     }
     NodePtr roto = makeRoto();
     ASSERT_TRUE( bool(roto) );
-    ASSERT_TRUE( bool( makePolygon(roto->getRotoContext(), { {100., 100.}, {300., 300.}, {300., 100.}, {100., 300.} }, 0.,
-                                   { {80., 80.}, {320., 320.}, {320., 80.}, {80., 320.} }) ) );
+    // the sides cross at (200, 200): a small lobe on the left, a large one on the right
+    ASSERT_TRUE( bool( makePolygon(roto->getRotoContext(), { {100., 100.}, {400., 400.}, {400., 0.}, {100., 300.} }, 0.,
+                                   { {80., 100.}, {420., 400.}, {420., 0.}, {80., 300.} }) ) );
     const Alpha alpha( renderFrame(roto) );
 
     const int y = 150;
-    EXPECT_EQ(1., alpha.at(120, y));
-    EXPECT_EQ(1., alpha.at(279, y));
-    // up to half a pixel of a 20 px ramp (where cairo samples the patches); a reversed ramp would differ by up to 1
-    for (int x = 70; x < 150; ++x) {
-        EXPECT_NEAR(alpha.at(x, y), alpha.at(399 - x, y), 0.1) << "x=" << x;
-    }
-    // 20 px ramps outside the vertical sides
+    EXPECT_EQ(1., alpha.at(110, y));
+    EXPECT_EQ(1., alpha.at(389, y));
+    // a 20 px ramp is 2.5 times as steep as a 50 px one
+    const double tolerance = 2.5 * kRampTolerance;
     for (int x = 80; x < 100; ++x) {
-        EXPECT_NEAR(featherRamp(100. - (x + 0.5), 20.), alpha.at(x, y), 2. * kRampTolerance) << "x=" << x;
+        EXPECT_NEAR(featherRamp(100. - (x + 0.5), 20.), alpha.at(x, y), tolerance) << "x=" << x;
+    }
+    for (int x = 400; x < 420; ++x) {
+        EXPECT_NEAR(featherRamp( (x + 0.5) - 400., 20. ), alpha.at(x, y), tolerance) << "x=" << x;
     }
 }
 
