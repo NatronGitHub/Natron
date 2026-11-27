@@ -1017,34 +1017,6 @@ RotoPaintInteract::onBreakMultiStrokeTriggered()
     makeStroke( true, RotoPoint() );
 }
 
-static bool
-isBranchConnectedToRotoNodeRecursive(Node* node,
-                                     const Node* rotoNode,
-                                     int* recursion,
-                                     std::list<Node*>& markedNodes)
-{
-    assert(recursion);
-    if (!node) {
-        return false;
-    }
-    if (rotoNode == node) {
-        return true;
-    }
-    markedNodes.push_back(node);
-    int maxInputs = node->getNInputs();
-    *recursion = *recursion + 1;
-    for (int i = 0; i < maxInputs; ++i) {
-        NodePtr inp = node->getInput(i);
-        if (inp) {
-            if ( isBranchConnectedToRotoNodeRecursive(inp.get(), rotoNode, recursion, markedNodes) ) {
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
-
 void
 RotoPaintInteract::checkViewersAreDirectlyConnected()
 {
@@ -1061,19 +1033,16 @@ RotoPaintInteract::checkViewersAreDirectlyConnected()
         int hasBranchConnectedToRoto = -1;
         for (int i = 0; i < maxInputs; ++i) {
             NodePtr input = viewerNode->getInput(i);
-            if (input) {
-                std::list<Node*> markedNodes;
-                int recursion = 0;
-                if ( isBranchConnectedToRotoNodeRecursive(input.get(), rotoNode.get(), &recursion, markedNodes) ) {
-                    if (recursion == 0) {
-                        //This viewer is already connected to the Roto node directly.
-                        break;
-                    }
-                    viewerNode->disconnectInput(i);
-                    if (hasBranchConnectedToRoto == -1) {
-                        viewerNode->connectInput(rotoNode, i);
-                        hasBranchConnectedToRoto = i;
-                    }
+            // Whether the Roto node is this input or upstream of it: each node once (#1628)
+            if ( input && !input->getNodesOnPathsUpstreamTo( rotoNode.get() ).empty() ) {
+                if (input == rotoNode) {
+                    //This viewer is already connected to the Roto node directly.
+                    break;
+                }
+                viewerNode->disconnectInput(i);
+                if (hasBranchConnectedToRoto == -1) {
+                    viewerNode->connectInput(rotoNode, i);
+                    hasBranchConnectedToRoto = i;
                 }
             }
         }

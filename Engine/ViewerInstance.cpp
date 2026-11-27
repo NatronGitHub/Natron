@@ -285,53 +285,20 @@ ViewerInstance::executeDisconnectTextureRequestOnMainThread(int index,bool clear
     }
 }
 
-static bool
-isRotoPaintNodeInputRecursive(Node* node,
-                              const NodePtr& rotoPaintNode)
-{
-    if ( node == rotoPaintNode.get() ) {
-        return true;
-    }
-    int maxInputs = node->getNInputs();
-    for (int i = 0; i < maxInputs; ++i) {
-        NodePtr input = node->getInput(i);
-        if (input) {
-            if (input == rotoPaintNode) {
-                return true;
-            } else {
-                bool ret = isRotoPaintNodeInputRecursive(input.get(), rotoPaintNode);
-                if (ret) {
-                    return true;
-                }
-            }
-        }
-    }
-
-    return false;
-}
-
+// Sets, or invalidates, the data of the last paint stroke of every node between node and rotoPaintNode, both included:
+// each node once (#1628)
 static void
-updateLastStrokeDataRecursively(Node* node,
-                                const NodePtr& rotoPaintNode,
-                                const RectD& lastStrokeBbox,
-                                bool invalidate)
+updateLastStrokeDataUpstream(Node* node,
+                             const NodePtr& rotoPaintNode,
+                             bool invalidate)
 {
-    if ( isRotoPaintNodeInputRecursive(node, rotoPaintNode) ) {
-        if (invalidate) {
-            node->invalidateLastPaintStrokeDataNoRotopaint();
-        } else {
-            node->setLastPaintStrokeDataNoRotopaint();
-        }
+    const NodesList nodes = node->getNodesOnPathsUpstreamTo( rotoPaintNode.get() );
 
-        if ( node == rotoPaintNode.get() ) {
-            return;
-        }
-        int maxInputs = node->getNInputs();
-        for (int i = 0; i < maxInputs; ++i) {
-            NodePtr input = node->getInput(i);
-            if (input) {
-                updateLastStrokeDataRecursively(input.get(), rotoPaintNode, lastStrokeBbox, invalidate);
-            }
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if (invalidate) {
+            (*it)->invalidateLastPaintStrokeDataNoRotopaint();
+        } else {
+            (*it)->setLastPaintStrokeDataNoRotopaint();
         }
     }
 }
@@ -378,7 +345,7 @@ public:
     virtual ~ViewerParallelRenderArgsSetter()
     {
         if (rotoNode) {
-            updateLastStrokeDataRecursively(viewerNode.get(), rotoNode, RectD(), true);
+            updateLastStrokeDataUpstream(viewerNode.get(), rotoNode, true);
         }
         if (viewerInputNode) {
             viewerInputNode->getEffectInstance()->invalidateParallelRenderArgsTLS();
@@ -492,7 +459,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                     for (NodesList::iterator it = rotoPaintNodes.begin(); it != rotoPaintNodes.end(); ++it) {
                         (*it)->prepareForNextPaintStrokeRender();
                     }
-                    updateLastStrokeDataRecursively(thisNode.get(), rotoPaintNode, lastStrokeBbox, false);
+                    updateLastStrokeDataUpstream(thisNode.get(), rotoPaintNode, false);
                 } else {
                     ///The drawing is already up to date: all changes have been taken into account for this event
                     args[i].reset();

@@ -26,6 +26,9 @@
 #include "NodePrivate.h"
 
 #include <set>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 #include <QDebug>
 #include <QThread>
@@ -659,6 +662,75 @@ Node::isNodeUpstream(const Node* input,
         node = current.get();
     }
 }
+
+NodesList
+Node::getNodesOnPathsUpstreamTo(const Node* target) const
+{
+    // An iterative depth-first search, which visits the inputs in order, each node once: the pre-order of its visits
+    // is the order in which the recursion first reaches the nodes. A node leads to target if one of its inputs does,
+    // which is known once its inputs are visited (in a graph without cycles, an input that was already visited has
+    // been visited completely).
+    NodesList visitOrder; // every node visited, in pre-order
+    std::unordered_set<const Node*> visited;
+    std::unordered_set<const Node*> leading; // the visited nodes that lead to target
+    struct Visit
+    {
+        NodePtr node;
+        int nInputs;
+        int nextInput;
+        bool leads;
+    };
+    std::vector<Visit> toVisit; // the nodes being visited: the path from this node to the current one
+
+    NodePtr thisShared = std::const_pointer_cast<Node>( shared_from_this() );
+    visited.insert(this);
+    visitOrder.push_back(thisShared);
+    if (this == target) {
+        return visitOrder;
+    }
+    toVisit.push_back( Visit{thisShared, getNInputs(), 0, false} );
+    while ( !toVisit.empty() ) {
+        Visit& current = toVisit.back();
+        if (current.nextInput < current.nInputs) {
+            NodePtr input = current.node->getInput(current.nextInput++);
+            if (!input) {
+                continue;
+            }
+            if ( !visited.insert( input.get() ).second ) {
+                if ( leading.count( input.get() ) ) {
+                    current.leads = true;
+                }
+                continue;
+            }
+            visitOrder.push_back(input);
+            if (input.get() == target) {
+                leading.insert(target);
+                current.leads = true;
+                continue;
+            }
+            const int nInputs = input->getNInputs();
+            toVisit.push_back( Visit{std::move(input), nInputs, 0, false} ); // invalidates current
+        } else {
+            const bool leads = current.leads;
+            if (leads) {
+                leading.insert( current.node.get() );
+            }
+            toVisit.pop_back(); // invalidates current
+            if ( leads && !toVisit.empty() ) {
+                toVisit.back().leads = true;
+            }
+        }
+    }
+
+    NodesList nodes;
+    for (NodesList::iterator it = visitOrder.begin(); it != visitOrder.end(); ++it) {
+        if ( leading.count( it->get() ) ) {
+            nodes.push_back( std::move(*it) );
+        }
+    }
+
+    return nodes;
+} // Node::getNodesOnPathsUpstreamTo
 
 
 

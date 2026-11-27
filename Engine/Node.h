@@ -1044,6 +1044,16 @@ public:
      **/
     bool hasSequentialOnlyNodeUpstream(std::string & nodeName) const;
 
+    /**
+     * @brief The nodes on the paths from this node up to target through the inputs (getInput(), with the group
+     * redirections), this node and target included, or none if target is neither this node nor upstream of it. The
+     * walk doesn't go upstream of target. The nodes are in the order in which the recursion
+     *     visit(n) { if (n leads to target) { add n; if (n != target) { for (input : inputs of n) visit(input); } } }
+     * first reaches them, but each node is visited once: that recursion is exponential on chains of diamonds (#1628).
+     * Takes the locks of getInput() one at a time, and no other lock.
+     **/
+    NodesList getNodesOnPathsUpstreamTo(const Node* target) const;
+
 
     /**
      * @brief Updates the sub label knob: e.g for the Merge node it corresponds to the
@@ -1455,11 +1465,9 @@ private:
 
     void markInputRelatedDataDirtyRecursive();
 
-    void markInputRelatedDataDirtyRecursiveInternal(std::list<Node*>& markedNodes, bool recurse);
-
     bool refreshAllInputRelatedData(bool hasSerializationData, const std::vector<NodeWPtr>& inputs);
 
-    bool refreshInputRelatedDataInternal(bool domarking, std::set<Node*>& markedNodes);
+    void refreshInputRelatedDataInternal(std::set<Node*>& markedNodes);
 
     bool refreshDraftFlagInternal(const std::vector<NodeWPtr>& inputs);
 

@@ -193,9 +193,15 @@ and the users of ``visitNodesDepthFirst`` (``Node.cpp``): the hash propagation,
 the downstream walk of ``Node::shouldCacheOutput`` (in ``renderRoI``, not
 guarded), the clearing of messages upstream of the viewer and the refresh of
 the previews. They keep the order of the recursions they replaced, which the
-hashes depend on (see :ref:`maint-cache`). Not iterative yet (#1628): the
-refresh of the input-related data on connection and project load, and the
-RotoPaint stroke walks.
+hashes depend on (see :ref:`maint-cache`). Also iterative (#1628), in the
+order of the recursions they replaced: the refresh of the input-related data on
+connection and project load (the marking downstream, a ``visitNodesDepthFirst``
+user, the walk downstream of
+``Node::refreshInputRelatedDataRecursiveInternal`` and the walk upstream of
+``Node::refreshInputRelatedDataInternal``), the split of the nodes into trees
+on project load (``Project::extractTreesFromNodes``), and the RotoPaint stroke walks
+(``Node::getNodesOnPathsUpstreamTo``), which visit each node once instead of
+once per path, which was exponential on chains of diamonds.
 
 The cache
 ---------
