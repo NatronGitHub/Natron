@@ -59,8 +59,6 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
-#include "Gui/GuiDefines.h"
-
 #include <SequenceParsing.h> // for removePath
 
 #include <ofxSonyVegas.h> // kOfxVegasProHostName, kOfxSonyVegasHostName
