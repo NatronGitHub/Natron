@@ -855,15 +855,18 @@ bezierSegmentEval(bool useGuiCurves,
                         std::sqrt(dx2 * dx2 + dy2 * dy2) +
                         std::sqrt(dx3 * dx3 + dy3 * dy3);
         // At most kMaxPointsPerSegment points, so that the conversion to int can't overflow for a segment that
-        // goes near the line at infinity of a perspective extra matrix. The cap is a stopgap: the result stays
-        // exact only for segments up to 4 * kMaxPointsPerSegment pixels long (400 000 px, far beyond any image).
+        // goes near the line at infinity of a perspective extra matrix. The cap is a stopgap: the usual density
+        // (one point per 4 px of control-polygon length, an upper bound of the arc length) is kept only up to
+        // 4 * kMaxPointsPerSegment px (400 000 px, far beyond any image).
         // The proper solution (#1954) samples by adaptive subdivision (de Casteljau) with convex-hull culling:
-        // a piece whose control-point hull, and its feather segment's, lies entirely outside the render window
-        // expanded by the feather distance is replaced by its chord. The area between the curve and the chord
-        // is then outside that window, so the fill and the feather of every pixel inside it are unchanged, and
-        // the number of points follows the visible length instead of the total length. Clipping the segments
-        // to the render window would not be correct: it breaks the winding of the closed contour and the
-        // pairing of the shape and feather points used by computeTriangles().
+        // a piece whose control points, taken together with those of its feather piece over the same t range,
+        // have a convex hull entirely outside the render window expanded by the feather distance is replaced by
+        // its chord (and so is the feather piece). The area between each piece and its chord, and every feather
+        // triangle between the two pieces, are then inside that hull, so outside the window: the fill and the
+        // feather of every pixel inside it are unchanged, and the number of points follows the visible length
+        // instead of the total length. Dropping the parts of the segments outside the render window would not
+        // be correct: it opens the closed contour (its winding) and breaks the pairing of the shape and feather
+        // points used by computeTriangles().
         const double kMaxPointsPerSegment = 100000.;
         nbPointsPerSegment = (int)std::min(std::max(length * 0.25, 2.), kMaxPointsPerSegment);
     }
