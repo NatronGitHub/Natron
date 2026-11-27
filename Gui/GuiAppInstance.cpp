@@ -241,8 +241,12 @@ GuiAppInstance::aboutToQuit()
         _imp->_gui->close();
         _imp->_gui->deleteLater();
 
-        // Make sure all events are processed
-        qApp->processEvents();
+        // Make sure all events are processed. Another quit (natron.quit(), a termination signal) waits until
+        // this one is done (#1786).
+        {
+            AppManager::NestedEventLoopRAII nestedLoop;
+            qApp->processEvents();
+        }
         // Make sure all deleteLater calls are reached
         qApp->sendPostedEvents(0, QEvent::DeferredDelete);
 
@@ -1106,7 +1110,10 @@ GuiAppInstance::declareCurrentAppVariable_Python()
 void
 GuiAppInstance::createLoadProjectSplashScreen(const QString& projectFile)
 {
-    QCoreApplication::processEvents();
+    {
+        AppManager::NestedEventLoopRAII nestedLoop; // a quit waits until this returns (#1786)
+        QCoreApplication::processEvents();
+    }
     if (_imp->loadProjectSplash) {
         return;
     }
