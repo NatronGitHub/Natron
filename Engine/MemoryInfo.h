@@ -50,21 +50,6 @@ U64 getSystemTotalRAM_conditionnally();
 // prints RAM value as KB, MB or GB
 QString printAsRAM(U64 bytes);
 
-#if 0 // not used for now
-/**
- * Returns the peak (maximum so far) resident set size (physical
- * memory use) measured in bytes, or zero if the value cannot be
- * determined on this OS.
- */
-std::size_t getPeakRSS( );
-
-/**
- * Returns the current resident set size (physical memory use) measured
- * in bytes, or zero if the value cannot be determined on this OS.
- */
-std::size_t getCurrentRSS( );
-#endif // 0
-
 std::size_t getAmountFreePhysicalRAM();
 
 NATRON_NAMESPACE_EXIT

@@ -795,25 +795,6 @@ TrackerContext::endSelection(TrackSelectionReason reason)
     --_imp->selectionRecursion;
 }
 
-#if 0
-static
-KnobDoublePtr
-getCornerPinPoint(Node* node,
-                  bool isFrom,
-                  int index)
-{
-    assert(0 <= index && index < 4);
-    QString name = isFrom ? QString::fromUtf8("from%1").arg(index + 1) : QString::fromUtf8("to%1").arg(index + 1);
-    KnobIPtr knob = node->getKnobByName( name.toStdString() );
-    assert(knob);
-    KnobDoublePtr  ret = std::dynamic_pointer_cast<KnobDouble>(knob);
-    assert(ret);
-
-    return ret;
-}
-
-#endif
-
 static
 KnobDoublePtr
 getCornerPinPoint(Node* node,

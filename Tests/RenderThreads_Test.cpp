@@ -58,7 +58,6 @@
 
 NATRON_NAMESPACE_USING
 
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
 namespace {
 // The frames reported by RenderEngine::frameRendered, from several render threads
 struct RenderedFrames
@@ -227,4 +226,3 @@ TEST_F(RenderThreadsTest, AbortStopsTheRender)
         ASSERT_TRUE( waitForRenderEnd(30000) ) << "the render did not stop after the abort (iteration " << i << ")";
     }
 }
-#endif // ifndef NATRON_PLAYBACK_USES_THREAD_POOL

@@ -553,18 +553,6 @@ matTranslation(double x,
                      0., 0., 1.);
 }
 
-#if 0
-static
-Matrix3x3
-matRotationAroundPoint(double rads,
-                       double px,
-                       double py)
-{
-    return matMul( matTranslation(px, py), matMul( matRotation(rads), matTranslation(-px, -py) ) );
-}
-
-#endif
-
 Matrix3x3
 matScale(double x,
          double y)
@@ -573,27 +561,6 @@ matScale(double x,
                      0., y,  0.,
                      0., 0., 1.);
 }
-
-#if 0
-static
-Matrix3x3
-matScale(double s)
-{
-    return matScale(s, s);
-}
-
-static
-Matrix3x3
-matScaleAroundPoint(double scaleX,
-                    double scaleY,
-                    double px,
-                    double py)
-{
-    return matMul( matTranslation(px, py), matMul( matScale(scaleX, scaleY), matTranslation(-px, -py) ) );
-}
-
-#endif
-
 
 Matrix3x3
 matSkewXY(double skewX,
@@ -706,64 +673,6 @@ matCanonicalToPixel(double pixelaspectratio, //!< 1.067 for PAL, where 720x576 p
     // FIXME: when it's the Upper field, showuldn't the first pixel start at canonical coordinate (0,0.5) ?
     return matScale( renderscaleX / pixelaspectratio, renderscaleY * (fielded ? 0.5 : 1.0) );
 }
-
- #if 0
-// matrix transform from destination to source
-static
-Matrix3x3
-matInverseTransformPixel(double pixelaspectratio, //!< 1.067 for PAL, where 720x576 pixels occupy 768x576 in canonical coords
-                         double renderscaleX,     //!< 0.5 for a half-resolution image
-                         double renderscaleY,
-                         bool fielded,
-                         double translateX,
-                         double translateY,
-                         double scaleX,
-                         double scaleY,
-                         double skewX,
-                         double skewY,
-                         bool skewOrderYX,
-                         double rads,
-                         double centerX,
-                         double centerY)
-{
-    ///1) We go from pixel to canonical
-    ///2) we apply transform
-    ///3) We go back to pixels
-
-    return matMul( matMul( matCanonicalToPixel(pixelaspectratio, renderscaleX, renderscaleY, fielded),
-                           matInverseTransformCanonical(translateX, translateY, scaleX, scaleY, skewX, skewY, skewOrderYX, rads, centerX, centerY) ),
-                   matPixelToCanonical(pixelaspectratio, renderscaleX, renderscaleY, fielded) );
-}
-
-// matrix transform from source to destination
-static
-Matrix3x3
-matTransformPixel(double pixelaspectratio, //!< 1.067 for PAL, where 720x576 pixels occupy 768x576 in canonical coords
-                  double renderscaleX,     //!< 0.5 for a half-resolution image
-                  double renderscaleY,
-                  bool fielded,
-                  double translateX,
-                  double translateY,
-                  double scaleX,
-                  double scaleY,
-                  double skewX,
-                  double skewY,
-                  bool skewOrderYX,
-                  double rads,
-                  double centerX,
-                  double centerY)
-{
-    ///1) We go from pixel to canonical
-    ///2) we apply transform
-    ///3) We go back to pixels
-
-    return matMul( matMul( matCanonicalToPixel(pixelaspectratio, renderscaleX, renderscaleY, fielded),
-                           matTransformCanonical(translateX, translateY, scaleX, scaleY, skewX, skewY, skewOrderYX, rads, centerX, centerY) ),
-                   matPixelToCanonical(pixelaspectratio, renderscaleX, renderscaleY, fielded) );
-}
-
-#endif // if 0
-
 
 // compute the bounding box of the transform of four points
 static void

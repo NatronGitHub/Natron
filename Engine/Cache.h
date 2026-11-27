@@ -416,55 +416,7 @@ public:
     typedef std::list<SerializedEntry> CacheTOC;
 
 public:
-
-
-#ifdef USE_VARIADIC_TEMPLATES
-
-#ifdef NATRON_CACHE_USE_BOOST
-#ifdef NATRON_CACHE_USE_HASH
-    typedef BoostLRUHashTable<hash_type, EntryTypePtr>, boost::bimaps::unordered_set_of > CacheContainer;
-#else
-    typedef BoostLRUHashTable<hash_type, EntryTypePtr>, boost::bimaps::set_of > CacheContainer;
-#endif
-    typedef typename CacheContainer::container_type::left_iterator CacheIterator;
-    typedef typename CacheContainer::container_type::left_const_iterator ConstCacheIterator;
-    static std::list<CachedValue> &  getValueFromIterator(CacheIterator it)
-    {
-        return it->second;
-    }
-    static const std::list<CachedValue> &  getValueFromIterator(ConstCacheIterator it)
-    {
-        return it->second;
-    }
-
-#else // cache use STL
-
-#ifdef NATRON_CACHE_USE_HASH
-    typedef StlLRUHashTable<hash_type, EntryTypePtr>, std::unordered_map > CacheContainer;
-#else
-    typedef StlLRUHashTable<hash_type, EntryTypePtr>, std::map > CacheContainer;
-#endif
-    typedef typename CacheContainer::key_to_value_type::iterator CacheIterator;
-    typedef typename CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
-    static std::list<EntryTypePtr> &  getValueFromIterator(CacheIterator it)
-    {
-        return it->second;
-    }
-    static const std::list<EntryTypePtr> &  getValueFromIterator(ConstCacheIterator it)
-    {
-        return it->second;
-    }
-
-#endif // NATRON_CACHE_USE_BOOST
-
-#else // !USE_VARIADIC_TEMPLATES
-
-#ifdef NATRON_CACHE_USE_BOOST
-#ifdef NATRON_CACHE_USE_HASH
     typedef BoostLRUHashTable<hash_type, EntryTypePtr> CacheContainer;
-#else
-    typedef BoostLRUHashTable<hash_type, EntryTypePtr> CacheContainer;
-#endif
     typedef typename CacheContainer::container_type::left_iterator CacheIterator;
     typedef typename CacheContainer::container_type::left_const_iterator ConstCacheIterator;
     static std::list<EntryTypePtr> &  getValueFromIterator(CacheIterator it)
@@ -475,24 +427,6 @@ public:
     {
         return it->second;
     }
-
-#else // cache use STL and tree (std map)
-
-    typedef StlLRUHashTable<hash_type, EntryTypePtr> CacheContainer;
-    typedef typename CacheContainer::key_to_value_type::iterator CacheIterator;
-    typedef typename CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
-    static std::list<EntryTypePtr> &   getValueFromIterator(CacheIterator it)
-    {
-        return it->second.first;
-    }
-    static const std::list<EntryTypePtr> &   getValueFromIterator(ConstCacheIterator it)
-    {
-        return it->second.first;
-    }
-
-#endif // NATRON_CACHE_USE_BOOST
-
-#endif // USE_VARIADIC_TEMPLATES
 
 private:
 
