@@ -1045,14 +1045,14 @@ public:
     bool hasSequentialOnlyNodeUpstream(std::string & nodeName) const;
 
     /**
-     * @brief The nodes on the paths from this node up to node through the inputs (getInput(), with the group
-     * redirections), this node and node included, or none if node is neither this node nor upstream of it. The walk
-     * doesn't go upstream of node. The nodes are in the order in which the recursion
-     *     visit(n) { if (n leads to node) { add n; if (n != node) { for (input : inputs of n) visit(input); } } }
+     * @brief The nodes on the paths from this node up to target through the inputs (getInput(), with the group
+     * redirections), this node and target included, or none if target is neither this node nor upstream of it. The
+     * walk doesn't go upstream of target. The nodes are in the order in which the recursion
+     *     visit(n) { if (n leads to target) { add n; if (n != target) { for (input : inputs of n) visit(input); } } }
      * first reaches them, but each node is visited once: that recursion is exponential on chains of diamonds (#1628).
      * Takes the locks of getInput() one at a time, and no other lock.
      **/
-    NodesList getNodesOnPathsUpstreamTo(const Node* node) const;
+    NodesList getNodesOnPathsUpstreamTo(const Node* target) const;
 
 
     /**

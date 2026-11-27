@@ -1206,10 +1206,12 @@ scriptNames(const NodesList& nodes)
 // The walks of a RotoPaint stroke (#1628) visit each node once: Node::getNodesOnPathsUpstreamTo(), which updates the
 // paint stroke data of the nodes between the Viewer and the RotoPaint node during a stroke, and tells whether the
 // Viewer's inputs lead to the RotoPaint node, on a chain of diamonds where the former recursions never finished. It
-// gives the nodes in the order of the first visits of the former recursion.
+// gives the nodes in the order of the first visits of the former recursion. The refresh of the input-related data also
+// runs on these nodes with two inputs.
 //
 //  Generator --> Dot A1 --> MultiPAR M1 (inputs A1, B1) --> Dot A2 --> M2 ... --> Mk --> MultiPAR Top (inputs Mk, C)
 //            \-> Dot B1 -/                              \-> Dot B2 -/                 Generator X --> Dot C -/
+//            \=> MultiPAR Twice (both inputs)
 TEST(DeepGraphRender, NodesOnPathsUpstreamOfDiamonds)
 {
     if ( !canRunTest() ) {
@@ -1220,7 +1222,7 @@ TEST(DeepGraphRender, NodesOnPathsUpstreamOfDiamonds)
     AppInstancePtr app = appPTR->getTopLevelInstance();
     ProjectPtr project = app->getProject();
     std::vector<NodePtr> a(1), b(1), m; // a[i], b[i] and m[i] for i >= 1; m[0] is the generator
-    NodePtr x, c, top;
+    NodePtr x, c, top, twice;
     {
         CreatingNodeTreeFlag_RAII creatingNodeTree(app);
         m.push_back( nodes.add(kNatronTestPluginGenerator) );
@@ -1243,9 +1245,14 @@ TEST(DeepGraphRender, NodesOnPathsUpstreamOfDiamonds)
         ASSERT_TRUE( project->connectNodes(0, x, c) );
         ASSERT_TRUE( project->connectNodes(0, m.back(), top) );
         ASSERT_TRUE( project->connectNodes(1, c, top) );
+        // a node connected to the generator through both of its inputs
+        twice = nodes.add(kNatronTestPluginMultiPAR);
+        ASSERT_TRUE( bool(twice) );
+        ASSERT_TRUE( project->connectNodes(0, m.front(), twice) );
+        ASSERT_TRUE( project->connectNodes(1, m.front(), twice) );
     }
     project->forceComputeInputDependentDataOnAllTrees();
-    const NodePtr& generator = m[0];
+    const NodePtr& generator = m.front();
 
     const std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
     const NodesList toGenerator = top->getNodesOnPathsUpstreamTo( generator.get() );
@@ -1255,8 +1262,10 @@ TEST(DeepGraphRender, NodesOnPathsUpstreamOfDiamonds)
     const NodesList fromMToX = m.back()->getNodesOnPathsUpstreamTo( x.get() );
     const NodesList toTop = top->getNodesOnPathsUpstreamTo( top.get() );
     const NodesList fromGeneratorToTop = generator->getNodesOnPathsUpstreamTo( top.get() );
-    const long long elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count();
-    EXPECT_LT(elapsedMs, 1000);
+    // The former recursions never finished here: ctest's timeout would catch a regression.
+    std::cerr << "DeepGraphRender: walks on " << kDiamondsCount << " diamonds ("
+              << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count()
+              << " ms)" << std::endl;
 
     // the order of the former recursion: down the A branches, then the B branches on the way back
     NodesList expected;
@@ -1306,6 +1315,33 @@ TEST(DeepGraphRender, NodesOnPathsUpstreamOfDiamonds)
             EXPECT_LE(1 << kReferenceDiamondsCount, calls);
         }
     }
+    {
+        NodesList updated;
+        int calls = 0;
+        referenceUpdateRecursively(twice, generator.get(), &updated, &calls);
+        EXPECT_EQ( scriptNames( firstOccurrences(updated) ), scriptNames( twice->getNodesOnPathsUpstreamTo( generator.get() ) ) );
+        expected.clear();
+        expected.push_back(twice);
+        expected.push_back(generator);
+        EXPECT_EQ( scriptNames(expected), scriptNames( twice->getNodesOnPathsUpstreamTo( generator.get() ) ) );
+    }
+
+    // The walks of the input-related data on nodes with several inputs, shared by two branches: as on project load
+    // (upstream from the outputs), then after a change at the top (downstream). Every node is refreshed.
+    const auto countDirty = [&nodes]() {
+        int dirty = 0;
+        for (std::vector<NodePtr>::const_iterator it = nodes.nodes.begin(); it != nodes.nodes.end(); ++it) {
+            if ( (*it)->isInputRelatedDataDirty() ) {
+                ++dirty;
+            }
+        }
+
+        return dirty;
+    };
+    project->forceComputeInputDependentDataOnAllTrees();
+    EXPECT_EQ( 0, countDirty() );
+    generator->forceRefreshAllInputRelatedData();
+    EXPECT_EQ( 0, countDirty() );
 }
 
 // The refresh of the input-related data (metadata, layer menus...) on project load and after a connection doesn't

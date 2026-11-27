@@ -664,15 +664,15 @@ Node::isNodeUpstream(const Node* input,
 }
 
 NodesList
-Node::getNodesOnPathsUpstreamTo(const Node* node) const
+Node::getNodesOnPathsUpstreamTo(const Node* target) const
 {
     // An iterative depth-first search, which visits the inputs in order, each node once: the pre-order of its visits
-    // is the order in which the recursion first reaches the nodes. A node leads to node if one of its inputs does,
+    // is the order in which the recursion first reaches the nodes. A node leads to target if one of its inputs does,
     // which is known once its inputs are visited (in a graph without cycles, an input that was already visited has
     // been visited completely).
     NodesList visitOrder; // every node visited, in pre-order
     std::unordered_set<const Node*> visited;
-    std::unordered_set<const Node*> leading; // the visited nodes that lead to node
+    std::unordered_set<const Node*> leading; // the visited nodes that lead to target
     struct Visit
     {
         NodePtr node;
@@ -685,7 +685,7 @@ Node::getNodesOnPathsUpstreamTo(const Node* node) const
     NodePtr thisShared = std::const_pointer_cast<Node>( shared_from_this() );
     visited.insert(this);
     visitOrder.push_back(thisShared);
-    if (this == node) {
+    if (this == target) {
         return visitOrder;
     }
     toVisit.push_back( Visit{thisShared, getNInputs(), 0, false} );
@@ -703,8 +703,8 @@ Node::getNodesOnPathsUpstreamTo(const Node* node) const
                 continue;
             }
             visitOrder.push_back(input);
-            if (input.get() == node) {
-                leading.insert(node);
+            if (input.get() == target) {
+                leading.insert(target);
                 current.leads = true;
                 continue;
             }
