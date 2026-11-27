@@ -357,15 +357,15 @@ jobs:
         # Ubuntu's names for the system libraries that the archive never bundles (INSTALL_LINUX.md,
         # "Runtime requirements of the Linux binaries"; the dnf list of natron-test.sh): libgomp,
         # GLVND's libGL/libEGL/libOpenGL (with Ubuntu's Mesa, which they depend on; no Xvfb:
-        # NatronRenderer needs no display), the X11/xcb/xkbcommon client libraries and ALSA, which Qt's libraries link
-        # to, and fontconfig with a font. Most of them are already on the runner image. Plus the
-        # tools that runTests.sh uses (zip, unzip, xz).
+        # NatronRenderer needs no display), the X11 client libraries and the core libxcb (not the
+        # xcb extension, xcb-util and xkbcommon libraries, which the archive bundles, #2024) and
+        # ALSA, which Qt's libraries link to, and fontconfig with a font. Most of them are already
+        # on the runner image. Plus the tools that runTests.sh uses (zip, unzip, xz).
         sudo apt-get update -q
         sudo apt-get install -y -q --no-install-recommends libgomp1 libgl1 libegl1 libopengl0 \
             libx11-6 libx11-xcb1 libxext6 libxrender1 libxi6 libxfixes3 libxrandr2 libxcursor1 \
             libxinerama1 libxcomposite1 libxdamage1 libxtst6 libsm6 libice6 libxcb1 \
-            libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxkbcommon0 \
-            libxkbcommon-x11-0 libasound2t64 fontconfig fonts-dejavu-core zip unzip xz-utils
+            libasound2t64 fontconfig fonts-dejavu-core zip unzip xz-utils
         . /etc/os-release
         echo "$PRETTY_NAME, $(ldd --version | head -1), $(uname -m)"
     - name: Run Natron-Tests on the latest Ubuntu

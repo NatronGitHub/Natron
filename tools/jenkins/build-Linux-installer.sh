@@ -69,15 +69,21 @@ export LD_LIBRARY_PATH
 #   have it): it is bundled if a bundled file needs it;
 # - the desktop libraries, which every Linux desktop has and which must match the system's
 #   display server and sound system: the X11 client libraries (libX11, libX11-xcb, libXext,
-#   libXrender, libXau, libXdmcp, libXi, libXfixes, ... i.e. libX*), libxcb and its extensions,
-#   the xcb-util libraries (libxcb-icccm, -image, -keysyms, -render-util...), libSM, libICE,
-#   libxkbcommon and libxkbcommon-x11, and ALSA (libasound).
+#   libXrender, libXau, libXdmcp, libXi, libXfixes, ... i.e. libX*), the core libxcb, libSM,
+#   libICE, and ALSA (libasound). Following the AppImage excludelist
+#   (https://github.com/AppImageCommunity/pkg2appimage/blob/master/excludelist): libX11 and
+#   libX11-xcb, because a bundled libX11 needs symbols of the matching libxcb (e.g.
+#   xcb_wait_for_reply64), and libxcb, because the system's Mesa needs symbols of its own
+#   libxcb (xcb_send_fd, xcb_send_request_with_fds); libxcb-dri2 and libxcb-dri3 too, which
+#   only Mesa's drivers use and which need those libxcb symbols; libSM and libICE, which
+#   every desktop has; ALSA, which must match the system's sound server.
+#   The other xcb libraries are bundled instead (see BUNDLED_DESKTOP_LIBS_RE).
 # INSTALL_LINUX.md lists them ("Runtime requirements of the Linux binaries"). The OpenGL, DRM, udev,
 # SELinux and GPU driver libraries are the same as in openfx's Support/include/linuxCheckBundle.sh.
 # Unlike there, libcrypt is not a system library: Debian and Ubuntu don't have libcrypt.so.2, so a
 # bundled file must not need it (Python's crypt module is left out, see INSTALL_LINUX.md).
 # A library in this list that would be bundled is an error.
-SYSTEM_LIBS_RE='^(ld-linux.*|lib(c|m|mvec|dl|pthread|rt|resolv|util|anl|thread_db|nsl|nss_.*|BrokenLocale|c_malloc_debug|stdc\+\+|gcc_s|gomp|atomic|GL|EGL|GLX|GLdispatch|OpenGL|GLESv1_CM|GLESv2|drm|drm_.*|gbm|glapi|udev|selinux|cuda|nvidia-.*|nvcuvid|amdocl.*|igdrcl|intelocl|MesaOpenCL|RusticlOpenCL|pocl|X[A-Za-z0-9]*|X11-xcb|xcb|xcb-.*|SM|ICE|xkbcommon|xkbcommon-x11|asound)\.so(\..*)?)$'
+SYSTEM_LIBS_RE='^(ld-linux.*|lib(c|m|mvec|dl|pthread|rt|resolv|util|anl|thread_db|nsl|nss_.*|BrokenLocale|c_malloc_debug|stdc\+\+|gcc_s|gomp|atomic|GL|EGL|GLX|GLdispatch|OpenGL|GLESv1_CM|GLESv2|drm|drm_.*|gbm|glapi|udev|selinux|cuda|nvidia-.*|nvcuvid|amdocl.*|igdrcl|intelocl|MesaOpenCL|RusticlOpenCL|pocl|X[A-Za-z0-9]*|X11-xcb|xcb|xcb-dri2|xcb-dri3|SM|ICE|asound)\.so(\..*)?)$'
 
 # Highest symbol versions defined by the system libraries of Rocky Linux 9.0 (glibc 2.34;
 # libstdc++, libgcc_s and libgomp from GCC 11), on x86_64 and aarch64. A bundled binary
@@ -99,6 +105,54 @@ SYSTEM_SYMVER_OTHER="CXXABI_TM_1 CXXABI_FLOAT128"
 
 function isSystemLib() {
     [[ "$(basename "$1")" =~ $SYSTEM_LIBS_RE ]]
+}
+
+# Desktop libraries that are bundled, although they come from the system packages of the SDK
+# image (Rocky Linux 9's /usr/lib64), not from SDK_HOME: Qt 5's xcb platform plug-in
+# (libqxcb.so, libQt5XcbQpa) and its GLX integration need the libxcb extension libraries
+# (glx, icccm, image, keysyms, randr, render, render-util, shape, shm, sync, util, xfixes,
+# xinerama, xinput, xkb), libxkbcommon and libxkbcommon-x11, and a desktop doesn't always have
+# them all (a clean Ubuntu 26.04 lacks libxcb-shape, -xinerama and -xinput, #2024). As in the
+# AppImage excludelist, only libxcb itself, libxcb-dri2 and libxcb-dri3 stay system libraries
+# (SYSTEM_LIBS_RE, which is checked first). They are MIT/X11-licensed: bundleDesktopLibs also
+# copies their licence notices.
+BUNDLED_DESKTOP_LIBS_RE='^lib(xcb-.*|xkbcommon|xkbcommon-x11)\.so(\..*)?$'
+
+# Print the libraries of BUNDLED_DESKTOP_LIBS_RE needed, directly or not, by the given ELF files.
+function desktopDepends() {
+    local deps d
+    deps="$(ldd "$@" 2>/dev/null | awk '$2 == "=>" && $3 ~ /^\// {print $3}' | sort -u)" || true
+    for d in $deps; do
+        if [[ "$(basename "$d")" =~ $BUNDLED_DESKTOP_LIBS_RE ]] && ! isSystemLib "$d"; then
+            echo "$d"
+        fi
+    done
+}
+
+# Copy the libraries of BUNDLED_DESKTOP_LIBS_RE needed by the ELF files in the given directories
+# to the bundle's lib directory, and the licence files of their packages (rpm -qL, or the
+# COPYING/LICENSE files of rpm -qd) to docs/licenses/<package>/. Fails if a library belongs to
+# no package or a package has no licence file.
+function bundleDesktopLibs() {
+    local libs l pkg lic
+    libs="$(desktopDepends $(find "$@" -type f \( -name '*.so' -o -name '*.so.*' -o -perm -u+x \)))"
+    for l in $libs; do
+        [ -f "${TMP_PORTABLE_DIR}/lib/$(basename "$l")" ] || cp -f "$l" "${TMP_PORTABLE_DIR}/lib/"
+        if ! pkg="$(rpm -qf --qf '%{NAME}\n' "$(readlink -f "$l")")"; then
+            (>&2 echo "Error: $l belongs to no package, its licence is unknown")
+            exit 1
+        fi
+        [ -d "${TMP_PORTABLE_DIR}/docs/licenses/$pkg" ] && continue
+        lic="$(rpm -qL "$pkg" | grep -v '^(contains no files)$' || true)"
+        [ -n "$lic" ] || lic="$(rpm -qd "$pkg" | grep -E '/(COPYING|LICENSE)[^/]*$' || true)"
+        if [ -z "$lic" ]; then
+            (>&2 echo "Error: package $pkg (of $l) has no licence file")
+            exit 1
+        fi
+        mkdir -p "${TMP_PORTABLE_DIR}/docs/licenses/$pkg"
+        cp $lic "${TMP_PORTABLE_DIR}/docs/licenses/$pkg/"
+        echo "* bundled $pkg (licence: $(echo $lic | xargs -n 1 basename | tr '\n' ' '))"
+    done
 }
 
 # Print the SDK libraries needed by the given ELF files, i.e. the libraries to bundle.
@@ -357,6 +411,9 @@ for z in $QT_PLUG_DEPENDS; do
     fi
 done
 
+
+# The xcb libraries of Qt's xcb platform plug-in, from the SDK image's system packages
+bundleDesktopLibs "${TMP_PORTABLE_DIR}/bin" "${TMP_PORTABLE_DIR}/lib"
 
 # done in build-natron.sh
 #mkdir -p "${TMP_PORTABLE_DIR}/Resources/etc/fonts/conf.d"
