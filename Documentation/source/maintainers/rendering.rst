@@ -206,7 +206,12 @@ on project load (``Project::extractTreesFromNodes``), and the RotoPaint stroke w
 once per path, which was exponential on chains of diamonds. Also iterative
 (#1950), in the same order: the walks downstream to the Viewers and the output
 nodes (``Node::hasViewersConnected`` and ``Node::hasOutputNodesConnected``,
-``visitNodesDepthFirst`` users run on every connection).
+``visitNodesDepthFirst`` users run on every connection), and the Gui copy of
+the split into trees, used by the node graph's Extract command
+(``addTreeInputs`` in ``Gui/NodeGraphUndoRedo.cpp``). Still recursive:
+``EffectInstance::refreshMetadata_recursive``, downstream, whose
+``ClipPreferencesRunning_RAII`` guards stay set on the whole path while the
+outputs are refreshed.
 
 The cache
 ---------
