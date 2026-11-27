@@ -25,6 +25,7 @@
 
 #include "Lut.h"
 
+#include <cstdint>
 #include <cstring> // for std::memcpy
 #include <algorithm> // min, max
 #include <cassert>
@@ -51,62 +52,21 @@
 NATRON_NAMESPACE_ENTER
 
 namespace Color {
-// compile-time endianness checking found on:
-// http://stackoverflow.com/questions/2100331/c-macro-definition-to-determine-big-endian-or-little-endian-machine
-// if(O32_HOST_ORDER == O32_BIG_ENDIAN) will always be optimized by gcc -O2
-enum
-{
-    O32_LITTLE_ENDIAN = 0x03020100ul,
-    O32_BIG_ENDIAN = 0x00010203ul,
-    O32_PDP_ENDIAN = 0x01000302ul
-};
-
-static const union
-{
-    uint8_t bytes[4];
-    uint32_t value;
-}
-
-o32_host_order = {
-    { 0, 1, 2, 3 }
-};
-#define O32_HOST_ORDER (o32_host_order.value)
+// The 16 most significant bits of the IEEE 754 representation of f (sign, exponent and 7 bits of mantissa).
+// std::memcpy instead of a union: reading the inactive member of a union is undefined behaviour in C++.
 static unsigned short
 hipart(const float f)
 {
-    union
-    {
-        float f;
-        unsigned short us[2];
-    }
+    std::uint32_t bits;
 
-    tmp;
+    std::memcpy( &bits, &f, sizeof(bits) );
 
-    tmp.us[0] = tmp.us[1] = 0;
-    tmp.f = f;
-
-    if (O32_HOST_ORDER == O32_BIG_ENDIAN) {
-        return tmp.us[0];
-    } else if (O32_HOST_ORDER == O32_LITTLE_ENDIAN) {
-        return tmp.us[1];
-    } else {
-        assert( (O32_HOST_ORDER == O32_LITTLE_ENDIAN) || (O32_HOST_ORDER == O32_BIG_ENDIAN) );
-
-        return 0;
-    }
+    return static_cast<unsigned short>(bits >> 16);
 }
 
 static float
 index_to_float(const unsigned short i)
 {
-    union
-    {
-        float f;
-        unsigned short us[2];
-    }
-
-    tmp;
-
     /* positive and negative zeros, and all gradual underflow, turn into zero: */
     if ( ( i < 0x80) || ( ( i >= 0x8000) && ( i < 0x8080) ) ) {
         return 0;
@@ -118,17 +78,12 @@ index_to_float(const unsigned short i)
     if (i >= 0xff80) {
         return -std::numeric_limits<float>::max();
     }
-    if (O32_HOST_ORDER == O32_BIG_ENDIAN) {
-        tmp.us[0] = i;
-        tmp.us[1] = 0x8000;
-    } else if (O32_HOST_ORDER == O32_LITTLE_ENDIAN) {
-        tmp.us[0] = 0x8000;
-        tmp.us[1] = i;
-    } else {
-        assert( (O32_HOST_ORDER == O32_LITTLE_ENDIAN) || (O32_HOST_ORDER == O32_BIG_ENDIAN) );
-    }
+    // i gives the 16 most significant bits, and 0x8000 is the middle of the range of floats with these bits.
+    const std::uint32_t bits = (static_cast<std::uint32_t>(i) << 16) | 0x8000U;
+    float f;
+    std::memcpy( &f, &bits, sizeof(f) );
 
-    return tmp.f;
+    return f;
 }
 
 ///initialize the singleton
@@ -176,16 +131,6 @@ clip2(const RectI& what,
 {
     return what.intersect(srcBounds).intersect(dstBounds);
 }
-
-#ifdef DEAD_CODE
-static bool
-intersects(const RectI & what,
-           const RectI & other)
-{
-    return what.intersects(other);
-}
-
-#endif // DEAD_CODE
 
 static void
 getOffsetsForPacking(PixelPackingEnum format,
@@ -235,19 +180,6 @@ Lut::fromColorSpaceUint8ToLinearFloatFast(unsigned char v) const
 
     return fromFunc_uint8_to_float[v];
 }
-
-#ifdef DEAD_CODE
-// It is not recommended to use this function, because the output is quantized
-// If one really needs float, one has to use the full function (or OpenColorIO)
-float
-Lut::toColorSpaceFloatFromLinearFloatFast(float v) const
-{
-    assert(init_);
-
-    return Color::intToFloat<0xff01>(toFunc_hipart_to_uint8xx[hipart(v)]);
-}
-
-#endif // DEAD_CODE
 
 unsigned char
 Lut::toColorSpaceUint8FromLinearFloatFast(float v) const
@@ -347,74 +279,6 @@ Lut::fillTables() const
         toFunc_hipart_to_uint8xx[i] = Color::charToUint8xx(b);
     }
 }
-
-#ifdef DEAD_CODE
-void
-Lut::to_byte_planar(unsigned char* to,
-                    const float* from,
-                    int W,
-                    const float* alpha,
-                    int inDelta,
-                    int outDelta) const
-{
-    validate();
-    unsigned char *end = to + W * outDelta;
-    // coverity[dont_call]
-    int start = rand() % W;
-    const float *q;
-    unsigned char *p;
-    unsigned error;
-    if (!alpha) {
-        /* go forwards from starting point to end of line: */
-        error = 0x80;
-        for (p = to + start * outDelta, q = from + start * inDelta; p < end; p += outDelta, q += inDelta) {
-            error = (error & 0xff) + toFunc_hipart_to_uint8xx[hipart(*q)];
-            *p = (unsigned char)(error >> 8);
-        }
-        /* go backwards from starting point to start of line: */
-        error = 0x80;
-        for (p = to + (start - 1) * outDelta, q = from + start * inDelta; p >= to; p -= outDelta) {
-            q -= inDelta;
-            error = (error & 0xff) + toFunc_hipart_to_uint8xx[hipart(*q)];
-            *p = (unsigned char)(error >> 8);
-        }
-    } else {
-        const float *a = alpha;
-        /* go forwards from starting point to end of line: */
-        error = 0x80;
-        for (p = to + start * outDelta, q = from + start * inDelta, a += start * inDelta; p < end; p += outDelta, q += inDelta, a += inDelta) {
-            const float v = *q * *a;
-            error = (error & 0xff) + toFunc_hipart_to_uint8xx[hipart(v)];
-            ++a;
-            *p = (unsigned char)(error >> 8);
-        }
-        /* go backwards from starting point to start of line: */
-        error = 0x80;
-        for (p = to + (start - 1) * outDelta, q = from + start * inDelta, a = alpha + start * inDelta; p >= to; p -= outDelta) {
-            const float v = *q * *a;
-            q -= inDelta;
-            q -= inDelta;
-            error = (error & 0xff) + toFunc_hipart_to_uint8xx[hipart(v)];
-            *p = (unsigned char)(error >> 8);
-        }
-    }
-}
-
-#endif // DEAD_CODE
-
-#ifdef DEAD_CODE
-void
-Lut::to_short_planar(unsigned short* /*to*/,
-                     const float* /*from*/,
-                     int /*W*/,
-                     const float* /*alpha*/,
-                     int /*inDelta*/,
-                     int /*outDelta*/) const
-{
-    throw std::runtime_error("Lut::to_short_planar not implemented yet.");
-}
-
-#endif // DEAD_CODE
 
 void
 Lut::to_float_planar(float* to,
@@ -519,23 +383,6 @@ Lut::to_byte_packed(unsigned char* to,
         }
     }
 } // to_byte_packed
-
-#ifdef DEAD_CODE
-void
-Lut::to_short_packed(unsigned short* /*to*/,
-                     const float* /*from*/,
-                     const RectI & /*conversionRect*/,
-                     const RectI & /*srcBounds*/,
-                     const RectI & /*dstBounds*/,
-                     PixelPackingEnum /*inputPacking*/,
-                     PixelPackingEnum /*outputPacking*/,
-                     bool /*invertY*/,
-                     bool /*premult*/) const
-{
-    throw std::runtime_error("Lut::to_short_packed not implemented yet.");
-}
-
-#endif // DEAD_CODE
 
 void
 Lut::to_float_packed(float* to,
@@ -981,251 +828,6 @@ from_float_packed(float *to,
         }
     }
 } // from_float_packed
-
-#if 0
-void
-to_byte_planar(unsigned char *to,
-               const float *from,
-               int W,
-               const float* alpha,
-               int inDelta,
-               int outDelta)
-{
-    if (!alpha) {
-        unsigned char *end = to + W * outDelta;
-        // coverity[dont_call]
-        int start = rand() % W;
-        const float *q;
-        unsigned char *p;
-        /* go forwards from starting point to end of line: */
-        float error = .5;
-        for (p = to + start * outDelta, q = from + start * inDelta; p < end; p += outDelta, q += inDelta) {
-            float G = error + *q * 255.0f;
-            if (G <= 0) {
-                *p = 0;
-            } else if (G < 255) {
-                int i = (int)G;
-                *p = (unsigned char)i;
-                error = G - i;
-            } else {
-                *p = 255;
-            }
-        }
-        /* go backwards from starting point to start of line: */
-        error = .5;
-        for (p = to + (start - 1) * outDelta, q = from + start * inDelta; p >= to; p -= outDelta) {
-            q -= inDelta;
-            float G = error + *q * 255.0f;
-            if (G <= 0) {
-                *p = 0;
-            } else if (G < 255) {
-                int i = (int)G;
-                *p = (unsigned char)i;
-                error = G - i;
-            } else {
-                *p = 255;
-            }
-        }
-    } else {
-        unsigned char *end = to + W * outDelta;
-        // coverity[dont_call]
-        int start = rand() % W;
-        const float *q;
-        const float *a = alpha;
-        unsigned char *p;
-        /* go forwards from starting point to end of line: */
-        float error = .5;
-        for (p = to + start * outDelta, q = from + start * inDelta, a += start * inDelta; p < end;
-             p += outDelta, q += inDelta, a += inDelta) {
-            float v = *q * *a;
-            float G = error + v * 255.0f;
-            if (G <= 0) {
-                *p = 0;
-            } else if (G < 255) {
-                int i = (int)G;
-                *p = (unsigned char)i;
-                error = G - i;
-            } else {
-                *p = 255;
-            }
-        }
-        /* go backwards from starting point to start of line: */
-        error = .5;
-        for (p = to + (start - 1) * outDelta, q = from + start * inDelta, a = alpha + start * inDelta; p >= to; p -= outDelta) {
-            q -= inDelta;
-            a -= inDelta;
-            const float v = *q * *a;
-            float G = error + v * 255.0f;
-            if (G <= 0) {
-                *p = 0;
-            } else if (G < 255) {
-                int i = (int)G;
-                *p = (unsigned char)i;
-                error = G - i;
-            } else {
-                *p = 255;
-            }
-        }
-    }
-} // to_byte_planar
-
-#endif // DEAD_CODE
-
-#ifdef DEAD_CODE
-void
-to_short_planar(unsigned short *to,
-                const float *from,
-                int W,
-                const float* alpha,
-                int inDelta,
-                int outDelta)
-{
-    Q_UNUSED(to);
-    Q_UNUSED(from);
-    Q_UNUSED(W);
-    Q_UNUSED(alpha);
-    Q_UNUSED(inDelta);
-    Q_UNUSED(outDelta);
-    throw std::runtime_error("Linear::to_short_planar not yet implemented.");
-}
-
-#endif // DEAD_CODE
-
-#ifdef DEAD_CODE
-void
-to_float_planar(float *to,
-                const float *from,
-                int W,
-                const float* alpha,
-                int inDelta,
-                int outDelta)
-{
-    if (!alpha) {
-        if ( ( inDelta == 1) && ( outDelta == 1) ) {
-            std::memcpy( to, from, W * sizeof(float) );
-        } else {
-            for (int f = 0, t = 0; f < W; f += inDelta, t += outDelta) {
-                to[t] = from[f];
-            }
-        }
-    } else {
-        for (int f = 0, t = 0; f < W; f += inDelta, t += outDelta) {
-            to[t] = from[f] * alpha[f];
-        }
-    }
-}
-
-#endif // DEAD_CODE
-
-#ifdef DEAD_CODE
-void
-to_byte_packed(unsigned char* to,
-               const float* from,
-               const RectI & conversionRect,
-               const RectI & srcBounds,
-               const RectI & dstBounds,
-               PixelPackingEnum inputPacking,
-               PixelPackingEnum outputPacking,
-               bool invertY,
-               bool premult)
-{
-    if ( ( inputPacking == ePixelPackingPLANAR) || ( outputPacking == ePixelPackingPLANAR) ) {
-        throw std::runtime_error("This function is not meant for planar buffers.");
-    }
-
-    ///clip the conversion rect to srcBounds and dstBounds
-    const RectI rect = clip2(conversionRect, srcBounds, dstBounds);
-    if ( rect.isNull() ) {
-        return;
-    }
-
-
-    bool inputHasAlpha = inputPacking == ePixelPackingBGRA || inputPacking == ePixelPackingRGBA;
-    bool outputHasAlpha = outputPacking == ePixelPackingBGRA || outputPacking == ePixelPackingRGBA;
-    int inROffset, inGOffset, inBOffset, inAOffset;
-    int outROffset, outGOffset, outBOffset, outAOffset;
-    getOffsetsForPacking(inputPacking, &inROffset, &inGOffset, &inBOffset, &inAOffset);
-    getOffsetsForPacking(outputPacking, &outROffset, &outGOffset, &outBOffset, &outAOffset);
-
-    int inPackingSize, outPackingSize;
-    inPackingSize = inputHasAlpha ? 4 : 3;
-    outPackingSize = outputHasAlpha ? 4 : 3;
-
-    for (int y = rect.y1; y < rect.y2; ++y) {
-        // coverity[dont_call]
-        int start = rand() % (rect.x2 - rect.x1) + rect.x1;
-        unsigned error_r, error_g, error_b;
-        error_r = error_g = error_b = 0x80;
-        int srcY = y;
-        if (invertY) {
-            srcY = srcBounds.y2 - y - 1;
-        }
-
-        const float *src_pixels = from + (srcY * (srcBounds.x2 - srcBounds.x1) * inPackingSize);
-        unsigned char *dst_pixels = to + (y * (dstBounds.x2 - dstBounds.x1) * outPackingSize);
-        /* go forwards from starting point to end of line: */
-        for (int x = start; x < rect.x2; ++x) {
-            int inCol = x * inPackingSize;
-            int outCol = x * outPackingSize;
-            float a = (inputHasAlpha && premult) ? src_pixels[inCol + inAOffset] : 1.f;
-
-            error_r = (error_r & 0xff) + src_pixels[inCol + inROffset] * a * 255.f;
-            error_g = (error_g & 0xff) + src_pixels[inCol + inGOffset] * a * 255.f;
-            error_b = (error_b & 0xff) + src_pixels[inCol + inBOffset] * a * 255.f;
-            dst_pixels[outCol + outROffset] = (unsigned char)(error_r >> 8);
-            dst_pixels[outCol + outGOffset] = (unsigned char)(error_g >> 8);
-            dst_pixels[outCol + outBOffset] = (unsigned char)(error_b >> 8);
-            if (outputHasAlpha) {
-                dst_pixels[outCol + outAOffset] = floatToInt<256>(a);
-            }
-        }
-        /* go backwards from starting point to start of line: */
-        error_r = error_g = error_b = 0x80;
-        for (int x = start - 1; x >= rect.x1; --x) {
-            int inCol = x * inPackingSize;
-            int outCol = x * outPackingSize;
-            float a = (inputHasAlpha && premult) ? src_pixels[inCol + inAOffset] : 1.f;
-
-            error_r = (error_r & 0xff) + src_pixels[inCol + inROffset] * a * 255.f;
-            error_g = (error_g & 0xff) + src_pixels[inCol + inGOffset] * a * 255.f;
-            error_b = (error_b & 0xff) + src_pixels[inCol + inBOffset] * a * 255.f;
-            dst_pixels[outCol + outROffset] = (unsigned char)(error_r >> 8);
-            dst_pixels[outCol + outGOffset] = (unsigned char)(error_g >> 8);
-            dst_pixels[outCol + outBOffset] = (unsigned char)(error_b >> 8);
-            if (outputHasAlpha) {
-                dst_pixels[outCol + outAOffset] = floatToInt<256>(a);
-            }
-        }
-    }
-} // to_byte_packed
-
-#endif // DEAD_CODE
-
-#ifdef DEAD_CODE
-void
-to_short_packed(unsigned short* to,
-                const float* from,
-                const RectI & conversionRect,
-                const RectI & srcBounds,
-                const RectI & dstBounds,
-                PixelPackingEnum inputPacking,
-                PixelPackingEnum outputPacking,
-                bool invertY,
-                bool premult)
-{
-    Q_UNUSED(to);
-    Q_UNUSED(from);
-    Q_UNUSED(conversionRect);
-    Q_UNUSED(srcBounds);
-    Q_UNUSED(dstBounds);
-    Q_UNUSED(invertY);
-    Q_UNUSED(premult);
-    Q_UNUSED(inputPacking);
-    Q_UNUSED(outputPacking);
-    throw std::runtime_error("Linear::to_short_packed not yet implemented.");
-}
-
-#endif // DEAD_CODE
 
 void
 to_float_packed(float* to,

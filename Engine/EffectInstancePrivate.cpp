@@ -379,6 +379,7 @@ EffectInstance::RenderArgs::RenderArgs()
     , lastFrame(0)
     , transformRedirections()
     , isDoingOpenGLRender(false)
+    , openGLInputTextureFailed(false)
 {
 }
 
@@ -399,6 +400,7 @@ EffectInstance::RenderArgs::RenderArgs(const RenderArgs & o)
     , lastFrame(o.lastFrame)
     , transformRedirections(o.transformRedirections)
     , isDoingOpenGLRender(o.isDoingOpenGLRender)
+    , openGLInputTextureFailed(o.openGLInputTextureFailed)
 {
 }
 
@@ -422,6 +424,7 @@ EffectInstance::RenderArgs::operator=(const RenderArgs & o)
     lastFrame = o.lastFrame;
     transformRedirections = o.transformRedirections;
     isDoingOpenGLRender = o.isDoingOpenGLRender;
+    openGLInputTextureFailed = o.openGLInputTextureFailed;
     //}
     return *this;
 }
@@ -747,6 +750,7 @@ EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectT
     tlsData->currentRenderArgs.firstFrame = firstFrame;
     tlsData->currentRenderArgs.lastFrame = lastFrame;
     tlsData->currentRenderArgs.isDoingOpenGLRender = isDoingOpenGLRender;
+    tlsData->currentRenderArgs.openGLInputTextureFailed = false;
 
     tlsData->currentRenderArgs.validArgs = true;
 }

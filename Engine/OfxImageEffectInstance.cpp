@@ -1687,6 +1687,43 @@ OfxImageEffectDescriptor::OfxImageEffectDescriptor(const OFX::Host::ImageEffect:
 {
 }
 
+namespace {
+// OFX 1.5.1 (ofxParam.h): kOfxParamPropHasHostOverlayHandle, on parameter descriptors, read only for the
+// plug-in, "If set to 1, then the host is flagging that there is some sort of native user overlay interface
+// handle available for the given parameter". Natron's native handle is a point, which it draws on its own
+// only for the Double2D parameters of type kOfxParamDoubleTypeXYAbsolute or
+// kOfxParamDoubleTypeNormalisedXYAbsolute (OfxDouble2DInstance's constructor). The plug-in sets the type
+// after paramDefine(), so the value is updated whenever it sets kOfxParamPropDoubleType (#1932).
+void
+updateHasHostOverlayHandle(OFX::Host::Param::Descriptor& param)
+{
+    const std::string& type = param.getDoubleType();
+    const bool hasHandle = (type == kOfxParamDoubleTypeXYAbsolute) || (type == kOfxParamDoubleTypeNormalisedXYAbsolute);
+
+    param.getProperties().setIntProperty(kOfxParamPropHasHostOverlayHandle, hasHandle ? 1 : 0);
+}
+
+class HostOverlayHandleHook
+    : public OFX::Host::Property::NotifyHook
+{
+public:
+    explicit HostOverlayHandleHook(OFX::Host::Param::Descriptor& param)
+        : _param(param)
+    {
+    }
+
+    virtual void notify(const std::string& /*name*/,
+                        bool /*singleValue*/,
+                        int /*indexOrN*/) OFX_EXCEPTION_SPEC OVERRIDE FINAL
+    {
+        updateHasHostOverlayHandle(_param);
+    }
+
+private:
+    OFX::Host::Param::Descriptor& _param;
+};
+} // anonymous namespace
+
 OFX::Host::Param::Descriptor *
 OfxImageEffectDescriptor::paramDefine(const char *paramType,
                                       const char *name)
@@ -1696,16 +1733,10 @@ OfxImageEffectDescriptor::paramDefine(const char *paramType,
     OFX::Host::Param::Descriptor *ret = OFX::Host::Param::SetDescriptor::paramDefine(paramType, name);
 
     if (std::strcmp(paramType, kOfxParamTypeDouble2D) == 0) {
-        OFX::Host::Property::Set& props = ret->getProperties();
-        const std::string& type = ret->getDoubleType();
-        // only kOfxParamDoubleTypeXYAbsolute and kOfxParamDoubleTypeNormalisedXYAbsolute are be supported
-        if (  //type == kOfxParamDoubleTypePlain ||
-                                                   ( type == kOfxParamDoubleTypeNormalisedXYAbsolute) ||
-                                                   //type == kOfxParamDoubleTypeNormalisedXY ||
-                                                   //type == kOfxParamDoubleTypeXY ||
-                                                   ( type == kOfxParamDoubleTypeXYAbsolute) ) {
-            props.setIntProperty(kOfxParamPropHasHostOverlayHandle, 1);
-        }
+        // the type is still HostSupport's default here (kOfxParamDoubleTypePlain)
+        updateHasHostOverlayHandle(*ret);
+        _hostOverlayHandleHooks.push_back( std::make_unique<HostOverlayHandleHook>(*ret) );
+        ret->getProperties().addNotifyHook( kOfxParamPropDoubleType, _hostOverlayHandleHooks.back().get() );
     }
 
     return ret;

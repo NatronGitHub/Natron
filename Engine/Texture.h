@@ -158,6 +158,12 @@ public:
         return _glType;
     }
 
+    // true if the last glTexImage2D of ensureTextureHasSize() reported GL_OUT_OF_MEMORY: the texture is unusable
+    bool allocationFailed() const
+    {
+        return _allocationFailed;
+    }
+
     virtual ~Texture();
 
 private:
@@ -168,6 +174,7 @@ private:
     int _internalFormat, _format, _glType;
     TextureRect _textureRect;
     DataTypeEnum _type;
+    bool _allocationFailed;
 };
 
 NATRON_NAMESPACE_EXIT

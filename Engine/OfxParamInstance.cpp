@@ -3126,16 +3126,6 @@ OfxDouble2DInstance::getKnob() const
     return _knob.lock();
 }
 
-#if 0
-bool
-OfxDouble2DInstance::isAnimated(int dimension) const
-{
-    KnobDoublePtr knob = _knob.lock();
-
-    return knob->isAnimated( dimension + _startIndex, ViewSpec::current() );
-}
-
-#endif
 bool
 OfxDouble2DInstance::isAnimated() const
 {

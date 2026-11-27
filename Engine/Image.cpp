@@ -28,6 +28,7 @@
 #include <algorithm> // min, max
 #include <cassert>
 #include <cstring> // for std::memcpy, std::memset
+#include <limits>
 #include <stdexcept>
 
 #include <QDebug>
@@ -733,19 +734,6 @@ Image::Image(const ImagePlaneDesc& components,
     , _useBitmap(useBitmap)
 {
     setCacheEntry(makeKey(0, 0, false, 0, ViewIdx(0), false, false),
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-                  ImageParamsPtr( new ImageParams(regionOfDefinition,
-                                                                  par,
-                                                                  mipmapLevel,
-                                                                  bounds,
-                                                                  bitdepth,
-                                                                  fielding,
-                                                                  premult,
-                                                                  false /*isRoDProjectFormat*/,
-                                                                  components,
-                                                                  storage,
-                                                                  textureTarget) ),
-#else
                   std::make_shared<ImageParams>(regionOfDefinition,
                                                   par,
                                                   mipmapLevel,
@@ -757,7 +745,6 @@ Image::Image(const ImagePlaneDesc& components,
                                                   components,
                                                   storage,
                                                   textureTarget),
-#endif
                   NULL /*cacheAPI*/
                   );
 
@@ -831,19 +818,6 @@ Image::makeParams(const RectD & rod,
 {
     const RectI bounds = rod.toPixelEnclosing(mipmapLevel, par);
 
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-    return ImageParamsPtr( new ImageParams(rod,
-                                                           par,
-                                                           mipmapLevel,
-                                                           bounds,
-                                                           bitdepth,
-                                                           fielding,
-                                                           premult,
-                                                           isRoDProjectFormat,
-                                                           components,
-                                                           storage,
-                                                           textureTarget) );
-#else
     return std::make_shared<ImageParams>(rod,
                                            par,
                                            mipmapLevel,
@@ -855,7 +829,6 @@ Image::makeParams(const RectD & rod,
                                            components,
                                            storage,
                                            textureTarget);
-#endif
 }
 
 ImageParamsPtr
@@ -877,19 +850,6 @@ Image::makeParams(const RectD & rod,    // the image rod in canonical coordinate
             bounds.bottom() >= pixelRod.bottom() && bounds.top() <= pixelRod.top() );
 #endif
 
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-    return ImageParamsPtr( new ImageParams(rod,
-                                                           par,
-                                                           mipmapLevel,
-                                                           bounds,
-                                                           bitdepth,
-                                                           fielding,
-                                                           premult,
-                                                           isRoDProjectFormat,
-                                                           components,
-                                                           storage,
-                                                           textureTarget) );
-#else
     return std::make_shared<ImageParams>(rod,
                                            par,
                                            mipmapLevel,
@@ -901,7 +861,6 @@ Image::makeParams(const RectD & rod,    // the image rod in canonical coordinate
                                            components,
                                            storage,
                                            textureTarget);
-#endif
 }
 
 // code proofread and fixed by @devernay on 8/8/2014
@@ -1293,11 +1252,7 @@ Image::pasteFrom(const Image & src,
         assert(gpuData);
         if (gpuData) {
             // update data directly on the mapped buffer
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-            ImagePtr tmpImg( new Image( ImagePlaneDesc::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM) );
-#else
             ImagePtr tmpImg = std::make_shared<Image>( ImagePlaneDesc::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM);
-#endif
             tmpImg->pasteFrom(src, roi);
 
             Image::ReadAccess racc(tmpImg ? tmpImg.get() : this);
@@ -1355,11 +1310,7 @@ Image::pasteFrom(const Image & src,
         glFinish();
         glCheckError();
         // Read to a temporary RGBA buffer then convert to the image which may not be RGBA
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-        ImagePtr tmpImg( new Image( ImagePlaneDesc::getRGBAComponents(), getRoD(), roi, 0, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), false, eStorageModeRAM) );
-#else
         ImagePtr tmpImg = std::make_shared<Image>( ImagePlaneDesc::getRGBAComponents(), getRoD(), roi, 0, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), false, eStorageModeRAM);
-#endif
 
         {
             Image::WriteAccess tmpAcc(tmpImg ? tmpImg.get() : this);
@@ -1806,6 +1757,25 @@ Image::getRowElements() const
     return getComponentsCount() * _bounds.width();
 }
 
+// The average of n pixel values, given their sum: rounded to the nearest value, ties to even, for
+// 8- and 16-bit images, so that mipmap levels have no bias (a truncating integer division made each
+// level darker than the float one, rounding ties up would make it lighter).
+template <typename PIX, typename SUM>
+static inline PIX
+averagePixels(SUM sum,
+              int n)
+{
+    if constexpr (std::numeric_limits<PIX>::is_integer) {
+        const SUM q = sum / n; // sum >= 0
+        const SUM r = sum % n;
+        const bool up = (2 * r > n) || ( (2 * r == n) && (q % 2 == 1) );
+
+        return PIX(q + up);
+    } else {
+        return PIX(sum / n);
+    }
+}
+
 // code proofread and fixed by @devernay on 4/12/2014
 template <typename PIX, int maxValue>
 void
@@ -1951,7 +1921,7 @@ Image::halveRoIForDepth(const RectI & roi,
 #endif
                 assert( sumW == 2 || ( sumW == 1 && ( (a == 0 && c == 0) || (b == 0 && d == 0) ) ) );
                 assert( sumH == 2 || ( sumH == 1 && ( (a == 0 && b == 0) || (c == 0 && d == 0) ) ) );
-                dstPixStart[k] = (a + b + c + d) / sum;
+                dstPixStart[k] = averagePixels<PIX>(a + b + c + d, sum);
             }
 
             if (copyBitMap) {
@@ -2063,7 +2033,7 @@ Image::halve1DImageForDepth(const RectI & roi,
                 assert( !std::isnan(*src) ); // check for NaN
                 assert( !std::isnan(*(src + _nbComponents)) ); // check for NaN
 #endif
-                *dst = PIX( (float)( *src + *(src + _nbComponents) ) / 2. );
+                *dst = averagePixels<PIX>(*src + *(src + _nbComponents), 2);
 #ifdef DEBUG_NAN
                 assert( !std::isnan(*dst) ); // check for NaN
 #endif
@@ -2091,7 +2061,7 @@ Image::halve1DImageForDepth(const RectI & roi,
                 assert( !std::isnan(src[k]) ); // check for NaN
                 assert( !std::isnan(src[k + rowSize]) ); // check for NaN
 #endif
-                dst[k] = PIX( (float)( src[k] + src[k + rowSize] ) / 2. );
+                dst[k] = averagePixels<PIX>(src[k] + src[k + rowSize], 2);
 #ifdef DEBUG_NAN
                 assert( !std::isnan(dst[k]) ); // check for NaN
 #endif

@@ -46,6 +46,7 @@ Texture::Texture(U32 target,
     , _format(format)
     , _glType(glType)
     , _type(type)
+    , _allocationFailed(false)
 {
     glGenTextures(1, &_texID);
 }
@@ -95,6 +96,11 @@ Texture::ensureTextureHasSize(const TextureRect& texRect,
         glTexParameteri (_target, GL_TEXTURE_WRAP_T, _clamp);
     }
 
+    // Clear the error flags of earlier calls, so that the one read below is glTexImage2D's (an implementation
+    // may keep several flags; it returns GL_NO_ERROR once they are all read).
+    glCheckError();
+    for (int i = 0; i < 8 && glGetError() != GL_NO_ERROR; ++i) {
+    }
     glTexImage2D (_target,
                   0,            // level
                   _internalFormat, //internalFormat
@@ -103,6 +109,7 @@ Texture::ensureTextureHasSize(const TextureRect& texRect,
                   _format,      // format
                   _glType, // type
                   originalRAMBuffer);           // pixels
+    _allocationFailed = (glGetError() == GL_OUT_OF_MEMORY);
 
 
     glBindTexture(_target, 0);

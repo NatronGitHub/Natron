@@ -277,9 +277,6 @@ AppManagerPrivate::AppManagerPrivate()
     , breakpadHandler()
     , breakpadAliveThread()
 #endif
-#ifdef USE_NATRON_GIL
-    , natronPythonGIL(QMutex::Recursive)
-#endif
     , pluginsUseInputImageCopyToRender(false)
     , glRequirements()
     , glHasTextureFloat(false)

@@ -29,6 +29,7 @@
 #include <limits>
 #include <cmath>
 #include <cstdint>
+#include <cstring> // std::memcpy
 
 #include "Global/GlobalDefines.h"
 #include "Engine/Noise.h"
@@ -140,18 +141,20 @@ ExprUtils::hash(const std::vector<double>& args)
         134, 83,  25,  189, 216, 100, 129, 150, 241, 210, 123, 99,  2,   164, 16,  220, 121, 139, 168, 64,  190, 9,
         31,  228, 95,  247, 244, 81,  102, 145, 204, 146, 26,  87,  113, 198, 181, 127, 237, 169, 28,  93,  27,  41,
         231, 248, 78,  162, 13,  186, 63,  66,  131, 202, 35,  144, 222, 223};
-    union {
-        uint32_t i;
-        unsigned char c[4];
-    } u1, u2;
-    u1.i = seed;
-    u2.c[3] = p[u1.c[0]];
-    u2.c[2] = p[(u1.c[1] + u2.c[3]) & 0xff];
-    u2.c[1] = p[(u1.c[2] + u2.c[2]) & 0xff];
-    u2.c[0] = p[(u1.c[3] + u2.c[1]) & 0xff];
+    // permute the bytes of seed, in memory order (std::memcpy: reading the inactive member of a union is
+    // undefined behaviour in C++)
+    unsigned char c1[4];
+    std::memcpy( c1, &seed, sizeof(c1) );
+    unsigned char c2[4];
+    c2[3] = p[c1[0]];
+    c2[2] = p[(c1[1] + c2[3]) & 0xff];
+    c2[1] = p[(c1[2] + c2[2]) & 0xff];
+    c2[0] = p[(c1[3] + c2[1]) & 0xff];
+    uint32_t i2;
+    std::memcpy( &i2, c2, sizeof(i2) );
 
     // scale to [0.0 .. 1.0]
-    return u2.i * (1.0 / std::numeric_limits<uint32_t>::max());
+    return i2 * (1.0 / std::numeric_limits<uint32_t>::max());
 }
 
 double

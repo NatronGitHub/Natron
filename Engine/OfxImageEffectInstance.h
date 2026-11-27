@@ -29,6 +29,7 @@
 #include "Global/Macros.h"
 
 #include <atomic>
+#include <memory>
 #include <string>
 #include <cstdarg>
 #include <vector>
@@ -380,6 +381,12 @@ public:
 
     virtual OFX::Host::Param::Descriptor * paramDefine(const char *paramType,
                                                        const char *name) OVERRIDE FINAL;
+
+private:
+    // The hooks that keep kOfxParamPropHasHostOverlayHandle in step with kOfxParamPropDoubleType on the
+    // Double2D parameters (see paramDefine()). They hold a reference to their parameter, which lives as
+    // long as this descriptor.
+    std::vector<std::unique_ptr<OFX::Host::Property::NotifyHook> > _hostOverlayHandleHooks;
 };
 
 NATRON_NAMESPACE_EXIT

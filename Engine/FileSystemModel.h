@@ -58,11 +58,6 @@ class FileSystemItem
 public:
     // public constructors
 
-    // Note: when switching to C++11, we can add variadic templates:
-    //template<typename ... T>
-    //static FileSystemItemPtr create( T&& ... all ) {
-    //    return std::make_shared<FileSystemItem>( std::forward<T>(all)... );
-    //}
     static FileSystemItemPtr create( const FileSystemModelPtr& model,
                                                      bool isDir,
                                                      const QString& filename,

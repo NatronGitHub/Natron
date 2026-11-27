@@ -70,6 +70,10 @@
 #define kTrackerParamMotionType "motionType"
 #define kTrackerParamTransformType "transformType"
 #define kTrackerParamReferenceFrame "referenceFrame"
+#define kTrackerParamSmooth "smooth"
+#define kTrackerParamSmoothCornerPin "smoothCornerPin"
+#define kCornerPinParamFrom1 "from1"
+#define kCornerPinParamTo1 "to1"
 #define kTransformParamTranslate "translate"
 #define kTransformParamRotate "rotate"
 #define kTransformParamScale "scale"
@@ -139,12 +143,12 @@ protected:
         return std::dynamic_pointer_cast<K>( _tracker->getKnobByName(name) );
     }
 
-    // A track moving by (+10, 0) per frame from frame 1 to 5, and a match-move transform solve
-    void animateTrack()
+    // A track moving by (+10, 0) per frame from frame 1 to lastFrame, and a match-move transform solve
+    void animateTrack(int lastFrame = 5)
     {
         KnobDoublePtr center = _track->getCenterKnob();
 
-        for (int t = 1; t <= 5; ++t) {
+        for (int t = 1; t <= lastFrame; ++t) {
             center->setValueAtTime(t, 100. + 10. * t, ViewSpec::all(), 0);
             center->setValueAtTime(t, 200., ViewSpec::all(), 1);
         }
@@ -175,6 +179,61 @@ TEST_F(TrackerHeadlessTest, SolveSetsTheParametersAtOnce)
     ASSERT_DOUBLE_EQ( 0., solvedTranslateX() );
     _context->solveTransformParams();
     EXPECT_NEAR(40., solvedTranslateX(), 1e-3) << "the solved translation was not set when the solve returned";
+}
+
+// The solve gives one result per keyframe of the track. With Smooth > 1, each solved value is the average of
+// the results around its time, the first result included: it was never sampled, and with a single result the
+// average asserted (Debug) or was 0 (#1941).
+// Smooth 3 averages the result at a time with the one before and the one after it. The translations solved
+// from frame 1 to 5 are 0, 10, 20, 30 and 40.
+TEST_F(TrackerHeadlessTest, SmoothedTranslationSamplesTheFirstResult)
+{
+    if ( skipped() ) {
+        return;
+    }
+    ASSERT_TRUE( knob<KnobInt>(kTrackerParamSmooth) && knob<KnobDouble>(kTransformParamTranslate) );
+    const std::vector<std::vector<double> > expected = {
+        // 1 result: the unfixed average was 0 too, only Debug builds asserted (SmoothedCornerPinFromASingleResult
+        // fails without the fix in Release builds too)
+        { 0. },
+        { 5., 5. },                 // 2 results
+        { 5., 10., 20., 30., 35. }, // N = 5 results
+    };
+    for (const std::vector<double>& translations : expected) {
+        const int nResults = (int)translations.size();
+        SCOPED_TRACE( std::to_string(nResults) + " result(s)" );
+        _track->getCenterKnob()->removeAnimation(ViewSpec::all(), 0);
+        _track->getCenterKnob()->removeAnimation(ViewSpec::all(), 1);
+        animateTrack(nResults);
+        knob<KnobInt>(kTrackerParamSmooth)->setValue(3, ViewSpec::all(), 0);
+        _context->solveTransformParams();
+        KnobDoublePtr translate = knob<KnobDouble>(kTransformParamTranslate);
+        EXPECT_EQ( nResults, translate->getKeyFramesCount(ViewSpec::all(), 0) );
+        for (int t = 1; t <= nResults; ++t) {
+            EXPECT_NEAR(translations[t - 1], translate->getValueAtTime(t, 0), 1e-3) << "frame " << t;
+        }
+    }
+}
+
+// A CornerPin smoothed from a single result: the "to" points are the "from" points (the track doesn't move), not
+// (0, 0) (#1941)
+TEST_F(TrackerHeadlessTest, SmoothedCornerPinFromASingleResult)
+{
+    if ( skipped() ) {
+        return;
+    }
+    ASSERT_TRUE( knob<KnobInt>(kTrackerParamSmoothCornerPin) && knob<KnobDouble>(kCornerPinParamFrom1) &&
+                 knob<KnobDouble>(kCornerPinParamTo1) );
+    animateTrack(1);
+    knob<KnobChoice>(kTrackerParamTransformType)->setValue( kTransformTypeCornerPin );
+    KnobDoublePtr from1 = knob<KnobDouble>(kCornerPinParamFrom1);
+    from1->setValue(30., ViewSpec::all(), 0);
+    from1->setValue(70., ViewSpec::all(), 1);
+    knob<KnobInt>(kTrackerParamSmoothCornerPin)->setValue(3);
+    _context->solveTransformParams();
+    KnobDoublePtr to1 = knob<KnobDouble>(kCornerPinParamTo1);
+    EXPECT_NEAR(30., to1->getValueAtTime(1, 0), 1e-3);
+    EXPECT_NEAR(70., to1->getValueAtTime(1, 1), 1e-3);
 }
 
 // The Compute button solves the transform without a viewer

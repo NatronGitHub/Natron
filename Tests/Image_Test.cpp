@@ -25,6 +25,8 @@
 
 #include "Global/Macros.h"
 
+#include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <vector>
 #include <gtest/gtest.h>
@@ -398,4 +400,119 @@ TEST(ImageMipmapTest, UpscaleIntoLargerOutput)
         EXPECT_EQ( dstBounds.area() - covered.area(), countEqual(dst, dstBounds, -1.f) )
             << "src=(" << srcBounds.x1 << "," << srcBounds.y1 << "," << srcBounds.x2 << "," << srcBounds.y2 << ")";
     }
+}
+
+// Fill a 4-component image with pseudo-random integer codes in [0, maxValue].
+template <typename PIX>
+static void
+fillCodes(Image& img, int maxValue, unsigned int seed)
+{
+    const RectI& b = img.getBounds();
+    Image::WriteAccess acc( &img );
+    for (int y = b.y1; y < b.y2; ++y) {
+        PIX* p = (PIX*)acc.pixelAt(b.x1, y);
+        for (int i = 0; i < b.width() * 4; ++i) {
+            seed = seed * 1103515245u + 12345u;
+            p[i] = PIX( (seed >> 16) % (unsigned int)(maxValue + 1) );
+        }
+    }
+}
+
+// Downscale an 8- or 16-bit RGBA image of random codes and compare each pixel with the exact mean
+// of the source pixels it covers, computed here (issue #1549: "garbage stripes at mipmap level >= 1"
+// for 8/16-bit images); the result may only differ by its rounding.
+template <typename PIX>
+static void
+checkDownscaleIntegerDepth(ImageBitDepthEnum depth, int maxValue)
+{
+    // odd and even widths and heights, bounds starting at even, odd and negative coordinates,
+    // and one row or column (Image::halve1DImage())
+    std::vector<RectI> boundsList;
+    const int x1s[] = { -3, 0, 1, 6 };
+    const int widths[] = { 16, 17, 33 };
+    for (int x1 : x1s) {
+        for (int w : widths) {
+            // heights 19, 20 and 36: at level 3, the largest enclosed rectangle is at least 1 pixel high
+            boundsList.push_back( RectI(x1, 1 - x1, x1 + w, 1 - x1 + w + 3) );
+        }
+    }
+    boundsList.push_back( RectI(3, 2, 40, 3) );
+    boundsList.push_back( RectI(-5, 3, -4, 30) );
+    // mean errors per level, pooled over all bounds (see below), for 2D images ([0]) and for rows and columns ([1])
+    double sumError[2][4] = { { 0., 0., 0., 0. }, { 0., 0., 0., 0. } };
+    int n[2][4] = { { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };
+    unsigned int seed = 1549;
+    for (const RectI& bounds : boundsList) {
+        const RectD rod( bounds.x1, bounds.y1, bounds.x2, bounds.y2 );
+        Image src(ImagePlaneDesc::getRGBAComponents(), rod, bounds, 0, 1., depth,
+                  eImagePremultiplicationPremultiplied, eImageFieldingOrderNone, false);
+        fillCodes<PIX>(src, maxValue, seed);
+        ++seed;
+        const int is1D = (bounds.width() == 1) || (bounds.height() == 1);
+        for (unsigned int level = 1; level <= 3; ++level) {
+            const RectI dstBounds = bounds.downscalePowerOfTwoSmallestEnclosing(level);
+            Image dst(ImagePlaneDesc::getRGBAComponents(), rod, dstBounds, level, 1., depth,
+                      eImagePremultiplicationPremultiplied, eImageFieldingOrderNone, false);
+            src.downscaleMipmap(rod, bounds, 0, level, false, &dst);
+            // only the largest enclosed rectangle is computed (see ImageMipmapTest.DownscaleNegativeBounds);
+            // a row or column stays in the dst row or column that contains it. Set the coordinates one
+            // by one: for a row or column, downscalePowerOfTwoLargestEnclosed() may return y2 < y1 (or
+            // x2 < x1), which the RectI copy constructor asserts against.
+            const int scale = 1 << level;
+            RectI enclosed;
+            enclosed.x1 = (bounds.width() == 1) ? (bounds.x1 >> level) : ( (bounds.x1 + scale - 1) >> level );
+            enclosed.x2 = (bounds.width() == 1) ? (enclosed.x1 + 1) : (bounds.x2 >> level);
+            enclosed.y1 = (bounds.height() == 1) ? (bounds.y1 >> level) : ( (bounds.y1 + scale - 1) >> level );
+            enclosed.y2 = (bounds.height() == 1) ? (enclosed.y1 + 1) : (bounds.y2 >> level);
+            ASSERT_FALSE( enclosed.isNull() );
+            Image::ReadAccess sacc( &src );
+            Image::ReadAccess dacc( &dst );
+            double maxError = 0.;
+            for (int y = enclosed.y1; y < enclosed.y2; ++y) {
+                // the source pixels covered by dst pixel (x, y), clipped to the source row or column
+                const int sy1 = (bounds.height() == 1) ? bounds.y1 : y * scale;
+                const int sy2 = (bounds.height() == 1) ? bounds.y2 : sy1 + scale;
+                for (int x = enclosed.x1; x < enclosed.x2; ++x) {
+                    const int sx1 = (bounds.width() == 1) ? bounds.x1 : x * scale;
+                    const int sx2 = (bounds.width() == 1) ? bounds.x2 : sx1 + scale;
+                    const PIX* d = (const PIX*)dacc.pixelAt(x, y);
+                    for (int c = 0; c < 4; ++c) {
+                        double sum = 0.;
+                        for (int sy = sy1; sy < sy2; ++sy) {
+                            for (int sx = sx1; sx < sx2; ++sx) {
+                                sum += ( (const PIX*)sacc.pixelAt(sx, sy) )[c];
+                            }
+                        }
+                        const double e = double(d[c]) - sum / ( (sx2 - sx1) * (sy2 - sy1) );
+                        maxError = std::max( maxError, std::abs(e) );
+                        sumError[is1D][level] += e;
+                        ++n[is1D][level];
+                    }
+                }
+            }
+            // each level rounds once, to the nearest value, so the error grows by at most 1/2 code per level
+            // (truncating gives up to 3/4 code per level)
+            EXPECT_LE(maxError, 0.5 * level) << "depth=" << (int)depth << " bounds=(" << bounds.x1 << "," << bounds.y1 << ","
+                                             << bounds.x2 << "," << bounds.y2 << ") level=" << level;
+        }
+    }
+    // The error is not biased towards black: truncating gives a mean error of -3/8 code per level for
+    // 2D images (averages of 4 codes) and -1/4 for rows and columns (averages of 2 codes), rounding to
+    // nearest with ties to even none.
+    for (unsigned int level = 1; level <= 3; ++level) {
+        ASSERT_GT(n[0][level], 0);
+        ASSERT_GT(n[1][level], 0);
+        EXPECT_LE(std::abs(sumError[0][level] / n[0][level]), 0.25 * level) << "2D depth=" << (int)depth << " level=" << level;
+        EXPECT_LE(std::abs(sumError[1][level] / n[1][level]), 0.125 * level) << "1D depth=" << (int)depth << " level=" << level;
+    }
+}
+
+TEST(ImageMipmapTest, DownscaleByteMatchesExactMean)
+{
+    checkDownscaleIntegerDepth<unsigned char>(eImageBitDepthByte, 255);
+}
+
+TEST(ImageMipmapTest, DownscaleShortMatchesExactMean)
+{
+    checkDownscaleIntegerDepth<unsigned short>(eImageBitDepthShort, 65535);
 }

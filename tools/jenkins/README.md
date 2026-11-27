@@ -95,8 +95,7 @@ Linux
 
 The `include/scripts/build-Linux-sdk.sh` script has to be launched. Libraries that already exist with the same version in the `SDK_HOME` will not be built. To decide whether a library should be built or not, the script usually simply tests that a file from the package exists at the beginning of the build section. Top force a rebuild, check in the script to see which file is tested, remove it, and launch the script.
 
-To upgrade a library version, upload the source files to `downloads.natron.fr/Third_Party_Sources`. This is where the scripts has been configured to fetch source files from (but it may also get it from the main site for the given package - this location is a failsafe place). To change this location edit common.sh.
-Then in `common.sh`, change the filename of the package to point to the file that was uploaded on the server.
+To upgrade a library version, change its version, file name and sha256 in its script in `include/scripts/pkg/`. The SDK downloads each source tarball from the project's own site, and from Natron's mirror on SourceForge (`THIRD_PARTY_SRC_URL` in `common.sh`) only if that fails. After the change, upload the new tarball to the mirror, as described in the Maintainer Guide chapter `Documentation/source/maintainers/sdk-source-mirror.rst`.
 
 To include a new patch, add it in `include/patches/LIBRARY/patch`. Patch and edit the sdk script to run the patch when needed.
 

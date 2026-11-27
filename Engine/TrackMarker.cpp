@@ -1444,7 +1444,14 @@ TrackMarkerPM::initializeKnobs()
     enableRefFrameKnob->setValue(true);
 
     KnobChoicePtr scoreType = getNodeKnob<KnobChoice>(node, kTrackerPMParamScore);
-    scoreType->slaveTo(0, getContext()->getCorrelationScoreTypeKnob(), 0);
+    // The Tracker has a score type parameter only in the builds that offer pattern matching
+    // (NATRON_TRACKER_ENABLE_TRACKER_PM, Debug builds). The others still make pattern-matching tracks, for
+    // Tracker.createTrack(True) and the projects that have one: these keep the score type of their TrackerPM
+    // node (#1949).
+    KnobChoicePtr contextScoreType = getContext()->getCorrelationScoreTypeKnob();
+    if (contextScoreType) {
+        scoreType->slaveTo(0, contextScoreType, 0);
+    }
     scoreTypeKnob = scoreType;
 
     KnobDoublePtr correlationScore = getNodeKnob<KnobDouble>(node, kTrackerPMParamTrackingCorrelationScore);

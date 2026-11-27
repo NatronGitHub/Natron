@@ -198,10 +198,20 @@ order of the recursions they replaced: the refresh of the input-related data on
 connection and project load (the marking downstream, a ``visitNodesDepthFirst``
 user, the walk downstream of
 ``Node::refreshInputRelatedDataRecursiveInternal`` and the walk upstream of
-``Node::refreshInputRelatedDataInternal``), the split of the nodes into trees
+``Node::refreshInputRelatedDataInternal``; the walk downstream also visits the
+nodes that the walk upstream refreshed, so that their other outputs are
+refreshed too, #1951), the split of the nodes into trees
 on project load (``Project::extractTreesFromNodes``), and the RotoPaint stroke walks
 (``Node::getNodesOnPathsUpstreamTo``), which visit each node once instead of
-once per path, which was exponential on chains of diamonds.
+once per path, which was exponential on chains of diamonds. Also iterative
+(#1950), in the same order: the walks downstream to the Viewers and the output
+nodes (``Node::hasViewersConnected`` and ``Node::hasOutputNodesConnected``,
+``visitNodesDepthFirst`` users run on every connection), and the Gui copy of
+the split into trees, used by the node graph's Extract command
+(``addTreeInputs`` in ``Gui/NodeGraphUndoRedo.cpp``). Still recursive:
+``EffectInstance::refreshMetadata_recursive``, downstream, whose
+``ClipPreferencesRunning_RAII`` guards stay set on the whole path while the
+outputs are refreshed.
 
 The cache
 ---------

@@ -362,21 +362,9 @@ getInputRoD(EffectInstance* effect,
             double /*time*/,
             RectD & rod)
 {
-#ifdef NATRON_NORMALIZE_SPATIAL_WITH_ROD
-    RenderScale scale;
-    scale.y = scale.x = 1.;
-    bool isProjectFormat;
-    Status stat = effect->getRegionOfDefinition_public(effect->getHash(), time, scale, /*view*/ 0, &rod, &isProjectFormat);
-    if ( (stat == StatFailed) || ( (rod.x1 == 0) && (rod.y1 == 0) && (rod.x2 == 1) && (rod.y2 == 1) ) ) {
-        Format f;
-        effect->getRenderFormat(&f);
-        rod = f;
-    }
-#else
     Format f;
     effect->getApp()->getProject()->getProjectDefaultFormat(&f);
     rod = f.toCanonicalFormat();
-#endif
 }
 
 double
@@ -629,30 +617,6 @@ KnobChoice::onInternalValueChanged(int dimension,
         _currentEntry = _entries[index];
     }
 }
-
-#if 0 // dead code
-// replaced by StrUtils::iequals(a, b)
-static bool
-caseInsensitiveCompare(const std::string& a,
-                       const std::string& b)
-{
-    if ( a.size() != b.size() ) {
-        return false;
-    }
-    std::locale loc;
-    for (std::size_t i = 0; i < a.size(); ++i) {
-        char aLow = std::tolower(a[i], loc);
-        char bLow = std::tolower(b[i], loc);
-        if (aLow != bLow) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-#endif
-
 
 void
 KnobChoice::findAndSetOldChoice()
@@ -916,39 +880,6 @@ KnobChoice::getActiveEntry()
 
     return ChoiceOption();
 }
-
-#if 0 // dead code
-// replaced by StrUtils::trim_copy(str)
-static std::string
-trim(std::string const & str)
-{
-    const std::string whitespace = " \t\f\v\n\r";
-    std::size_t first = str.find_first_not_of(whitespace);
-
-    // If there is no non-whitespace character, both first and last will be std::string::npos (-1)
-    // There is no point in checking both, since if either doesn't work, the
-    // other won't work, either.
-    if (first == std::string::npos) {
-        return "";
-    }
-
-    std::size_t last  = str.find_last_not_of(whitespace);
-
-    return str.substr(first, last - first + 1);
-}
-
-// replaced by std::replace_if(str.begin(), str.end(), ::isspace, ' ');
-static void
-whitespacify(std::string & str)
-{
-    std::replace( str.begin(), str.end(), '\t', ' ');
-    std::replace( str.begin(), str.end(), '\f', ' ');
-    std::replace( str.begin(), str.end(), '\v', ' ');
-    std::replace( str.begin(), str.end(), '\n', ' ');
-    std::replace( str.begin(), str.end(), '\r', ' ');
-}
-
-#endif
 
 std::string
 KnobChoice::getHintToolTipFull() const

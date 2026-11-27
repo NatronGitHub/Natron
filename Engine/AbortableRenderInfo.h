@@ -78,12 +78,6 @@ private:
 public:
     // public constructors
 
-    // Note: when switching to C++11, we can add variadic templates:
-    //template<typename ... T>
-    //static AbortableRenderInfoPtr create( T&& ... all ) {
-    //    return AbortableRenderInfoPtr( new AbortableRenderInfo( std::forward<T>(all)... ) );
-    //}
-
     static AbortableRenderInfoPtr create(bool canAbort,
                                                          U64 age)
     {

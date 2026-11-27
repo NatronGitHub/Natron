@@ -1834,9 +1834,7 @@ OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
         int activeThreadsCount = QThreadPool::globalInstance()->activeThreadCount();
 
         // Add the number of threads already running by the multiThreadSuite + parallel renders
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
         activeThreadsCount += appPTR->getNRunningThreads();
-#endif
 
         // Clamp to 0
         activeThreadsCount = std::max( 0, activeThreadsCount);

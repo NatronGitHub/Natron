@@ -35,6 +35,7 @@
 #include <bitset>
 #include <cassert>
 #include <limits>
+#include <new> // std::bad_alloc
 #include <stdexcept>
 #include <sstream> // stringstream
 
@@ -712,6 +713,16 @@ EffectInstance::getThreadLocalOpenGLContext() const
     }
 
     return tls->frameArgs.back()->openGLContext.lock();
+}
+
+void
+EffectInstance::setThreadLocalOpenGLInputTextureFailed()
+{
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
+
+    if ( tls && tls->currentRenderArgs.validArgs && tls->currentRenderArgs.isDoingOpenGLRender ) {
+        tls->currentRenderArgs.openGLInputTextureFailed = true;
+    }
 }
 
 ImagePtr
@@ -1561,31 +1572,18 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
         throw std::runtime_error("No OpenGL context attached");
     }
 
-    GLuint pboID = context->getPBOId();
-    assert(pboID != 0);
-    glEnable(GL_TEXTURE_2D);
-    // bind PBO to update texture source
-    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pboID);
-
-    std::size_t dataSize = bounds.area() * 4 * info.dataTypeSize;
-
-    // Note that glMapBufferARB() causes sync issue.
-    // If GPU is working with this buffer, glMapBufferARB() will wait(stall)
-    // until GPU to finish its job. To avoid waiting (idle), you can call
-    // first glBufferDataARB() with NULL pointer before glMapBufferARB().
-    // If you do that, the previous data in PBO will be discarded and
-    // glMapBufferARB() returns a new allocated pointer immediately
-    // even if GPU is still working with the previous data.
-    glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, 0, GL_DYNAMIC_DRAW_ARB);
+    // The texture can't be created (#1945): the caller renders without OpenGL, as when the plug-in runs out of
+    // GPU memory (clipLoadTexture returns the exception, a std::bad_alloc, as kOfxStatErrMemory).
+    GLint maxTextureSize = 0;
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
+    if ( (bounds.width() > maxTextureSize) || (bounds.height() > maxTextureSize) ) {
+        throw OpenGLTextureAllocationError();
+    }
 
     bool useTmpImage = image->getComponentsCount() != 4;
     ImagePtr tmpImg;
     if (useTmpImage) {
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-        tmpImg.reset( new Image( ImagePlaneDesc::getRGBAComponents(), image->getRoD(), bounds, 0, image->getPixelAspectRatio(), image->getBitDepth(), image->getPremultiplication(), image->getFieldingOrder(), false, eStorageModeRAM) );
-#else
         tmpImg = std::make_shared<Image>( ImagePlaneDesc::getRGBAComponents(), image->getRoD(), bounds, 0, image->getPixelAspectRatio(), image->getBitDepth(), image->getPremultiplication(), image->getFieldingOrder(), false, eStorageModeRAM);
-#endif
         tmpImg->setKey(image->getKey());
         if (tmpImg->getComponents() == image->getComponents()) {
             tmpImg->pasteFrom(*image, bounds);
@@ -1598,26 +1596,52 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
     const unsigned char* srcdata = racc.pixelAt(bounds.x1, bounds.y1);
     assert(srcdata);
 
+    GLuint pboID = context->getPBOId();
+    assert(pboID != 0);
+    glEnable(GL_TEXTURE_2D);
+    // bind PBO to update texture source; unbound on every exit, so that later pixel transfers in this context
+    // don't read from it (it is good idea to release PBOs with ID 0 after use: once bound with 0, all pixel
+    // operations are back to normal ways)
+    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pboID);
+    struct PBOUnbinder
+    {
+        ~PBOUnbinder()
+        {
+            glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+        }
+    } pboUnbinder;
+
+    std::size_t dataSize = bounds.area() * 4 * info.dataTypeSize;
+
+    // Note that glMapBufferARB() causes sync issue.
+    // If GPU is working with this buffer, glMapBufferARB() will wait(stall)
+    // until GPU to finish its job. To avoid waiting (idle), you can call
+    // first glBufferDataARB() with NULL pointer before glMapBufferARB().
+    // If you do that, the previous data in PBO will be discarded and
+    // glMapBufferARB() returns a new allocated pointer immediately
+    // even if GPU is still working with the previous data.
+    glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, 0, GL_DYNAMIC_DRAW_ARB);
+
     GLvoid* gpuData = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-    if (gpuData) {
-            // update data directly on the mapped buffer
-        memcpy(gpuData, srcdata, dataSize);
-        GLboolean result = glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
-        assert(result == GL_TRUE);
-        Q_UNUSED(result);
+    if (!gpuData) {
+        // the buffer could not be allocated: the texture would hold garbage
+        throw OpenGLTextureAllocationError();
+    }
+    // update data directly on the mapped buffer
+    memcpy(gpuData, srcdata, dataSize);
+    if (glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB) != GL_TRUE) { // release the mapped buffer
+        // the buffer contents were lost (e.g. a display mode change)
+        throw OpenGLTextureAllocationError();
     }
     glCheckError();
 
     // The creation of the image will use glTexImage2D and will get filled with the PBO
     ImagePtr gpuImage;
     getOrCreateFromCacheInternal(image->getKey(), params, false /*useCache*/, &gpuImage);
-
-    // it is good idea to release PBOs with ID 0 after use.
-    // Once bound with 0, all pixel operations are back to normal ways.
-    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-    //glBindTexture(GL_TEXTURE_2D, 0); // useless, we didn't bind anything
-    glCheckError();
-
+    if ( !gpuImage || gpuImage->isGLTextureAllocationFailed() ) {
+        // glTexImage2D failed (GL_OUT_OF_MEMORY): the texture is unusable (gpuImage, if any, deletes it)
+        throw OpenGLTextureAllocationError();
+    }
 
     return gpuImage;
 } // convertRAMImageToOpenGLTexture
@@ -2489,7 +2513,13 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
             return eRenderingFunctorRetOK;
         } else {
             EffectInstance::RenderRoIRetCode renderOk;
-            renderOk = tls->currentRenderArgs.identityInput->renderRoI(*renderArgs, &identityPlanes);
+            try {
+                renderOk = tls->currentRenderArgs.identityInput->renderRoI(*renderArgs, &identityPlanes);
+            } catch (const OpenGLTextureAllocationError&) {
+                // the input could not be loaded into a texture (#1945): render again without OpenGL, after the
+                // usual end of this OpenGL render (endSequenceRender, the context detached)
+                return eRenderingFunctorRetOutOfGPUMemory;
+            }
             if (renderOk == eRenderRoIRetCodeAborted) {
                 return eRenderingFunctorRetAborted;
             } else if (renderOk == eRenderRoIRetCodeFailed) {
@@ -2699,6 +2729,13 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
                     // An image the plug-in fetched could not be rendered because the graph is too
                     // deep: the result is wrong, don't mark it as rendered in the cache.
                     st = eStatusFailed;
+                } else if ( planes.useOpenGL && tls->currentRenderArgs.openGLInputTextureFailed ) {
+                    // An input could not be loaded into a texture (#1945). The plug-in should have returned
+                    // kOfxStatErrMemory ("The plug-in should abort the GL render and return kOfxStatErrMemory,
+                    // after which the host can decide to retry the operation with CPU based processing",
+                    // ofxGPURender.h, clipLoadTexture), but it may have rendered without that input (e.g. a
+                    // black frame): render the frame again without OpenGL, whatever it returned.
+                    st = eStatusOutOfMemory;
                 }
             }
         }
@@ -2844,17 +2881,6 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
                     /*
                      * BitDepth/Components conversion required as well as downscaling, do conversion to a tmp buffer
                      */
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-                    ImagePtr tmp( new Image(it->second.fullscaleImage->getComponents(),
-                                            it->second.tmpImage->getRoD(),
-                                            renderMappedRectToRender,
-                                            mipmapLevel,
-                                            it->second.tmpImage->getPixelAspectRatio(),
-                                            it->second.fullscaleImage->getBitDepth(),
-                                            it->second.fullscaleImage->getPremultiplication(),
-                                            it->second.fullscaleImage->getFieldingOrder(),
-                                            false) );
-#else
                     ImagePtr tmp = std::make_shared<Image>(it->second.fullscaleImage->getComponents(),
                                                              it->second.tmpImage->getRoD(),
                                                              renderMappedRectToRender,
@@ -2864,7 +2890,6 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
                                                              it->second.fullscaleImage->getPremultiplication(),
                                                              it->second.fullscaleImage->getFieldingOrder(),
                                                              false);
-#endif
 
                     it->second.tmpImage->convertToFormat( renderMappedRectToRender,
                                                           _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( it->second.tmpImage->getBitDepth() ),
@@ -2984,18 +3009,6 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImagePlaneDes
          * Allocate a temporary image for rendering only if using cache
          */
         if (useCache) {
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-            p.tmpImage.reset( new Image(p.renderMappedImage->getComponents(),
-                                        p.renderMappedImage->getRoD(),
-                                        tls->currentRenderArgs.renderWindowPixel,
-                                        p.renderMappedImage->getMipmapLevel(),
-                                        p.renderMappedImage->getPixelAspectRatio(),
-                                        p.renderMappedImage->getBitDepth(),
-                                        p.renderMappedImage->getPremultiplication(),
-                                        p.renderMappedImage->getFieldingOrder(),
-                                        false /*useBitmap*/,
-                                        img->getParams()->getStorageInfo().mode) );
-#else
             p.tmpImage = std::make_shared<Image>(p.renderMappedImage->getComponents(),
                                                    p.renderMappedImage->getRoD(),
                                                    tls->currentRenderArgs.renderWindowPixel,
@@ -3006,7 +3019,6 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImagePlaneDes
                                                    p.renderMappedImage->getFieldingOrder(),
                                                    false /*useBitmap*/,
                                                    img->getParams()->getStorageInfo().mode);
-#endif
         } else {
             p.tmpImage = p.renderMappedImage;
         }
@@ -4874,20 +4886,6 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
             if (isAbortable) {
                 isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, node->getEffectInstance() );
             }
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-            setter.reset( new ParallelRenderArgsSetter( time,
-                                                        viewIdx, //view
-                                                        isRenderUserInteraction, // isRenderUserInteraction
-                                                        isSequentialRender, // isSequential
-                                                        abortInfo, // abortInfo
-                                                        node, // treeRoot
-                                                        0, //texture index
-                                                        getApp()->getTimeLine().get(),
-                                                        NodePtr(), // activeRotoPaintNode
-                                                        true, // isAnalysis
-                                                        false, // draftMode
-                                                        RenderStatsPtr() ) );
-#else
             setter = std::make_shared<ParallelRenderArgsSetter>( time,
                                                                   viewIdx, //view
                                                                   isRenderUserInteraction, // isRenderUserInteraction
@@ -4900,7 +4898,6 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
                                                                   true, // isAnalysis
                                                                   false, // draftMode
                                                                   RenderStatsPtr() );
-#endif
         }
         {
             RECURSIVE_ACTION();

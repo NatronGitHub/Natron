@@ -246,20 +246,19 @@ public:
     void setKnobsFrozen(bool frozen);
 
 
-    /*Returns in viewers the list of all the viewers connected to this node*/
+    /**
+     * @brief Appends to viewers the Viewers downstream of this node (this node included), each once, in the order of a
+     * depth-first walk through the outputs (getOutputsWithGroupRedirection()) that visits each node once and doesn't go
+     * past a Viewer. The walk is iterative (#1950). Takes the locks of getOutputsWithGroupRedirection() one call at a
+     * time, and no other lock.
+     **/
     void hasViewersConnected(std::list<ViewerInstance* >* viewers) const;
 
+    /**
+     * @brief The same for the output nodes (isOutput(): Writers, DiskCache, Viewers...) other than GroupOutput nodes: the
+     * walk doesn't go past an output node.
+     **/
     void hasOutputNodesConnected(std::list<OutputEffectInstance* >* writers) const;
-
-private:
-
-    void hasViewersConnectedInternal(std::list<ViewerInstance* >* viewers,
-                                     std::list<const Node*>* markedNodes) const;
-
-    void hasOutputNodesConnectedInternal(std::list<OutputEffectInstance* >* writers,
-                                         std::list<const Node*>* markedNodes) const;
-
-public:
 
     /**
      * @brief Forwarded to the live effect instance
@@ -1035,16 +1034,6 @@ private:
 public:
 
     /**
-     * @brief Returns whether this node or one of its inputs (recursively) is marked as
-     * eSequentialPreferenceOnlySequential
-     *
-     * @param nodeName If the return value is true, this will be set to the name of the node
-     * which is sequential.
-     *
-     **/
-    bool hasSequentialOnlyNodeUpstream(std::string & nodeName) const;
-
-    /**
      * @brief The nodes on the paths from this node up to target through the inputs (getInput(), with the group
      * redirections), this node and target included, or none if target is neither this node nor upstream of it. The
      * walk doesn't go upstream of target. The nodes are in the order in which the recursion
@@ -1453,7 +1442,17 @@ private:
 
     void refreshCreatedViews(KnobI* knob, bool silent);
 
-    void refreshInputRelatedDataRecursiveInternal(std::set<Node*>& markedNodes);
+    // The nodes already reached by a refresh of the input-related data: visited by the walk downstream
+    // (refreshInputRelatedDataRecursiveInternal()), and refreshed by the walk upstream through the dirty inputs
+    // (refreshInputRelatedDataInternal()). A node refreshed upstream is still visited downstream, so that its other
+    // outputs are refreshed too (#1951).
+    struct InputRelatedDataRefresh
+    {
+        std::set<Node*> visitedDownstream;
+        std::set<Node*> refreshedUpstream;
+    };
+
+    void refreshInputRelatedDataRecursiveInternal(InputRelatedDataRefresh& refresh);
 
     void refreshInputRelatedDataRecursive();
 
@@ -1467,7 +1466,7 @@ private:
 
     bool refreshAllInputRelatedData(bool hasSerializationData, const std::vector<NodeWPtr>& inputs);
 
-    void refreshInputRelatedDataInternal(std::set<Node*>& markedNodes);
+    void refreshInputRelatedDataInternal(InputRelatedDataRefresh& refresh);
 
     bool refreshDraftFlagInternal(const std::vector<NodeWPtr>& inputs);
 

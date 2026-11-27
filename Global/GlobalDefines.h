@@ -102,6 +102,18 @@ typedef OfxRangeD RangeD;
 #define kCurveEditorObjectName "curveEditor"
 #define kDopeSheetEditorObjectName "dopeSheetEditor"
 
+// Default fonts, used by the Gui and by the Engine settings (which must not include Gui headers).
+#define NATRON_FONT "Droid Sans"
+#define NATRON_FONT_ALT "Droid Sans"
+#define NATRON_SCRIPT_FONT "Courier New"
+#define NATRON_FONT_SIZE_6 6
+#define NATRON_FONT_SIZE_8 8
+#define NATRON_FONT_SIZE_10 10
+#define NATRON_FONT_SIZE_11 11
+#define NATRON_FONT_SIZE_12 12
+#define NATRON_FONT_SIZE_13 13
+#define NATRON_FONT_SIZE_DEFAULT NATRON_FONT_SIZE_11 // the sliders font becomes undreadable below 11 on non-HiDPI mac displays
+
 #define kCurveEditorMoveMultipleKeysCommandCompressionID 2
 #define kKnobUndoChangeCommandCompressionID 3
 #define kNodeGraphMoveNodeCommandCompressionID 4

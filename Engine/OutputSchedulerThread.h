@@ -41,8 +41,6 @@
 #include "Engine/EngineFwd.h"
 #include "Engine/ThreadPool.h"
 
-//#define NATRON_PLAYBACK_USES_THREAD_POOL
-
 
 NATRON_NAMESPACE_ENTER
 
@@ -89,33 +87,19 @@ class OutputSchedulerThread;
 
 struct RenderThreadTaskPrivate;
 
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
 class RenderThreadTask
     :  public QThread
       , public AbortableThread
-#else
-class RenderThreadTask
-    :  public QRunnable
-#endif
 {
 public:
 
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     RenderThreadTask(const OutputEffectInstancePtr& output,
                      OutputSchedulerThread* scheduler);
-#else
-    RenderThreadTask(const OutputEffectInstancePtr& output,
-                     OutputSchedulerThread* scheduler,
-                     const int time,
-                     const bool useRenderStats,
-                     const std::vector<ViewIdx>& viewsToRender);
-#endif
 
     virtual ~RenderThreadTask();
 
     virtual void run() OVERRIDE FINAL;
 
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     /**
      * @brief Call this to quit the thread whenever it will return to the pickFrameToRender function
      **/
@@ -126,7 +110,6 @@ public:
     bool hasQuit() const;
 
     void notifyIsRunning(bool running);
-#endif
 
 protected:
 
@@ -297,7 +280,6 @@ public:
      **/
     int getNActiveRenderThreads() const;
 
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     /**
      * @brief Called by render-threads to pick some work to do or to get asleep if there's nothing to do
      * @returns false, and no frame, if the thread must quit
@@ -313,7 +295,6 @@ public:
      * finishes this way, so this is meant for FFA renders), to open the window of #1607.
      **/
     static void setTestHooks(bool churnRenderThreads, int delayUs);
-#endif
 
     /**
      * @brief Called by the render-threads when mustQuit() is true on the thread
@@ -387,11 +368,7 @@ protected:
      * The internal thread pool will take care of the thread
      * The task will pick frames to render until there are no more to be rendered.
      **/
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     virtual RenderThreadTask* createRunnable() = 0;
-#else
-    virtual RenderThreadTask* createRunnable(int frame, bool useRenderStarts, const std::vector<ViewIdx>& viewsToRender) = 0;
-#endif
 
     /**
      * @brief Called upon failure of a thread to render an image
@@ -450,7 +427,6 @@ private:
     void stopRender();
 
 
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     /**
      * @brief Called by the scheduler threads to wake-up render threads and make them do some work
      * It calls pushFramesToRenderInternal. It starts pushing frames from lastFramePushedIndex
@@ -472,10 +448,6 @@ private:
      * @param optimalNThreads[out] Will be set to the new number of threads
      **/
     void adjustNumberOfThreads(int* newNThreads, int *lastNThreads);
-#else
-    void startTasksFromLastStartedFrame();
-    void startTasks(int startingFrame);
-#endif
 
     /**
      * @brief Make nThreadsToStop quit running. If 0 then all threads will be destroyed.
@@ -509,11 +481,7 @@ private:
     virtual void getFrameRangeToRender(int& first, int& last) const OVERRIDE FINAL;
     virtual int timelineGetTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     virtual RenderThreadTask* createRunnable() OVERRIDE FINAL WARN_UNUSED_RETURN;
-#else
-    virtual RenderThreadTask* createRunnable(int frame, bool useRenderStarts, const std::vector<ViewIdx>& viewsToRender) OVERRIDE FINAL WARN_UNUSED_RETURN;
-#endif
 
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
     virtual SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL;
@@ -547,11 +515,7 @@ private:
 
     virtual void getFrameRangeToRender(int& first, int& last) const OVERRIDE FINAL;
 
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     virtual RenderThreadTask* createRunnable() OVERRIDE FINAL WARN_UNUSED_RETURN;
-#else
-    virtual RenderThreadTask* createRunnable(int frame, bool useRenderStarts, const std::vector<ViewIdx>& viewsToRender) OVERRIDE FINAL WARN_UNUSED_RETURN;
-#endif
 
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
     virtual SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL { return eSchedulingPolicyOrdered; }

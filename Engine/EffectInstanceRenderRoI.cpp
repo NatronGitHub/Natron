@@ -32,6 +32,7 @@
 #include <limits>
 #include <fstream>
 #include <cassert>
+#include <new> // std::bad_alloc
 #include <stdexcept>
 #include <sstream> // stringstream
 
@@ -181,17 +182,6 @@ EffectInstance::convertPlanesFormatsIfNeeded(const AppInstancePtr& app,
          **/
         Image::ReadAccess acc = inputImage->getReadRights();
         RectI bounds = inputImage->getBounds();
-#if 0 //def BOOST_NO_CXX11_VARIADIC_TEMPLATES
-       ImagePtr tmp( new Image(targetComponents,
-                                inputImage->getRoD(),
-                                bounds,
-                                inputImage->getMipmapLevel(),
-                                inputImage->getPixelAspectRatio(),
-                                targetDepth,
-                                inputImage->getPremultiplication(),
-                                inputImage->getFieldingOrder(),
-                                false) );
-#else
         ImagePtr tmp = std::make_shared<Image>(targetComponents,
                                                  inputImage->getRoD(),
                                                  bounds,
@@ -202,7 +192,6 @@ EffectInstance::convertPlanesFormatsIfNeeded(const AppInstancePtr& app,
                                                  inputImage->getFieldingOrder(),
                                                  false);
 
-#endif
         tmp->setKey(inputImage->getKey());
         const RectI clippedRoi = roi.intersect(bounds);
 
@@ -813,6 +802,23 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// End Compute RoI /////////////////////////////////////////////////////////////////////////
     const PluginOpenGLRenderSupport openGLSupport = frameArgs->currentOpenglSupport;
+    // OpenGL failed (kOfxStatGPURenderFailed, kOfxStatGPUOutOfMemory or kOfxStatErrMemory from the OpenGL render,
+    // or an input texture that could not be loaded): render again without OpenGL if the plug-in can render on the
+    // CPU (not "needed", and kOfxImageEffectPropCPURenderSupported isn't "false"), else fail with a message. This
+    // is the rule of openfx HostSupport's OpenGL::openGLFailed() and OpenGL::cpuRetryAllowed() (ofxhOpenGLRender.h).
+    const auto renderAgainWithoutOpenGL = [&]() -> RenderRoIRetCode {
+        if (openGLSupport != ePluginOpenGLRenderSupportYes) {
+            // The plug-in can only use GPU or doesn't support GPU
+            if ( !getNode()->hasPersistentMessage() ) {
+                setPersistentMessage( eMessageTypeError, tr("The OpenGL render failed or ran out of GPU memory, and this plug-in cannot render without OpenGL.").toStdString() );
+            }
+            throw std::runtime_error("Rendering Failed");
+        }
+        std::unique_ptr<RenderRoIArgs> newArgs( new RenderRoIArgs(args) );
+        newArgs->allowGPURendering = false;
+
+        return renderRoI(*newArgs, outputPlanes);
+    };
     StorageModeEnum storage = eStorageModeRAM;
     OSGLContextAttacherPtr glContextLocker;
 
@@ -1461,25 +1467,40 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             continue;
         }
         RenderRoIRetCode inputCode;
+        bool inputTextureFailed = false;
         {
             const RectD canonicalRoI = it->rect.toCanonical(renderFullScaleThenDownscale ? 0 : args.mipmapLevel, par, rod);
 
-            inputCode = renderInputImagesForRoI(requestPassData,
-                                                useTransforms,
-                                                storage,
-                                                args.time,
-                                                args.view,
-                                                rod,
-                                                canonicalRoI,
-                                                tls->currentRenderArgs.transformRedirections,
-                                                args.mipmapLevel,
-                                                renderMappedScale,
-                                                renderScaleOneUpstreamIfRenderScaleSupportDisabled,
-                                                byPassCache,
-                                                *framesNeeded,
-                                                *neededComps,
-                                                &it->imgs,
-                                                &it->inputRois);
+            try {
+                inputCode = renderInputImagesForRoI(requestPassData,
+                                                    useTransforms,
+                                                    storage,
+                                                    args.time,
+                                                    args.view,
+                                                    rod,
+                                                    canonicalRoI,
+                                                    tls->currentRenderArgs.transformRedirections,
+                                                    args.mipmapLevel,
+                                                    renderMappedScale,
+                                                    renderScaleOneUpstreamIfRenderScaleSupportDisabled,
+                                                    byPassCache,
+                                                    *framesNeeded,
+                                                    *neededComps,
+                                                    &it->imgs,
+                                                    &it->inputRois);
+            } catch (const OpenGLTextureAllocationError&) {
+                if (storage != eStorageModeGLTex) {
+                    // not an OpenGL render: rendering again without OpenGL would do the same
+                    throw;
+                }
+                // An input could not be loaded into an OpenGL texture (#1945)
+                inputTextureFailed = true;
+            }
+        }
+        if (inputTextureFailed) {
+            // Nothing was allocated or rendered for this node yet (and for an OpenGL render no frame-order claim or
+            // trimap guard is held)
+            return renderAgainWithoutOpenGL();
         }
         if ( planesToRender->inputPremult.empty() ) {
             for (InputImagesMap::iterator it2 = it->imgs.begin(); it2 != it->imgs.end(); ++it2) {
@@ -1855,19 +1876,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         ///use the ret code instead.
         throw std::runtime_error("Rendering Failed");
     } else if (renderRetCode == eRenderRoIStatusRenderOutOfGPUMemory) {
-        /// The OpenGL render ran out of memory or failed (kOfxStatGPUOutOfMemory, kOfxStatGPURenderFailed):
-        /// recall renderRoI on this node, but don't use GPU this time if possible
-        if (openGLSupport != ePluginOpenGLRenderSupportYes) {
-            // The plug-in can only use GPU or doesn't support GPU
-            if ( !getNode()->hasPersistentMessage() ) {
-                setPersistentMessage( eMessageTypeError, tr("The OpenGL render failed or ran out of GPU memory, and this plug-in cannot render without OpenGL.").toStdString() );
-            }
-            throw std::runtime_error("Rendering Failed");
-        }
-        std::unique_ptr<RenderRoIArgs> newArgs( new RenderRoIArgs(args) );
-        newArgs->allowGPURendering = false;
-
-        return renderRoI(*newArgs, outputPlanes);
+        /// The OpenGL render ran out of memory or failed (kOfxStatGPUOutOfMemory, kOfxStatGPURenderFailed,
+        /// kOfxStatErrMemory, an input texture that could not be loaded): recall renderRoI on this node, but
+        /// don't use GPU this time if possible
+        return renderAgainWithoutOpenGL();
     }
 
 
@@ -2163,19 +2175,6 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
             tiledArgs->planes = planesToRender;
             tiledArgs->compsNeeded = compsNeeded;
 
-
-#ifdef NATRON_HOSTFRAMETHREADING_SEQUENTIAL
-            std::vector<EffectInstance::RenderingFunctorRetEnum> ret( tiledData.size() );
-            int i = 0;
-            for (std::list<RectToRender>::const_iterator it = planesToRender->rectsToRender.begin(); it != planesToRender->rectsToRender.end(); ++it, ++i) {
-                ret[i] = self->_imp->tiledRenderingFunctor(tiledArgs,
-                                               *it,
-                                               currentThread);
-            }
-            std::vector<EffectInstance::RenderingFunctorRetEnum>::const_iterator it2;
-
-#else
-
             std::function<RenderingFunctorRetEnum(const RectToRender&)> render = [&](const RectToRender& rect) {
                 return self->_imp->tiledRenderingFunctor(*tiledArgs, rect, currentThread);
             };
@@ -2184,7 +2183,6 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
             ret.waitForFinished();
             QFuture<EffectInstance::RenderingFunctorRetEnum>::const_iterator it2;
 
-#endif
             for (it2 = ret.begin(); it2 != ret.end(); ++it2) {
                 if ( (*it2) == EffectInstance::eRenderingFunctorRetFailed ) {
                     renderStatus = eRenderingFunctorRetFailed;

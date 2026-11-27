@@ -826,43 +826,6 @@ bezierP(const Point& a,
     return ret;
 }
 
-#ifdef DEAD_CODE
-static
-Point
-bezierPP(const Point& a,
-         const Point& b,
-         const Point& c,
-         const Point& d,
-         double t)
-{
-    Point ret;
-
-    ret.x = 6.0 * (t * ( d.x - a.x + 3.0 * (b.x - c.x) ) + a.x + c.x - 2.0 * b.x);
-    ret.y = 6.0 * (t * ( d.y - a.y + 3.0 * (b.y - c.y) ) + a.y + c.y - 2.0 * b.y);
-
-    return ret;
-}
-
-#endif // DEAD_CODE
-
-#ifdef DEAD_CODE
-static
-Point
-bezierPPP(const Point& a,
-          const Point& b,
-          const Point& c,
-          const Point& d)
-{
-    Point ret;
-
-    ret.x =  6.0 * ( d.x - a.x + 3.0 * (b.x - c.x) );
-    ret.y =  6.0 * ( d.y - a.y + 3.0 * (b.y - c.y) );
-
-    return ret;
-}
-
-#endif // DEAD_CODE
-
 static
 Point
 BuP(const Point P[4][4],
