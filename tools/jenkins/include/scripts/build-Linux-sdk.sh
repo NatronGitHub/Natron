@@ -54,7 +54,7 @@ esac
 #############################
 # Package-specific switches #
 #############################
-# WITH_MARIADB=true|false build MariaDB/MySQL as well as the corresponding Qt and Python components
+# WITH_MARIADB=true|false build MariaDB/MySQL as well as the corresponding Qt SQL plug-in
 WITH_MARIADB="${WITH_MARIADB:-true}"
 
 # GCC_TOOLSET=N gcc-toolset version used on Rocky Linux 9 (default: 14, i.e. GCC 14.2,
@@ -617,19 +617,18 @@ build cmake
 build libzip # (requires cmake)
 #build berkeleydb # (optional for python3)
 build sqlite # (required for the QtSql SQLite module, optional for python3)
-build pcre # (required by glib)
-build pcre2 # (required by mariadb)
+build pcre2 # (required by glib and mariadb)
 
 checkpoint
 
-build git # (requires curl and pcre)
+build git # (requires curl)
 
 checkpoint
 
 if $WITH_MARIADB; then
-    build mariadb # (for the Qt mariadb plugin and the python mariadb adapter)
+    build mariadb # (for the Qt mariadb plugin)
 fi
-build postgresql # (for the Qt postgresql plugin and the python postgresql adapter)
+build postgresql # (for the Qt postgresql plugin)
 
 checkpoint
 
@@ -642,10 +641,6 @@ build meson # (requires python3, required for building glib > 2.59.0)
 
 checkpoint
 
-if $WITH_MARIADB; then
-    build mysqlclient # (MySQL/MariaDB connector for python 3)
-fi
-build psycopg2 # (PostgreSQL connector for python 3)
 build sphinx # (Python documentation generator)
 build sphinx-rtd-theme # (Read the Docs theme for Sphinx)
 
@@ -675,7 +670,6 @@ build boost
 
 checkpoint
 
-build cppunit
 build libjpeg-turbo
 build giflib
 build tiff
@@ -695,8 +689,6 @@ build cairo
 build harfbuzz
 build fribidi # (for pango)
 build pango
-build libcroco # (requires glib and libxml2)
-build xmlto # (required by shared-mime-info)
 build shared-mime-info # (required by gdk-pixbuf)
 build gdk-pixbuf
 build librsvg # (without vala support)
@@ -711,19 +703,14 @@ build libheif # (for imagemagick and openimageio)
 
 checkpoint
 
-build imagemagick6
 build imagemagick7
-build glew
 build poppler-glib # (without curl, nss3, qt4, qt5)
 build poppler-data
-build tinyxml # (used by OpenColorIO)
 build yaml-cpp # (0.5.3 requires boost, 0.6+ requires C++11, used by OpenColorIO)
-build opencolorio1 # (uses yaml-cpp, tinyxml, lcms)
-build opencolorio # (uses yaml-cpp, tinyxml, lcms)
+build opencolorio # (uses yaml-cpp, expat, Imath)
 build webp # (for OIIO)
 build openimageio
-build seexpr211
-build seexpr
+build seexpr211 # (SeExpr 2.11, for openfx-io's SeExpr plug-ins)
 #build eigen
 #build opencv
 
@@ -745,7 +732,6 @@ build speex # (EOL, use opus)
 build opus
 build opusfile # (for sox)
 build sox
-build orc
 build x264
 build xvid
 build soxr

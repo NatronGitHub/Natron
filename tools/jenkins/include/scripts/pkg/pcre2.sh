@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Install pcre (required by glib)
+# Install pcre2 (required by glib and mariadb)
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/pcre2.html
 PCRE2_VERSION=10.49
 PCRE2_TAR="pcre2-${PCRE2_VERSION}.tar.bz2"

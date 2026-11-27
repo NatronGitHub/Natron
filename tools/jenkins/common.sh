@@ -423,8 +423,8 @@ if [ "$PKGOS" = "Windows" ]; then
     fi
 fi
 
-# ImageMagick 7, used by openfx-arena (build-plugins.sh). On Linux and macOS, ImageMagick 6
-# stays in SDK_HOME (on macOS, MacPorts' ImageMagick, which other ports use).
+# ImageMagick 7, used by openfx-arena (build-plugins.sh). On macOS, ImageMagick 6 stays in
+# SDK_HOME (MacPorts' ImageMagick, which other ports use); the Linux SDK has no ImageMagick 6.
 # - Linux: the SDK's $SDK_HOME/magick7 (include/scripts/pkg/imagemagick7.sh);
 # - macOS: MacPorts' ImageMagick7 +natron (tools/MacPorts/graphics/ImageMagick7), installed in
 #   $SDK_HOME/lib/ImageMagick7;
