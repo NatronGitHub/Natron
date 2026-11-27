@@ -238,7 +238,7 @@ env OSMESA_VERSION=25.0.7 LLVM_VERSION=19.1.7 LLVM_BUILD=1 PYTHON=/opt/local/bin
 
 Use osmesa-install master: it has the LLVM and Mesa build fixes needed with recent macOS SDKs and Xcode versions (verified with Xcode 27.2). Set `OSMESA_VERSION` and `LLVM_VERSION`: without them, osmesa-install builds its own default, Mesa 18.3.6 with LLVM 6.0.1.
 
-**Upgrading from Mesa 18.3.6** (the default until 2026-11): delete the old installation first, so that no LLVM 6 or Mesa 18 files are left: `sudo rm -rf /opt/osmesa /opt/llvm`, then run the commands above. Python 2.7 was only needed for Mesa 18: if `port select --show python` still shows `python27`, run `sudo port select --set python python311` (install section 8), and `sudo port uninstall python27` if nothing else uses it. Keep `gsed`: the build scripts use it (section 5).
+**Upgrading from Mesa 18.3.6** (the default until 2026-11): delete the old installation first, so that no LLVM 6 or Mesa 18 files are left: `sudo rm -rf /opt/osmesa /opt/llvm`, then run the commands above. Python 2.7 was only needed for Mesa 18: if `port select --show python` still shows `python27`, run `sudo port select --set python python311` (install section 8), and `sudo port uninstall python27` if nothing else uses it. Keep `gsed`: the build scripts use it (section 6).
 
 Don't use a MacPorts or Homebrew LLVM (`LLVM_SYSTEM=1`) for release builds: the Shadertoy plugin would then depend on their dylibs.
 
