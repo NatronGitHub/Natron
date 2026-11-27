@@ -434,6 +434,8 @@ step_compiler() {
 step_tools() {
     $PORT install gsed gawk coreutils findutils keychain tmux gzip bash wget bison flex doxygen \
         texinfo ncdu1 meson ninja help2man unzip tcl expect
+    # Google Test for the Tests binary (Tests/CMakeLists.txt; a static library, not in the DMG)
+    $PORT install gtest
     $PORT install privoxy     # HTTP->SOCKS proxy for pip in VMs without direct internet access
 }
 
@@ -830,6 +832,11 @@ step_update() {
     if ! port -q installed ImageMagick7 2>/dev/null | grep -q '+natron.*(active)'; then
         echo "===== installing ImageMagick7 +natron"
         $PORT install ImageMagick7 +natron -x11 -openexr
+    fi
+    # Google Test, for the images created before step_tools had it
+    if ! port -q installed gtest 2>/dev/null | grep -q '(active)'; then
+        echo "===== installing gtest"
+        $PORT install gtest
     fi
     # rebuild OSMesa/LLVM if missing or built for a newer macOS (delete /opt/osmesa/lib to force a rebuild)
     step_osmesa

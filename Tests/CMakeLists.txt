@@ -19,8 +19,6 @@
 
 set(Tests_HEADERS BaseTest.h NaNGuards_FastMath.h OfxTestPlugin.h TestUtils.h)
 set(Tests_SOURCES
-    googletest/googletest/src/gtest-all.cc
-    googletest/googlemock/src/gmock-all.cc
     BaseTest.cpp
     CLArgs_Test.cpp
     CacheHolderID_Test.cpp
@@ -155,20 +153,24 @@ target_include_directories(Tests PRIVATE ..)
 target_include_directories(Tests
     SYSTEM PRIVATE
         ../libs/SequenceParsing
-        googletest/googletest/include
-        googletest/googletest
-        googletest/googlemock/include
-        googletest/googlemock
         ../libs/qhttpserver/src
         ../libs/qhttpserver/http-parser
-        google-test/include
-        google-test
-        google-mock/include
-        google-mock
 )
-# bundled third-party code (see NATRON_THIRD_PARTY_NO_WARNINGS)
-set_property(SOURCE googletest/googletest/src/gtest-all.cc googletest/googlemock/src/gmock-all.cc
-    APPEND PROPERTY COMPILE_OPTIONS ${NATRON_THIRD_PARTY_NO_WARNINGS})
+# Google Test: an installed googletest, found with its CMake config (1.14, Ubuntu 24.04's, is the
+# oldest version that CI builds with). Only GTest::gtest is linked: no test uses Google Mock, and
+# main() is wmain.cpp's (not GTest::gtest_main).
+find_package(GTest 1.14 CONFIG QUIET)
+if(NOT GTest_FOUND)
+    if(GTest_CONSIDERED_VERSIONS)
+        set(_natron_gtest_found " (found ${GTest_CONSIDERED_VERSIONS}: older, or for another architecture)")
+    endif()
+    message(FATAL_ERROR "Tests: Google Test 1.14 or later (googletest, with its CMake config) was not found${_natron_gtest_found}. "
+        "Install it (Debian/Ubuntu: libgtest-dev; Fedora, RHEL 10 (EPEL): gtest-devel; macOS: the MacPorts port gtest; "
+        "MSYS2: mingw-w64-ucrt-x86_64-gtest, or mingw-w64-clang-aarch64-gtest on CLANGARM64; FreeBSD: googletest), "
+        "add its prefix to CMAKE_PREFIX_PATH or set GTest_DIR, or configure with -DNATRON_BUILD_TESTS=OFF.")
+endif()
+message(STATUS "Tests: Google Test ${GTest_VERSION} (${GTest_DIR})")
+target_link_libraries(Tests PRIVATE GTest::gtest)
 add_test(NAME Tests COMMAND Tests)
 # The same OFX tests with the plug-ins known from the OFX plug-in cache that Tests wrote, instead of a
 # scan: the binaries are loaded at the first use of their plug-ins (OfxHost::getPluginContextAndDescribe()).

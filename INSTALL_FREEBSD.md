@@ -9,8 +9,10 @@ Natron on FreeBSD.
 In order to have Natron compiling, first you need to install the required libraries.
 
 ```
-pkg install qt5 boost-all pyside2 expat cairo pkgconf
+pkg install qt5 boost-all pyside2 expat cairo pkgconf googletest
 ```
+
+(`googletest` is Google Test, required to build the unit tests; without it, configure CMake with `-DNATRON_BUILD_TESTS=OFF`.)
 
 For the CMake build, also install `cmake` (`pkg install cmake`).
 
