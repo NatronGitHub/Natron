@@ -11,7 +11,7 @@ set -u # Treat unset variables as an error when substituting.
 # -------------------
 # Depending in the options, the script can have different build types: build a Natron release, snapshot,
 # just CI or a specific plug-in repository CI.
-# A snapshot differs from CI because the resulting build is uploaded as well as its debug symbols.
+# A snapshot differs from CI because the resulting build is uploaded.
 # A snapshot is stamped with a specific development tag so that it doesn't get mixed up with releases.
 #
 # To launch a release, you must set RELEASE_TAG and point GIT_URL to the Natron repo to build from.
@@ -23,12 +23,11 @@ set -u # Treat unset variables as an error when substituting.
 # SNAPSHOT_COMMIT: The commit to build for a snapshot on the given SNAPSHOT_BRANCH. If not set, the latest commit of the branch will be built
 # UNIT_TESTS: "false" or "true" (for compat with jenkins) to run the full unit tests suite after the build
 # NATRON_LICENSE: (GPL or COMMERCIAL) The license to build Natron with. If GPL then GPL components will be included.
-# DISABLE_BREAKPAD: If set to 1, natron will be built without crash reporting capabilities
-# COMPILE_TYPE: The type of build to do, i.e in terms of compilation. Valid values are (`relwithdebinfo`, `release`, `debug`). Must be `relwithdebinfo` or `debug` if DISABLE_BREAKPAD is not 1.
+# COMPILE_TYPE: The type of build to do, i.e in terms of compilation. Valid values are (`relwithdebinfo`, `release`, `debug`).
 # NATRON_DEV_STATUS: ALPHA, BETA, RC, STABLE, CUSTOM: this is useful when doing a release (i.e: if specifying RELEASE_TAG.)
 # NATRON_CUSTOM_BUILD_USER_NAME: For a release, Tag the build with a specific user/client name
 # NATRON_BUILD_NUMBER: When doing a release this is the number of the release (if doing a rebuild)
-# NATRON_BUILD_SYSTEM: cmake (the default) or qmake (deprecated, kept on RB-2.6 as a fallback, see #1181). The CMake build has no crash reporter: it implies DISABLE_BREAKPAD=1. Linux builds always use DISABLE_BREAKPAD=1 (the Linux SDK has no Breakpad).
+# NATRON_BUILD_SYSTEM: cmake (the default) or qmake (deprecated, kept on RB-2.6 as a fallback, see #1181).
 # NATRON_EXTRA_CMAKE_FLAGS: Optional cmake flags to pass when building Natron with CMake, e.g. "-DNATRON_FAST_MATH=ON"
 # NATRON_EXTRA_QMAKE_FLAGS: Optional qmake flags to pass when building Natron with qmake
 # BUILD_NAME: Give a name to the build so that it can be found in the archive
@@ -261,23 +260,9 @@ case "$NATRON_BUILD_SYSTEM" in
         exit 1
         ;;
 esac
-if [ "$NATRON_BUILD_SYSTEM" = "cmake" ] && [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-    # Breakpad is being replaced by sentry-native (#1183), which the CMake build will support
-    echo "The CMake build has no Breakpad crash reporter (#1183): building without it (DISABLE_BREAKPAD=1)."
-    echo "Set NATRON_BUILD_SYSTEM=qmake for a build with Breakpad (macOS and Windows only)."
-    DISABLE_BREAKPAD=1
-fi
-if [ "$PKGOS" = "Linux" ] && [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-    # The Linux SDK no longer builds Breakpad (dump_syms); it is being replaced by sentry-native (#1183)
-    echo "The Linux SDK has no Breakpad (dump_syms): building without the crash reporter (DISABLE_BREAKPAD=1)."
-    DISABLE_BREAKPAD=1
-fi
-
-# By default breakpad is enabled
-if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-    DISABLE_BREAKPAD=0
-else
-    echo "DISABLE_BREAKPAD specified: crash reporting support disabled"
+# Natron has no crash reporter: Breakpad was removed, sentry-native will replace it (#1183)
+if [ -n "${DISABLE_BREAKPAD:-}" ]; then
+    echo "Note: DISABLE_BREAKPAD is obsolete and ignored: Natron is always built without a crash reporter (#1183)."
 fi
 
 # Remove any previous jenkins artifacts from previous builds
@@ -379,7 +364,6 @@ setBuildOption "BUILD_NAME" "${BUILD_NAME:-}"
 setBuildOption "EXTRA_PYTHON_MODULES_SCRIPT" "${EXTRA_PYTHON_MODULES_SCRIPT:-}"
 setBuildOption "CURRENT_DATE" "$CURRENT_DATE"
 setBuildOption "DEBUG_SCRIPTS" "$DEBUG_SCRIPTS"
-setBuildOption "DISABLE_BREAKPAD" "${DISABLE_BREAKPAD:-}"
 setBuildOption "NATRON_LICENSE" "$NATRON_LICENSE"
 setBuildOption "BUILD_ARCHIVE_DIRECTORY" "$BUILD_ARCHIVE_DIRECTORY"
 
@@ -660,10 +644,6 @@ if [ "${INSTALLER_OS}" = "Windows" ]; then
 fi
 
 INSTALLER_BASENAME="${INSTALLER_BASENAME}-${NATRON_VERSION_STRING}-${INSTALLER_OS}-${INSTALLER_ARCH}"
-
-if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-    INSTALLER_BASENAME="${INSTALLER_BASENAME}-breakpad"
-fi
 
 if [ "$COMPILE_TYPE" = "debug" ]; then
     INSTALLER_BASENAME="${INSTALLER_BASENAME}-debug"

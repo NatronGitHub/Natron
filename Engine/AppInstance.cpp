@@ -916,6 +916,10 @@ AppInstance::runPythonProjectScript(const QString& filePath,
         // (kOfxChangePluginEdited, as after loading an .ntp file, see OfxEffectInstance.cpp): not a user edit,
         // after which the plug-in would set the parameters (colorspace...) from the file. Reading it extends the project frame range
         // (Node::onFileNameParameterChanged()), which the .ntp loader doesn't: keep the one the script set.
+        // Call the action of the decoder itself, as ReadNodePrivate::createReadNode() does for a kept decoder: the file
+        // knob belongs to the Read node (see OfxParamToKnob::getKnobHolder()), whose knobChanged() takes a change of
+        // the file for a new file, and replaced a decoder that isn't the default one of the extension with the
+        // default one, which also reset its parameters (#1783).
         double savedFirst = 0.;
         double savedLast = 0.;
         getProject()->getFrameRange(&savedFirst, &savedLast);
@@ -926,7 +930,7 @@ AppInstance::runPythonProjectScript(const QString& filePath,
             NodePtr decoder = isRead ? isRead->getEmbeddedReader() : NodePtr();
             KnobIPtr fileKnob = decoder ? decoder->getKnobByName(kOfxImageEffectFileParamName) : KnobIPtr();
             if (fileKnob) {
-                fileKnob->evaluateValueChange(0, getTimeLine()->currentFrame(), ViewSpec::all(), eValueChangedReasonPluginEdited);
+                decoder->getEffectInstance()->onKnobValueChanged_public(fileKnob.get(), eValueChangedReasonPluginEdited, getTimeLine()->currentFrame(), ViewSpec(0), true);
             }
         }
         // The OCIO plug-ins (openfx-io) show their colorspace parameters, strings, as menus that are not saved, which

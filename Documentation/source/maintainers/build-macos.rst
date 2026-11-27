@@ -336,7 +336,7 @@ Running the build
     mkdir -p "$workspace"
     cd "$NATRON_SRC/tools/jenkins"     # NATRON_SRC: your Natron checkout
 
-    NOUPDATE=1 WORKSPACE="$workspace" DISABLE_BREAKPAD=1 NATRON_LICENSE=GPL \
+    NOUPDATE=1 WORKSPACE="$workspace" NATRON_LICENSE=GPL \
       GIT_URL=https://github.com/NatronGitHub/Natron.git GIT_BRANCH=RB-2.6 \
       UNIT_TESTS=true BUILD_NAME=natron_github_RB2 BUILD_NUMBER=1 \
       COMPILE_TYPE=release MKJOBS=8 \

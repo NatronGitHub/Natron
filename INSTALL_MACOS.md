@@ -377,14 +377,14 @@ See [macOS packaging tools](#macos-packaging-tools) below.
 mkdir -p $HOME/Development/workspace
 cd $NATRON_SRC/tools/jenkins
 # NATRON_MACOS_MIN: the release target, NATRON_MACOS_RELEASE_MIN in tools/jenkins/macos-release.sh
-env NATRON_MACOS_MIN=14.0 NOUPDATE=1 WORKSPACE=$HOME/Development/workspace DISABLE_BREAKPAD=1 NATRON_LICENSE=GPL \
+env NATRON_MACOS_MIN=14.0 NOUPDATE=1 WORKSPACE=$HOME/Development/workspace NATRON_LICENSE=GPL \
     GIT_URL=https://github.com/NatronGitHub/Natron.git GIT_BRANCH=RB-2.6 \
     UNIT_TESTS=false BUILD_NAME=natron_github_RB2 BUILD_NUMBER=1 \
     COMPILE_TYPE=release MKJOBS=8 \
     ./launchBuildMain.sh
 ```
 
-`launchBuildMain.sh` builds Natron with CMake (`tools/jenkins/build-natron.sh` configures it with the release options, runs `cmake --install` with `NATRON_INSTALL_LAYOUT=PORTABLE`, and stages the result for the installer script). Extra CMake options go in `NATRON_EXTRA_CMAKE_FLAGS`, e.g. `NATRON_EXTRA_CMAKE_FLAGS=-DNATRON_FAST_MATH=ON`. `NATRON_BUILD_SYSTEM=qmake` selects the deprecated qmake build, the only one with the Breakpad crash reporter (the CMake build implies `DISABLE_BREAKPAD=1`). It checks out Natron (`GIT_URL`, `GIT_BRANCH`) and the plug-ins from GitHub: local changes in `$NATRON_SRC` are not built, except for the `tools/` scripts and the overlay. To build local changes, see "Developing with the MacPorts SDK".
+`launchBuildMain.sh` builds Natron with CMake (`tools/jenkins/build-natron.sh` configures it with the release options, runs `cmake --install` with `NATRON_INSTALL_LAYOUT=PORTABLE`, and stages the result for the installer script). Extra CMake options go in `NATRON_EXTRA_CMAKE_FLAGS`, e.g. `NATRON_EXTRA_CMAKE_FLAGS=-DNATRON_FAST_MATH=ON`. `NATRON_BUILD_SYSTEM=qmake` selects the deprecated qmake build. Natron has no crash reporter until #1183. It checks out Natron (`GIT_URL`, `GIT_BRANCH`) and the plug-ins from GitHub: local changes in `$NATRON_SRC` are not built, except for the `tools/` scripts and the overlay. To build local changes, see "Developing with the MacPorts SDK".
 
 The `.dmg` ends up in `$HOME/Development/workspace/builds_archive/natron_github_RB2/1/`, named `Natron-<branch>-<date>-<commit>-macOS<version>-<arch>.dmg`, where `<version>` is the oldest macOS it runs on. **Release or development target.** With `NATRON_MACOS_MIN=14.0`, as above (release builds; `tools/tart/provision.sh` sets it from `NATRON_MACOS_RELEASE_MIN` in `tools/jenkins/macos-release.sh`), `tools/jenkins/common.sh` builds Natron and the plug-ins for macOS 14.0, and `launchBuildMain.sh` then runs `tools/tart/check-minos.sh` on the `.dmg`, which fails the build if a Mach-O file in it needs a newer macOS (the list is in `<dmg name>-minos.txt`; `tools/tart/natron-build.sh` checks it again on the host). This only works with ports built for 14.0 (install section 2). Without `NATRON_MACOS_MIN` (development builds), Natron and the plug-ins are built for the build Mac's own macOS, so that the plug-ins can bundle MacPorts' ordinary binary archives (their deploy step, `OFX_DEPLOY_STRICT_MINOS`, rejects a library built for a newer macOS than the target), and the DMG is named after it. An explicit `MACOSX_DEPLOYMENT_TARGET` wins over both. Use `UNIT_TESTS=true` to also run the render regression suite (Natron-Tests); this adds `-tests.txt` and `-unit_tests_failures.zip` next to the DMG. `BUILD_FROM=N` / `BUILD_TO=N` run only some of the six steps (checkout, plugins, Natron, installer, tests, archive).
 
@@ -397,7 +397,7 @@ For a release, build a tag instead of a branch:
 ```Shell
 # NATRON_MACOS_MIN: NATRON_MACOS_RELEASE_MIN in tools/jenkins/macos-release.sh
 env NATRON_MACOS_MIN=14.0 NATRON_DEV_STATUS=STABLE RELEASE_TAG=2.6.0 NATRON_BUILD_NUMBER=1 NOUPDATE=1 WORKSPACE=$HOME/Development/workspace \
-    DISABLE_BREAKPAD=1 NATRON_LICENSE=GPL GIT_URL=https://github.com/NatronGitHub/Natron.git \
+    NATRON_LICENSE=GPL GIT_URL=https://github.com/NatronGitHub/Natron.git \
     UNIT_TESTS=true BUILD_NAME=natron_github_RB2 BUILD_NUMBER=1 COMPILE_TYPE=release MKJOBS=8 \
     ./launchBuildMain.sh
 ```

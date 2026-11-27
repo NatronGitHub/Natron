@@ -38,11 +38,9 @@ resilience:
   Autosave is triggered on inactivity and after significant edits. On startup
   Natron detects a leftover autosave and offers to recover it
   (``loadProject(..., attemptToLoadAutosave)``).
-- ``ExistenceCheckerThread`` implements a liveness ping between cooperating
-  processes; it emits ``otherProcessUnreachable()`` when the peer disappears.
-  Combined with rendering in a separate process (``ProcessHandler``,
-  ``ProcessInputChannel``), this is how a crash in a render process does not
-  take the GUI down with it, and vice-versa.
+- Rendering in a separate process (``ProcessHandler``,
+  ``ProcessInputChannel``) is how a crash in a render process does not take
+  the GUI down with it.
 
 If you change the project model or the save path, verify that autosave and
 recovery still round-trip — this is a data-safety feature.
@@ -50,20 +48,17 @@ recovery still round-trip — this is a data-safety feature.
 Crash reporting
 ---------------
 
-Natron ships an **out-of-process crash reporter** built on
-`Google Breakpad <https://chromium.googlesource.com/breakpad/breakpad/>`_. The
-relevant trees are ``BreakpadClient`` (the in-process client that installs the
-exception handler and writes a minidump), and ``CrashReporter`` /
-``CrashReporterCLI`` (the separate reporter process that catches the dump and
-lets the user submit it). It is enabled in the deprecated qmake build with
-``CONFIG+=enable-breakpad`` (see ``breakpadpro.pri`` / ``breakpadclient.pri`` and
-``README_breakpad.md``). The CMake build doesn't build it: Breakpad is to be
-replaced by sentry-native/Crashpad
-(`#1183 <https://github.com/NatronGitHub/Natron/issues/1183>`_).
+Natron 2.6 has **no crash reporter**: the former out-of-process reporter built
+on Google Breakpad (``CrashReporter``, ``CrashReporterCLI``, ``BreakpadClient``
+and the ``libs/google-breakpad`` submodule) was never shipped by the 2.6 builds
+and was removed. A crash reporter will come back with sentry-native/Crashpad
+(`#1183 <https://github.com/NatronGitHub/Natron/issues/1183>`_). Until then,
+crashes are diagnosed from backtraces: a debugger, the system crash log, or the
+``SIGSEGV`` handler that prints a backtrace on Linux.
 
 Because so many open issues are unreproducible "random crashes"
-(`#557 <https://github.com/NatronGitHub/Natron/issues/557>`_), keeping this
-pipeline working — dumps captured, symbols available, reports delivered — is one
+(`#557 <https://github.com/NatronGitHub/Natron/issues/557>`_), bringing a crash-reporting
+pipeline back — dumps captured, symbols available, reports delivered — is one
 of the highest-leverage things a maintainer can do (see :ref:`maint-todo`).
 
 Multi-view and stereo

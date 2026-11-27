@@ -32,11 +32,7 @@ fi
 
 if "$GENDOCS"; then
 
-    if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-        NATRON_RENDERER_BIN="NatronRenderer-bin"
-    else
-        NATRON_RENDERER_BIN="NatronRenderer"
-    fi
+    NATRON_RENDERER_BIN="NatronRenderer"
 
     # generate the plugins doc first
     if "$RUNPANDOC" && command -v pandoc >/dev/null 2>&1 && [ $(pandoc --version |head -1 |awk '{print $2}') == "2.3.1" ]; then

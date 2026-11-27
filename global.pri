@@ -144,10 +144,6 @@ CONFIG(debug, debug|release){
     DEFINES *= NDEBUG
 }
 
-CONFIG(enable-breakpad) {
-    include(breakpadclient.pri)
-}
-
 CONFIG(noassertions) {
 #See http://doc.qt.io/qt-4.8/debug.html
    DEFINES *= NDEBUG QT_NO_DEBUG QT_NO_DEBUG_OUTPUT QT_NO_WARNING_OUTPUT

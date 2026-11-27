@@ -64,11 +64,7 @@ case "${macosx}" in
 *) echo "unknown macOS version: ${macosx}";;
 esac
 
-if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-    natronbins=(Natron NatronRenderer NatronProjectConverter natron-python NatronCrashReporter NatronRendererCrashReporter Tests)
-else
-    natronbins=(Natron NatronRenderer NatronProjectConverter natron-python Tests)
-fi
+natronbins=(Natron NatronRenderer NatronProjectConverter natron-python Tests)
 otherbins=(ffmpeg ffprobe iconvert idiff igrep iinfo exrheader tiffinfo) # iv maybe?
 
 if [ "${SDK_HOME}" = "${MACPORTS}" ] && [ ! -h "${SDK_HOME}/Library/lib" ]; then
@@ -145,48 +141,13 @@ fi
 #    CODE_SIGN_OPTS+=( --deep )
 #fi
 
-
-DUMP_SYMS=/usr/local/bin/dump_syms
-DSYMUTIL=dsymutil
-if [ "${COMPILER}" = "clang" ] || [ "${COMPILER}" = "clang-omp" ]; then
-    for v in 6.0 5.0 4.0 3.9; do
-        if [ -x /opt/local/bin/llvm-dsymutil-mp-${v} ]; then
-            DSYMUTIL=/opt/local/bin/llvm-dsymutil-mp-${v}
-            break
-        fi
-    done
-    for v in 17 16 15 14 11 9.0 8.0 7.0; do
-        if [ -x /opt/local/bin/dsymutil-mp-${v} ]; then
-            DSYMUTIL=/opt/local/bin/dsymutil-mp-${v}
-            break
-        fi
-    done
-    echo "* Using ${DSYMUTIL}"
-fi
-
 #  clang's OpenMP lib
 omplibs="omp"
 
 
-# tag symbols we want to keep with 'release'
-BPAD_TAG=""
-if [ "${NATRON_BUILD_CONFIG:-}" != "" ] && [ "${NATRON_BUILD_CONFIG:-}" != "SNAPSHOT" ]; then
-    BPAD_TAG="-release"
-    #if [ -f "${TMP_BINARIES_PATH}/natron-fullversion.txt" ]; then
-    #    GET_VER=`cat "${TMP_BINARIES_PATH}/natron-fullversion.txt"`
-    #    if [ "$GET_VER" != "" ]; then
-    #        TAG=$GET_VER
-    #    fi
-    #fi
-fi
-
 if [ ! -d "${TMP_BINARIES_PATH}" ]; then
     echo "=====> NO ${TMP_BINARIES_PATH}, NOTHING TO DO HERE!"
     exit 1
-fi
-
-if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-    mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/symbols"
 fi
 
 package="${TMP_PORTABLE_DIR}.app"
@@ -208,6 +169,9 @@ cp -a "${TMP_BINARIES_PATH}/PyPlugs" "${package}/Contents/Plugins/"
 # a Python module: Contents/Plugins is on the Python path
 cp "${TMP_BINARIES_PATH}/natron_convert_project.py" "${package}/Contents/Plugins/"
 cp -a "${TMP_BINARIES_PATH}/Resources" "${package}/Contents/"
+# The Tests run of build-natron.sh imported the PyPlugs of PyPlugs/ and of the OFX bundles
+# (Contents/Resources/PyPlugs, #1854): their __pycache__ must not be packaged (#1923)
+find "${package}/Contents/Plugins" -type d -name __pycache__ -prune -exec rm -rf {} +
 
 NATRON_BIN_VERSION="${NATRON_VERSION_SHORT}"
 if [ "${NATRON_BIN_VERSION}" = "" ]; then
@@ -228,37 +192,11 @@ else
     echo "APPLNtrn" > "${package}/Contents/PkgInfo"
 fi
 
-#Dump symbols for breakpad before stripping
 for bin in IO Misc CImg Arena GMIC Shadertoy Extra Magick OCL; do
     ofx_binary="${package}/Contents/Plugins/OFX/Natron/${bin}.ofx.bundle/Contents/MacOS/${bin}.ofx"
 
     #Strip binary
     if [ -x "$ofx_binary" ] && [ "$COMPILE_TYPE" != "debug" ]; then
-        if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-            STATUS=0
-            if [ "${BITS}" = "64" ] || [ "${BITS}" = "Universal" ]; then
-                $DSYMUTIL --arch=x86_64 "$ofx_binary" || STATUS=$?
-                if [ ${STATUS} == 0 ] && [ -d "${ofx_binary}.dSYM" ]; then
-                    # dump_syms produces many errors. redirect stderr to stdout (pipe), then stdout to file
-                    $DUMP_SYMS "${ofx_binary}.dSYM" 2>&1 > "${BUILD_ARCHIVE_DIRECTORY}/symbols/${bin}.ofx-${CURRENT_DATE}${BPAD_TAG:-}-Mac-x86_64.sym" | head -10
-                    rm -rf "${ofx_binary}.dSYM"
-                else
-                    echo "Warning: $DSYMUTIL --arch=x86_64 $ofx_binary failed with exit status ${STATUS}"
-                fi
-            fi
-            STATUS=0
-            if [ "${BITS}" = "32" ] || [ "${BITS}" = "Universal" ]; then
-                $DSYMUTIL --arch=i386 "$ofx_binary" || STATUS=$?
-                if [ ${STATUS} == 0 ] && [ -d "${ofx_binary}.dSYM" ]; then
-                    # dump_syms produces many errors. redirect stderr to stdout (pipe), then stdout to file
-                    $DUMP_SYMS "${ofx_binary}.dSYM" 2>&1 > "${BUILD_ARCHIVE_DIRECTORY}/symbols/${bin}.ofx-${CURRENT_DATE}${BPAD_TAG:-}-Mac-i386.sym" | head -10
-                    rm -rf "${ofx_binary}.dSYM"
-                else
-                    echo "Warning: $DSYMUTIL --arch=i386 $ofx_binary failed with exit status ${STATUS}"
-                fi
-            fi
-        fi
-
         echo "* stripping $ofx_binary";
         # Retain the original binary for QA and use with the util 'atos'
         #mv -f "$ofx_binary" "${binary}_FULL";
@@ -1033,44 +971,6 @@ done
 
 find "${pkglib}" -type f -exec ${GSED} -e "s@${MACPORTS}@${MACPORTSRAND}@g" -e "s@$HOMEBREW@${HOMEBREWRAND}@g" -e "s@${LOCAL}@${LOCALRAND}@g" -e "s@${SDK_HOME}@${SDKRAND}@g" --in-place {} \;
 
-if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-    mv "${package}/Contents/MacOS/Natron" "${package}/Contents/MacOS/Natron-bin"
-    mv "${package}/Contents/MacOS/NatronCrashReporter" "${package}/Contents/MacOS/Natron"
-    mv "${package}/Contents/MacOS/NatronRenderer" "${package}/Contents/MacOS/NatronRenderer-bin"
-    mv "${package}/Contents/MacOS/NatronRendererCrashReporter" "${package}/Contents/MacOS/NatronRenderer"
-    natronbins+=(Natron-bin NatronRenderer-bin)
-
-    echo "* Extract symbols from executables..."
-
-    for bin in Natron-bin NatronRenderer-bin; do
-
-	binary="${package}/Contents/MacOS/${bin}";
-	#Dump symbols for breakpad before stripping
-	if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-            if [ -x "${binary}" ]; then
-                STATUS=0
-                $DSYMUTIL --arch=x86_64 "${binary}" || STATUS=$?
-                if [ ${STATUS} == 0 ] && [ -d "${binary}.dSYM" ]; then
-                    # dump_syms produces many errors. redirect stderr to stdout (pipe), then stdout to file
-                    $DUMP_SYMS "${binary}.dSYM"  2>&1 > "${BUILD_ARCHIVE_DIRECTORY}/symbols/${bin}-${CURRENT_DATE}${BPAD_TAG}-Mac-x86_64.sym" | head -10
-                    rm -rf "${binary}.dSYM"
-                else
-                    echo "Warning: $DSYMUTIL --arch=x86_64 ${binary} failed with exit status ${STATUS}"
-                fi
-                STATUS=0
-                $DSYMUTIL --arch=i386 "${binary}" || STATUS=$?
-                if [ ${STATUS} == 0 ] && [ -d "${binary}.dSYM" ]; then
-                    # dump_syms produces many errors. redirect stderr to stdout (pipe), then stdout to file
-                    $DUMP_SYMS "${binary}.dSYM" 2>&1 > "${BUILD_ARCHIVE_DIRECTORY}/symbols/${bin}-${CURRENT_DATE}${BPAD_TAG}-Mac-i386.sym" | head -10
-                    rm -rf "${binary}.dSYM"
-                else
-                    echo "Warning: $DSYMUTIL --arch=x86_64 ${binary} failed with exit status ${STATUS}"
-                fi
-            fi
-	fi
-    done
-fi
-
 if [ "${STRIP}" = 1 ]; then
     echo "*** Strip executables..."
     for bin in "${natronbins[@]}" "${otherbins[@]}"; do
@@ -1209,6 +1109,12 @@ fi
 #  "${package}" \
 #  "${package}/Contents/MacOS"/*
 
+# The Tests below (and the plug-in documentation generator, when gen-natron-doc.sh runs it) run
+# Natron from the package, which imports the PyPlugs of Contents/Plugins/PyPlugs and of the OFX
+# bundles (Contents/Resources/PyPlugs, #1854): no __pycache__ may be written into the package
+# (#1923). The OFX bundles are signed above and not again, so a __pycache__ in them would also make
+# the final codesign --verify --deep --strict fail.
+export PYTHONDONTWRITEBYTECODE=1
 # Generate documentation
 cd "${CWD}"
 echo "*** Generating doc"

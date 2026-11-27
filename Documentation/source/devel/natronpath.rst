@@ -72,6 +72,20 @@ and version (see below). Among PyPlugs with different file names, when two have 
 version, the first one found wins. A PyPlug with a higher version is also loaded, and new nodes
 use the highest version.
 
+A project stores the path of the file of each PyPlug it uses. When a project is opened and that
+file doesn't exist any more, for example in a project saved when PIKColor was in Natron's
+``Plugins/PyPlugs`` (it now ships in ``Misc.ofx.bundle``), Natron looks for a file of the same
+name in these search paths, in the same order and recursively, the OpenFX plug-in bundles
+included. If it finds one and the *Load PyPlugs in projects from .py if possible* preference is
+checked, the node is created from the PyPlug of that ID that Natron loaded at startup, in its
+highest version (by the rules above, it can come from another file); if the version of the file
+found differs from the one saved in the project, Natron first asks whether to use it, once for all
+the nodes of that PyPlug (NatronRenderer answers Yes, or No with ``--no-dialogs``). After the
+answer Yes, it saves the updated project right away, unless errors were logged while loading it,
+or plug-ins changed parameter values during the load: the project is then only marked modified.
+When no file is found, the preference is unchecked, or the answer is No, the node is loaded from
+the content saved in the project (see :ref:`pyplugWriting-update`).
+
 .. mermaid::
    :alt: The search order is: the bundled PyPlugs if "Use bundled plug-ins" and "Prefer
          bundled plug-ins" are both checked; ~/.Natron; the system location; the directories of

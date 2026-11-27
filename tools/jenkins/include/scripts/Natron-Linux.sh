@@ -12,7 +12,6 @@ help=0
 update=0
 portable=0
 debug=0
-nocrashdump=0
 parseoptions=1
 while [ "$parseoptions" = 1 ]; do
     case $1 in
@@ -29,7 +28,7 @@ while [ "$parseoptions" = 1 ]; do
             shift # past argument
             ;;
         -n|--nocrashdump)
-            nocrashdump=1
+            # obsolete (there is no crash reporter any more), accepted and ignored
             shift # past argument
             ;;
         -h|--help)
@@ -96,15 +95,11 @@ if [ "$portable" = 1 ]; then
 fi
 
 if [ "$help" = 1 ]; then
-    echo "Usage: $1 [-u|--update] [-p|--portable] [-n|--nocrashdump] [-d|--debug] <options>"
+    echo "Usage: $1 [-u|--update] [-p|--portable] [-d|--debug] <options>"
     echo "Full usage:"
 fi        
 
 bin="$dir/bin/Natron"
-
-if [ "$nocrashdump" = 1 ] && [ -x "${bin}-bin" ]; then
-    bin="${bin}-bin"
-fi        
 
 # start app, with optional debug
 if [ "$debug" = 1 ] && [ -x "${bin}.debug" ]; then

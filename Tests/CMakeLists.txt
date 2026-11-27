@@ -112,6 +112,7 @@ set(Tests_SOURCES
     PythonExpressionScope_Test.cpp
     ReadNodeInputs_Test.cpp
     ReadNodeOverlay_Test.cpp
+    ReadWriteDecoderChoice_Test.cpp
     ReadWriteVersion_Test.cpp
     RenderThreadSafety_Test.cpp
     RenderThreads_Test.cpp
@@ -125,6 +126,7 @@ set(Tests_SOURCES
     TrackerHeadless_Test.cpp
     ViewerCache_Test.cpp
     ViewerTexture_Test.cpp
+    WriteNodeReadBack_Test.cpp
     WriteNodeViews_Test.cpp
     wmain.cpp
 )

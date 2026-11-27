@@ -18,7 +18,7 @@
 # ***** END LICENSE BLOCK *****
 
 # Use this for binaries in App.pro, Renderer.pro etc...this way
-# CONFIG += static-gui static-engine static-host-support static-breakpadclient static-ceres static-libmv
+# CONFIG += static-gui static-engine static-host-support static-ceres static-libmv
 
 libmv-flags {
 CONFIG += ceres-flags

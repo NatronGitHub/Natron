@@ -19,8 +19,6 @@
 #
 # Build the portable archive for Linux
 #
-# Options:
-# DISABLE_BREAKPAD=1: Disable automatic crash report (always set: the Linux SDK has no Breakpad)
 
 
 set -e # Exit immediately if a command exits with a non-zero status
@@ -33,12 +31,6 @@ source common.sh
 source manageBuildOptions.sh
 source manageLog.sh
 updateBuildOptions
-
-# The Linux SDK no longer builds Breakpad (dump_syms, crash reporter), see #1183
-if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-    echo "Warning: the Linux SDK has no Breakpad (dump_syms): packaging without the crash reporter (DISABLE_BREAKPAD=1)."
-    DISABLE_BREAKPAD=1
-fi
 
 pushd () {
     command pushd "$@" > /dev/null
@@ -223,20 +215,11 @@ function systemLibsNeeded() {
     done
 }
 
-# Pretty architecture/platform identifier (used for breakpad symbol files)
-case "${ARCH}" in
-    aarch64) PKGOS_BITS="${PKGOS}-aarch64" ;;
-    *) PKGOS_BITS="${PKGOS}-x86_${BITS}bit" ;;
-esac
-
 if [ -d "${BUILD_ARCHIVE_DIRECTORY}" ]; then
     rm -rf "${BUILD_ARCHIVE_DIRECTORY}"
 fi
 
 mkdir -p "${BUILD_ARCHIVE_DIRECTORY}"
-if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-    mkdir "${BUILD_ARCHIVE_DIRECTORY}/symbols"
-fi
 
 # If we are in DEBUG_SYMBOLS mode there might already be deployed installer, remove them
 if [ ! -z "$DEBUG_SCRIPTS" ]; then
@@ -252,22 +235,8 @@ if [ -z "${NATRON_BUILD_CONFIG:-}" ]; then
     exit 1
 fi
 
-# tag symbols we want to keep with 'release'
-if [ "${NATRON_BUILD_CONFIG}" = "RELEASE" ] || [ "$NATRON_BUILD_CONFIG" = "STABLE" ]; then
-    BPAD_TAG="-release"
-fi
 
-
-BINARIES_TO_INSTALL=""
-if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-mv "${TMP_BINARIES_PATH}/bin/Natron" "${TMP_BINARIES_PATH}/bin/Natron-bin"
-mv "${TMP_BINARIES_PATH}/bin/NatronRenderer" "${TMP_BINARIES_PATH}/bin/NatronRenderer-bin"
-mv "${TMP_BINARIES_PATH}/bin/NatronCrashReporter" "${TMP_BINARIES_PATH}/bin/Natron"
-mv "${TMP_BINARIES_PATH}/bin/NatronRendererCrashReporter" "${TMP_BINARIES_PATH}/bin/NatronRenderer"
-BINARIES_TO_INSTALL="${TMP_BINARIES_PATH}/bin/Natron ${TMP_BINARIES_PATH}/bin/NatronRenderer ${TMP_BINARIES_PATH}/bin/Natron-bin ${TMP_BINARIES_PATH}/bin/NatronRenderer-bin"
-else
 BINARIES_TO_INSTALL="${TMP_BINARIES_PATH}/bin/Natron ${TMP_BINARIES_PATH}/bin/NatronRenderer"
-fi
 
 if [ -f "${TMP_BINARIES_PATH}/bin/NatronProjectConverter" ]; then
 BINARIES_TO_INSTALL="$BINARIES_TO_INSTALL ${TMP_BINARIES_PATH}/bin/NatronProjectConverter"
@@ -314,12 +283,6 @@ for b in Natron NatronRenderer NatronProjectConverter; do
         fi
     fi
 done
-
-# Dump symbols for crash reporting
-if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-    "${SDK_HOME}/bin"/dump_syms "${TMP_BINARIES_PATH}/bin/Natron" > "${BUILD_ARCHIVE_DIRECTORY}/symbols/Natron-${CURRENT_DATE}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
-    "${SDK_HOME}/bin"/dump_syms "${TMP_BINARIES_PATH}/bin/NatronRenderer" > "${BUILD_ARCHIVE_DIRECTORY}/symbols/NatronRenderer-${CURRENT_DATE}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
-fi
 
 # Get all dependencies of the binaries
 CORE_DEPENDS="$(sdkDepends $(find "${TMP_PORTABLE_DIR}/bin" -maxdepth 1 -type f))"
@@ -541,11 +504,6 @@ function installPlugin() {
         mkdir -p "${TMP_PORTABLE_DIR}/Plugins/OFX/Natron"
     fi
 
-    # Dump symbols
-    if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-        "${SDK_HOME}/bin/dump_syms" "${TMP_BINARIES_PATH}"/OFX/Plugins/"${OFX_BINARY}".ofx.bundle/Contents/*/"${OFX_BINARY}".ofx > "${BUILD_ARCHIVE_DIRECTORY}/symbols/${OFX_BINARY}.ofx-${CURRENT_DATE}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
-    fi
-
 
 
 
@@ -614,6 +572,8 @@ function installPlugin() {
 
     # Copy plug-in bundle
     cp -a "${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle" "${TMP_PORTABLE_DIR}/Plugins/OFX/Natron/"
+    # without the caches of its PyPlugs, written by build-natron.sh's Tests run (#1923)
+    find "${TMP_PORTABLE_DIR}/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle" -type d -name __pycache__ -prune -exec rm -rf {} +
 
 }
 
@@ -648,13 +608,15 @@ fi
 rm -rf "$HOME/.cache/INRIA/Natron"* &> /dev/null || true
 # The tests need no display: use Qt's offscreen platform with or without valgrind.
 # Not on aarch64, where valgrind is too slow (see build-natron.sh).
+# No Python caches (PYTHONDONTWRITEBYTECODE): Tests loads the PyPlugs, and their __pycache__ would
+# be put in the archive with the tree (#1923).
 if command -v valgrind > /dev/null 2>&1 && [ "${ARCH:-$(uname -m)}" != aarch64 ]; then
     # without DeepGraphRender.VeryDeepChain, too slow under valgrind (see build-natron.sh)
-    env GTEST_FILTER=-DeepGraphRender.VeryDeepChain QT_QPA_PLATFORM=offscreen $TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/valgrind-python${PYV}.supp" "${TMP_PORTABLE_DIR}/bin/Tests"
+    env PYTHONDONTWRITEBYTECODE=1 GTEST_FILTER=-DeepGraphRender.VeryDeepChain QT_QPA_PLATFORM=offscreen $TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/valgrind-python${PYV}.supp" "${TMP_PORTABLE_DIR}/bin/Tests"
 else
     # without valgrind
     echo "Warning: valgrind not found, or aarch64: running the bundled unit tests without it"
-    env QT_QPA_PLATFORM=offscreen $TIMEOUT -s KILL 1800 "${TMP_PORTABLE_DIR}/bin/Tests"
+    env PYTHONDONTWRITEBYTECODE=1 QT_QPA_PLATFORM=offscreen $TIMEOUT -s KILL 1800 "${TMP_PORTABLE_DIR}/bin/Tests"
 fi
 rm "${TMP_PORTABLE_DIR}/bin/Tests"
 

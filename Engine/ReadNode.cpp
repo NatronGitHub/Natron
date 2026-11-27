@@ -279,6 +279,12 @@ public:
     // syncPluginVersionKnob() for the decoder
     void syncVersionKnob();
 
+    /**
+     * @brief A copy of the serializations of the generic knobs that destroyReadNode() keeps, and that differ from
+     * their default, for cloneGenericKnobs() (as WriteNodePrivate::modifiedGenericKnobs()).
+     **/
+    std::list<KnobSerializationPtr> modifiedGenericKnobs() const;
+
     void cloneGenericKnobs();
 
     // Refreshes the decoders offered for the file's format. It doesn't change the plug-in ID: after a
@@ -454,6 +460,26 @@ ReadNodePrivate::cloneGenericKnobs()
             }
         }
     }
+}
+
+std::list<KnobSerializationPtr>
+ReadNodePrivate::modifiedGenericKnobs() const
+{
+    std::list<KnobSerializationPtr> serialized;
+    const KnobsVec& knobs = _publicInterface->getKnobs();
+
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        bool mustSerializeKnob = false;
+        // not ParamExistingInstance, which createDefaultReadNode() sets on the placeholder decoder: the first decoder
+        // must guess its parameters (components, premultiplication, colorspace) from its file, also from a file that
+        // doesn't exist yet, the next time the file changes (see GenericReaderPlugin::changedFilename() in openfx-io)
+        if ( (*it)->isDeclaredByPlugin() && ( (*it)->getName() != kParamExistingInstance ) &&
+             isGenericKnob( (*it)->getName(), &mustSerializeKnob ) && mustSerializeKnob && (*it)->hasModifications() ) {
+            serialized.push_back( std::make_shared<KnobSerialization>(*it) );
+        }
+    }
+
+    return copyKnobSerializations(serialized);
 }
 
 void
@@ -715,6 +741,16 @@ ReadNodePrivate::createReadNode(bool throwErrors,
 
         return;
     }
+    // As in WriteNodePrivate::createWriteNode() (#1574): without a decoder (the node has no file name yet), the
+    // generic knobs are those that the placeholder decoder left (see createDefaultReadNode()), and their values may
+    // have been set since, e.g. a missing frame mode set from Python before the file name (#1784): the new decoder
+    // resets them to its defaults, keep those values.
+    const bool keepPlaceholderKnobs = !embeddedPlugin && !serialization;
+    std::list<KnobSerializationPtr> placeholderKnobs;
+    if (keepPlaceholderKnobs) {
+        placeholderKnobs = modifiedGenericKnobs();
+    }
+
     //Destroy any previous reader
     //This will store the serialization of the generic knobs
     destroyReadNode();
@@ -826,8 +862,22 @@ ReadNodePrivate::createReadNode(bool throwErrors,
     }
 
 
-    // Clone the old values of the generic knobs if we created the same decoder than before
-    if (lastPluginIDCreated == readerPluginID) {
+    if (keepPlaceholderKnobs) {
+        // also after the default fallback (createDefaultReadNode() reset the knobs), for the next file name
+        genericKnobsSerialization = placeholderKnobs;
+        cloneGenericKnobs();
+        if (node) {
+            // the decoder did not see these values (e.g. it enables Frame Rate for a custom frame rate)
+            for (std::list<KnobSerializationPtr>::const_iterator it = placeholderKnobs.begin(); it != placeholderKnobs.end(); ++it) {
+                KnobIPtr knob = _publicInterface->getKnobByName( (*it)->getName() );
+                if (knob) {
+                    node->getEffectInstance()->onKnobValueChanged_public(knob.get(), eValueChangedReasonNatronInternalEdited, _publicInterface->getCurrentTime(), ViewSpec(0), true);
+                }
+            }
+        }
+    } else if (lastPluginIDCreated == readerPluginID) {
+        // Clone the old values of the generic knobs if we created the same decoder as before. With another decoder,
+        // they get its defaults (a4f90a61a).
         cloneGenericKnobs();
     }
     lastPluginIDCreated = readerPluginID;

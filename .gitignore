@@ -222,7 +222,6 @@ Renderer/NatronRenderer
 
 *commits-hash.sh*
 
-CrashReporterCLI/NatronRendererCrashReporter
 *repo.sh*
 *local.sh*
 OpenColorIO-Configs
@@ -240,7 +239,6 @@ bigtosmall.txt
 #Documentation/source/plugins
 .qmake.stash
 App/Natron
-BreakpadClient.xcodeproj/
 Documentation/html
 Documentation/pdf
 # documentation build tools and generated inputs (see Documentation/source/_ext)
@@ -250,12 +248,8 @@ Documentation/source/devel/openfx/
 Engine.xcodeproj/
 Gui.xcodeproj/
 HostSupport.xcodeproj/
-Natron-bin.xcodeproj/
 Natron.xcodeproj/
-NatronCrashReporter.xcodeproj/
-NatronRenderer-bin.xcodeproj/
 NatronRenderer.xcodeproj/
-NatronRendererCrashReporter.xcodeproj/
 Project.xcodeproj/
 PythonBin/natron-python
 Renderer/NatronRenderer
@@ -266,9 +260,8 @@ TestWrite
 Tests.xcodeproj/
 Tests/Plugins
 Tests/Tests
-breakpadclient.pri
-breakpadpro.pri
 config.pri
+# leftover checkout of the removed libs/google-breakpad submodule
 google-breakpad/
 libs/ceres/ceres.xcodeproj/
 libs/md4c/md4c.xcodeproj/

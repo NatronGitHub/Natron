@@ -32,13 +32,17 @@
 
 #include "Global/Macros.h"
 
+#include <list>
 #include <sstream>
 #include <string>
 
 #include <gtest/gtest.h>
 
+#include <QtCore/QDir>
 #include <QtCore/QFileInfo>
+#include <QtCore/QRegularExpression>
 #include <QtCore/QString>
+#include <QtCore/QStringList>
 
 #include <ofxhPluginCache.h>
 
@@ -75,4 +79,39 @@ TEST(OfxPluginScan, SkipsAtNamesAndNonBundles)
         EXPECT_EQ( std::string::npos, cache.find(skipped[i][1]) ) << skipped[i][0] << " was scanned";
     }
 #endif
+}
+
+// The Tests binary starts with --setting useStdOFXPluginsLocation=False (wmain.cpp, #1761): the standard OFX
+// plug-in locations of the machine are not scanned, so that the results don't depend on what is installed
+// there (the plug-ins come from OFX_PLUGIN_PATH).
+TEST(OfxPluginScan, IgnoresTheStandardLocations)
+{
+    // the directories that OFX_PLUGIN_PATH lists may be standard ones (HostSupport splits it on ';', and also
+    // on ':' except on Windows, see DIRLIST_SEP_CHARS in ofxhPluginCache.cpp)
+#if defined(Q_OS_WIN)
+    const QRegularExpression separators( QString::fromUtf8(";") );
+#else
+    const QRegularExpression separators( QString::fromUtf8("[:;]") );
+#endif
+    const QStringList envPaths = QString::fromLocal8Bit( qgetenv("OFX_PLUGIN_PATH") ).split(separators);
+    const std::list<std::string>& paths = OFX::Host::PluginCache::getPluginCache()->getPluginPath();
+
+    EXPECT_FALSE( paths.empty() );
+    for (const std::string& p : paths) {
+        const QString path = QDir::fromNativeSeparators( QString::fromUtf8( p.c_str() ) );
+        if ( envPaths.contains( QString::fromUtf8( p.c_str() ) ) ) {
+            continue;
+        }
+        for (const char* host : { "Plugins", NATRON_APPLICATION_NAME, "Nuke" }) {
+#if defined(Q_OS_WIN)
+            // <Common Files>/OFX/<host> (OFX::Host::PluginCache::getStdOFXPluginPath())
+            const bool standard = path.endsWith( QString::fromUtf8("/Common Files/OFX/") + QString::fromUtf8(host), Qt::CaseInsensitive );
+#elif defined(Q_OS_DARWIN)
+            const bool standard = ( path == QString::fromUtf8("/Library/OFX/") + QString::fromUtf8(host) );
+#else
+            const bool standard = ( path == QString::fromUtf8("/usr/OFX/") + QString::fromUtf8(host) );
+#endif
+            EXPECT_FALSE(standard) << p << " is a standard OFX plug-in location";
+        }
+    }
 }

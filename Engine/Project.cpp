@@ -34,6 +34,7 @@
 #include <limits>
 #include <ostream>
 #include <set>
+#include <sstream>
 #include <utility>
 #include <streambuf>
 #include <vector>
@@ -659,27 +660,6 @@ Project::loadProjectInternal(const QString & path,
 
     NodesRestoreStatus ret;
 
-    if ( (NATRON_VERSION_MAJOR == 1) && (NATRON_VERSION_MINOR == 0) && (NATRON_VERSION_REVISION == 0) ) {
-        ///Try to determine if the project was made during Natron v1.0.0 - RC2 or RC3 to detect a bug we introduced at that time
-        ///in the BezierCP class serialisation
-        bool foundV = false;
-        QFile f(filePath);
-        f.open(QIODevice::ReadOnly);
-        QTextStream fs(&f);
-        while ( !fs.atEnd() ) {
-            QString line = fs.readLine();
-
-            if ( (line.indexOf( QString::fromUtf8("Natron v1.0.0 RC2") ) != -1) || (line.indexOf( QString::fromUtf8("Natron v1.0.0 RC3") ) != -1) ) {
-                appPTR->setProjectCreatedDuringRC2Or3(true);
-                foundV = true;
-                break;
-            }
-        }
-        if (!foundV) {
-            appPTR->setProjectCreatedDuringRC2Or3(false);
-        }
-    }
-
     LoadProjectSplashScreen_RAII __raii_splashscreen__(getApp(), name);
 
     // Detect the format from the content of the file, then use only the matching archive:
@@ -747,21 +727,30 @@ Project::loadProjectInternal(const QString & path,
 
     try {
         if (fileFormat == eProjectFileFormatText) {
-            FStreamsSupport::ifstream ifile;
-            FStreamsSupport::open( &ifile, filePath.toStdString() );
-            if (!ifile) {
-                throw std::runtime_error( tr("Failed to open %1").arg(filePath).toStdString() );
-            }
-            boost::archive::xml_iarchive iArchive(ifile);
-            loadFromArchive(iArchive, [&ifile]() {
+            // Parse a copy in memory: the look-ahead below needs tellg()/seekg(), which don't work on a
+            // text-mode file stream with libc++ on Windows (MSYS2 CLANGARM64, #1494): its filebuf seeks
+            // the C stream back by the number of buffered characters, which is wrong when the CRT has
+            // translated CRLF line endings. The file is still read in text mode, so line endings are
+            // translated as before.
+            std::stringstream text;
+            {
+                FStreamsSupport::ifstream ifile;
+                FStreamsSupport::open( &ifile, filePath.toStdString() );
+                if (!ifile) {
+                    throw std::runtime_error( tr("Failed to open %1").arg(filePath).toStdString() );
+                }
+                text << ifile.rdbuf();
+            } // the file is closed here, before the project is loaded
+            boost::archive::xml_iarchive iArchive(text);
+            loadFromArchive(iArchive, [&text]() {
                 // the next element, after white space, which the archive skips too (reading it from an archive
                 // that doesn't have it would leave the archive in a state that its destructor can't close)
-                ifile >> std::ws;
-                const std::streampos pos = ifile.tellg();
+                text >> std::ws;
+                const std::streampos pos = text.tellg();
                 char tag[sizeof("<ProjectGui") - 1];
-                const bool found = ifile.read( tag, sizeof(tag) ) && ( std::memcmp( tag, "<ProjectGui", sizeof(tag) ) == 0 );
-                ifile.clear();
-                ifile.seekg(pos);
+                const bool found = text.read( tag, sizeof(tag) ) && ( std::memcmp( tag, "<ProjectGui", sizeof(tag) ) == 0 );
+                text.clear();
+                text.seekg(pos);
 
                 return found;
             });

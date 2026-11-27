@@ -81,14 +81,14 @@ The `<srcPath>` must be absolute and `<buildPath>` must not be a subdir of `<src
 ```
 mkdir <buildPath>
 cd <buildfolder>
-qmake -r CONFIG+=disable-breakpad <srcPath>/Project.pro
+qmake -r <srcPath>/Project.pro
 make
 ```
 
 If you want to build in DEBUG mode change the qmake call to this line:
 
 ```
-qmake -r CONFIG+=debug CONFIG+=disable-breakpad <srcPath>/Project.pro
+qmake -r CONFIG+=debug <srcPath>/Project.pro
 ```
 
 Some debug options are available for developers of Natron and you can see them in the `global.pri` file. To enable an option just add `CONFIG+=<option>` in the qmake call.

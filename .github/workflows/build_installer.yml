@@ -42,7 +42,6 @@ permissions:
   actions: read
 
 env:
-  NATRON_BUILD_WORKSPACE: 'D:/nbw'
   CI: 'True'
   # the Windows installer whose file list and DLLs the new one is compared with: the last one
   # built by these scripts (MINGW64, qmake)
@@ -66,7 +65,11 @@ jobs:
         # UCRT64 on tags (CLANGARM64 isn't released yet), else the environment(s) chosen. Only
         # include, so that no environment is added by accident. repo_suffix: the name of the
         # package repository artifact of build_pacman_repo.yml (UCRT64 keeps the original name).
-        include: ${{ fromJSON((inputs.msystem == 'both' && '[{"msystem":"UCRT64","runner":"windows-2022","repo_suffix":""},{"msystem":"CLANGARM64","runner":"windows-11-arm","repo_suffix":"-clangarm64"}]') || (inputs.msystem == 'CLANGARM64' && '[{"msystem":"CLANGARM64","runner":"windows-11-arm","repo_suffix":"-clangarm64"}]') || '[{"msystem":"UCRT64","runner":"windows-2022","repo_suffix":""}]') }}
+        # workspace: NATRON_BUILD_WORKSPACE, a short path (MAX_PATH) on the runner's largest disk:
+        # windows-2022 has a D: drive, windows-11-arm only C: (#1494).
+        include: ${{ fromJSON((inputs.msystem == 'both' && '[{"msystem":"UCRT64","runner":"windows-2022","repo_suffix":"","workspace":"D:/nbw"},{"msystem":"CLANGARM64","runner":"windows-11-arm","repo_suffix":"-clangarm64","workspace":"C:/nbw"}]') || (inputs.msystem == 'CLANGARM64' && '[{"msystem":"CLANGARM64","runner":"windows-11-arm","repo_suffix":"-clangarm64","workspace":"C:/nbw"}]') || '[{"msystem":"UCRT64","runner":"windows-2022","repo_suffix":"","workspace":"D:/nbw"}]') }}
+    env:
+      NATRON_BUILD_WORKSPACE: ${{ matrix.workspace }}
     defaults:
       run:
         shell: msys2 {0}
@@ -128,7 +131,7 @@ jobs:
           # CMake build (NATRON_BUILD_SYSTEM defaults to cmake), no crash reporter until #1183. GPL
           # only: there are no COMMERCIAL builds in CI, weekly builds or releases. No Natron-Tests
           # here (UNIT_TESTS=false): the natron-tests job runs them on a fresh runner (#1959).
-          WORKSPACE=${NATRON_BUILD_WORKSPACE_UNIX} BUILD_NAME=natron BUILD_NUMBER=1 BITS=64 NATRON_LICENSE=GPL GIT_URL=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git GIT_URL_IS_NATRON=1 SNAPSHOT_BRANCH=${GITHUB_REF_NAME} QT_VERSION_MAJOR=5 DISABLE_BREAKPAD=1 NOUPDATE=1 MKJOBS=$(nproc) MINIMIZE_DISK_USAGE=1 UNIT_TESTS=false ./launchBuildMain.sh
+          WORKSPACE=${NATRON_BUILD_WORKSPACE_UNIX} BUILD_NAME=natron BUILD_NUMBER=1 BITS=64 NATRON_LICENSE=GPL GIT_URL=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git GIT_URL_IS_NATRON=1 SNAPSHOT_BRANCH=${GITHUB_REF_NAME} QT_VERSION_MAJOR=5 NOUPDATE=1 MKJOBS=$(nproc) MINIMIZE_DISK_USAGE=1 UNIT_TESTS=false ./launchBuildMain.sh
 
           # the architecture in the installer name, as common.sh sets WIN_ARCH
           case "${MSYSTEM_CARCH}" in
@@ -228,6 +231,11 @@ jobs:
         # After the build dependencies are uninstalled, with only the bundle's bin/ and the Windows
         # directories on PATH: a DLL, Python module or PySide module missing from the bundle fails
         # here (Tests.exe and the docs ran with /ucrt64/bin on PATH).
+        # No Python caches: this tree is Setup.exe's input, and caches written here would be
+        # installed as ordinary files, so the uninstall check of the next step would not test the
+        # [UninstallDelete] entries of Natron.iss.
+        env:
+          PYTHONDONTWRITEBYTECODE: 1
         run: |
           INSTALLER_DIR=$(cygpath -u '${{ steps.build.outputs.INSTALLER_DIR }}')/${{ steps.build.outputs.INSTALLER_NAME }}
           SYSPATH="$(cygpath -u -S):$(cygpath -u -W)"
@@ -262,7 +270,9 @@ jobs:
         run: |
           INSTALLER_DIR=$(cygpath -u '${{ steps.build.outputs.INSTALLER_DIR }}')/${{ steps.build.outputs.INSTALLER_NAME }}
           ISS=tools/MINGW-packages/mingw-w64-natron-setup/Natron.iss
-          APP_W='D:\ni'
+          # the drive of the build workspace (D: on windows-2022, C: on windows-11-arm)
+          DRIVE="${NATRON_BUILD_WORKSPACE%%/*}"
+          APP_W="${DRIVE}\\ni"
           APP=$(cygpath -u "${APP_W}")
           SYSPATH="$(cygpath -u -S):$(cygpath -u -W)"
           if [ -d "${INSTALLER_DIR}/Plugins/PySide6" ]; then PYSIDE=PySide6; else PYSIDE=PySide2; fi
@@ -323,7 +333,7 @@ jobs:
           if [ "$(vercmp "${SETUP_VERSION}" 1.0-9)" -lt 0 ]; then
             echo "::warning::natron-setup ${SETUP_VERSION} is older than 1.0-9: the check that Setup.exe refuses the folder of a Natron 2.5 or older is skipped"
           else
-            OLD_W='D:\ni25'
+            OLD_W="${DRIVE}\\ni25"
             OLD=$(cygpath -u "${OLD_W}")
             if [ -e "${OLD}" ]; then echo "::error::${OLD} already exists"; exit 1; fi
             mkdir -p "${OLD}/bin"
@@ -371,11 +381,16 @@ jobs:
           printf 'print("NatronRenderer script ran")\nimport sys\nsys.exit(0)\n' > installed_renderer.py
           timeout -k 10 600 env PATH="${APP}/bin:${SYSPATH}" "${APP}/bin/NatronRenderer.exe" --no-settings "$(cygpath -w "${GITHUB_WORKSPACE}/installed_renderer.py")" < /dev/null || { echo "::error::the installed NatronRenderer failed to run a script"; errors=1; }
           timeout -k 10 600 env PATH="${APP}/bin:${SYSPATH}" "${APP}/bin/natron-python.exe" -c "import sys, ssl, ${PYSIDE}.QtCore, ${PYSIDE}.QtWidgets; print('natron-python', sys.version.split()[0], ${PYSIDE}.QtCore.qVersion())" < /dev/null || { echo "::error::the installed natron-python failed"; errors=1; }
+          wrote=$(comm -13 <(echo "${before}") <(cd "${APP}" && find . -type f | sort))
           echo "Files that the installed programs wrote into ${APP_W}:"
-          comm -13 <(echo "${before}") <(cd "${APP}" && find . -type f | sort) | sed -n '1,50p'
-          # The uninstaller copies itself to %TEMP% and returns at once: wait until nothing is left
-          # but the folders that existed before the first install (D:\ni and D:\ni\bin, see above),
-          # which the uninstaller keeps: it only removes the folders it created. (It removes some
+          echo "${wrote}" | sed -n '1,50p'
+          # the uninstall check below must cover the caches of [UninstallDelete]
+          if ! grep -q '^\./Plugins/PyPlugs/__pycache__/' <<< "${wrote}"; then
+            echo "::error::the installed programs wrote no Plugins/PyPlugs/__pycache__: the uninstall check would not test the [UninstallDelete] entries"; errors=1
+          fi
+          # The uninstaller copies itself to %TEMP% and returns at once: wait until no file is left,
+          # and no folder but those that existed before the first install (\ni and \ni\bin, see
+          # above), which the uninstaller keeps: it only removes the folders it created. (It removes some
           # folders after unins000.exe and unins000.dat: those that still held [UninstallDelete]
           # files at its first try.)
           MSYS2_ARG_CONV_EXCL='*' "${APP}/unins000.exe" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART || { echo "::error::the uninstaller failed"; errors=1; }
@@ -436,7 +451,8 @@ jobs:
         with:
           # the unzipped portable tree, with Setup.exe (not the -tests or -unit_tests_failures artifacts)
           pattern: Natron-*-Windows-${{ matrix.arch }}
-          path: dist
+          # on C:, as the install, so that the step below can rename the tree
+          path: C:/nd
 
       - name: Keep LF line endings
         # the runner's Git for Windows has core.autocrlf=true, and Natron-Tests has no
@@ -457,10 +473,15 @@ jobs:
         id: natron_tests
         timeout-minutes: 150
         run: |
-          SETUP=$(find dist -mindepth 3 -maxdepth 3 -name Setup.exe)
+          SETUP=$(find /c/nd -mindepth 3 -maxdepth 3 -name Setup.exe)
           if [ "$(echo "${SETUP}" | grep -c .)" != 1 ]; then echo "::error::not exactly one Setup.exe in the artifact:"; echo "${SETUP}"; exit 1; fi
           NAME=$(basename "$(dirname "${SETUP}")")
           echo "NAME=${NAME}" >> $GITHUB_ENV
+          # Setup.exe reads its files with MAX_PATH (260) paths: the tree, nested twice under its
+          # long name (<artifact>/<name>/), at a short path (the longest file is 123 characters)
+          if [ -e /c/ns ]; then echo "::error::C:\\ns already exists"; exit 1; fi
+          mv "$(dirname "${SETUP}")" /c/ns
+          SETUP=/c/ns/Setup.exe
           APP_W='C:\nt'
           APP=$(cygpath -u "${APP_W}")
           if [ -e "${APP}" ]; then echo "::error::${APP_W} already exists"; exit 1; fi
