@@ -1209,6 +1209,11 @@ fi
 #  "${package}" \
 #  "${package}/Contents/MacOS"/*
 
+# The documentation generator and the Tests below run Natron, which imports the PyPlugs of
+# Plugins/PyPlugs and of the OFX bundles (Contents/Resources/PyPlugs, #1854): no __pycache__ may
+# be written into the package (the bytecode of the build machine; on macOS it would also break the
+# signature of the OFX bundles, which are signed before)
+export PYTHONDONTWRITEBYTECODE=1
 # Generate documentation
 cd "${CWD}"
 echo "*** Generating doc"
