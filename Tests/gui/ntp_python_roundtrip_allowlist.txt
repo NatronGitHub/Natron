@@ -73,7 +73,7 @@
 
 # Layer choices of older projects, when their inputs' images are missing (BayMax, when its images
 # could not be downloaded)
-#2013 *_channels}*
+#2013 *_channels}* BayMax*
 #2013 /Project/NodesCollection/{HSVTool1}/{channels}/#0/Value BayMax*
 #2013 */{outputA}/#*/Value BayMax*
 
