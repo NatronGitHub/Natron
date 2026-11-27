@@ -91,7 +91,7 @@ function checkoutRepository() {
     # at the tip of their remote branch (no --remote): a snapshot must build
     # the same sources as CI. --depth 1 still gets a pinned commit that is not
     # a branch tip: git then fetches it by sha.
-    $TIMEOUT 1800 $GIT submodule update --depth 1 --init --recursive
+    $TIMEOUT 1800 $GIT submodule update --depth 1 --init --recursive || return 1
 
     # copy tarball of sources pruned of git files
     if [ "${TAR_SOURCES:-}" = "1" ]; then

@@ -100,8 +100,8 @@ Known failures are listed in Natron-Tests itself, in `known_failures/common.txt`
   gh workflow run macos_arm64.yml -f dmg=v2.6.0-rc1
   ```
 
-  The release of a pre-release tag is created by the other release workflows (`attach_to_prerelease.sh`); if it doesn't exist yet, `gh release create v2.6.0-rc1 --verify-tag --prerelease` creates it. With `dmg=TAG`, the workflow takes the release's `*-arm64.dmg` asset (`dmg=TAG/ASSET` for another one), and when the tests pass it attaches `<dmg name>-tests.txt`, `-tests-summary.txt` and `-unit_tests_failures.zip` to the release, as `macos_x86_64.yml` does for the x86_64 DMG (`-f attach=false` to only test). The push of a pre-release tag also starts the workflow, which runs the tests only if the DMG is already attached (a build takes longer than that, so this usually ends with a notice).
-- **Any other build.** Upload it to a draft release, which only the repository's maintainers can see, and give the draft's tag and the asset name; nothing is attached to a draft:
+  The release of a pre-release tag is created by the other release workflows (`attach_to_prerelease.sh`); if it doesn't exist yet, `gh release create v2.6.0-rc1 --verify-tag --prerelease` creates it. With `dmg=TAG`, the workflow takes the release's `*-arm64.dmg` asset (`dmg=TAG/ASSET` for another one), and when the tests pass on an arm64 DMG it attaches `<dmg name>-tests.txt`, `-tests-summary.txt` and `-unit_tests_failures.zip` to the release, as `macos_x86_64.yml` does for the x86_64 DMG (`-f attach=false` to only test). The push of a pre-release tag also starts the workflow, which runs the tests only if the DMG is already attached (a build takes longer than that, so this usually ends with a notice).
+- **Any other build.** Upload it to a draft release, which only the repository's maintainers can see, and give the draft's tag and the asset name (the workflow's download job has `contents: write`, which it needs to see drafts); nothing is attached to a draft:
 
   ```sh
   gh release create macos-dmg-tests --draft --title "macOS DMGs to test (draft, never published)" --notes "" || true
@@ -109,7 +109,7 @@ Known failures are listed in Natron-Tests itself, in `known_failures/common.txt`
   gh workflow run macos_arm64.yml -f dmg=macos-dmg-tests/Natron-….dmg
   ```
 
-  The DMG can also be a workflow run artifact (`dmg=RUN_ID/ARTIFACT`) or an `https://` URL.
+  The DMG can also be a workflow run artifact (`dmg=RUN_ID/ARTIFACT`) or the `https://` URL of a `.dmg` file.
 
 The results are kept as the artifact `Natron-macOS-arm64-tests` (14 days): `gh run download <run id> -n Natron-macOS-arm64-tests`. An x86_64 DMG given to `macos_arm64.yml` runs under Rosetta, as a smoke test of the workflow only; `run-natron-tests.sh` takes the known failures of the app's architecture (`KNOWN_FAILURES_ARCH`), not the runner's.
 

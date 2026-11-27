@@ -6,12 +6,13 @@ name: macOS DMG tests
 # copied app, with the known failures of Natron-Tests (an unexpected pass fails the job), as
 # tools/tart/natron-test.sh does in a tart VM. Called by macos_x86_64.yml (the DMG it builds, on
 # the latest Intel runner) and macos_arm64.yml (the DMG built with tools/tart, on the latest arm64
-# runner). The results are kept as an artifact for 14 days.
+# runner), with the DMG as an artifact of the calling run. The results are kept as an artifact for
+# 14 days.
 on:
   workflow_call:
     inputs:
-      dmg:
-        description: 'The DMG: RUN_ID/ARTIFACT (an artifact of a workflow run, with one DMG), TAG or TAG/ASSET (an asset of the GitHub release of TAG; TAG alone: its *-ARCH.dmg asset, ARCH of the runner), or an https:// URL'
+      artifact:
+        description: 'The name of an artifact of this run with the DMG (one .dmg file)'
         type: string
         required: true
       runner:
@@ -25,7 +26,6 @@ on:
 
 permissions:
   contents: read
-  actions: read
 
 jobs:
   test:
@@ -44,38 +44,28 @@ jobs:
           persist-credentials: false
 
       - name: Download the DMG
-        env:
-          GH_TOKEN: ${{ github.token }}
-          DMG_SOURCE: ${{ inputs.dmg }}
-          RUNNER_LABEL: ${{ inputs.runner }}
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact }}
+          path: ${{ runner.temp }}/dmg
+
+      - name: Find the DMG
         run: |
-          dir=$RUNNER_TEMP/dmg
-          mkdir -p "$dir"
-          case $RUNNER_LABEL in *-intel) arch=x86_64 ;; *) arch=arm64 ;; esac
-          case $DMG_SOURCE in
-          https://*)
-            curl -fL --retry 5 -o "$dir/$(basename "${DMG_SOURCE%%\?*}")" "$DMG_SOURCE" ;;
-          [0-9]*/?*)
-            gh run download "${DMG_SOURCE%%/*}" -R "$GITHUB_REPOSITORY" -n "${DMG_SOURCE#*/}" -D "$dir" ;;
-          ?*/?*)
-            gh release download "${DMG_SOURCE%%/*}" -R "$GITHUB_REPOSITORY" -p "${DMG_SOURCE#*/}" -D "$dir" ;;
-          ?*)
-            gh release download "$DMG_SOURCE" -R "$GITHUB_REPOSITORY" -p "*-$arch.dmg" -D "$dir" ;;
-          *)
-            echo "::error::no DMG given"; exit 1 ;;
-          esac
           shopt -s nullglob
-          dmgs=("$dir"/*.dmg)
-          [ ${#dmgs[@]} = 1 ] || { echo "::error::$DMG_SOURCE: ${#dmgs[@]} DMG files, not 1"; ls -l "$dir"; exit 1; }
+          dmgs=("$RUNNER_TEMP"/dmg/*.dmg)
+          [ ${#dmgs[@]} = 1 ] || { echo "::error::artifact $ARTIFACT: ${#dmgs[@]} DMG files, not 1"; ls -l "$RUNNER_TEMP/dmg"; exit 1; }
           ls -l "${dmgs[0]}"
           echo "DMG=${dmgs[0]}" >> "$GITHUB_ENV"
           echo "DMG_NAME=$(basename "${dmgs[0]%.dmg}")" >> "$GITHUB_ENV"
+        env:
+          ARTIFACT: ${{ inputs.artifact }}
 
       - name: Check the DMG and the runner
         run: |
           sw_vers
           mnt=$(mktemp -d); hdiutil attach -quiet -readonly -nobrowse -mountpoint "$mnt" "$DMG"
-          archs=$(lipo -archs "$mnt"/*.app/Contents/MacOS/NatronRenderer); hdiutil detach -quiet "$mnt"
+          trap 'hdiutil detach -quiet "$mnt"' EXIT
+          archs=$(lipo -archs "$mnt"/*.app/Contents/MacOS/NatronRenderer)
           echo "NatronRenderer: $archs; runner: $(uname -m)"
           case " $archs " in
           *" $(uname -m) "*) ;;

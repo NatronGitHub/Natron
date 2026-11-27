@@ -1,8 +1,9 @@
 name: macOS x86_64 DMG
 
 # The macOS x86_64 (Intel) DMG of Natron, built on GitHub's Intel runner (macos-15-intel), and
-# tested with Natron-Tests on the latest Intel runner (macos-26-intel). The arm64 DMG is built in a tart VM (tools/tart). Runs weekly
-# (Sunday), on demand, and on pre-release tags (v*-alpha*, -beta*, -rc*, -RC*), never on pull requests.
+# tested with Natron-Tests on the latest Intel runner (macos-26-intel). The arm64 DMG is built in
+# a tart VM (tools/tart) and tested by macos_arm64.yml. Runs weekly (Sunday), on demand, and on
+# pre-release tags (v*-alpha*, -beta*, -rc*, -RC*), never on pull requests.
 #
 # 1. SDK (macos_x86_64_sdk.yml, up to 4 chained stages of less than 6 hours): the MacPorts SDK of
 #    tools/tart/provision.sh, for macOS 14.0 (every Mach-O file has minos <= 14.0). On macOS 15 the
@@ -170,11 +171,8 @@ jobs:
     # whose (indirect) dependencies were skipped is skipped too
     if: ${{ !cancelled() && needs.dmg.result == 'success' }}
     uses: ./.github/workflows/macos_dmg_tests.yml
-    permissions:
-      contents: read
-      actions: read
     with:
-      dmg: ${{ github.run_id }}/Natron-macOS-x86_64-dmg
+      artifact: Natron-macOS-x86_64-dmg
       runner: macos-26-intel
       results: Natron-macOS-x86_64-tests
 

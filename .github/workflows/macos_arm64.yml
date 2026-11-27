@@ -6,17 +6,17 @@ name: macOS arm64 DMG tests
 # tools/tart/README.md). This checks that the macOS 14 build runs on the newest macOS.
 # Runs on demand, and on pre-release tags (as macos_x86_64.yml) if the release of the tag already
 # has an *-arm64.dmg asset (otherwise the run only says so: upload the DMG, then run it on demand).
-# When the DMG is the asset of a v* release and the tests pass, the test results are attached to
-# that release, next to the DMG.
+# When the DMG is the arm64 DMG asset of a v* release and the tests pass, the test results are
+# attached to that release, next to the DMG.
 on:
   workflow_dispatch:
     inputs:
       dmg:
-        description: 'The DMG: TAG (the *-arm64.dmg asset of the GitHub release of TAG), TAG/ASSET, RUN_ID/ARTIFACT (an artifact of a workflow run), or an https:// URL'
+        description: 'The DMG: TAG (the *-arm64.dmg asset of the GitHub release of TAG), TAG/ASSET, RUN_ID/ARTIFACT (an artifact of a workflow run), or the https:// URL of a .dmg file'
         type: string
         required: true
       attach:
-        description: 'Attach the test results to the release, if the DMG is the asset of a v* release and the tests pass'
+        description: 'Attach the test results to the release, if the DMG is the arm64 DMG asset of a v* release and the tests pass'
         type: boolean
         default: true
   push:
@@ -30,16 +30,22 @@ permissions:
   contents: read
 
 concurrency:
+  # macOS runners are scarce: one run at a time per ref (a newer pending run replaces an older one)
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   find:
-    name: Find the DMG
+    name: Download the DMG
     # on Linux: a tag without a DMG holds no macOS runner
     runs-on: ubuntu-latest
+    permissions:
+      # draft releases (where tools/tart/README.md puts the DMGs that aren't release assets) are
+      # visible only with push access; this job runs no code of the repository, only gh and curl
+      contents: write
+      actions: read
     outputs:
-      dmg: ${{ steps.find.outputs.dmg }}
+      found: ${{ steps.find.outputs.found }}
       tag: ${{ steps.find.outputs.tag }}
     steps:
       - id: find
@@ -58,22 +64,50 @@ jobs:
             fi
             DMG_SOURCE=$TAG ATTACH=true
           fi
-          echo "dmg=$DMG_SOURCE" >> "$GITHUB_OUTPUT"
-          # the release whose asset the DMG is: TAG or TAG/ASSET, not RUN_ID/ARTIFACT or a URL
+          dir=$RUNNER_TEMP/dmg
+          mkdir -p "$dir"
           case $DMG_SOURCE in
-          https://*|[0-9]*/*) ;;
-          v*) [ "$ATTACH" != true ] || echo "tag=${DMG_SOURCE%%/*}" >> "$GITHUB_OUTPUT" ;;
+          https://*)
+            url=${DMG_SOURCE%%\?*}
+            case $url in *.dmg) ;; *) echo "::error::$DMG_SOURCE: not the URL of a .dmg file"; exit 1 ;; esac
+            curl -fL --retry 5 -o "$dir/$(basename "$url")" "$DMG_SOURCE" ;;
+          [0-9]*/?*)
+            gh run download "${DMG_SOURCE%%/*}" -n "${DMG_SOURCE#*/}" -D "$dir" ;;
+          ?*/?*)
+            gh release download "${DMG_SOURCE%%/*}" -p "${DMG_SOURCE#*/}" -D "$dir" ;;
+          ?*)
+            gh release download "$DMG_SOURCE" -p '*-arm64.dmg' -D "$dir" ;;
+          *)
+            echo "::error::no DMG given"; exit 1 ;;
           esac
+          shopt -s nullglob
+          dmgs=("$dir"/*.dmg)
+          [ ${#dmgs[@]} = 1 ] || { echo "::error::$DMG_SOURCE: ${#dmgs[@]} DMG files, not 1"; ls -l "$dir"; exit 1; }
+          ls -l "${dmgs[0]}"
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          # the results are attached only for the arm64 DMG asset of a v* release (TAG or TAG/ASSET),
+          # not for a run artifact, a URL, or another asset (e.g. the x86_64 DMG, whose results
+          # macos_x86_64.yml attaches)
+          case $DMG_SOURCE:${dmgs[0]} in
+          https://*|[0-9]*/*) ;;
+          v*-arm64.dmg) [ "$ATTACH" != true ] || echo "tag=${DMG_SOURCE%%/*}" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Keep the DMG for the test job
+        if: steps.find.outputs.found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Natron-macOS-dmg-to-test
+          path: ${{ runner.temp }}/dmg/*.dmg
+          retention-days: 1
+          compression-level: 0
 
   test:
     needs: find
-    if: needs.find.outputs.dmg != ''
+    if: needs.find.outputs.found == 'true'
     uses: ./.github/workflows/macos_dmg_tests.yml
-    permissions:
-      contents: read
-      actions: read
     with:
-      dmg: ${{ needs.find.outputs.dmg }}
+      artifact: Natron-macOS-dmg-to-test
       runner: macos-26
       results: Natron-macOS-arm64-tests
 
