@@ -411,7 +411,8 @@ jobs:
     # its Setup.exe into a new folder (the default "full" type, as an interactive install), and
     # runTests.sh runs against the installed NatronRenderer.exe. runTests.sh needs a POSIX shell:
     # the runner's Git Bash, with only its /usr/bin (POSIX tools and msys-*.dll, no native DLL) and
-    # the Windows directories on PATH, so a DLL or module missing from the package fails here.
+    # the Windows directories on PATH. A DLL or module missing from bin\ fails the job (the
+    # installed NatronRenderer -v); one missing from a plug-in bundle fails its tests.
     # The runner: the newest Windows Server image for x86-64, windows-11-arm for CLANGARM64 (#1961).
     name: Natron-Tests (${{ matrix.msystem }}, installed with Setup.exe)
     needs: win-installer
@@ -422,7 +423,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # the environments of win-installer; arch: the architecture in the zip name (WIN_ARCH)
+        # the environments of win-installer (keep in sync with its matrix); arch: the architecture
+        # in the zip name (WIN_ARCH)
         include: ${{ fromJSON((inputs.msystem == 'both' && '[{"msystem":"UCRT64","runner":"windows-latest","arch":"x86_64"},{"msystem":"CLANGARM64","runner":"windows-11-arm","arch":"arm64"}]') || (inputs.msystem == 'CLANGARM64' && '[{"msystem":"CLANGARM64","runner":"windows-11-arm","arch":"arm64"}]') || '[{"msystem":"UCRT64","runner":"windows-latest","arch":"x86_64"}]') }}
     defaults:
       run:
@@ -435,6 +437,11 @@ jobs:
           # the unzipped portable tree, with Setup.exe (not the -tests or -unit_tests_failures artifacts)
           pattern: Natron-*-Windows-${{ matrix.arch }}
           path: dist
+
+      - name: Keep LF line endings
+        # the runner's Git for Windows has core.autocrlf=true, and Natron-Tests has no
+        # .gitattributes: bash can't run runTests.sh, script.sh or read the conf files with CRLF
+        run: git config --global core.autocrlf false
 
       - name: Check out Natron-Tests
         uses: actions/checkout@v4
@@ -477,9 +484,20 @@ jobs:
             chmod +x "${TOOLS}/unzip"
           fi
           TESTPATH="$(cygpath -u "${TOOLS}"):${TESTPATH}"
-          for t in bash timeout seq sed grep awk diff curl unzip; do
-            PATH="${TESTPATH}" command -v $t > /dev/null || { echo "::error::$t is not on the PATH of runTests.sh"; exit 1; }
+          # (the POSIX tools must not come from System32, which has its own find, sort, timeout)
+          for t in bash timeout seq sed grep awk diff find sort curl unzip; do
+            p=$(PATH="${TESTPATH}" command -v $t) || { echo "::error::$t is not on the PATH of runTests.sh"; exit 1; }
+            case "$t:$p" in
+              curl:*) ;;
+              *:"${SYS}"/*) echo "::error::$t is the Windows one ($p), not a POSIX tool"; exit 1 ;;
+            esac
           done
+          if [ -n "$(cd Natron-Tests && git ls-files --eol runTests.sh | grep crlf)" ] || grep -q $'\r' Natron-Tests/runTests.sh; then
+            echo "::error::Natron-Tests was checked out with CRLF line endings"; exit 1
+          fi
+          # the installed Natron must start, with nothing but Windows on PATH (otherwise every test
+          # would fail, which is only a warning)
+          timeout -k 10 600 env PATH="$(cygpath -u -S):$(cygpath -u -W)" "${APP}/bin/NatronRenderer.exe" -v < /dev/null || { echo "::error::the installed NatronRenderer -v failed"; exit 1; }
           # (OCIO: a Windows path, as Natron reads it; KNOWN_FAILURES_ARCH: Git Bash sets no
           # MSYSTEM_CARCH, and may run emulated on ARM64)
           status=0
