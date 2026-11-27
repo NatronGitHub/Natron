@@ -25,6 +25,7 @@
 #endif
 #include <cmath>
 #include <cstdint>
+#include <cstring> // std::memcpy
 
 #include "Global/Macros.h"
 
@@ -74,28 +75,30 @@ unsigned char hashReduceChar(int index[d]) {
 //! Does a hash reduce to an integer
 template <int d>
 uint32_t hashReduce(uint32_t index[d]) {
-    union {
-        uint32_t i;
-        unsigned char c[4];
-    } u1, u2;
     // blend with seed (constants from Numerical Recipes, attrib. from Knuth)
-    u1.i = 0;
+    uint32_t i1 = 0;
     for (int k = 0; k < d; k++) {
         static const uint32_t M = 1664525, C = 1013904223;
-        u1.i = u1.i * M + index[k] + C;
+        i1 = i1 * M + index[k] + C;
     }
     // tempering (from Matsumoto)
-    u1.i ^= (u1.i >> 11);
-    u1.i ^= (u1.i << 7) & 0x9d2c5680U;
-    u1.i ^= (u1.i << 15) & 0xefc60000U;
-    u1.i ^= (u1.i >> 18);
-    // permute bytes (shares perlin noise permutation table)
-    u2.c[3] = p[u1.c[0]];
-    u2.c[2] = p[u1.c[1] + u2.c[3]];
-    u2.c[1] = p[u1.c[2] + u2.c[2]];
-    u2.c[0] = p[u1.c[3] + u2.c[1]];
+    i1 ^= (i1 >> 11);
+    i1 ^= (i1 << 7) & 0x9d2c5680U;
+    i1 ^= (i1 << 15) & 0xefc60000U;
+    i1 ^= (i1 >> 18);
+    // permute bytes (shares perlin noise permutation table), in memory order:
+    // std::memcpy instead of a union, whose inactive member can't be read in C++.
+    unsigned char c1[4];
+    std::memcpy( c1, &i1, sizeof(c1) );
+    unsigned char c2[4];
+    c2[3] = p[c1[0]];
+    c2[2] = p[c1[1] + c2[3]];
+    c2[1] = p[c1[2] + c2[2]];
+    c2[0] = p[c1[3] + c2[1]];
+    uint32_t i2;
+    std::memcpy( &i2, c2, sizeof(i2) );
 
-    return u2.i;
+    return i2;
 }
 
 //! Noise with d_in dimensional domain, 1 dimensional abcissa
