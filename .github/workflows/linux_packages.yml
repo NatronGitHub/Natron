@@ -9,7 +9,10 @@ name: Linux packages
 #    the plug-ins, the bundled unit tests, the portable archive, whose system libraries and
 #    symbol versions build-Linux-installer.sh checks against Rocky Linux 9.0, checkBundle);
 # 3. Natron-Tests (master) on the archive, in a clean rockylinux/rockylinux:9 container
-#    (tools/docker/natron-test.sh): <name>-tests.txt, <name>-unit_tests_failures.zip.
+#    (tools/docker/natron-test.sh): <name>-tests.txt, <name>-unit_tests_failures.zip;
+# 4. Natron-Tests on the archive again, directly on the latest Ubuntu runner of each arch, with
+#    only the runtime libraries that a desktop has (natron-test.sh -H; #1964, #1965): newer glibc,
+#    libstdc++ and X11/GL libraries than Rocky Linux 9's.
 # Weekly (Sunday), on demand, and on pre-release tags (v2.6.0-rc1, -beta1, -alpha.1, ...), whose release gets the
 # archives and the test results; never on pull requests. The archives and the test results are
 # kept 14 days as workflow artifacts. On RB-2.6, the weekly and on-demand runs whose packages and
@@ -314,6 +317,65 @@ jobs:
         retention-days: 14
         if-no-files-found: warn
 
+  # The same suite, on the latest Ubuntu runner of each arch, directly on the host: the archive
+  # installed as a user would (extracted into a new directory, run with a new empty HOME and a
+  # clean environment), with newer system libraries than Rocky Linux 9's (#1964, #1965). The
+  # results are named as in the test job; the artifact name doesn't match Natron-Linux-*, so the
+  # release job attaches only the Rocky Linux 9 results.
+  test_latest:
+    needs: package
+    if: ${{ !cancelled() && needs.package.result != 'skipped' }}
+    name: Natron-Tests ${{ matrix.arch }} on ${{ matrix.runner }}
+    timeout-minutes: 345
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - arch: x86_64
+          runner: ubuntu-26.04
+        - arch: aarch64
+          runner: ubuntu-26.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+    - uses: actions/checkout@v4
+      with:
+        repository: NatronGitHub/Natron-Tests
+        ref: master
+        path: Natron-Tests
+        persist-credentials: false
+    - uses: actions/download-artifact@v4
+      with:
+        name: Natron-Linux-${{ matrix.arch }}
+        path: dist
+    - name: Install the runtime libraries that every desktop has
+      run: |
+        # Ubuntu's names for the system libraries that the archive never bundles (INSTALL_LINUX.md,
+        # "Runtime requirements of the Linux binaries"; the dnf list of natron-test.sh): libgomp,
+        # GLVND's libGL/libEGL/libOpenGL (no Mesa driver, no Xvfb: NatronRenderer needs no
+        # display), the X11/xcb/xkbcommon client libraries and ALSA, which Qt's libraries link
+        # to, and fontconfig with a font. Most of them are already on the runner image. Plus the
+        # tools that runTests.sh uses (zip, unzip, xz).
+        sudo apt-get update -q
+        sudo apt-get install -y -q --no-install-recommends libgomp1 libgl1 libegl1 libopengl0 \
+            libx11-6 libx11-xcb1 libxext6 libxrender1 libxi6 libxfixes3 libxrandr2 libxcursor1 \
+            libxinerama1 libxcomposite1 libxdamage1 libxtst6 libsm6 libice6 libxcb1 \
+            libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxkbcommon0 \
+            libxkbcommon-x11-0 libasound2t64 fontconfig fonts-dejavu-core zip unzip xz-utils
+        . /etc/os-release
+        echo "$PRETTY_NAME, $(ldd --version | head -1), $(uname -m)"
+    - name: Run Natron-Tests on the latest Ubuntu
+      run: tools/docker/natron-test.sh -H -n Natron-Tests -o results dist/*.tar.xz
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: Natron-Tests-Linux-${{ matrix.arch }}-${{ matrix.runner }}
+        path: results/
+        retention-days: 14
+        if-no-files-found: warn
+
   # pre-release tags only: attach the archives and the test results to the GitHub pre-release
   release:
     needs: [package, test]
@@ -352,11 +414,12 @@ jobs:
   # the bundled plug-ins, per arch: the plug-ins are built from moving branches). The release and its tag are created at the first run; later runs only
   # replace the assets (the tag doesn't move: the commit is in natron_testing-commit.txt).
   natron_testing:
-    needs: [package, test]
+    needs: [package, test, test_latest]
     # all or nothing, so that both archives match natron_testing-commit.txt: the result of a matrix
-    # job is success only if every arch succeeded (package: built and checked, test: Natron-Tests
-    # passed, known failures excepted)
-    if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/RB-2.6' && needs.package.result == 'success' && needs.test.result == 'success' }}
+    # job is success only if every arch succeeded (package: built and checked, test and
+    # test_latest: Natron-Tests passed on Rocky Linux 9 and on the latest Ubuntu, known failures
+    # excepted; the plug-ins' CI runs on recent Ubuntu runners)
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/RB-2.6' && needs.package.result == 'success' && needs.test.result == 'success' && needs.test_latest.result == 'success' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: write
