@@ -210,6 +210,14 @@ struct OfxEffectInstancePrivate
     KnobIntWPtr selectionRectangleStateKnob;
     KnobStringWPtr undoRedoTextKnob;
     KnobBoolWPtr undoRedoStateKnob;
+    // preferencesLock guards the clip preferences (components, depth, PAR of the clips) and the effect
+    // preferences (frame rate, fielding, premult, continuous, frame varying) set by onMetadataRefreshed().
+    // Actions read them with the lock held for reading, on any thread; onMetadataRefreshed() writes them on the
+    // main thread. Lock order: preferencesLock before the Python GIL. A render action holds it for reading and
+    // may need the GIL (a Python expression); the main thread may hold the GIL when it refreshes the metadata (a
+    // param.set() in a script): onMetadataRefreshed() releases the GIL before it locks for writing (#1862),
+    // see CP.21 (https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#rconc-lock) and CP.22
+    // (https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#rconc-unknown).
     mutable QReadWriteLock preferencesLock;
     mutable QReadWriteLock renderSafetyLock;
     mutable RenderSafetyEnum renderSafety;
@@ -1800,6 +1808,10 @@ OfxEffectInstance::onMetadataRefreshed(const NodeMetadata& metadata)
     //////////////// Actually push to the clips the preferences and set the flags on the effect, protected by a write lock.
 
     {
+        // The write lock waits for the actions that hold preferencesLock for reading, which may need the GIL (a
+        // render evaluating a Python expression): don't hold the GIL while waiting (#1862). Nothing below runs
+        // Python. Declared before the lock, so that the GIL is taken again after the lock is released.
+        PythonGILUnlocker gilUnlocker; // if this thread holds the GIL
         QWriteLocker l(&_imp->preferencesLock);
         if (!_imp->effect) {
             return;

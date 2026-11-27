@@ -159,3 +159,29 @@ Working on the bindings
   install it into Natron's bundled interpreter with
   ``natron-python -m pip install <package>`` rather than the system Python — this
   keeps the package on the same Python that Natron actually runs.
+
+Threads and the GIL
+-------------------
+
+Python runs on several threads: scripts and callbacks on the main thread, Python
+expressions and render callbacks on the render threads. Each one holds the Python
+GIL while it runs Python, through ``PythonGILLocker`` (``Engine/AppManager.h``).
+
+- **Lock order: a lock held while running Python comes before the GIL.** Some locks
+  are held across code that may take the GIL: a render action, which may evaluate a
+  Python expression, holds the render lock of its effect, the clip preferences lock
+  (``preferencesLock``, for reading) and the OFX suite mutexes it locked. A thread
+  that holds the GIL must not block on such a lock, nor wait for another thread (a
+  render, the multi-thread suite): it would deadlock with a thread that holds the lock
+  and waits for the GIL. Short locks that are never held while taking the GIL (e.g.
+  the value of a knob) are fine. Release the GIL first with ``PythonGILUnlocker``, a
+  no-op on threads that don't hold it, as in ``OfxClipInstance::getInputImageInternal()`` and
+  ``OfxHost::multiThread()`` (#1653), ``OfxEffectInstance::onMetadataRefreshed()``
+  and ``OfxHost::mutexLock()`` (#1862), or ``AppInstance::startWritersRendering()``.
+  See `CP.21 <https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#rconc-lock>`_
+  and `CP.22 <https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#rconc-unknown>`_.
+- No Python API may be called while a ``PythonGILUnlocker`` exists, except through a
+  ``PythonGILLocker``. Declare the unlocker before the lock it protects, so that the GIL
+  is taken again after the lock is released.
+- Tests: ``Tests/OfxInstanceChangedGIL_Test.cpp`` holds the GIL as a script does
+  while another thread needs it, with a watchdog that aborts on a deadlock.

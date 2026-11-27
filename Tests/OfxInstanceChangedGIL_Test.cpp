@@ -19,8 +19,10 @@
 // A Python script that presses a button or sets a parameter holds the Python GIL while the plug-in's
 // kOfxActionInstanceChanged runs. If that action waits for threads that need the GIL, e.g. to evaluate a
 // Python expression, Natron deadlocks (#1653): when it fetches an input image whose render waits for a
-// render lock held by another render, or when it runs threads of the multi-thread suite. The plug-ins are
-// in Tests/OfxTestPlugin/NatronTestPluginGILWait.cpp.
+// render lock held by another render, or when it runs threads of the multi-thread suite. The same happens
+// when the action locks a mutex of the multi-thread suite held by such a thread, and when the parameter
+// change refreshes the clip preferences, which waits for the actions running on other threads (#1862). The
+// plug-ins are in Tests/OfxTestPlugin/NatronTestPluginGILWait.cpp.
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -88,6 +90,22 @@ pressButtonFromPython(const NodePtr& node,
                       const std::string& button)
 {
     std::string script = node->getApp()->getAppIDString() + '.' + node->getFullyQualifiedName() + '.' + button + ".trigger()\n";
+    std::string error;
+    bool ok = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, 0);
+
+    EXPECT_TRUE(ok) << error;
+
+    return ok;
+}
+
+// Set a parameter of node from Python, as a script does: the GIL is held while Natron handles the change.
+bool
+setParamFromPython(const NodePtr& node,
+                   const std::string& param,
+                   double value)
+{
+    std::string script = node->getApp()->getAppIDString() + '.' + node->getFullyQualifiedName() + '.' + param + ".set(" +
+                         std::to_string(value) + ")\n";
     std::string error;
     bool ok = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, 0);
 
@@ -249,4 +267,101 @@ TEST(OfxInstanceChangedGIL, MultiThreadSuiteThreadsNeedTheGIL)
     }
     EXPECT_EQ( threadReads + 2, NatronTestPlugin::counter("GILWait.threadReads") );
     EXPECT_EQ( threadReadsFailed, NatronTestPlugin::counter("GILWait.threadReadsFailed") );
+}
+
+// The script presses "mutex": kOfxActionInstanceChanged locks a mutex of the multi-thread suite, which a render
+// on another thread holds until it has read a parameter with a Python expression (#1862).
+TEST(OfxInstanceChangedGIL, SuiteMutexHeldByARenderThatNeedsTheGIL)
+{
+    if ( !NatronTestPlugin::isAvailable(kGILWaitSource) || !NatronTestPlugin::isAvailable(kGILWaitAnalysis) ) {
+        NatronTestPlugin::reportMissing(kGILWaitAnalysis);
+
+        return;
+    }
+    TestCleanup cleanup("OfxInstanceChangedGIL.SuiteMutexHeldByARenderThatNeedsTheGIL");
+    NodePtr source = NatronTestPlugin::createNode(kGILWaitSource);
+    cleanup.nodes.push_back(source);
+    NodePtr analysis = NatronTestPlugin::createNode(kGILWaitAnalysis);
+    cleanup.nodes.push_back(analysis);
+    ASSERT_TRUE( source && analysis );
+    ASSERT_TRUE( setValueExpression(source) );
+    appPTR->clearAllCaches();
+
+    const int sourceRenders = NatronTestPlugin::counter("GILWait.sourceRender");
+    const int mutexLocked = NatronTestPlugin::counter("GILWait.mutexLocked");
+    const int mutexLockFailed = NatronTestPlugin::counter("GILWait.mutexLockFailed");
+    NatronTestPlugin::setCounter("GILWait.go", 0);
+    NatronTestPlugin::setCounter("GILWait.inRender", 0);
+    NatronTestPlugin::setCounter("GILWait.holdMutex", 1);
+    NatronTestPlugin::setCounter("GILWait.holdRender", 1);
+    {
+        Watchdog watchdog("OfxInstanceChangedGIL.SuiteMutexHeldByARenderThatNeedsTheGIL");
+        // the render holds the mutex until it has read "value", which needs the GIL
+        std::atomic<bool> rendered(false);
+        std::unique_ptr<JoiningThread> renderThread( new JoiningThread([&source, &rendered]() {
+            rendered = bool( NatronTestPlugin::renderFrame(source, 50.) );
+            appPTR->getAppTLS()->cleanupTLSForThread();
+        }) );
+        for (int i = 0; i < 2000 && NatronTestPlugin::counter("GILWait.inRender") == 0; ++i) {
+            std::this_thread::sleep_for( std::chrono::milliseconds(10) );
+        }
+        EXPECT_EQ( 1, NatronTestPlugin::counter("GILWait.inRender") ) << "the render on the other thread did not start";
+        {
+            PythonGILLocker pgl; // the script runs
+            NatronTestPlugin::setCounter("GILWait.go", 1); // the render now waits for the GIL
+            pressButtonFromPython(analysis, "mutex");
+        }
+        renderThread.reset(); // join
+        EXPECT_TRUE(rendered);
+    }
+    EXPECT_EQ( 0, NatronTestPlugin::counter("GILWait.holdMutex") ) << "the render did not lock the mutex";
+    EXPECT_EQ( mutexLocked + 1, NatronTestPlugin::counter("GILWait.mutexLocked") );
+    EXPECT_EQ( mutexLockFailed, NatronTestPlugin::counter("GILWait.mutexLockFailed") );
+    EXPECT_EQ( sourceRenders + 1, NatronTestPlugin::counter("GILWait.sourceRender") );
+}
+
+// The script sets a clip preferences slave parameter of an effect while a render of that effect on another thread
+// needs the GIL: the render action holds the clip preferences of the effect (for reading), which the refresh of
+// the clip preferences sets (#1862).
+TEST(OfxInstanceChangedGIL, ClipPreferencesWhileARenderNeedsTheGIL)
+{
+    if ( !NatronTestPlugin::isAvailable(kGILWaitSource) ) {
+        NatronTestPlugin::reportMissing(kGILWaitSource);
+
+        return;
+    }
+    TestCleanup cleanup("OfxInstanceChangedGIL.ClipPreferencesWhileARenderNeedsTheGIL");
+    NodePtr source = NatronTestPlugin::createNode(kGILWaitSource);
+    cleanup.nodes.push_back(source);
+    ASSERT_TRUE( bool(source) );
+    ASSERT_TRUE( setValueExpression(source) );
+    appPTR->clearAllCaches();
+
+    const int sourceRenders = NatronTestPlugin::counter("GILWait.sourceRender");
+    const int clipPreferences = NatronTestPlugin::counter("GILWait.clipPreferences");
+    NatronTestPlugin::setCounter("GILWait.go", 0);
+    NatronTestPlugin::setCounter("GILWait.inRender", 0);
+    NatronTestPlugin::setCounter("GILWait.holdMutex", 0);
+    NatronTestPlugin::setCounter("GILWait.holdRender", 1);
+    {
+        Watchdog watchdog("OfxInstanceChangedGIL.ClipPreferencesWhileARenderNeedsTheGIL");
+        std::atomic<bool> rendered(false);
+        std::unique_ptr<JoiningThread> renderThread( new JoiningThread([&source, &rendered]() {
+            rendered = bool( NatronTestPlugin::renderFrame(source, 50.) );
+            appPTR->getAppTLS()->cleanupTLSForThread();
+        }) );
+        for (int i = 0; i < 2000 && NatronTestPlugin::counter("GILWait.inRender") == 0; ++i) {
+            std::this_thread::sleep_for( std::chrono::milliseconds(10) );
+        }
+        EXPECT_EQ( 1, NatronTestPlugin::counter("GILWait.inRender") ) << "the render on the other thread did not start";
+        {
+            PythonGILLocker pgl; // the script runs
+            NatronTestPlugin::setCounter("GILWait.go", 1); // the render now waits for the GIL
+            setParamFromPython(source, "prefs", 1.);
+        }
+        renderThread.reset(); // join
+        EXPECT_TRUE(rendered);
+    }
+    EXPECT_LT( clipPreferences, NatronTestPlugin::counter("GILWait.clipPreferences") ) << "the clip preferences were not refreshed";
+    EXPECT_LE( sourceRenders + 1, NatronTestPlugin::counter("GILWait.sourceRender") );
 }
