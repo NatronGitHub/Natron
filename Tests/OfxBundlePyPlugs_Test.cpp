@@ -439,14 +439,14 @@ TEST(OfxBundlePyPlugs, ProjectFindsMovedPyPlugInBundle)
         if (loadFromPy) {
             // the version change was asked (the background app answers yes), then the project was updated to the
             // PyPlug found in the search path, and saved
-            EXPECT_NE( std::string::npos, output.find("QUESTION: New PyPlug version") ) << output;
+            EXPECT_NE( std::string::npos, output.find("QUESTION ASKED: New PyPlug version") ) << output;
             EXPECT_EQ( 1, reloaded.count(version1) ) << output;
             const QString module = QString::fromUtf8( savedPythonModule(reloaded) );
             EXPECT_EQ( registeredModuleFile, canonical( module.endsWith( QString::fromUtf8(".py") ) ? module : module + QString::fromUtf8(".py") ) )
                 << module.toStdString();
         } else {
             // loaded from the project, without looking at the PyPlug's version: nothing asked, the file is unchanged
-            EXPECT_EQ( std::string::npos, output.find("QUESTION:") ) << output;
+            EXPECT_EQ( std::string::npos, output.find("PyPlug version") ) << output;
             EXPECT_EQ(contents, reloaded) << output;
         }
     }
