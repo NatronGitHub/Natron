@@ -26,6 +26,7 @@
 #include "PyGuiApp.h"
 
 #include <algorithm> // max
+#include <cstdio> // snprintf
 #include <stdexcept>
 
 CLANG_DIAG_OFF(deprecated)
@@ -879,7 +880,11 @@ PyViewer::getPixel(double x,
     float r, g, b, a;
     unsigned int mipmapLevel;
     if ( !gl || !gl->getColorAt(x, y, true /*forceLinear*/, input, &r, &g, &b, &a, &mipmapLevel) ) {
-        PyErr_Format(PyExc_ValueError, "the viewer shows no image at (%g, %g)", x, y);
+        // PyErr_Format() has no floating-point conversions (Python 3.12+ raises SystemError on %g): format
+        // the message first
+        char msg[128];
+        std::snprintf(msg, sizeof(msg), "the viewer shows no image at (%g, %g)", x, y);
+        PyErr_SetString(PyExc_ValueError, msg);
 
         return ret;
     }
