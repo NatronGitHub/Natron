@@ -45,17 +45,13 @@ int
 gettimeofday (struct timeval *tv,
               void *tz)
 {
-    union
-    {
-        ULONGLONG ns100;  // time since 1 Jan 1601 in 100ns units
-        FILETIME ft;
-    }
+    FILETIME ft;
 
-    now;
-
-    GetSystemTimeAsFileTime (&now.ft);
-    tv->tv_usec = long ( (now.ns100 / 10LL) % 1000000LL );
-    tv->tv_sec = long ( (now.ns100 - 116444736000000000LL) / 10000000LL );
+    GetSystemTimeAsFileTime (&ft);
+    // time since 1 Jan 1601 in 100ns units (assembled from the two halves rather than read through a union)
+    const ULONGLONG ns100 = ( ULONGLONG(ft.dwHighDateTime) << 32 ) | ft.dwLowDateTime;
+    tv->tv_usec = long ( (ns100 / 10LL) % 1000000LL );
+    tv->tv_sec = long ( (ns100 - 116444736000000000LL) / 10000000LL );
 
     return 0;
 }
