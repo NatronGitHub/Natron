@@ -302,8 +302,8 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - P4
      - `ofxCore.h:638-646 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxCore.h#L638-L646>`__ kOfxPropInstanceData, Default NULL, "unique to each plug-in instance, so two instances … do not share the same data pointer"
      - DEFAULT / MUST
-     - Main instances start at NULL. **Render clones** are copy-constructed (``Instance(const Instance&)`` → ``Base(other)`` copies the property set, HS/ofxhImageEffect.cpp:780-797; HS/ofxhPropertySuite.cpp:578-592). So before their CreateInstance, clones carry the main instance's pointer (Engine/OfxEffectInstance.cpp:643-653).
-     - PARTIAL
+     - Main instances start at NULL. **Render clones** are copy-constructed (``Instance(const Instance&)`` → ``Base(other)`` copies the property set, HS/ofxhImageEffect.cpp:780-797; HS/ofxhPropertySuite.cpp:578-592). So before their CreateInstance, clones carry the main instance's pointer (Engine/OfxEffectInstance.cpp:643-653). Fixed: the copy constructor of ``OfxImageEffectInstance`` resets it to NULL, so a clone's CreateInstance sees NULL (test ``OfxRenderClone.DestroyedBeforeMainInstance``).
+     - OK (fixed by `#1992 <https://github.com/NatronGitHub/Natron/pull/1992>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - P5
@@ -798,7 +798,7 @@ Spec-only
 
 19. **R4:** the host kOfxPropName get-hook returns ErrValue instead of ErrBadIndex for index≠0 (Engine/OfxHost.cpp:483-484). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__.
 
-20. **P4:** render clones start with the main instance's kOfxPropInstanceData instead of NULL (HS/ofxhImageEffect.cpp:780-797). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+20. **P4:** render clones start with the main instance's kOfxPropInstanceData instead of NULL (HS/ofxhImageEffect.cpp:780-797). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `#1992 <https://github.com/NatronGitHub/Natron/pull/1992>`__.
 
 21. **P5:** the host kOfxPropName is user-set and proxied per plug-in (deliberate). There is also a typo: ``loadingPluginVersionMinor = getVersionMajor()`` (Engine/OfxHost.cpp:676), harmless. The proxied name is deliberate, won't fix; the typo is in `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
