@@ -160,3 +160,30 @@ TEST_F(KnobDuplicateTest, LinkIsAnimatedForEachDimension)
     from->clearExpression(0, true);
     from->clearExpression(1, true);
 }
+
+// A name clash on the destination holder (#1787): a parameter of another type, or of the same type with fewer
+// dimensions, already has the name. No new parameter is created, NULL is returned, and the original parameter
+// gets no expression.
+TEST_F(KnobDuplicateTest, NameClashReturnsNull)
+{
+    if ( skipped() ) {
+        return;
+    }
+    KnobDoublePtr from = std::dynamic_pointer_cast<KnobDouble>( _from->getKnobByName("double2DFrom") );
+    ASSERT_TRUE( bool(from) );
+    ASSERT_EQ( 2, from->getDimension() );
+    EffectInstancePtr to = _to->getEffectInstance();
+    KnobStringPtr otherType = to->createStringKnob("clashOtherType", "clashOtherType");
+    ASSERT_TRUE( bool(otherType) );
+    KnobDoublePtr fewerDims = to->createDoubleKnob("clashFewerDims", "clashFewerDims", 1);
+    ASSERT_TRUE( bool(fewerDims) );
+
+    EXPECT_FALSE( bool( duplicate(from, "clashOtherType") ) );
+    EXPECT_FALSE( bool( duplicate(from, "clashFewerDims") ) );
+    EXPECT_EQ( otherType, to->getKnobByName("clashOtherType") );
+    EXPECT_EQ( fewerDims, to->getKnobByName("clashFewerDims") );
+    EXPECT_EQ( 1, fewerDims->getDimension() );
+    for (int i = 0; i < from->getDimension(); ++i) {
+        EXPECT_TRUE( from->getExpression(i).empty() ) << from->getExpression(i);
+    }
+}

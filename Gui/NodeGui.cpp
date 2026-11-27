@@ -4131,7 +4131,9 @@ GroupKnobDialog::GroupKnobDialog(Gui* gui,
     std::vector<KnobIPtr> children = group->getChildren();
     for (std::size_t i = 0; i < children.size(); ++i) {
         KnobIPtr duplicate = children[i]->createDuplicateOnHolder(getKnobsHolder(), KnobPagePtr(), KnobGroupPtr(), i, true, children[i]->getName(), children[i]->getLabel(), children[i]->getHintToolTip(), false, true);
-        duplicate->setAddNewLine( children[i]->isNewLineActivated() );
+        if (duplicate) { // NULL on a name clash (#1787)
+            duplicate->setAddNewLine( children[i]->isNewLineActivated() );
+        }
     }
 
     refreshUserParamsGUI();
