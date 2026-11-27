@@ -79,8 +79,9 @@ name in these search paths, in the same order and recursively, the OpenFX plug-i
 included. If it finds one and the *Load PyPlugs in projects from .py if possible* preference is
 checked, the node is created from the PyPlug of that ID that Natron loaded at startup, in its
 highest version (by the rules above, it can come from another file); if the version of the file
-found differs from the one saved in the project, Natron first asks whether to use it, and after the
-answer Yes it saves the updated project right away (NatronRenderer always answers Yes). When no file
+found differs from the one saved in the project, Natron first asks whether to use it, once for all
+the nodes of that PyPlug; after the answer Yes it saves the updated project right away, unless
+errors were logged while loading it (NatronRenderer always answers Yes). When no file
 is found, the preference is unchecked, or the answer is No, the node is loaded from the content
 saved in the project (see :ref:`pyplugWriting-update`).
 
