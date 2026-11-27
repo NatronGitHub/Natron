@@ -1034,16 +1034,6 @@ private:
 public:
 
     /**
-     * @brief Returns whether this node or one of its inputs (recursively) is marked as
-     * eSequentialPreferenceOnlySequential
-     *
-     * @param nodeName If the return value is true, this will be set to the name of the node
-     * which is sequential.
-     *
-     **/
-    bool hasSequentialOnlyNodeUpstream(std::string & nodeName) const;
-
-    /**
      * @brief The nodes on the paths from this node up to target through the inputs (getInput(), with the group
      * redirections), this node and target included, or none if target is neither this node nor upstream of it. The
      * walk doesn't go upstream of target. The nodes are in the order in which the recursion
