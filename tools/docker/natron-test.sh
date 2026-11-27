@@ -5,10 +5,14 @@
 # of the Linux binaries") and the tools that runTests.sh needs are installed. This checks that
 # the archive is self-contained and runs on the oldest supported distribution. It is the Linux
 # counterpart of tools/tart/natron-test.sh.
+# With -H, the suite runs directly on this machine instead, as the current user, with a new
+# empty HOME and no container: linux_packages.yml uses it on the latest Ubuntu runners, to check
+# the archive on the newest systems (#1964, #1965). The caller installs the runtime packages.
 #
 #   natron-test.sh [options] Natron-...-Linux-<arch>-no-installer.tar.xz
 #     -o DIR      where to write the results (default: the archive's directory)
 #     -n DIR      Natron-Tests checkout (default: $NATRON_TESTS_SRC, cloned if missing)
+#     -H          run on this machine, without a container
 #
 # DOCKER (default: docker) can be set to podman. TEST=TestFoo or TESTCUSTOM=TestBar run a single
 # test (see runTests.sh); the results are then named <name>-partial-<test>-*.
@@ -29,15 +33,17 @@ NATRON_TESTS_SRC=${NATRON_TESTS_SRC:-$PWD/Natron-Tests}
 NATRON_TESTS_URL=${NATRON_TESTS_URL:-https://github.com/NatronGitHub/Natron-Tests.git}
 TEST_TIMEOUT=${TEST_TIMEOUT:-14400}   # seconds, for the whole suite
 OUT=
-while getopts "o:n:h" opt; do
+HOST=false
+while getopts "o:n:Hh" opt; do
     case $opt in
         o) OUT=$OPTARG ;;
         n) NATRON_TESTS_SRC=$OPTARG ;;
-        *) sed -n 2,23p "$0"; exit 1 ;;
+        H) HOST=true ;;
+        *) sed -n 2,27p "$0"; exit 1 ;;
     esac
 done
 shift $((OPTIND - 1))
-[ $# = 1 ] && [ -f "$1" ] || { sed -n 2,23p "$0"; exit 1; }
+[ $# = 1 ] && [ -f "$1" ] || { sed -n 2,27p "$0"; exit 1; }
 ARCHIVE=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
 NAME=$(basename "$ARCHIVE" .tar.xz)
 NAME=${NAME%-no-installer}
@@ -69,9 +75,9 @@ for z in Natron_2.3.12_Spaceship.zip Natron_2.3.12_BayMax.zip; do
     fi
 done
 
-# Runs as root in the container: installs the runtime packages, then runs the suite as a user.
+# Container only, as root: installs the runtime packages and creates the user that runs RUN.
 # shellcheck disable=SC2016
-INNER='set -euo pipefail
+SETUP='set -euo pipefail
 # the system libraries that are never bundled (see SYSTEM_LIBS_RE in build-Linux-installer.sh),
 # fontconfig and a font (every desktop has them), and the tools that runTests.sh uses
 dnf -y -q install libgomp libglvnd-glx libglvnd-egl libglvnd-opengl \
@@ -82,27 +88,38 @@ dnf -y -q install libgomp libglvnd-glx libglvnd-egl libglvnd-opengl \
     findutils diffutils procps-ng xz unzip zip shadow-utils util-linux > /dev/null
 dnf clean all > /dev/null
 useradd -m natron
-cd /home/natron
-tar -xJf /in/archive.tar.xz
+'
+# Extracts the archive into $H, runs the suite as $U (through su if RUNAS is set, i.e. as root in
+# the container) and writes the results to $OUTD. IN has archive.tar.xz and Natron-Tests.
+# shellcheck disable=SC2016
+RUN='set -euo pipefail
+cd "$H"
+tar -xJf "$IN/archive.tar.xz"
 mv ./*-no-installer natron
-cp -a /in/Natron-Tests Natron-Tests
+mkdir Natron-Tests
+cp -a "$IN/Natron-Tests/." Natron-Tests/
 rm -rf Natron-Tests/.git Natron-Tests/result.txt Natron-Tests/summary.txt Natron-Tests/failed
-chown -R natron: natron Natron-Tests
-P=/home/natron/natron
+[ -z "$RUNAS" ] || chown -R "$RUNAS": natron Natron-Tests
+P=$H/natron
 # a missing library would make every test fail: list them first
 missing=$(find "$P" -type f \( -name "*.so*" -o -name "*.ofx" -o -perm -u+x \) | while IFS= read -r f; do
     ldd "$f" 2> /dev/null | grep "not found" | sed "s#^#$f: #" || true
 done)
 status=0
 [ -z "$missing" ] || { echo "Error: missing system libraries:"; echo "$missing"; status=1; }
-su natron -c "cd Natron-Tests && env -i HOME=/home/natron USER=natron LOGNAME=natron SHELL=/bin/bash \
+cmd="cd Natron-Tests && env -i HOME=$H USER=$U LOGNAME=$U SHELL=/bin/bash \
     LANG=C.UTF-8 PATH=/usr/bin:/bin:/usr/sbin:/sbin \
     ${TEST:+TEST=\"$TEST\"} ${TESTCUSTOM:+TESTCUSTOM=\"$TESTCUSTOM\"} \
-    NATRON_DISK_CACHE_PATH=/home/natron/NatronTmpCacheDir \
+    NATRON_DISK_CACHE_PATH=$H/NatronTmpCacheDir \
     OCIO=$P/Resources/OpenColorIO-Configs/blender/config.ocio \
     FFMPEG=$P/bin/ffmpeg COMPARE=$P/bin/idiff \
-    timeout -s KILL $TEST_TIMEOUT /bin/bash runTests.sh $P/NatronRenderer" > /out/runTests.log 2>&1 || status=$?
-[ -z "$missing" ] || { echo "Error: missing system libraries:"; echo "$missing"; } >> /out/runTests.log
+    timeout -s KILL $TEST_TIMEOUT /bin/bash runTests.sh $P/NatronRenderer"
+if [ -n "$RUNAS" ]; then
+    su "$RUNAS" -c "$cmd"
+else
+    bash -c "$cmd"
+fi > "$OUTD/runTests.log" 2>&1 || status=$?
+[ -z "$missing" ] || { echo "Error: missing system libraries:"; echo "$missing"; } >> "$OUTD/runTests.log"
 echo "runTests.sh exited, status $status (also 1 if a system library is missing)"
 cd Natron-Tests
 # runTests.sh only copies the images of the failed render tests to failed/: also copy those of
@@ -124,25 +141,37 @@ if [ -f result.txt ]; then
             fi ;;
         esac
     done
-    cp result.txt /out/result.txt
+    cp result.txt "$OUTD/result.txt"
 fi
-[ ! -f summary.txt ] || cp summary.txt /out/summary.txt
+[ ! -f summary.txt ] || cp summary.txt "$OUTD/summary.txt"
 if [ -n "$(ls -A failed 2> /dev/null)" ]; then
-    mv failed "/out/$NAME-unit_tests_failures"
-    (cd /out && zip -r -q "$NAME-unit_tests_failures.zip" "$NAME-unit_tests_failures" && rm -rf "$NAME-unit_tests_failures")
+    mv failed "$OUTD/$NAME-unit_tests_failures"
+    (cd "$OUTD" && zip -r -q "$NAME-unit_tests_failures.zip" "$NAME-unit_tests_failures" && rm -rf "$NAME-unit_tests_failures")
 fi
 exit "$status"'
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/natron-test.XXXXXX")
 trap 'rm -rf "$WORK"' EXIT
 status=0
-# no port is published and nothing is written outside $WORK; the archive and Natron-Tests are read-only
-# shellcheck disable=SC2086 # DOCKER may have options, e.g. "podman --connection NAME"
-$DOCKER run --rm --pull always \
-    -v "$ARCHIVE:/in/archive.tar.xz:ro" -v "$NATRON_TESTS_SRC:/in/Natron-Tests:ro" -v "$WORK:/out" \
-    -e NAME="$NAME" -e TEST_TIMEOUT="$TEST_TIMEOUT" -e TEST="${TEST:-}" -e TESTCUSTOM="${TESTCUSTOM:-}" \
-    "$TEST_IMAGE" bash -c "$INNER" || status=$?
-echo "*** the test container exited with status $status"
+if [ "$HOST" = true ]; then
+    # RUN writes only in $WORK (HOME too); the archive and Natron-Tests are only read
+    mkdir "$WORK/in" "$WORK/home"
+    ln -s "$ARCHIVE" "$WORK/in/archive.tar.xz"
+    ln -s "$NATRON_TESTS_SRC" "$WORK/in/Natron-Tests"
+    env NAME="$NAME" TEST_TIMEOUT="$TEST_TIMEOUT" TEST="${TEST:-}" TESTCUSTOM="${TESTCUSTOM:-}" \
+        IN="$WORK/in" OUTD="$WORK" H="$WORK/home" U="$(id -un)" RUNAS= \
+        bash -c "$RUN" || status=$?
+    echo "*** the test run exited with status $status"
+else
+    # no port is published and nothing is written outside $WORK; the archive and Natron-Tests are read-only
+    # shellcheck disable=SC2086 # DOCKER may have options, e.g. "podman --connection NAME"
+    $DOCKER run --rm --pull always \
+        -v "$ARCHIVE:/in/archive.tar.xz:ro" -v "$NATRON_TESTS_SRC:/in/Natron-Tests:ro" -v "$WORK:/out" \
+        -e NAME="$NAME" -e TEST_TIMEOUT="$TEST_TIMEOUT" -e TEST="${TEST:-}" -e TESTCUSTOM="${TESTCUSTOM:-}" \
+        -e IN=/in -e OUTD=/out -e H=/home/natron -e U=natron -e RUNAS=natron \
+        "$TEST_IMAGE" bash -c "$SETUP$RUN" || status=$?
+    echo "*** the test container exited with status $status"
+fi
 [ ! -f "$WORK/runTests.log" ] || mv "$WORK/runTests.log" "$OUT/$NAME-tests.log"
 [ ! -f "$WORK/result.txt" ] || mv "$WORK/result.txt" "$OUT/$NAME-tests.txt"
 [ ! -f "$WORK/summary.txt" ] || mv "$WORK/summary.txt" "$OUT/$NAME-tests-summary.txt"
