@@ -53,6 +53,7 @@ Options:
                      Not for the built-in corpus, whose files are not written to.
   --jobs N           run N projects at a time (default 1)
   --keep DIR         keep A, B and P.py of each project with differences in DIR
+  --report-unused    list the allowlist entries that no difference used
 
 Exit status: 0 if every project that loaded has no difference but the
 allowed ones, 1 otherwise, 77 (skip) if no project loaded, 2 on a usage error.
@@ -117,9 +118,13 @@ IGNORED_TAGS = frozenset((
     "count", "item_version", "NodesCount", "KnobsCount", "ProjectKnobsCount",
     "UserPagesCount", "PagesCount", "NbChildren", "Children",
 ))
-# Elements that must differ: the creation date of the project, and the date
-# of the save (a project parameter)
-IGNORED_PATHS = frozenset(("/Project/CreationDate", "/Project/{lastSaveDate}"))
+# Elements that must differ: the creation time of the project, the default
+# of its creationDate parameter (the time the session started), and what each
+# save sets (Project::saveProjectInternal()): the date and the author
+IGNORED_PATHS = frozenset((
+    "/Project/CreationDate", "/Project/{creationDate}/#0/Default",
+    "/Project/{lastSaveDate}", "/Project/{lastAuthor}",
+))
 # The elements whose text names their list item (a node, a parameter)
 KEY_TAGS = ("Plugin_script_name", "Name")
 # The [Project] entry of the project paths: the folder of the file, which the
@@ -194,8 +199,11 @@ def _children(element, parent_path):
     """The children of element, by path segment: {segment: (path, child)}.
 
     Items with a name are keyed by it ({name}), other items by their position
-    (#n), other elements by their tag (with #n if the tag is repeated).
+    (#n), other elements by their tag (with #n if the tag is repeated). The
+    Value of an animated dimension is "Value(animated)": it is the value at
+    the current frame, which only depends on the curve and on that frame.
     """
+    animated = element.tag == "item" and element.findtext("HasAnimation") == "1"
     ret = {}
     positions = {}
     for child in element:
@@ -208,6 +216,8 @@ def _children(element, parent_path):
             positions[child.tag] = positions.get(child.tag, -1) + 1
             segment = child.tag if child.tag != "item" else ""
             segment += "#%d" % positions[child.tag] if (child.tag == "item" or positions[child.tag]) else ""
+            if animated and child.tag == "Value":
+                segment = "Value(animated)"
         while segment in ret:  # two items with the same name
             segment += "'"
         path = "%s/%s" % (parent_path, segment)
@@ -436,6 +446,7 @@ def _parse_args(argv):
     parser.add_argument("--next-to-project", action="store_true")
     parser.add_argument("--jobs", type=int, default=1)
     parser.add_argument("--keep")
+    parser.add_argument("--report-unused", action="store_true")
     return parser.parse_args(argv)
 
 
@@ -493,10 +504,12 @@ def main(argv):
         for result in ("fail", "skip"):
             for label in results[result]:
                 print("%s: %s" % (result.upper(), label))
-        for issue, path_pattern, project_pattern, uses in allowlist.entries:
-            if not uses:
-                print("allowlist entry not used (fixed, or not in this corpus?): %s %s %s"
-                      % (issue, path_pattern, project_pattern))
+        unused = [entry[:3] for entry in allowlist.entries if not entry[3]]
+        print("%d allowlist entries not used (fixed, or not in this corpus)%s"
+              % (len(unused), ":" if unused and options.report_unused else ""))
+        if options.report_unused:
+            for entry in unused:
+                print("  not used: " + " ".join(entry))
         if results["fail"]:
             return 1
         if not results["pass"]:

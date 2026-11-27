@@ -157,7 +157,7 @@ jobs:
         echo "$(wc -l < ../projects.txt) Natron-Tests projects"
         status=0
         python ../Natron/Tests/gui/run_ntp_python_roundtrip_test.py "${RENDERER}" --builtin --next-to-project \
-          --jobs "${JOBS}" --keep ../results/differences --projects-from ../projects.txt \
+          --jobs "${JOBS}" --report-unused --keep ../results/differences --projects-from ../projects.txt \
           > ../results.log 2>&1 || status=$?
         mkdir -p ../results
         mv ../results.log ../results/roundtrip.log
@@ -167,7 +167,7 @@ jobs:
           sed -n '/^\*\*\* [0-9]* passed/,$p' ../results/roundtrip.log
           echo '```'
         } >> "${GITHUB_STEP_SUMMARY}"
-        grep -E '^(\*\*\* [0-9]+ passed|  /|FAIL|SKIP|allowlist)' ../results/roundtrip.log | sed -n '1,400p'
+        grep -E '^(\*\*\* [0-9]+ passed|  /|  not used|FAIL|SKIP|[0-9]+ allowlist)' ../results/roundtrip.log | sed -n '1,400p'
         exit ${status}
 
     - uses: actions/upload-artifact@v4

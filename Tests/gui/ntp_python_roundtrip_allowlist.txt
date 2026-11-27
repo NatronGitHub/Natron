@@ -15,18 +15,94 @@
 # The enabled state of the GPU Rendering project parameter, which comes from the preferences
 #2005 /Project/{gpuRendering}/#0/Enabled
 
-# The visibility and enabled state that plug-ins give their parameters (the Write of all planes)
-#2006 /Project/NodesCollection/{AllPlanes}/{*}/Secret ProjectPythonTest.ntp
-#2006 /Project/NodesCollection/{AllPlanes}/{*}/#*/Enabled ProjectPythonTest.ntp
+# The visibility and enabled state that plug-ins give their parameters
+#2006 */Secret
+#2006 */#*/Enabled
+#2006 */{screenAlpha}
+#2006 */{highDefUpstream}
 
 # NatronRenderer drops the Viewers of Python projects
 #2007 /Project/NodesCollection/*{Viewer*}
 #2007 /ProjectGui/NodesGui/*{Viewer*}
 
-# The node colours, with 4 significant digits
+# The node colours, with 4 significant digits, and positions, rounded
 #2008 /ProjectGui/NodesGui/*/[rgb]
+#2008 /ProjectGui/NodesGui/*/[XY]_position
 
 # The Viewer settings and the window layout
 #1937 /ProjectGui/Gui_Layout/*
 #1937 /ProjectGui/ViewersData/*
 #1937 /ProjectGui/OpenedPanels/*
+
+# Smooth and Cubic keyframes become Free, with other derivatives
+#2009 */Curve/KeyFrameSet/#*/InterpolationMethod
+#2009 */Curve/KeyFrameSet/#*/*Derivative
+#2009 */ParametricCurves/#*/KeyFrameSet/#*/*
+
+# Read and Write nodes: the decoder, and what it (or the encoder) sets from the file
+#2010 */{decodingPlugin*}*
+#2010 */{firstFrame}*
+#2010 */{lastFrame}*
+#2010 */{startingTime}*
+#2010 */{frameRate}*
+#2010 */{filePremult}*
+#2010 */{outputPremult}*
+#2010 */{ocioInputSpace}*
+#2010 */{ocioOutputSpace}*
+#2010 */{outputLayerChoice}*
+#2010 */{onMissingFrame}*
+#2010 */{NatronParamFormatChoice}*
+#2010 */{ParamExistingInstance}*
+#2010 */{quality}*
+#2010 */{tileSize}*
+#2010 */{gopSize}*
+#2010 */{bFrames}*
+#2010 */{transformCenter}*
+
+# The font of node labels, and their automatic part
+#2011 */{userTextArea}/#0/Value
+#2011 */{Label}/#0/Value
+
+# The current frame, and the value of animated parameters at that frame
+#2012 /Project/Timeline_current_time
+#2012 */Value(animated)
+
+# Layer choices of older projects
+#2013 *_channels}/*
+
+# PyPlug instances get the installed PyPlug's parameter definitions
+#2014 */Help
+#2014 */Helps/*
+#2014 */Entries/*
+#2014 */Min
+#2014 */Max
+#2014 */#*/Default
+#2014 /Project/NodesCollection/{Glow1}/* TestGlow*test.ntp
+#2014 /Project/NodesCollection/{LightWrap}/* BayMax*
+
+# Roto: the centers and the control-point curves
+#2015 */RotoContext/*
+#2015 */{*Roto*}/{center}*
+#2015 */{*Roto*}/{cloneCenter}*
+#2015 */{*Roto*}/{cloneFilter}*
+
+# Clones
+#2016 */MasterNode
+
+# Values that the plug-in set, not the user
+#2017 */{maskChannel_*}*
+#2017 */{outputComponents}*
+#2017 */{NatronParamFormatSize}*
+#2017 */{toneRanges}*
+#2017 */{dissolveCurve}*
+#2017 */{warp}*
+#2017 */{channels}/#*/Value
+#2017 */{outputA}/#*/Value
+#2017 */{formatType}/#*/Value
+#2017 */{enableAlpha}/#*/Value
+#2017 */{bitDepth}/#*/Value
+#2017 */{ocioInputSpaceSet}/#*/Value
+
+# The page order of nodes without user pages
+#2018 */name
+#2018 */name#*
