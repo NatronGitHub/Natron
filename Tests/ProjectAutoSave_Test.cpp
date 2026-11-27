@@ -38,6 +38,8 @@
 #include <cstdlib>
 #include <future>
 #include <iostream>
+#include <map>
+#include <string>
 #include <thread>
 
 #include <QCoreApplication>
@@ -414,5 +416,36 @@ TEST(ProjectAutoSave, SaveCopyKeepsAutoSave)
 
     project->removeLastAutosave();
     EXPECT_FALSE( QFile::exists(autoSavePath) );
+    project->resetProject();
+}
+
+// Restoring the auto-save of a project that was never saved, as at startup after a crash, set [Project] to the
+// folder of the auto-save (the auto-saves folder), where [Project]/... paths were then read and written (#1900).
+// The restored project is still untitled: [Project] stays unset, and such paths are refused (#1539).
+TEST(ProjectAutoSave, UntitledAutoSaveKeepsProjectPathUnset)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const QString name = QString::fromUtf8("UntitledAutoSave.ntp");
+    ProjectPtr project = appPTR->getTopLevelInstance()->getProject();
+    project->resetProject();
+    ASSERT_FALSE( project->hasProjectBeenSavedByUser() );
+    const std::string projectFile = std::string("[" NATRON_PROJECT_ENV_VAR_NAME "]/image.png");
+    ASSERT_TRUE( project->usesUnsetProjectPath(projectFile) );
+
+    // the auto-save of the untitled project, in dir rather than in the user's auto-saves folder
+    ASSERT_TRUE( project->saveProject_imp(dir, name, true /*autoSave*/, false /*updateProjectProperties*/) );
+    const QString autoSaveName = name + QString::fromUtf8(".binautosave");
+    ASSERT_TRUE( QFile::exists(dir + autoSaveName) );
+
+    ASSERT_TRUE( project->loadProject(dir, autoSaveName, true /*isUntitledAutosave*/, false /*attemptToLoadAutosave*/) );
+    EXPECT_FALSE( project->hasProjectBeenSavedByUser() );
+    EXPECT_TRUE( project->getProjectPath().isEmpty() ) << project->getProjectPath().toStdString();
+    std::map<std::string, std::string> env;
+    project->getEnvironmentVariables(env);
+    EXPECT_TRUE( env[NATRON_PROJECT_ENV_VAR_NAME].empty() ) << env[NATRON_PROJECT_ENV_VAR_NAME];
+    EXPECT_TRUE( project->usesUnsetProjectPath(projectFile) );
+
     project->resetProject();
 }

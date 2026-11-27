@@ -692,7 +692,9 @@ Project::loadProjectInternal(const QString & path,
             iArchive >> boost::serialization::make_nvp("Background_project", bgProject);
             ProjectSerialization projectSerializationObj( getApp() );
             iArchive >> boost::serialization::make_nvp("Project", projectSerializationObj);
-            ret = load(projectSerializationObj, name, path, mustSave);
+            // an untitled project has no folder yet: [Project] keeps its saved value instead of becoming the
+            // auto-saves folder (#1900)
+            ret = load(projectSerializationObj, name, isUntitledAutosave ? QString() : path, mustSave);
         } // __raii_loadingProjectInternal__
 
         hasGuiData = !bgProject;

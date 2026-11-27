@@ -279,8 +279,9 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
             }
             if (projectKnobs[i] == envVars) {
                 ///For eAppTypeBackgroundAutoRunLaunchedFromGui don't change the project path since it is controlled
-                ///by the main GUI process
-                if (appPTR->getAppType() != AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui) {
+                ///by the main GUI process.
+                ///An empty path (the auto-save of an untitled project): the project has no folder yet (#1900).
+                if ( !path.isEmpty() && (appPTR->getAppType() != AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui) ) {
                     autoSetProjectDirectory(path);
                 }
                 _publicInterface->onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(), false);
