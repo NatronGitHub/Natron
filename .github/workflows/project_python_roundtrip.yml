@@ -133,20 +133,31 @@ jobs:
         echo "RENDERER=$(cygpath -m "${GITHUB_WORKSPACE}/${RENDERER}")" >> "${GITHUB_ENV}"
         echo "OCIO=$(cygpath -m "${GITHUB_WORKSPACE}/${APP}/Resources/OpenColorIO-Configs/blender/config.ocio")" >> "${GITHUB_ENV}"
 
-    - name: Download the BayMax and Spaceship assets
-      # as runTests.sh: the images that their projects read (from SourceForge, which is sometimes
-      # slow or flaky; a project whose images are missing still loads)
-      working-directory: Natron-Tests
+    # The zips of the BayMax and Spaceship assets: SourceForge is slow (about 30 minutes for both)
+    # and sometimes flaky. They never change (Natron 2.3.12 examples).
+    - uses: actions/cache@v4
+      with:
+        path: assets
+        key: natron-tests-assets-2.3.12
+
+    - name: Extract the BayMax and Spaceship assets
+      # as runTests.sh: the images that their projects read (a project whose images are missing still
+      # loads). Extracted with Python's zipfile: Git for Windows may have no unzip.
       run: |
+        mkdir -p assets
         for p in Spaceship:Natron_2.3.12_Spaceship:Natron_project/Sources BayMax:Natron_2.3.12_BayMax:Robot; do
           IFS=: read -r dir name src <<< "$p"
-          if curl -fsSL --retry 3 --max-time 1800 -o "$name.zip" "https://downloads.sourceforge.net/project/natron/Examples/$name.zip" &&
-              (cd "$dir" && unzip -o -qq "../$name.zip" && mv "$name/$src" .); then
+          zip="assets/$name.zip"
+          if ! python -m zipfile -t "$zip" > /dev/null 2>&1; then
+            rm -f "$zip"
+            curl -fsSL --retry 3 --max-time 1800 -o "$zip" "https://downloads.sourceforge.net/project/natron/Examples/$name.zip" || rm -f "$zip"
+          fi
+          if [ -f "$zip" ] && python -m zipfile -e "$zip" "Natron-Tests/$dir" && mv "Natron-Tests/$dir/$name/$src" "Natron-Tests/$dir/"; then
             echo "$dir: $(basename "$src") extracted"
           else
+            rm -f "$zip"
             echo "::warning::could not download or extract $name.zip: the $dir projects are checked without their images"
           fi
-          rm -f "$name.zip"
         done
 
     - name: Python project round trip

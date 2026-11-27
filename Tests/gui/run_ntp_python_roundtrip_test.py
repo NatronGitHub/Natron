@@ -69,6 +69,7 @@ import re
 import shutil
 import sys
 import tempfile
+import threading
 import xml.etree.ElementTree as ET
 
 import natronrunner
@@ -156,6 +157,7 @@ class Allowlist:
 
     def __init__(self, path):
         self.entries = []  # AllowlistEntry
+        self._lock = threading.Lock()  # guards the uses of the entries (the jobs are threads)
         if not os.path.exists(path):
             return
         with open(path, encoding="utf-8") as f:
@@ -171,6 +173,10 @@ class Allowlist:
     def issue(self, project, difference_path):
         """The issue of the first entry that allows the difference, or None."""
         project = project.replace("\\", "/")
+        with self._lock:
+            return self._issue(project, difference_path)
+
+    def _issue(self, project, difference_path):
         for entry in self.entries:
             if (fnmatch.fnmatchcase(difference_path, entry.path_pattern)
                     and fnmatch.fnmatchcase(project, entry.project_pattern)):
@@ -272,7 +278,8 @@ def compare(a, b, path=""):
 def _only_in(side, element, path):
     """The differences of an element that only one file has.
 
-    A file has only the parameters that have changes (see
+    A user parameter is one difference, at its path. Otherwise, a file has
+    only the parameters that have changes (see
     KnobHelper::hasModificationsForSerialization()): for a parameter, the
     changes it has, each at its path (a value that isn't the default, a
     disabled or secret parameter, an animation, an expression, a link), so
@@ -280,6 +287,9 @@ def _only_in(side, element, path):
     """
     if element.tag != "item" or element.find("Name") is None or element.find("Type") is None:
         return [(path, "only in %s%s" % (side, _summary(element)))]
+    if element.findtext("UserKnob") == "1":
+        # the exporter creates the user parameters: a missing one is lost, whatever its state
+        return [(path, "only in %s: a user parameter%s" % (side, _summary(element)))]
     differences = []
     secret = element.find("Secret")
     if secret is not None and secret.text == "1":

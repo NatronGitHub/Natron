@@ -53,7 +53,6 @@
 #2010 */{ocioOutputSpace}*
 #2010 */{outputLayerChoice}*
 #2010 */{onMissingFrame}*
-#2010 */{NatronParamFormatChoice}*
 #2010 */{ParamExistingInstance}*
 #2010 */{quality}*
 #2010 */{tileSize}*
@@ -71,6 +70,7 @@
 
 # Layer choices of older projects
 #2013 *_channels}*
+#2013 /Project/NodesCollection/{HSVTool1}/{channels}/#0/Value BayMax*
 
 # PyPlug instances get the installed PyPlug's parameter definitions, and plug-in parameters the
 # installed plug-in's defaults
@@ -96,7 +96,6 @@
 #2017 */{toneRanges}*
 #2017 */{dissolveCurve}*
 #2017 */{warp}*
-#2017 */{channels}/#*/Value
 #2017 */{outputA}/#*/Value
 #2017 */{formatType}/#*/Value
 #2017 */{enableAlpha}/#*/Value
