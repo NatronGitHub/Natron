@@ -37,6 +37,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QString>
 #include <QMutex>
 #include <QWaitCondition>
+#include <QByteArray>
 CLANG_DIAG_ON(deprecated)
 
 #include "Global/GlobalDefines.h"
@@ -184,6 +185,13 @@ Q_SIGNALS:
      * 2: Crash.
      **/
     void processFinished(int);
+
+private:
+
+    /**
+     * @brief Handles one message (one line, without its end) read from the output socket.
+     **/
+    void onMessageReceived(QString str);
 };
 
 /**
@@ -212,15 +220,11 @@ public:
 
     /**
      * @brief Call it if you want to write something to the background process output channel.
+     * Thread-safe: the message is queued, and the thread of this channel writes it to the pipe.
      **/
     void writeToOutputChannel(const QString & message);
 
 public Q_SLOTS:
-
-    /**
-     * @brief Called when the main process wants to create the input channel.
-     **/
-    void onNewConnectionPending();
 
     /**
      * @brief Called whenever the main process writes something to the background process' input channel.
@@ -241,22 +245,33 @@ private:
     virtual void run() OVERRIDE FINAL;
 
     /**
-     * @brief Called once the first time run is started.
+     * @brief Called by run(), before the constructor returns.
      * Post-condition: The output channel is created and you can write to it via the
      * writeToOutputChannel(QString) function. Also the local server as been created
      * and the main process should have replied with a connection request to create the input channel.
      **/
     void initialize();
 
+    /**
+     * @brief Writes the queued output to the output pipe, and waits until it is written (or the main process
+     * stops reading it). Called on this thread only.
+     **/
+    void sendPendingOutput();
+
     QString _mainProcessServerName;
-    mutable QMutex _backgroundOutputPipeMutex;
+    // The sockets and the server belong to this thread: only run() creates, uses and destroys them.
     QLocalSocket* _backgroundOutputPipe; //< if the process is background but managed by a gui process then this
                                          //pipe is used to output messages
     QLocalServer* _backgroundIPCServer; //< for a background app used to manage input IPC  with the gui app
     QLocalSocket* _backgroundInputPipe; //<if the process is bg but managed by a gui process then the pipe is used
                                         //to read input messages
-    mutable QMutex _mustQuitMutex;
-    bool _mustQuit;
+    // _outputMutex guards _pendingOutput, _initialized and _mustQuit (CP.50); _outputCond is signalled when one
+    // of them changes.
+    QMutex _outputMutex;
+    QWaitCondition _outputCond;
+    QByteArray _pendingOutput; //< the messages written by writeToOutputChannel(), not sent yet
+    bool _initialized; //< set by run() after initialize(): the constructor waits for it
+    bool _mustQuit; //< set by the destructor: run() sends the pending output and returns
 };
 
 NATRON_NAMESPACE_EXIT
