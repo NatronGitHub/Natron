@@ -93,7 +93,8 @@ install the packages into another directory with ``--target``, and add that dire
 from the desktop (Finder or Dock, Start menu, a desktop launcher), set ``PYTHONPATH`` for the
 programs started afterwards: ``setx PYTHONPATH %USERPROFILE%\natron-python-modules`` on Windows
 (it stays set), or ``launchctl setenv PYTHONPATH ~/natron-python-modules`` on macOS (until you log
-out; not tested). You can also add the directory to ``sys.path`` in ``init.py`` (see :ref:`startupScripts`).
+out; not tested). You can also add the directory to ``sys.path`` in ``init.py`` (see
+:ref:`startupScripts`).
 
 On macOS, installing into ``Natron.app`` modifies the signed application bundle, so prefer
 ``--target`` there.
