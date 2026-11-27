@@ -913,17 +913,20 @@ py_getDisplayedPixel(PyObject* /*self*/,
     const QPointF pos = gl->toWidgetCoordinates( QPointF(x, y) );
     const QImage img = gl->grabFramebuffer();
     const double ratio = gl->devicePixelRatioF();
-    const int px = (int)(pos.x() * ratio);
-    const int py = (int)(pos.y() * ratio);
-    if ( !img.valid(px, py) ) {
-        // PyErr_Format() has no floating-point conversions: format the message first
+    const double fx = pos.x() * ratio;
+    const double fy = pos.y() * ratio;
+    // compare before converting to int: the conversion of an out-of-range value is undefined, and truncation
+    // would put e.g. -0.5 in pixel 0
+    if ( !( (fx >= 0.) && ( fx < img.width() ) && (fy >= 0.) && ( fy < img.height() ) ) ) {
+        // PyErr_Format() has no floating-point conversions (Python 3.12+ raises SystemError on %g): format
+        // the message first
         char msg[128];
         std::snprintf(msg, sizeof(msg), "(%g, %g) is not visible in the viewer", x, y);
         PyErr_SetString(PyExc_ValueError, msg);
 
         return 0;
     }
-    const QRgb c = img.pixel(px, py);
+    const QRgb c = img.pixel( (int)fx, (int)fy );
 
     return Py_BuildValue( "(iiii)", qRed(c), qGreen(c), qBlue(c), qAlpha(c) );
 }

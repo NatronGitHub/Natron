@@ -28,9 +28,10 @@ check_close(b, srgb8(0.5), 3, "displayed blue at the image centre")
 # a point outside the viewer: the error message gives its coordinates
 try:
     NatronGuiTest.getDisplayedPixel("Viewer1", -12345.5, -54321.2)
-    check(False, "getDisplayedPixel() did not fail for a point outside the viewer")
 except ValueError as e:
     check("(-12345.5, -54321.2)" in str(e), "getDisplayedPixel() error message: %r" % str(e))
+else:
+    check(False, "getDisplayedPixel() did not fail for a point outside the viewer")
 
 # delete with the node graph shortcut (an undoable command), then undo and redo it
 app.clearSelection()
