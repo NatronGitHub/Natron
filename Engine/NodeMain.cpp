@@ -816,8 +816,9 @@ Node::doDestroyNodeInternalEnd(bool autoReconnect)
         app->recheckInvalidExpressions();
     }
 
-    ///Remove the Python node
-    deleteNodeVariableToPython( getFullyQualifiedName() );
+    // The Python variable of the node is not deleted here: deactivate() deleted it (above, or when the node was
+    // deleted in the node graph or by a deferred destroyNode()), and its script name may now be the name of
+    // another node, whose variable this would delete (#1805). Without an app, there is no variable to delete.
 
     ///Disconnect all inputs
     /*int maxInputs = getNInputs();
@@ -953,7 +954,17 @@ Node::destroyNode(bool blockingDestroy, bool autoReconnect)
         NodeDestroyNodeInternalArgsPtr args = std::make_shared<NodeDestroyNodeInternalArgs>();
         args->autoReconnect = autoReconnect;
         _imp->renderWatcher->scheduleBlockingTask(NodeRenderWatcher::eBlockingTaskQuitAnyProcessing, args);
-
+        // Until then, the node is deactivated, as a node deleted in the node graph is (and as
+        // doDestroyNodeInternalEnd() does first): it is no longer found, its script name is free and its outputs
+        // are reconnected before destroy() returns (#1805). After the watcher is set, so that a destroyNode() from
+        // the callbacks that deactivate() runs (e.g. onNodeDeletion) finds the destruction pending.
+        if ( getApp() ) {
+            deactivate(NodesList(),
+                       true,
+                       autoReconnect,
+                       true,
+                       false);
+        }
     }
 } // Node::destroyNodeInternal
 

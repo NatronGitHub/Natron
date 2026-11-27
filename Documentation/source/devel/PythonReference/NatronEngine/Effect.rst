@@ -222,6 +222,11 @@ Removes this Effect from the current project definitively.
 If *autoReconnect* is True then any nodes connected to this node will try to connect
 their input to the input of this node instead.
 
+The node is removed before this function returns: :func:`getNode()<NatronEngine.Group.getNode>`
+no longer finds it, and its script name is free for a new node. The memory of the node may be
+freed later, e.g. when it is destroyed from a node callback or while it is rendering. Its
+:doc:`parameters<Param>` raise :class:`RuntimeError` once it is freed.
+
 
 
 .. method:: Effect.disconnectInput(inputNumber)
