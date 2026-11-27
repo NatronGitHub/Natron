@@ -1,0 +1,33 @@
+name: TEMPORARY validate macOS DMG tests
+
+# Temporary (never merged): runs macos_dmg_tests.yml on this validation branch, because a new
+# workflow can only be dispatched once it is on the default branch.
+on:
+  push:
+    branches:
+    - validate-macos-dmg-tests
+
+permissions:
+  contents: read
+
+jobs:
+  intel:
+    uses: ./.github/workflows/macos_dmg_tests.yml
+    permissions:
+      contents: read
+      actions: read
+    with:
+      dmg: 45541934858/Natron-macOS-x86_64-dmg
+      runner: macos-26-intel
+      results: validate-x86_64-tests
+  arm64:
+    needs: intel
+    if: ${{ !cancelled() }}
+    uses: ./.github/workflows/macos_dmg_tests.yml
+    permissions:
+      contents: read
+      actions: read
+    with:
+      dmg: macos-dmg-tests/Natron-remove-breakpad-202611260916-24f53db-macOS14-arm64.dmg
+      runner: macos-26
+      results: validate-arm64-tests
