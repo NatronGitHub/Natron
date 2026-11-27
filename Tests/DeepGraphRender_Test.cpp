@@ -57,6 +57,7 @@
 #include "Engine/Hash64.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
+#include "Engine/OutputEffectInstance.h"
 #include "Engine/Project.h"
 #include "Engine/ThreadPool.h"
 
@@ -1382,12 +1383,44 @@ TEST(DeepGraphRender, VeryDeepDotChainInputRelatedData)
     printStep("input-related data refreshed upstream");
 
     // after a connection at the top (Node::endInputEdition()): downstream. The former recursions use less stack per node
-    // there: 3000 nodes didn't overflow 256 KB, so this leaves 128 KB (56 of the 64 chunks of the margin). The connection
-    // itself is not made here: it runs other recursive walks downstream (Node::hasOutputNodesConnected(), for example).
+    // there: 3000 nodes didn't overflow 256 KB, so this leaves 128 KB (56 of the 64 chunks of the margin).
     const int kDownstreamMarginChunks = 56;
     callWithLittleStackLeft( [&firstDot]() {
         firstDot->forceRefreshAllInputRelatedData();
     }, kDownstreamMarginChunks );
     EXPECT_EQ( 0, countDirty() );
     printStep("input-related data refreshed downstream");
+
+    // the walks downstream to the output nodes and the Viewers, which every connection runs (#1950)
+    {
+        std::list<OutputEffectInstance*> outputs;
+        std::list<ViewerInstance*> viewers;
+        callWithLittleStackLeft( [&firstDot, &outputs, &viewers]() {
+            firstDot->hasOutputNodesConnected(&outputs);
+            firstDot->hasViewersConnected(&viewers);
+        }, kDownstreamMarginChunks );
+        ASSERT_EQ( 1u, outputs.size() );
+        EXPECT_EQ( chain.output()->getEffectInstance().get(), outputs.front() );
+        EXPECT_TRUE( viewers.empty() );
+        printStep("output nodes and Viewers downstream found");
+    }
+
+    // a disconnection and a connection at the top, as the user makes them: each aborts the renders of the output nodes
+    // downstream, then refreshes the input-related data downstream and asks the Viewers downstream to render
+    bool disconnected = false;
+    callWithLittleStackLeft( [&generator, &firstDot, &disconnected]() {
+        disconnected = Project::disconnectNodes(generator, firstDot);
+    }, kDownstreamMarginChunks );
+    ASSERT_TRUE(disconnected);
+    EXPECT_FALSE( firstDot->getInput(0) );
+    EXPECT_EQ( 0, countDirty() );
+    printStep("top of the chain disconnected");
+    bool connected = false;
+    callWithLittleStackLeft( [&generator, &firstDot, &connected]() {
+        connected = Project::connectNodes(0, generator, firstDot);
+    }, kDownstreamMarginChunks );
+    ASSERT_TRUE(connected);
+    EXPECT_EQ( generator, firstDot->getInput(0) );
+    EXPECT_EQ( 0, countDirty() );
+    printStep("top of the chain connected");
 }

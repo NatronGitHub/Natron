@@ -2814,69 +2814,53 @@ Node::getEffectInstance() const
 }
 
 void
-Node::hasViewersConnectedInternal(std::list<ViewerInstance* >* viewers,
-                                 std::list<const Node*>* markedNodes) const
-{
-
-    if (std::find(markedNodes->begin(), markedNodes->end(), this) != markedNodes->end()) {
-        return;
-    }
-
-    markedNodes->push_back(this);
-    ViewerInstance* thisViewer = dynamic_cast<ViewerInstance*>( _imp->effect.get() );
-
-    if (thisViewer) {
-        viewers->push_back(thisViewer);
-    } else {
-        NodesList outputs;
-        getOutputsWithGroupRedirection(outputs);
-
-        for (NodesList::iterator it = outputs.begin(); it != outputs.end(); ++it) {
-            assert(*it);
-            (*it)->hasViewersConnectedInternal(viewers, markedNodes);
-        }
-    }
-}
-
-void
-Node::hasOutputNodesConnectedInternal(std::list<OutputEffectInstance* >* writers,
-                                     std::list<const Node*>* markedNodes) const
-{
-    if (std::find(markedNodes->begin(), markedNodes->end(), this) != markedNodes->end()) {
-        return;
-    }
-
-    markedNodes->push_back(this);
-
-    OutputEffectInstance* thisWriter = dynamic_cast<OutputEffectInstance*>( _imp->effect.get() );
-
-    if ( thisWriter && thisWriter->isOutput() && !dynamic_cast<GroupOutput*>(thisWriter) ) {
-        writers->push_back(thisWriter);
-    } else {
-        NodesList outputs;
-        getOutputsWithGroupRedirection(outputs);
-
-        for (NodesList::iterator it = outputs.begin(); it != outputs.end(); ++it) {
-            assert(*it);
-            (*it)->hasOutputNodesConnectedInternal(writers, markedNodes);
-        }
-    }
-}
-
-void
 Node::hasOutputNodesConnected(std::list<OutputEffectInstance* >* writers) const
 {
-    std::list<const Node*> m;
-    hasOutputNodesConnectedInternal(writers, &m);
+    // The former recursion
+    //     void visit(n) {
+    //         if (n is marked) return;
+    //         mark n;
+    //         if (n is an output other than a GroupOutput) add it to writers; else for (output : outputs of n, in order) visit(output);
+    //     }
+    // without its stack frame per node, which overflowed the stack on every connection in a deep chain (#1950)
+    std::unordered_set<const Node*> visited;
+
+    visitNodesDepthFirst( this, visited, [writers](const Node* node) {
+        NodesList outputs;
+        OutputEffectInstance* writer = dynamic_cast<OutputEffectInstance*>( node->_imp->effect.get() );
+        if ( writer && writer->isOutput() && !dynamic_cast<GroupOutput*>(writer) ) {
+            writers->push_back(writer);
+        } else {
+            node->getOutputsWithGroupRedirection(outputs);
+        }
+
+        return outputs;
+    } );
 }
 
 void
 Node::hasViewersConnected(std::list<ViewerInstance* >* viewers) const
 {
+    // The former recursion
+    //     void visit(n) {
+    //         if (n is marked) return;
+    //         mark n;
+    //         if (n is a Viewer) add it to viewers; else for (output : outputs of n, in order) visit(output);
+    //     }
+    // without its stack frame per node, which overflowed the stack on every connection in a deep chain (#1950)
+    std::unordered_set<const Node*> visited;
 
-    std::list<const Node*> m;
-    hasViewersConnectedInternal(viewers, &m);
+    visitNodesDepthFirst( this, visited, [viewers](const Node* node) {
+        NodesList outputs;
+        ViewerInstance* viewer = dynamic_cast<ViewerInstance*>( node->_imp->effect.get() );
+        if (viewer) {
+            viewers->push_back(viewer);
+        } else {
+            node->getOutputsWithGroupRedirection(outputs);
+        }
 
+        return outputs;
+    } );
 }
 
 
