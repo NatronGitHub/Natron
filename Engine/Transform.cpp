@@ -33,6 +33,8 @@
 #include <cassert>
 #include <cstdlib>
 #include <algorithm>
+#include <cmath>
+#include <limits>
 #include <stdexcept>
 
 #include <ofxCore.h> // kOfxFlagInfiniteMin
@@ -375,6 +377,28 @@ matApply(const Matrix3x3 & m,
     *x = tmpX;
     *y = tmpY;
     *z = tmpZ;
+}
+
+bool
+toEuclidean(const Point3D & p,
+            double* x,
+            double* y)
+{
+    // Accept the quotients below DBL_MAX / 2, which leaves room for the rounding of the bound:
+    // |p.x / p.z| < DBL_MAX / 2 if |p.x| < |p.z| * DBL_MAX / 2. Test it without overflowing: if
+    // |p.z| >= 1, the quotient is at most |p.x|, and otherwise |p.z| * DBL_MAX / 2 is finite.
+    // If p.z == 0, the bound is 0, and no point passes.
+    const double maxQuotient = 0.5 * std::numeric_limits<double>::max();
+    const double absZ = std::abs(p.z);
+    const double bound = absZ >= 1. ? maxQuotient : absZ * maxQuotient;
+
+    if ( !(std::abs(p.x) < bound) || !(std::abs(p.y) < bound) ) {
+        return false;
+    }
+    *x = p.x / p.z;
+    *y = p.y / p.z;
+
+    return true;
 }
 
 Matrix4x4::Matrix4x4()

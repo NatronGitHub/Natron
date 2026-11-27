@@ -473,6 +473,16 @@ public:
      * otherwise if it has never been called, evaluateAtTime_DeCasteljau will be called to compute the bounding box.
      **/
     virtual RectD getBoundingBox(double time) const OVERRIDE;
+
+    /**
+     * @brief False if the transform of the shape at time (see getTransformAtTime()) doesn't send all its control
+     * and feather points to finite points on the same side of the line at infinity, e.g. with a perspective
+     * extra matrix. The shape then crosses the line at infinity and has no finite image: it is not rendered,
+     * and adds nothing to getBoundingBox(). The evaluation functions check the control points and the feather
+     * points separately, and give no points for the one that crosses the line at infinity.
+     **/
+    bool hasFiniteImageAtTime(bool useGuiCurves, double time) const;
+
     static void bezierSegmentListBboxUpdate(bool useGuiCurves,
                                             const std::list<BezierCPPtr> & points,
                                             bool finished,

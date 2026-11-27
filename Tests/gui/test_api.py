@@ -74,6 +74,12 @@ x, y = rod_center(gen)
 px = v.getPixel(x, y)
 check_close(px.r, 0.5, 1e-3, "getPixel() red")
 check_close(px.a, 0.5, 1e-3, "getPixel() alpha")
+try:
+    v.getPixel(-12345.5, -54321.2)
+except ValueError as e:
+    check("(-12345.5, -54321.2)" in str(e), "getPixel() error message: %r" % str(e))
+else:
+    check(False, "getPixel() did not fail outside the image")
 bounds, data = v.getImage()
 pixels = array.array('f', data)
 check(len(pixels) > 0 and len(pixels) % 4 == 0, "getImage() pixels")

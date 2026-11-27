@@ -79,7 +79,6 @@ CurveGui::nextPointForSegment(const double x, // < in curve coordinates
                               const bool isPeriodic,
                               const double parametricXMin,
                               const double parametricXMax,
-                              KeyFrameSet::const_iterator* lastUpperIt,
                               double* x2WidgetCoords,
                               KeyFrame* x1Key,
                               bool* isx1Key)
@@ -104,90 +103,17 @@ CurveGui::nextPointForSegment(const double x, // < in curve coordinates
 
 
 
-    // We're between 2 keyframes or the curve is periodic, get the upper and lower keyframes widget coordinates
-
-    // Points to the first keyframe with a greater time (in widget coords) than x1
-    KeyFrameSet::const_iterator upperIt = keys.end();;
-
-    // If periodic, bring back x in the period range (in widget coordinates)
-    double xClamped = x;
-    double period = parametricXMax - parametricXMin;
-
-    {
-        //KeyFrameSet::const_iterator start = keys.begin();
-        const double xMin = parametricXMin;// + start->getTime();
-        const double xMax = parametricXMax;// + start->getTime();
-        if ((x < xMin || x > xMax) && isPeriodic) {
-            xClamped = std::fmod(x - xMin, period) + parametricXMin;
-            if (xClamped < xMin) {
-                xClamped += period;
-            }
-            assert(xClamped >= xMin && xClamped <= xMax);
-        }
-    }
-    {
-
-        KeyFrameSet::const_iterator itKeys = keys.begin();
-
-        if ( *lastUpperIt != keys.end() ) {
-            // If we already have called this function before, start from the previously
-            // computed iterator to avoid n square complexity
-            itKeys = *lastUpperIt;
-        } else {
-            // Otherwise start from the beginning
-            itKeys = keys.begin();
-        }
-
-        for (; itKeys != keys.end(); ++itKeys) {
-            if (itKeys->getTime() > xClamped) {
-                upperIt = itKeys;
-                *lastUpperIt = upperIt;
-                break;
-            }
-        }
-    }
-
-    double tprev, vprev, vprevDerivRight, tnext, vnext, vnextDerivLeft;
-    if (upperIt == keys.end()) {
-        // We are in a periodic curve: we are in-between the last keyframe and the parametric xMax
-        // If the curve is non periodic, it should have been handled in the 2 cases above: we only draw a straightline
-        // from the widget border to the first/last keyframe
-        assert(isPeriodic);
-        KeyFrameSet::const_iterator start = keys.begin();
-        KeyFrameSet::const_reverse_iterator last = keys.rbegin();
-        tprev = last->getTime();
-        vprev = last->getValue();
-        vprevDerivRight = last->getRightDerivative();
-        tnext = std::fmod(last->getTime() - start->getTime(), period) + tprev;
-        //xClamped += period;
-        vnext = start->getValue();
-        vnextDerivLeft = start->getLeftDerivative();
-
-    } else if (upperIt == keys.begin()) {
-        // We are in a periodic curve: we are in-between the parametric xMin and the first keyframe
-        // If the curve is non periodic, it should have been handled in the 2 cases above: we only draw a straightline
-        // from the widget border to the first/last keyframe
-        assert(isPeriodic);
-        KeyFrameSet::const_reverse_iterator last = keys.rbegin();
-        tprev = last->getTime();
-        //xClamped -= period;
-        vprev = last->getValue();
-        vprevDerivRight = last->getRightDerivative();
-        tnext = std::fmod(last->getTime() - upperIt->getTime(), period) + tprev;
-        vnext = upperIt->getValue();
-        vnextDerivLeft = upperIt->getLeftDerivative();
-
-    } else {
-        // in-between 2 keyframes
-        KeyFrameSet::const_iterator prev = upperIt;
-        --prev;
-        tprev = prev->getTime();
-        vprev = prev->getValue();
-        vprevDerivRight = prev->getRightDerivative();
-        tnext = upperIt->getTime();
-        vnext = upperIt->getValue();
-        vnextDerivLeft = upperIt->getLeftDerivative();
-    }
+    // We're between 2 keyframes or the curve is periodic: get the keyframes around x, as getValueAt()
+    // interpolates between them. For a periodic curve, xClamped is x brought into the period that
+    // starts at the first keyframe, and the keyframe before or after it may be shifted by a period.
+    const Curve::Segment segment = Curve::segmentAt(keys, isPeriodic, parametricXMin, parametricXMax, x);
+    const double xClamped = segment.t;
+    const double tprev = segment.tcur;
+    const double vprev = segment.vcur;
+    const double vprevDerivRight = segment.vcurDerivRight;
+    const double tnext = segment.tnext;
+    const double vnext = segment.vnext;
+    const double vnextDerivLeft = segment.vnextDerivLeft;
     double normalizeTimeRange = tnext - tprev;
     if (normalizeTimeRange == 0) {
         // Only 1 keyframe, draw a horizontal line
@@ -346,7 +272,6 @@ CurveGui::drawCurve(int curveIndex,
         try {
             bool isX1AKey = false;
             KeyFrame x1Key;
-            KeyFrameSet::const_iterator lastUpperIt = keyframes.end();
 
             while ( x1 < (widgetWidth - 1) ) {
                 double x, y;
@@ -360,7 +285,7 @@ CurveGui::drawCurve(int curveIndex,
 
                 vertices.push_back( (float)x );
                 vertices.push_back( (float)y );
-                nextPointForSegment(x, keyframes, isPeriodic, parametricRange.first, parametricRange.second,  &lastUpperIt, &x2, &x1Key, &isX1AKey);
+                nextPointForSegment(x, keyframes, isPeriodic, parametricRange.first, parametricRange.second, &x2, &x1Key, &isX1AKey);
                 x1 = x2;
             }
             //also add the last point

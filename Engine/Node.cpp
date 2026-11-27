@@ -6334,54 +6334,60 @@ Node::refreshAllInputRelatedData(bool /*canChangeValues*/,
     return hasChanged;
 } // Node::refreshAllInputRelatedData
 
-bool
-Node::refreshInputRelatedDataInternal(bool domarking, std::set<Node*>& markedNodes)
+void
+Node::refreshInputRelatedDataInternal(std::set<Node*>& markedNodes)
 {
+    // The former recursion, on this node (which the caller has marked), with mark = false, and on its inputs, with mark = true:
+    //     void refresh(n, mark) {
+    //         if ( !n->isInputRelatedDataDirty() || (mark && n is marked) ) return;
+    //         for (i : inputs of n, in order) { inputs[i] = n->getInput(i); if (inputs[i] is dirty) refresh(inputs[i], true); }
+    //         if (mark) mark n;
+    //         n->refreshAllInputRelatedData(false, inputs);
+    //         if (n is a RotoPaint node) its bottom Merge node->refreshInputRelatedDataRecursiveInternal(markedNodes);
+    //     }
+    // without its stack frame per node, which may overflow the stack on project load (#1628). The walk downstream of the
+    // bottom Merge node stays nested once: the nodes downstream of it are inside the RotoPaint node, and none of them is a
+    // RotoPaint node.
+    if ( !isInputRelatedDataDirty() ) {
+        return;
+    }
+    struct Refresh
     {
-        QMutexLocker k(&_imp->pluginsPropMutex);
-        if (!_imp->mustComputeInputRelatedData) {
-            //We didn't change
-            return false;
+        NodePtr node;
+        std::vector<NodeWPtr> inputs;
+        int nextInput;
+    };
+    std::vector<Refresh> toRefresh; // the path from this node to the current one
+    toRefresh.push_back( Refresh{shared_from_this(), std::vector<NodeWPtr>( getNInputs() ), 0} );
+    while ( !toRefresh.empty() ) {
+        Refresh& current = toRefresh.back();
+        if ( current.nextInput < (int)current.inputs.size() ) {
+            const int i = current.nextInput++;
+            NodePtr input = current.node->getInput(i);
+            current.inputs[i] = input;
+            if ( input && input->isInputRelatedDataDirty() && ( markedNodes.find( input.get() ) == markedNodes.end() ) ) {
+                const int nInputs = input->getNInputs();
+                toRefresh.push_back( Refresh{std::move(input), std::vector<NodeWPtr>(nInputs), 0} ); // invalidates current
+            }
+            continue;
+        }
+        const Refresh refreshed = std::move(current);
+        toRefresh.pop_back(); // invalidates current
+        if ( !toRefresh.empty() ) { // not this node
+            markedNodes.insert( refreshed.node.get() );
+        }
+        refreshed.node->refreshAllInputRelatedData(false, refreshed.inputs);
+
+        if ( refreshed.node->isRotoPaintingNode() ) {
+            RotoContextPtr roto = refreshed.node->getRotoContext();
+            assert(roto);
+            NodePtr bottomMerge = roto->getRotoPaintBottomMergeNode();
+            if (bottomMerge) {
+                bottomMerge->refreshInputRelatedDataRecursiveInternal(markedNodes);
+            }
         }
     }
-
-    if (domarking) {
-        std::set<Node*>::iterator found = markedNodes.find(this);
-
-        if ( found != markedNodes.end() ) {
-            return false;
-        }
-    }
-
-    ///Check if inputs must be refreshed first
-
-    int maxInputs = getNInputs();
-    std::vector<NodeWPtr> inputsCopy(maxInputs);
-    for (int i = 0; i < maxInputs; ++i) {
-        NodePtr input = getInput(i);
-        inputsCopy[i] = input;
-        if ( input && input->isInputRelatedDataDirty() ) {
-            input->refreshInputRelatedDataInternal(true, markedNodes);
-        }
-    }
-
-    if (domarking) {
-        markedNodes.insert(this);
-    }
-
-    bool hasChanged = refreshAllInputRelatedData(false, inputsCopy);
-
-    if ( isRotoPaintingNode() ) {
-        RotoContextPtr roto = getRotoContext();
-        assert(roto);
-        NodePtr bottomMerge = roto->getRotoPaintBottomMergeNode();
-        if (bottomMerge) {
-            bottomMerge->refreshInputRelatedDataRecursiveInternal(markedNodes);
-        }
-    }
-
-    return hasChanged;
-}
+} // Node::refreshInputRelatedDataInternal
 
 bool
 Node::isInputRelatedDataDirty() const
@@ -6429,53 +6435,45 @@ Node::markAllInputRelatedDataDirty()
 }
 
 void
-Node::markInputRelatedDataDirtyRecursiveInternal(std::list<Node*>& markedNodes,
-                                                 bool recurse)
-{
-    std::list<Node*>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), this);
-
-    if ( found != markedNodes.end() ) {
-        return;
-    }
-    markAllInputRelatedDataDirty();
-    markedNodes.push_back(this);
-    if (recurse) {
-        NodesList outputs;
-        getOutputsWithGroupRedirection(outputs);
-        for (NodesList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-            (*it)->markInputRelatedDataDirtyRecursiveInternal( markedNodes, true );
-        }
-    }
-}
-
-void
 Node::markInputRelatedDataDirtyRecursive()
 {
-    std::list<Node*> marked;
+    // This node and every node downstream, each once, in the order of the former recursion (#1628)
+    std::unordered_set<const Node*> marked;
 
-    markInputRelatedDataDirtyRecursiveInternal(marked, true);
+    visitNodesDepthFirst( this, marked, [](Node* node) {
+        node->markAllInputRelatedDataDirty();
+        NodesList outputs;
+        node->getOutputsWithGroupRedirection(outputs);
+
+        return outputs;
+    } );
 }
 
 void
 Node::refreshInputRelatedDataRecursiveInternal(std::set<Node*>& markedNodes)
 {
-    if ( getApp()->isCreatingNodeTree() ) {
-        return;
-    }
-    std::set<Node*>::iterator found = markedNodes.find(this);
-
-    if ( found != markedNodes.end() ) {
-        return;
-    }
-
-    markedNodes.insert(this);
-    refreshInputRelatedDataInternal(false, markedNodes);
-
-    ///Now notify outputs we have changed
-    NodesList outputs;
-    getOutputsWithGroupRedirection(outputs);
-    for (NodesList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        (*it)->refreshInputRelatedDataRecursiveInternal( markedNodes );
+    // The former recursion
+    //     void refreshDownstream(n) {
+    //         if ( n->getApp()->isCreatingNodeTree() || n is marked ) return;
+    //         mark n; n->refreshInputRelatedDataInternal(markedNodes);
+    //         for (output : outputs of n, in order) refreshDownstream(output);
+    //     }
+    // without its stack frame per node (#1628)
+    std::vector<NodePtr> toVisit; // the nodes to visit, last first
+    NodePtr node = shared_from_this();
+    for (;;) {
+        if ( !node->getApp()->isCreatingNodeTree() && markedNodes.insert( node.get() ).second ) {
+            node->refreshInputRelatedDataInternal(markedNodes);
+            // Now notify the outputs that we have changed
+            NodesList outputs;
+            node->getOutputsWithGroupRedirection(outputs);
+            toVisit.insert( toVisit.end(), outputs.rbegin(), outputs.rend() );
+        }
+        if ( toVisit.empty() ) {
+            break;
+        }
+        node = std::move( toVisit.back() );
+        toVisit.pop_back();
     }
 }
 

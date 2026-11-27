@@ -4094,38 +4094,44 @@ hasNodeInputsInList(const NodesList& nodes,
     return foundInput;
 }
 
+// Adds node and the nodes of nodes upstream of it to tree, in the order of the former recursion
+//     void add(n) {
+//         if (n is marked || n is not in nodes) return;
+//         if (no input of n is in nodes) { add n to tree.inputs; mark n; }
+//         else { add n to tree.inbetweenNodes; mark n; for (input : GUI inputs of n, in order) add(input); }
+//     }
+// without its stack frame per node, which overflowed the stack on project load in deep graphs (#1628)
 static void
 addTreeInputs(const NodesList& nodes,
               const NodePtr& node,
               Project::NodesTree& tree,
-              NodesList& markedNodes)
+              std::set<const Node*>& markedNodes)
 {
-    if ( std::find(markedNodes.begin(), markedNodes.end(), node) != markedNodes.end() ) {
-        return;
-    }
+    std::vector<NodePtr> toVisit(1, node); // the nodes to visit, last first
 
-    if ( std::find(nodes.begin(), nodes.end(), node) == nodes.end() ) {
-        return;
-    }
-
-    if ( !hasNodeInputsInList(nodes, node) ) {
-        Project::TreeInput input;
-        input.node = node;
-        const std::vector<NodeWPtr>& inputs = node->getGuiInputs();
-        input.inputs.resize( inputs.size() );
-        for (std::size_t i = 0; i < inputs.size(); ++i) {
-            input.inputs[i] = inputs[i].lock();
+    while ( !toVisit.empty() ) {
+        const NodePtr current = std::move( toVisit.back() );
+        toVisit.pop_back();
+        if ( markedNodes.count( current.get() ) || ( std::find(nodes.begin(), nodes.end(), current) == nodes.end() ) ) {
+            continue;
         }
-        tree.inputs.push_back(input);
-        markedNodes.push_back(node);
-    } else {
-        tree.inbetweenNodes.push_back(node);
-        markedNodes.push_back(node);
-        const std::vector<NodeWPtr>& inputs = node->getGuiInputs();
-        for (std::vector<NodeWPtr>::const_iterator it2 = inputs.begin(); it2 != inputs.end(); ++it2) {
-            NodePtr input = it2->lock();
-            if (input) {
-                addTreeInputs(nodes, input, tree, markedNodes);
+        markedNodes.insert( current.get() );
+        const std::vector<NodeWPtr>& inputs = current->getGuiInputs();
+        if ( !hasNodeInputsInList(nodes, current) ) {
+            Project::TreeInput input;
+            input.node = current;
+            input.inputs.resize( inputs.size() );
+            for (std::size_t i = 0; i < inputs.size(); ++i) {
+                input.inputs[i] = inputs[i].lock();
+            }
+            tree.inputs.push_back(input);
+        } else {
+            tree.inbetweenNodes.push_back(current);
+            for (std::vector<NodeWPtr>::const_reverse_iterator it = inputs.rbegin(); it != inputs.rend(); ++it) {
+                NodePtr input = it->lock();
+                if (input) {
+                    toVisit.push_back( std::move(input) );
+                }
             }
         }
     }
@@ -4135,7 +4141,7 @@ void
 Project::extractTreesFromNodes(const NodesList& nodes,
                                std::list<Project::NodesTree>& trees)
 {
-    NodesList markedNodes;
+    std::set<const Node*> markedNodes;
 
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         bool isOutput = !hasNodeOutputsInList(nodes, *it);

@@ -41,6 +41,8 @@
 #include <gtest/gtest.h>
 
 #include "Global/MathUtils.h"
+#include "Engine/Bezier.h"
+#include "Engine/BezierCP.h"
 #include "Engine/Curve.h"
 #include "Engine/CurveSerialization.h"
 #include "Engine/Format.h"
@@ -54,6 +56,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/Lut.h"
 #include "Engine/Transform.h"
+#include "Engine/ViewIdx.h"
 #include "Gui/ZoomContext.h"
 #include "NaNGuards_FastMath.h"
 #include "TestUtils.h"
@@ -834,4 +837,122 @@ TEST(NaNGuards, AnimatedKnobLoadNaNDerivatives)
     other->clone( real.get() );
     expectSameKeys( *realCurve, *other->getCurve(ViewIdx(0), 0) );
     EXPECT_FALSE( other->getCurve(ViewIdx(0), 0)->getMustRefreshDerivatives() );
+}
+
+// #1308: the perspective divide of a point on (or too close to) the line at infinity has no result,
+// instead of an infinity or a NaN
+TEST(NaNGuards, PerspectiveDivide)
+{
+    double x = 7., y = 7.;
+
+    EXPECT_TRUE( Transform::toEuclidean(Transform::Point3D(2., 4., 2.), &x, &y) );
+    EXPECT_EQ(1., x);
+    EXPECT_EQ(2., y);
+    // a negative z is the same point as a positive one (homogeneous coordinates are defined up to a factor)
+    EXPECT_TRUE( Transform::toEuclidean(Transform::Point3D(-2., -4., -2.), &x, &y) );
+    EXPECT_EQ(1., x);
+    EXPECT_EQ(2., y);
+    // a small z gives a large, finite point
+    EXPECT_TRUE( Transform::toEuclidean(Transform::Point3D(1., -1., 1e-300), &x, &y) );
+    EXPECT_TRUE( MathUtils::isFinite(x) && MathUtils::isFinite(y) );
+    EXPECT_DOUBLE_EQ(1e300, x);
+    EXPECT_DOUBLE_EQ(-1e300, y);
+    EXPECT_TRUE( Transform::toEuclidean(Transform::Point3D(1e307, 0., 1.), &x, &y) );
+    EXPECT_EQ(1e307, x);
+
+    // no image: *x and *y are unchanged
+    const Transform::Point3D noImage[] = {
+        Transform::Point3D(1., 1., 0.), // on the line at infinity
+        Transform::Point3D(0., 0., 0.), // not a point
+        Transform::Point3D(0., 1., -0.),
+        Transform::Point3D(1e300, 0., 1e-300), // the quotient overflows
+        Transform::Point3D(0., -1e10, std::numeric_limits<double>::denorm_min()),
+        Transform::Point3D(std::numeric_limits<double>::max(), 0., 1.),
+        Transform::Point3D(std::numeric_limits<double>::quiet_NaN(), 0., 1.),
+    };
+    for (const Transform::Point3D& p : noImage) {
+        x = 7.;
+        y = 7.;
+        EXPECT_FALSE( Transform::toEuclidean(p, &x, &y) ) << p.x << ' ' << p.y << ' ' << p.z;
+        EXPECT_EQ(7., x);
+        EXPECT_EQ(7., y);
+    }
+}
+
+static BezierCPs
+makeSquare()
+{
+    // a 10x10 square at the origin, with tangents at the control points (straight segments)
+    const double xy[4][2] = { { 0., 0. }, { 10., 0. }, { 10., 10. }, { 0., 10. } };
+    BezierCPs cps;
+
+    for (int i = 0; i < 4; ++i) {
+        BezierCPPtr cp = std::make_shared<BezierCP>();
+        cp->setStaticPosition(false, xy[i][0], xy[i][1]);
+        cp->setLeftBezierStaticPosition(false, xy[i][0], xy[i][1]);
+        cp->setRightBezierStaticPosition(false, xy[i][0], xy[i][1]);
+        cps.push_back(cp);
+    }
+
+    return cps;
+}
+
+// #1308: a perspective transform (e.g. the extra matrix of a Roto shape) that sends a control point to the
+// line at infinity, or the control points to both sides of it, gives the shape no finite image: no points and
+// no bounding box, instead of infinities, NaNs, or points from the other side of the horizon.
+TEST(NaNGuards, BezierPerspectiveDegenerate)
+{
+    const BezierCPs cps = makeSquare();
+    const Transform::Matrix3x3 degenerate[] = {
+        Transform::Matrix3x3(1., 0., 0., 0., 1., 0., 0.1, 0., 0.), // z = 0.1 x: (0, 0) and (0, 10) are at infinity
+        Transform::Matrix3x3(1., 0., 0., 0., 1., 0., -0.1, 0., 0.5), // z = 0.5 - 0.1 x: x = 10 is on the other side
+        Transform::Matrix3x3(1., 0., 0., 0., 1., 0., 0., 0., 0.), // z = 0 everywhere
+    };
+
+    for (const Transform::Matrix3x3& m : degenerate) {
+        RectD bbox;
+        bbox.setupInfinity();
+        Bezier::bezierSegmentListBboxUpdate(false, cps, true, false, 0., ViewIdx(0), 0, m, &bbox);
+        EXPECT_EQ(std::numeric_limits<double>::max(), bbox.x1); // unchanged
+        EXPECT_EQ(std::numeric_limits<double>::lowest(), bbox.x2);
+
+        std::list<std::list<ParametricPoint> > points;
+        RectD evalBbox;
+        evalBbox.setupInfinity();
+        Bezier::deCastelJau(false, false, cps, 0., 0, true, 10, m, &points, NULL, &evalBbox);
+        EXPECT_TRUE( points.empty() );
+        EXPECT_EQ(std::numeric_limits<double>::max(), evalBbox.x1);
+    }
+}
+
+// The perspective divide of a shape that is on one side of the line at infinity.
+TEST(NaNGuards, BezierPerspective)
+{
+    const BezierCPs cps = makeSquare();
+    // z = 1 + 0.01 x: x = 10 is divided by 1.1; and the same transform with all its coefficients negated
+    const Transform::Matrix3x3 matrices[] = {
+        Transform::Matrix3x3(1., 0., 0., 0., 1., 0., 0.01, 0., 1.),
+        Transform::Matrix3x3(-1., 0., 0., 0., -1., 0., -0.01, 0., -1.),
+    };
+
+    for (const Transform::Matrix3x3& m : matrices) {
+        RectD bbox;
+        bbox.setupInfinity();
+        Bezier::bezierSegmentListBboxUpdate(false, cps, true, false, 0., ViewIdx(0), 0, m, &bbox);
+        EXPECT_NEAR(0., bbox.x1, 1e-12);
+        EXPECT_NEAR(10. / 1.1, bbox.x2, 1e-12);
+        EXPECT_NEAR(0., bbox.y1, 1e-12);
+        EXPECT_NEAR(10., bbox.y2, 1e-12);
+
+        std::list<ParametricPoint> points;
+        Bezier::deCastelJau(false, false, cps, 0., 0, true, 10, m, NULL, &points, NULL);
+        EXPECT_FALSE( points.empty() );
+        for (const ParametricPoint& p : points) {
+            EXPECT_TRUE( MathUtils::isFinite(p.x) && MathUtils::isFinite(p.y) );
+            EXPECT_GE(p.x, -1e-12);
+            EXPECT_LE(p.x, 10. / 1.1 + 1e-12);
+            EXPECT_GE(p.y, -1e-12);
+            EXPECT_LE(p.y, 10. + 1e-12);
+        }
+    }
 }
