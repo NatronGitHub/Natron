@@ -23,6 +23,13 @@
 //   support only 8-bit, respectively 16-bit images, so that the host converts the float input. They
 //   don't support render scale (their region of definition fails at a scale other than 1), so that
 //   the host renders them at full scale and downscales the result itself (Image::downscaleMipmap()).
+// - net.natron.test.DepthWrite (Tests/OfxClipDepth_Test.cpp): a filter like DepthByte that supports 8-bit and
+//   float images but not kOfxImageEffectPropSupportsMultipleClipDepths, and sets its output depth to 8 bits in
+//   kOfxImageEffectActionGetClipPreferences, which only a plug-in that supports multiple clip depths may do
+//   (#1385). Its render copies Source to Output and fails unless both are float images, the depth the host
+//   must choose for a float input.
+// - net.natron.test.DepthWriteMulti: the same, but it supports multiple clip depths, so its 8-bit output is
+//   honoured. Its render fails unless Source is float and Output is 8-bit.
 
 #include <cstddef>
 #include <cstring>
@@ -46,6 +53,8 @@ enum PluginEnum
     eRamp,
     eDepthByte,
     eDepthShort,
+    eDepthWrite,
+    eDepthWriteMulti,
 };
 
 OfxStatus
@@ -194,8 +203,8 @@ depthPluginMain(PluginEnum plugin,
         if (stat != kOfxStatOK) {
             return stat;
         }
-        const char* const labels[] = { "RampTest", "DepthByteTest", "DepthShortTest" };
-        const char* const depths[] = { kOfxBitDepthFloat, kOfxBitDepthByte, kOfxBitDepthShort };
+        const char* const labels[] = { "RampTest", "DepthByteTest", "DepthShortTest", "DepthWriteTest", "DepthWriteMultiTest" };
+        const char* const depths[] = { kOfxBitDepthFloat, kOfxBitDepthByte, kOfxBitDepthShort, kOfxBitDepthByte, kOfxBitDepthByte };
         gPropSuite->propSetString(props, kOfxPropLabel, 0, labels[plugin]);
         gPropSuite->propSetString(props, kOfxImageEffectPluginPropGrouping, 0, "Other/Test");
         if (plugin == eRamp) {
@@ -204,6 +213,10 @@ depthPluginMain(PluginEnum plugin,
             gPropSuite->propSetString(props, kOfxImageEffectPropSupportedContexts, 0, kOfxImageEffectContextFilter);
         }
         gPropSuite->propSetString(props, kOfxImageEffectPropSupportedPixelDepths, 0, depths[plugin]);
+        if ( (plugin == eDepthWrite) || (plugin == eDepthWriteMulti) ) {
+            gPropSuite->propSetString(props, kOfxImageEffectPropSupportedPixelDepths, 1, kOfxBitDepthFloat);
+            gPropSuite->propSetInt(props, kOfxImageEffectPropSupportsMultipleClipDepths, 0, plugin == eDepthWriteMulti ? 1 : 0);
+        }
         gPropSuite->propSetString(props, kOfxImageEffectPluginRenderThreadSafety, 0, kOfxImageEffectRenderFullySafe);
 
         return kOfxStatOK;
@@ -232,6 +245,13 @@ depthPluginMain(PluginEnum plugin,
 
         return kOfxStatOK;
     }
+    if ( ( (plugin == eDepthWrite) || (plugin == eDepthWriteMulti) ) &&
+         (std::strcmp(action, kOfxImageEffectActionGetClipPreferences) == 0) ) {
+        // allowed only for DepthWriteMulti, which supports multiple clip depths; DepthWrite keeps float
+        gPropSuite->propSetString(outArgs, "OfxImageClipPropDepth_" kOfxImageEffectOutputClipName, 0, kOfxBitDepthByte);
+
+        return kOfxStatOK;
+    }
     if (std::strcmp(action, kOfxImageEffectActionRender) == 0) {
         OfxTime time = 0.;
         OfxRectI renderWindow;
@@ -254,6 +274,17 @@ depthPluginMain(PluginEnum plugin,
         case eDepthShort:
 
             return copySource<unsigned short>(effect, time, renderWindow, kOfxBitDepthShort);
+        case eDepthWrite:
+
+            return copySource<float>(effect, time, renderWindow, kOfxBitDepthFloat);
+        case eDepthWriteMulti: {
+            // the image depths only: an 8-bit output and a float input
+            ClipImage dst(effect, kOfxImageEffectOutputClipName, time);
+            ClipImage src(effect, kOfxImageEffectSimpleSourceClipName, time);
+
+            return ( dst.data && src.data && (std::strcmp(dst.depth, kOfxBitDepthByte) == 0) &&
+                     (std::strcmp(src.depth, kOfxBitDepthFloat) == 0) ) ? kOfxStatOK : kOfxStatFailed;
+        }
         }
     }
 
@@ -287,6 +318,24 @@ depthShortMain(const char* action,
     return depthPluginMain(eDepthShort, action, (OfxImageEffectHandle)handle, inArgs, outArgs);
 }
 
+OfxStatus
+depthWriteMain(const char* action,
+               const void* handle,
+               OfxPropertySetHandle inArgs,
+               OfxPropertySetHandle outArgs)
+{
+    return depthPluginMain(eDepthWrite, action, (OfxImageEffectHandle)handle, inArgs, outArgs);
+}
+
+OfxStatus
+depthWriteMultiMain(const char* action,
+                    const void* handle,
+                    OfxPropertySetHandle inArgs,
+                    OfxPropertySetHandle outArgs)
+{
+    return depthPluginMain(eDepthWriteMulti, action, (OfxImageEffectHandle)handle, inArgs, outArgs);
+}
+
 void
 setHost(OfxHost* host)
 {
@@ -297,8 +346,11 @@ OfxPlugin gPlugins[] = {
     { kOfxImageEffectPluginApi, 1, "net.natron.test.Ramp", 1, 0, setHost, rampMain },
     { kOfxImageEffectPluginApi, 1, "net.natron.test.DepthByte", 1, 0, setHost, depthByteMain },
     { kOfxImageEffectPluginApi, 1, "net.natron.test.DepthShort", 1, 0, setHost, depthShortMain },
+    { kOfxImageEffectPluginApi, 1, "net.natron.test.DepthWrite", 1, 0, setHost, depthWriteMain },
+    { kOfxImageEffectPluginApi, 1, "net.natron.test.DepthWriteMulti", 1, 0, setHost, depthWriteMultiMain },
 };
 NatronTestPluginRegistrar gRegistrars[] = {
     NatronTestPluginRegistrar(&gPlugins[0]), NatronTestPluginRegistrar(&gPlugins[1]), NatronTestPluginRegistrar(&gPlugins[2]),
+    NatronTestPluginRegistrar(&gPlugins[3]), NatronTestPluginRegistrar(&gPlugins[4]),
 };
 } // anonymous namespace

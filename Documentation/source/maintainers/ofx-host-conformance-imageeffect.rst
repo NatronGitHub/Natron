@@ -255,8 +255,8 @@ Natron does not use HS ``Instance::getClipPreferences()``. It has its own path: 
    * - 5
      - `ofxClipPreferences.rst:101-118 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxClipPreferences.rst?plain=1#L101-L118>`__ depth: if host or plug-in sets MultipleClipDepths to 0, all clips get one common depth, "the deepest depth of any input clip mapped to a depth the plugin supports"; "the only case where a plugin may set the output depth" is when both are 1
      - MUST
-     - Default: EffectInstance.cpp:5404-5420 and :5482 (deepest connected depth → closest supported). The Depth\_ props are created read-only unless both support it (OfxImageEffectInstance.cpp:1276-1282). With the ``ePluginReadOnlyWarn`` policy (OfxHost.cpp:181-186) a write is still accepted, with a warning. checkMetadata then forces every input to the output depth (EffectInstance.cpp:5826-5829). So a plug-in that does not support multiple depths can still pick the common depth through the output clip.
-     - PARTIAL
+     - Default: EffectInstance.cpp:5404-5420 and :5482 (deepest connected depth → closest supported). The Depth\_ props are created read-only unless both support it (OfxImageEffectInstance.cpp:1276-1282). With the ``ePluginReadOnlyWarn`` policy (OfxHost.cpp:181-186) a write is still accepted, with a warning. checkMetadata then forces every input to the output depth (EffectInstance.cpp:5826-5829). So a plug-in that does not support multiple depths can still pick the common depth through the output clip. Fixed: the depths are read back only from the properties that the plug-in may write; a write to a read-only one is still accepted with the warning, and ignored (test ``OfxClipDepth.PluginWithoutMultipleDepthsCannotSetTheDepth``).
+     - OK (fixed by `#1992 <https://github.com/NatronGitHub/Natron/pull/1992>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - 6
@@ -331,7 +331,7 @@ Natron does not use HS ``Instance::getClipPreferences()``. It has its own path: 
 
 Which preferences can a host refuse, and what Natron does:
 
-- Depth: the plug-in may set it only if both sides support multiple depths. Natron makes the property read-only but accepts writes with a warning (3.5).
+- Depth: the plug-in may set it only if both sides support multiple depths. Natron makes the property read-only; a write is accepted with a warning, and ignored (3.5).
 
 - PAR: the plug-in may set it only if both sides support multiple PARs. Natron forces the inputs to the output PAR, but accepts the plug-in's output PAR (3.8).
 
@@ -806,11 +806,11 @@ Verdict counts
    * - verdict
      - count
    * - OK
-     - 74
+     - 77
    * - PARTIAL
-     - 20
+     - 18
    * - WRONG
-     - 10
+     - 9
    * - MISSING
      - 2
    * - N/A
@@ -843,7 +843,7 @@ Wrong results
 
 8. **PAR mismatch is not resampled** (3.8, PARTIAL). Natron refuses the connection or relabels and warns. **Frame-rate change is not mapped to the output frame range** (3.11 and 4.7, PARTIAL) although SetableFrameRate=1. SetableFrameRate stays 1 for 2.6, because the shipped readers, Deinterlace and NoOp rely on it (3.11, `#1107 <https://github.com/NatronGitHub/Natron/issues/1107>`__). Second check: checkMetadata (EffectInstance.cpp:5826-5871), Node::canConnectInput (NodeInputs.cpp:750-768), and OfxEffectInstance::getFrameRange (no FPS term). No existing issue (`#775 <https://github.com/NatronGitHub/Natron/issues/775>`__ is unrelated). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
-9. **Clip-preference context restrictions not enforced, depth write accepted although read-only** (3.5 and 3.6, PARTIAL). Natron accepts component changes on mandated clips and the output in Filter/Transition/Paint/Retimer, and output-depth writes from plug-ins without multiple-depth support (ePluginReadOnlyWarn, OfxHost.cpp:181-186). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+9. **Clip-preference context restrictions not enforced** (3.6, PARTIAL). Natron accepts component changes on mandated clips and the output in Filter/Transition/Paint/Retimer. It also accepted output-depth writes from plug-ins without multiple-depth support (3.5, ePluginReadOnlyWarn, OfxHost.cpp:181-186); since `#1992 <https://github.com/NatronGitHub/Natron/pull/1992>`__ such a write is still accepted with the warning, but ignored. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
 10. **Non-tiled input clips can get less than their RoD; no padding for non-multires plug-ins** (5.21 and 5.4, PARTIAL, deliberate per the HS comment :2135-2145). Related to `#254 <https://github.com/NatronGitHub/Natron/issues/254>`__ (isIdentity vs framesNeeded) only loosely. **Deliberate, won't fix.** Listed in `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__ for completeness.
 

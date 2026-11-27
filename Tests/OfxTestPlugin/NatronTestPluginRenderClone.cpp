@@ -24,7 +24,9 @@
 // - destroyedBeforeLater: the instances destroyed while a later instance (e.g. one of their render
 //   clones) was still alive;
 // - inRender: the renders in progress. kOfxImageEffectActionRender blocks while the counter
-//   RenderClone.blockRender is set, so that a test can keep a render going on the main instance.
+//   RenderClone.blockRender is set, so that a test can keep a render going on the main instance;
+// - instanceDataAtCreate: the instances whose kOfxPropInstanceData was not NULL in
+//   kOfxActionCreateInstance (its default is NULL, ofxCore.h). Each instance then sets it to its own data.
 
 #include <chrono>
 #include <cstring>
@@ -93,6 +95,17 @@ describeInContext(OfxImageEffectHandle effect)
 void
 onCreateInstance(OfxImageEffectHandle effect)
 {
+    // a render clone must not start with the instance data of its main instance
+    OfxPropertySetHandle props = 0;
+    void* instanceData = 0;
+    if ( (gEffectSuite->getPropertySet(effect, &props) == kOfxStatOK) &&
+         (gPropSuite->propGetPointer(props, kOfxPropInstanceData, 0, &instanceData) == kOfxStatOK) &&
+         (instanceData != 0) ) {
+        natronTestIncrementCounter("RenderClone.instanceDataAtCreate");
+    }
+    if (props) {
+        gPropSuite->propSetPointer(props, kOfxPropInstanceData, 0, effect); // any pointer that is not NULL
+    }
     {
         std::lock_guard<std::mutex> l(gMutex);
         gLiveInstances[effect] = ++gCreatedInstances;

@@ -97,6 +97,7 @@ SOURCES += \
     OfxContexts_Test.cpp \
     OfxCPURenderSupport_Test.cpp \
     OfxClipComponentsView_Test.cpp \
+    OfxClipDepth_Test.cpp \
     OfxClipGetImage_Test.cpp \
     OfxCustomParamInterp_Test.cpp \
     OfxDrawSuite_Test.cpp \
