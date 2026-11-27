@@ -119,6 +119,9 @@ OfxImageEffectInstance::OfxImageEffectInstance(const OfxImageEffectInstance& oth
     // ("This data pointer is unique to each plug-in instance", ofxCore.h). Otherwise a plug-in that reads it in
     // kOfxActionCreateInstance would take the main instance's private data for its own.
     getProps().setPointerProperty(kOfxPropInstanceData, nullptr);
+    // The copied property set has no get hooks (HostSupport's Property copy constructor doesn't copy them): without
+    // this one, the render clones, which run most renders, would report no user-created planes.
+    getProps().setGetHook(kNatronOfxExtraCreatedPlanes, (OFX::Host::Property::GetHook*)this);
 }
 
 OfxImageEffectInstance::~OfxImageEffectInstance()

@@ -24,6 +24,9 @@
 // in OfxEffectInstance::destroyInteracts() (#1801).
 // A render clone is a new instance of the plug-in: in its kOfxActionCreateInstance, kOfxPropInstanceData is
 // NULL (its default, "unique to each plug-in instance", ofxCore.h), not the main instance's pointer (#1385).
+// A render clone reports the extra planes of its node (kNatronOfxExtraCreatedPlanes: the project's default planes
+// and the node's user-created ones), as the main instance does: the property is computed by a get hook, which the
+// copied property set didn't have (#2023).
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -78,6 +81,7 @@ TEST(OfxRenderClone, DestroyedBeforeMainInstance)
     const int created = NatronTestPlugin::counter("RenderClone.created");
     const int destroyedBeforeLater = NatronTestPlugin::counter("RenderClone.destroyedBeforeLater");
     const int instanceDataAtCreate = NatronTestPlugin::counter("RenderClone.instanceDataAtCreate");
+    const int renderWithoutExtraPlanes = NatronTestPlugin::counter("RenderClone.renderWithoutExtraPlanes");
     ASSERT_EQ( 0, NatronTestPlugin::counter("RenderClone.live") );
 
     NodePtr node = NatronTestPlugin::createNode(kNatronTestPluginRenderClone);
@@ -106,6 +110,8 @@ TEST(OfxRenderClone, DestroyedBeforeMainInstance)
     EXPECT_EQ( 2, NatronTestPlugin::counter("RenderClone.live") );
     // the clone started with no instance data, although the main instance had set its own
     EXPECT_EQ( instanceDataAtCreate, NatronTestPlugin::counter("RenderClone.instanceDataAtCreate") );
+    // both renders, on the main instance and on the clone, saw the extra planes (the project has five by default)
+    EXPECT_EQ( renderWithoutExtraPlanes, NatronTestPlugin::counter("RenderClone.renderWithoutExtraPlanes") );
 
     // as on quit (Project::reset(), Node::doDestroyNodeInternalEnd()), where the crash was seen; this also
     // destroys any node that an earlier test left in the project, as DeepGraphRender_Test.cpp does
