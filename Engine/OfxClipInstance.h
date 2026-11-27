@@ -344,10 +344,23 @@ struct OfxImageCommonPrivate;
 class OfxImageCommon
 {
 public:
+    // How the plug-in gets the pixels of internalImage
+    enum AccessEnum
+    {
+        // an output image: the plug-in writes into internalImage, locked for writing while this object lives
+        eAccessWrite,
+        // a source image: the plug-in reads internalImage, locked for reading while this object lives
+        eAccessRead,
+        // a source image: the plug-in reads a copy of internalImage, which is not locked once this object is
+        // constructed (GL textures are always locked, as with eAccessRead), so that a plug-in that waits in its render
+        // action for other frames doesn't hold a lock that those frames may need (#248)
+        eAccessReadCopy,
+    };
+
     explicit OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
                             const OfxClipInstance::RenderActionDataPtr& renderData,
                             const NATRON_NAMESPACE::ImagePtr& internalImage,
-                            bool isSrcImage,
+                            AccessEnum accessMode,
                             const RectI& renderWindow,
                             const Transform::Matrix3x3Ptr& mat,
                             const std::string& components,
@@ -371,14 +384,14 @@ class OfxImage
 public:
     explicit OfxImage( const OfxClipInstance::RenderActionDataPtr& renderData,
                        const NATRON_NAMESPACE::ImagePtr& internalImage,
-                       bool isSrcImage,
+                       OfxImageCommon::AccessEnum accessMode,
                        const RectI& renderWindow,
                        const Transform::Matrix3x3Ptr& mat,
                        const std::string& components,
                        int nComps,
                       double par)
         : OFX::Host::ImageEffect::Image()
-        , OfxImageCommon(this, renderData, internalImage, isSrcImage, renderWindow, mat, components, nComps, par)
+        , OfxImageCommon(this, renderData, internalImage, accessMode, renderWindow, mat, components, nComps, par)
     {
     }
 };
@@ -390,14 +403,14 @@ class OfxTexture
 public:
     explicit OfxTexture( const OfxClipInstance::RenderActionDataPtr& renderData,
                          const NATRON_NAMESPACE::ImagePtr& internalImage,
-                         bool isSrcImage,
+                         OfxImageCommon::AccessEnum accessMode,
                          const RectI& renderWindow,
                          const Transform::Matrix3x3Ptr& mat,
                          const std::string& components,
                          int nComps,
                         double par)
         : OFX::Host::ImageEffect::Texture()
-        , OfxImageCommon(this, renderData, internalImage, isSrcImage, renderWindow, mat, components, nComps, par)
+        , OfxImageCommon(this, renderData, internalImage, accessMode, renderWindow, mat, components, nComps, par)
     {
     }
 };
