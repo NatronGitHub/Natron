@@ -61,6 +61,7 @@ allowed ones, 1 otherwise, 77 (skip) if no project loaded, 2 on a usage error.
 
 import argparse
 import concurrent.futures
+import dataclasses
 import fnmatch
 import os
 import queue
@@ -132,6 +133,15 @@ KEY_TAGS = ("Plugin_script_name", "Name")
 PROJECT_PATH_RE = re.compile(r"<Name>Project</Name><Value>[^<]*</Value>")
 
 
+@dataclasses.dataclass
+class AllowlistEntry:
+    """A line of the allowlist, and how many differences it allowed."""
+    issue: str
+    path_pattern: str
+    project_pattern: str
+    uses: int = 0
+
+
 class Allowlist:
     """The accepted differences, each with the issue that tracks it.
 
@@ -145,7 +155,7 @@ class Allowlist:
     ISSUE_RE = re.compile(r"^([\w.-]+/[\w.-]+)?#[0-9]+$")
 
     def __init__(self, path):
-        self.entries = []  # [issue, path pattern, project pattern, uses]
+        self.entries = []  # AllowlistEntry
         if not os.path.exists(path):
             return
         with open(path, encoding="utf-8") as f:
@@ -156,15 +166,16 @@ class Allowlist:
                 if len(fields) not in (2, 3) or not self.ISSUE_RE.match(fields[0]):
                     raise ValueError("%s:%d: expected '<issue> <path pattern> [<project pattern>]'"
                                      % (path, number))
-                self.entries.append([fields[0], fields[1], fields[2] if len(fields) == 3 else "*", 0])
+                self.entries.append(AllowlistEntry(*fields) if len(fields) == 3 else AllowlistEntry(*fields, "*"))
 
     def issue(self, project, difference_path):
         """The issue of the first entry that allows the difference, or None."""
         project = project.replace("\\", "/")
         for entry in self.entries:
-            if fnmatch.fnmatchcase(difference_path, entry[1]) and fnmatch.fnmatchcase(project, entry[2]):
-                entry[3] += 1
-                return entry[0]
+            if (fnmatch.fnmatchcase(difference_path, entry.path_pattern)
+                    and fnmatch.fnmatchcase(project, entry.project_pattern)):
+                entry.uses += 1
+                return entry.issue
         return None
 
 
@@ -198,7 +209,8 @@ def _key(element):
 def _children(element, parent_path):
     """The children of element, by path segment: {segment: (path, child)}.
 
-    Items with a name are keyed by it ({name}), other items by their position
+    Items with a name are keyed by it ({name}, {name}(user) for a user
+    parameter, which the exporter writes in full), other items by their position
     (#n), other elements by their tag (with #n if the tag is repeated). The
     Value of an animated dimension is "Value(animated)": it is the value at
     the current frame, which only depends on the curve and on that frame.
@@ -212,6 +224,8 @@ def _children(element, parent_path):
         key = _key(child) if child.tag == "item" else None
         if key is not None:
             segment = "{%s}" % key
+            if child.findtext("UserKnob") == "1":
+                segment += "(user)"
         else:
             positions[child.tag] = positions.get(child.tag, -1) + 1
             segment = child.tag if child.tag != "item" else ""
@@ -228,6 +242,10 @@ def _children(element, parent_path):
 
 def compare(a, b, path=""):
     """The differences between two XML elements, recursively.
+
+    Items with a name are matched by name: the order of nodes, of parameters,
+    and of the parameters of a user page, is not compared (the page order is:
+    the "name" items of a node).
 
     Returns:
       A list of (path, description), e.g.
@@ -504,12 +522,12 @@ def main(argv):
         for result in ("fail", "skip"):
             for label in results[result]:
                 print("%s: %s" % (result.upper(), label))
-        unused = [entry[:3] for entry in allowlist.entries if not entry[3]]
+        unused = [entry for entry in allowlist.entries if not entry.uses]
         print("%d allowlist entries not used (fixed, or not in this corpus)%s"
               % (len(unused), ":" if unused and options.report_unused else ""))
         if options.report_unused:
             for entry in unused:
-                print("  not used: " + " ".join(entry))
+                print("  not used: %s %s %s" % (entry.issue, entry.path_pattern, entry.project_pattern))
         if results["fail"]:
             return 1
         if not results["pass"]:

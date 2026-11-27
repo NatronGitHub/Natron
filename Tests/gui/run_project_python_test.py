@@ -663,7 +663,7 @@ def main(argv):
         if not (run_renderer(renderer + ["-t", files["build"]], env)
                 and run_renderer(renderer + ["-t", files["load"]], env)
                 and run_renderer(renderer + ["-t", "-l", files["onload"],
-                                              files["first"]], env)):
+                                             files["first"]], env)):
             return 1
         if not _check_results(files):
             return 1

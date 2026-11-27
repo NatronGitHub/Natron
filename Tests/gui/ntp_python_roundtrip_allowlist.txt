@@ -5,7 +5,9 @@
 # Each line: <issue> <difference path pattern> [<project pattern>]
 # The patterns are shell patterns (* also matches /), on the paths that the test prints, e.g.
 # /Project/NodesCollection/{Group1}/{myDouble}/#0/Value ({name}: a node or a parameter; #n: the
-# n-th item of a list), and on the project as given to the test (default: every project).
+# n-th item of a list; {name}(user): a user parameter, which the exporter writes in full, so that
+# "*}/..." matches only the other parameters), and on the project as given to the test (default:
+# every project).
 # Lines that start with "# " are comments.
 
 # The disk-cache keys of the nodes
@@ -16,8 +18,8 @@
 #2005 /Project/{gpuRendering}/#0/Enabled
 
 # The visibility and enabled state that plug-ins give their parameters
-#2006 */Secret
-#2006 */#*/Enabled
+#2006 *}/Secret
+#2006 *}/#*/Enabled
 #2006 */{screenAlpha}
 #2006 */{highDefUpstream}
 
@@ -68,17 +70,15 @@
 #2012 */Value(animated)
 
 # Layer choices of older projects
-#2013 *_channels}/*
+#2013 *_channels}*
 
-# PyPlug instances get the installed PyPlug's parameter definitions
-#2014 */Help
-#2014 */Helps/*
-#2014 */Entries/*
-#2014 */Min
-#2014 */Max
-#2014 */#*/Default
+# PyPlug instances get the installed PyPlug's parameter definitions, and plug-in parameters the
+# installed plug-in's defaults
+#2014 *}/#*/Default
 #2014 /Project/NodesCollection/{Glow1}/* TestGlow*test.ntp
 #2014 /Project/NodesCollection/{LightWrap}/* BayMax*
+#2014 /Project/NodesCollection/{Fill1}/* TestFill*
+#2014 /Project/NodesCollection/{PIKColor}/* TestPIK*
 
 # Roto: the centers and the control-point curves
 #2015 */RotoContext/*
@@ -103,6 +103,7 @@
 #2017 */{bitDepth}/#*/Value
 #2017 */{ocioInputSpaceSet}/#*/Value
 
-# The page order of nodes without user pages
-#2018 */name
-#2018 */name#*
+# The page order of nodes without user pages (the path doesn't tell whether a node has user pages:
+# the entry also allows a different page order of the others)
+#2018 *}/name
+#2018 *}/name#*

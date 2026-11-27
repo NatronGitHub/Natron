@@ -12,7 +12,8 @@ name: Python project round trip
 # passed), Windows the portable tree of the last successful build_installer.yml run on RB-2.6 (or the
 # runs given by hand). The check itself (the driver and the allowlist) comes from the branch of the
 # run. Weekly (Sunday, after the package workflows) and on demand; never skipped: the packages are
-# rebuilt every week, with the plug-ins' moving branches.
+# rebuilt every week, with the plug-ins' moving branches. No macOS job yet (#2001 asks for the Linux
+# and Windows packages): the x86_64 DMG artifact of macos_x86_64.yml could be used the same way.
 on:
   workflow_dispatch:
     inputs:
