@@ -26,7 +26,10 @@
 // - inRender: the renders in progress. kOfxImageEffectActionRender blocks while the counter
 //   RenderClone.blockRender is set, so that a test can keep a render going on the main instance;
 // - instanceDataAtCreate: the instances whose kOfxPropInstanceData was not NULL in
-//   kOfxActionCreateInstance (its default is NULL, ofxCore.h). Each instance then sets it to its own data.
+//   kOfxActionCreateInstance (its default is NULL, ofxCore.h). Each instance then sets it to its own data;
+// - renderWithExtraPlanes, renderWithoutExtraPlanes: the renders whose instance (a render clone or the main
+//   instance) reported extra planes (kNatronOfxExtraCreatedPlanes, ofxNatron.h: the project's default planes and
+//   the node's user-created ones) with a non-empty first value, and those that reported none.
 
 #include <chrono>
 #include <cstring>
@@ -37,6 +40,7 @@
 
 #include <ofxCore.h>
 #include <ofxImageEffect.h>
+#include <ofxNatron.h>
 #include <ofxParam.h>
 #include <ofxProperty.h>
 
@@ -140,8 +144,21 @@ onDestroyInstance(OfxImageEffectHandle effect)
 
 // Blocks while the counter RenderClone.blockRender is set.
 void
-render()
+render(OfxImageEffectHandle effect)
 {
+    OfxPropertySetHandle props = 0;
+    int extraPlanes = -1;
+    if ( (gEffectSuite->getPropertySet(effect, &props) != kOfxStatOK) ||
+         (gPropSuite->propGetDimension(props, kNatronOfxExtraCreatedPlanes, &extraPlanes) != kOfxStatOK) ) {
+        extraPlanes = -1;
+    }
+    const char* firstPlane = 0;
+    if ( (extraPlanes > 0) && (gPropSuite->propGetString(props, kNatronOfxExtraCreatedPlanes, 0, &firstPlane) == kOfxStatOK) &&
+         firstPlane && (firstPlane[0] != 0) ) {
+        natronTestIncrementCounter("RenderClone.renderWithExtraPlanes");
+    } else {
+        natronTestIncrementCounter("RenderClone.renderWithoutExtraPlanes");
+    }
     natronTestIncrementCounter("RenderClone.inRender");
     while (natronTestGetCounter("RenderClone.blockRender") != 0) {
         std::this_thread::sleep_for( std::chrono::milliseconds(1) );
@@ -190,7 +207,7 @@ renderClonePluginMain(const char* action,
         return kOfxStatOK;
     }
     if (std::strcmp(action, kOfxImageEffectActionRender) == 0) {
-        render(); // the test doesn't look at the image
+        render(effect); // the test doesn't look at the image
 
         return kOfxStatOK;
     }
