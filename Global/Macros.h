@@ -501,14 +501,6 @@ GCC_ONLY_DIAG_OFF(pragmas)  // warning: unknown option after '#pragma GCC diagno
 #define NATRON_COMPILER_SUPPORTS_CXX_EXCEPTIONS COMPILER_HAS_CLANG_FEATURE(cxx_exceptions)
 #define NATRON_COMPILER_SUPPORTS_BUILTIN_IS_TRIVIALLY_COPYABLE COMPILER_HAS_CLANG_FEATURE(is_trivially_copyable)
 
-#ifdef __cplusplus
-#if __cplusplus <= 201103L
-#define NATRON_CPP_STD_VER 11
-#elif __cplusplus <= 201402L
-#define NATRON_CPP_STD_VER 14
-#endif
-#endif
-
 #endif // defined(__clang__)
 
 /* COMPILER(GCC_OR_CLANG) - GNU Compiler Collection or Clang */
@@ -524,10 +516,6 @@ GCC_ONLY_DIAG_OFF(pragmas)  // warning: unknown option after '#pragma GCC diagno
 
 #define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
 #define GCC_VERSION_AT_LEAST(major, minor, patch) (GCC_VERSION >= (major * 10000 + minor * 100 + patch))
-
-#if !GCC_VERSION_AT_LEAST(4, 9, 0)
-//#error "Please use a newer version of GCC. WebKit requires GCC 4.9.0 or newer to compile."
-#endif
 
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
 #define NATRON_COMPILER_SUPPORTS_C_STATIC_ASSERT 1
@@ -558,10 +546,6 @@ GCC_ONLY_DIAG_OFF(pragmas)  // warning: unknown option after '#pragma GCC diagno
 
 #define NATRON_COMPILER_MSVC 1
 #define NATRON_COMPILER_SUPPORTS_CXX_REFERENCE_QUALIFIED_FUNCTIONS 1
-
-#if _MSC_VER < 1900
-//#error "Please use a newer version of Visual Studio. WebKit requires VS2015 or newer to compile."
-#endif
 
 #endif
 
@@ -821,17 +805,9 @@ GCC_ONLY_DIAG_OFF(pragmas)  // warning: unknown option after '#pragma GCC diagno
 #define NATRON_COMPILER_SUPPORTS_HAS_TRIVIAL_DESTRUCTOR COMPILER_HAS_CLANG_EXTENSION(has_trivial_destructor)
 #endif
 
-/* COMPILER(MSVC7_OR_LOWER) - Microsoft Visual C++ 2003 or lower*/
-/* COMPILER(MSVC9_OR_LOWER) - Microsoft Visual C++ 2008 or lower*/
 #if defined(_MSC_VER)
-#if _MSC_VER < 1400
-#define NATRON_COMPILER_MSVC7_OR_LOWER 1
-#elif _MSC_VER < 1600
-#define NATRON_COMPILER_MSVC9_OR_LOWER 1
-#endif
-
 /* Specific compiler features */
-#if !COMPILER(CLANG) && _MSC_VER >= 1600
+#if !COMPILER(CLANG)
 #define NATRON_SUPPORTS_CXX_NULLPTR 1
 #endif
 
@@ -845,18 +821,11 @@ GCC_ONLY_DIAG_OFF(pragmas)  // warning: unknown option after '#pragma GCC diagno
 
 /* Specific compiler features */
 #if COMPILER(GCC) && !COMPILER(CLANG)
-#if GCC_VERSION_AT_LEAST(4, 7, 0) && defined(__cplusplus) && __cplusplus >= 201103L
 #define NATRON_COMPILER_SUPPORTS_CXX_RVALUE_REFERENCES 1
 #define NATRON_COMPILER_SUPPORTS_CXX_DELETED_FUNCTIONS 1
 #define NATRON_SUPPORTS_CXX_NULLPTR 1
 #define NATRON_COMPILER_SUPPORTS_CXX_OVERRIDE_CONTROL 1
 #define NATRON_COMPILER_QUIRK_GCC11_GLOBAL_ISINF_ISNAN 1
-
-#elif GCC_VERSION_AT_LEAST(4, 6, 0) && defined(__GXX_EXPERIMENTAL_CXX0X__)
-#define NATRON_SUPPORTS_CXX_NULLPTR 1
-#define NATRON_COMPILER_QUIRK_GCC11_GLOBAL_ISINF_ISNAN 1
-#endif
-
 #endif // COMPILER(GCC) && !COMPILER(CLANG)
 
 /* ignore_result */
@@ -895,14 +864,6 @@ ignore_result(T x)
 #else
 #define OVERRIDE
 #define FINAL
-#endif
-
-#if COMPILER_SUPPORTS(CXX_OVERRIDE_CONTROL)
-// we want to use override & final, and get no warnings even if not compiling in c++11 mode
-// clang-format off
-CLANG_DIAG_OFF(c++11-extensions)
-//GCC_DIAG_OFF(c++11-extensions) // no corresponding GCC warning option?
-// clang-format on
 #endif
 
 
