@@ -150,7 +150,6 @@ SOURCES += \
     KnobWidgetDnD.cpp \
     Label.cpp \
     LineEdit.cpp \
-    LinkToKnobDialog.cpp \
     LogWindow.cpp \
     ManageUserParamsDialog.cpp \
     Menu.cpp \
@@ -296,7 +295,6 @@ HEADERS += \
     KnobWidgetDnD.h \
     Label.h \
     LineEdit.h \
-    LinkToKnobDialog.h \
     LogWindow.h \
     ManageUserParamsDialog.h \
     Menu.h \
