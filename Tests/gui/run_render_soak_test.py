@@ -105,8 +105,8 @@ DEBUGGER_TIMEOUT = 120  # seconds for a debugger to print the backtraces of a st
 INPUT_FRAMES = 50  # frames of the sequence that the Read node of the writers graph reads (it loops)
 # The nodes (by name prefix) of each graph whose render statistics (NatronRenderer -s) must show a cache miss at each
 # frame, in the statistics of at least one Write node: the frame was rendered, not taken from a cache. Frame-varying
-# nodes; in BayMax, the misses of all the SoakRunGain nodes are added up (the one after its still image hits the cache
-# after the first frame, the one after the Robot sequence misses at every frame).
+# nodes; in BayMax, the misses of all the SoakRunGain nodes are added up: the one before the Write node misses at every
+# frame (the ones after the Read nodes don't, when the image is a still or the branch is switched off at that frame).
 PROBES = {"writers": "Grade", "sequential": "Grade", "baymax": "SoakRunGain"}
 # Natron-Tests' BayMax project: its configurations, as runTests.sh reads them, and the idiff options it uses for BayMax
 BAYMAX_CONFS = ("conf", "conf2", "conf3", "conf4")
@@ -474,7 +474,8 @@ def one_run(index, renderer, wrapper, work, graph, setup, driver, config, opts, 
         os.makedirs(cache)
     # A gain that changes from run to run (Grade nodes after the generators and the Read nodes): no image of this run
     # can be one of an earlier run. Each run is also a new NatronRenderer, with a RAM cache of its own.
-    gain = 1 + (index % 10 + 1) * 1e-4
+    # (1e-6: the 8-bit outputs don't change, so BayMax still matches its references, but the hashes of the images do)
+    gain = 1 + (index % 10 + 1) * 1e-6
     stats = ["-s"] if with_stats and driver == "cli" else []
     base_env = dict(SOAK_OUT=out_dir, SOAK_GRAPH=graph, SOAK_SIZE=opts.size, SOAK_INPUT=os.path.join(work, "input"),
                     NATRON_DISK_CACHE_PATH=cache, SOAK_RUN_GAIN=repr(gain))

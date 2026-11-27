@@ -20,7 +20,8 @@
 
 It inserts a Grade by SOAK_RUN_GAIN ("SoakRunGain<n>") after each Read node, so that the images change slightly from
 run to run, and adds the WriteOIIO "SoakWrite" that renders SOAK_OUTPUT_NODE to SOAK_OUTPUT_FILE, frames SOAK_FIRST to
-SOAK_LAST, with the JPEG quality SOAK_QUALITY, as Natron-Tests' runTests.sh does.
+SOAK_LAST, with the JPEG quality SOAK_QUALITY, as Natron-Tests' runTests.sh does, after another such Grade
+("SoakRunGainOut", rendered at every frame).
 """
 
 import os
@@ -68,7 +69,12 @@ def add_writer():
     writer = app.createNode("fr.inria.openfx.WriteOIIO")  # pylint: disable=undefined-variable
     writer.setScriptName("SoakWrite")
     writer = app.SoakWrite  # pylint: disable=undefined-variable  (the attributes of the node's parameters)
-    writer.connectInput(0, getattr(app, os.environ["SOAK_OUTPUT_NODE"]))  # pylint: disable=undefined-variable
+    # a Grade by GAIN before the writer: rendered at every frame (the probe of the render statistics check)
+    grade = app.createNode("net.sf.openfx.GradePlugin")  # pylint: disable=undefined-variable
+    grade.setScriptName("SoakRunGainOut")
+    grade.getParam("multiply").set(GAIN, GAIN, GAIN, GAIN)
+    reconnect(grade, 0, getattr(app, os.environ["SOAK_OUTPUT_NODE"]))  # pylint: disable=undefined-variable
+    reconnect(writer, 0, grade)
     writer.filename.set(os.environ["SOAK_OUTPUT_FILE"])
     writer.encodingPluginChoice.set("fr.inria.openfx.WriteOIIO")
     writer.frameRange.set(2)  # manual
