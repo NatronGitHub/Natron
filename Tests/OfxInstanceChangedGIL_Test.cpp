@@ -58,57 +58,10 @@
 #define kGILWaitAnalysis "net.natron.test.GILWaitAnalysis"
 
 NATRON_NAMESPACE_USING
+using NatronTest::JoiningThread;
+using NatronTest::Watchdog;
 
 namespace {
-// If the threads deadlock, nothing else can report it: abort after a while.
-class Watchdog
-{
-    std::atomic<bool> _done;
-    std::thread _thread;
-
-public:
-    explicit Watchdog(const std::string& testName)
-        : _done(false)
-    {
-        _thread = std::thread([this, testName]() {
-            for (int i = 0; i < 600 && !_done; ++i) {
-                std::this_thread::sleep_for( std::chrono::milliseconds(100) );
-            }
-            if (!_done) {
-                std::cerr << testName << ": deadlock (#1653)? (total time of 60 s exceeded)" << std::endl;
-                std::abort();
-            }
-        });
-    }
-
-    ~Watchdog()
-    {
-        _done = true;
-        if ( _thread.joinable() ) {
-            _thread.join();
-        }
-    }
-};
-
-// Joins its thread when destroyed, also when the test exits early (CP.25).
-class JoiningThread
-{
-    std::thread _thread;
-
-public:
-    explicit JoiningThread(const std::function<void()>& f)
-        : _thread(f)
-    {
-    }
-
-    ~JoiningThread()
-    {
-        if ( _thread.joinable() ) {
-            _thread.join();
-        }
-    }
-};
-
 // Give the "value" parameter of node a Python expression: reading it needs the GIL.
 bool
 setValueExpression(const NodePtr& node)

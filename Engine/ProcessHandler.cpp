@@ -167,10 +167,20 @@ ProcessHandler::onDataWrittenToSocket()
     ///always running in the main thread
     assert( QThread::currentThread() == qApp->thread() );
 
-    QString str = QString::fromUtf8( _bgProcessOutputSocket->readLine() );
-    while ( str.endsWith( QLatin1Char('\n') ) ) {
-        str.chop(1);
+    // the background process sends its messages in batches (#1887): one readyRead() may bring several lines, and
+    // the end of a line may come with the next readyRead()
+    while ( _bgProcessOutputSocket->canReadLine() ) {
+        QString str = QString::fromUtf8( _bgProcessOutputSocket->readLine() );
+        while ( str.endsWith( QLatin1Char('\n') ) ) {
+            str.chop(1);
+        }
+        onMessageReceived(str);
     }
+}
+
+void
+ProcessHandler::onMessageReceived(QString str)
+{
     _processLog.append( QString::fromUtf8("Message received: ") + str + QLatin1Char('\n') );
     if ( str.startsWith( QString::fromUtf8(kFrameRenderedStringShort) ) ) {
         str = str.remove( QString::fromUtf8(kFrameRenderedStringShort) );
@@ -289,29 +299,41 @@ ProcessHandler::onProcessEnd(int exitCode,
 ProcessInputChannel::ProcessInputChannel(const QString & mainProcessServerName)
     : QThread()
     , _mainProcessServerName(mainProcessServerName)
-    , _backgroundOutputPipeMutex()
     , _backgroundOutputPipe(0)
     , _backgroundIPCServer(0)
     , _backgroundInputPipe(0)
-    , _mustQuitMutex()
+    , _outputMutex()
+    , _outputCond()
+    , _pendingOutput()
+    , _initialized(false)
     , _mustQuit(false)
 {
-    initialize();
-    _backgroundIPCServer->moveToThread(this);
+    // The sockets are created, used and destroyed by run() only, on this thread (#1887): a QLocalSocket must only be
+    // used from its own thread (writing the output pipe from the render threads made Qt warn, e.g. "QSocketNotifier:
+    // Socket notifiers cannot be enabled or disabled from another thread", "Cannot queue arguments of type
+    // 'QAbstractSocket::SocketState'", and may crash), and on Windows Qt 5 completes the reads of a pipe only on
+    // the thread that started them: a socket created on the main thread and moved to this one never gets its
+    // input, and its destruction there waits forever for its pending read.
     start();
+    // as before, return once the pipes are connected (or the main process failed to answer in time)
+    QMutexLocker l(&_outputMutex);
+    while (!_initialized) {
+        _outputCond.wait( l.mutex() );
+    }
 }
 
 ProcessInputChannel::~ProcessInputChannel()
 {
     // Tell run() to return, and wait until the thread is finished, so that the QThread can be
     // destroyed (else Qt aborts with "QThread: Destroyed while thread is still running").
-    // run() may already have returned by itself, after the abort message.
     {
-        QMutexLocker l(&_mustQuitMutex);
+        QMutexLocker l(&_outputMutex);
         _mustQuit = true;
     }
+    _outputCond.wakeAll();
     wait();
 
+    // already destroyed by run(), unless the thread did not run
     delete _backgroundIPCServer;
     delete _backgroundOutputPipe;
 }
@@ -319,22 +341,30 @@ ProcessInputChannel::~ProcessInputChannel()
 void
 ProcessInputChannel::writeToOutputChannel(const QString & message)
 {
+    // run() writes it to the output pipe, on the thread of the socket (#1887)
     {
-        QMutexLocker l(&_backgroundOutputPipeMutex);
-        _backgroundOutputPipe->write( ( message + QLatin1Char('\n') ).toUtf8() );
-        _backgroundOutputPipe->flush();
+        QMutexLocker l(&_outputMutex);
+        _pendingOutput.append( ( message + QLatin1Char('\n') ).toUtf8() );
     }
+    _outputCond.wakeAll();
 }
 
 void
-ProcessInputChannel::onNewConnectionPending()
+ProcessInputChannel::sendPendingOutput()
 {
-    if (_backgroundInputPipe) {
-        ///listen to only 1 process!
-        return;
+    const int timeoutMs = 5000; // for each part of the output: the main process stopped reading the pipe
+    assert(QThread::currentThread() == this);
+    QByteArray output;
+    {
+        QMutexLocker l(&_outputMutex);
+        output.swap(_pendingOutput);
     }
-    _backgroundInputPipe = _backgroundIPCServer->nextPendingConnection();
-    QObject::connect( _backgroundInputPipe, SIGNAL(readyRead()), this, SLOT(onInputChannelMessageReceived()) );
+    if ( !output.isEmpty() ) {
+        _backgroundOutputPipe->write(output);
+    }
+    // no event loop on this thread: write the buffer to the pipe here (returns at once if it is not connected)
+    while ( _backgroundOutputPipe->bytesToWrite() > 0 && _backgroundOutputPipe->waitForBytesWritten(timeoutMs) ) {
+    }
 }
 
 bool
@@ -366,17 +396,47 @@ ProcessInputChannel::run()
                                                            boost_adaptbx::floating_point::exception_trapping::invalid |
                                                            boost_adaptbx::floating_point::exception_trapping::overflow);
 #endif
-    for (;; ) {
-        if ( _backgroundInputPipe->waitForReadyRead(100) ) {
-            if ( onInputChannelMessageReceived() ) {
-                qDebug() << "Background process now closing the input channel...";
+    initialize();
+    {
+        QMutexLocker l(&_outputMutex);
+        _initialized = true;
+    }
+    _outputCond.wakeAll();
 
-                return;
+    // Without an input pipe (the main process did not connect to the server in time, see initialize()), or once
+    // the abort message was received, this thread only writes the output pipe.
+    bool listening = _backgroundInputPipe != 0;
+    for (;; ) {
+        if (listening) {
+            // wakes up every 100 ms to write the pending output (the latency of the progress messages)
+            if ( _backgroundInputPipe->waitForReadyRead(100) && onInputChannelMessageReceived() ) {
+                qDebug() << "Background process now closing the input channel...";
+                listening = false;
+            } else if (_backgroundInputPipe->state() != QLocalSocket::ConnectedState) {
+                // the main process closed the pipe: waitForReadyRead() would return at once, wait for the output
+                listening = false;
+            }
+        } else {
+            QMutexLocker l(&_outputMutex);
+            while ( _pendingOutput.isEmpty() && !_mustQuit ) {
+                _outputCond.wait( l.mutex() );
             }
         }
+        bool mustQuit;
+        {
+            QMutexLocker l(&_outputMutex);
+            mustQuit = _mustQuit;
+        }
+        // the messages written before the destructor set _mustQuit are sent before run() returns
+        sendPendingOutput();
+        if (mustQuit) {
+            // the sockets belong to this thread: destroy them here, not in the destructor
+            delete _backgroundIPCServer; // and _backgroundInputPipe, its child
+            _backgroundIPCServer = 0;
+            _backgroundInputPipe = 0;
+            delete _backgroundOutputPipe;
+            _backgroundOutputPipe = 0;
 
-        QMutexLocker l(&_mustQuitMutex);
-        if (_mustQuit) {
             return;
         }
     }
@@ -391,7 +451,6 @@ ProcessInputChannel::initialize()
     std::cout << "Attempting connection to " << _mainProcessServerName.toStdString() << std::endl;
 
     _backgroundIPCServer = new QLocalServer();
-    QObject::connect( _backgroundIPCServer, SIGNAL(newConnection()), this, SLOT(onNewConnectionPending()) );
     QString tmpFileName;
 #if defined(Q_OS_WIN)
     tmpFileName += QString::fromUtf8("//./pipe");
@@ -427,18 +486,14 @@ ProcessInputChannel::initialize()
         std::cout << "WARNING: The GUI application failed to respond, canceling this process will not be possible"
             " unless it finishes or you kill it." << std::endl;
     }
+    // sent now: the main process answers it by connecting to the server
     writeToOutputChannel( QString::fromUtf8(kBgProcessServerCreatedShort) + tmpFileName );
+    sendPendingOutput();
 
     ///we wait for the GUI app to connect its socket to this server, we let it 5 sec to reply
-    _backgroundIPCServer->waitForNewConnection(5000);
-
-    ///since we're still not returning the event loop, just process them manually in case
-    ///Qt didn't caught the new connection pending.
-    {
-#ifdef DEBUG
-        boost_adaptbx::floating_point::exception_trapping trap(0);
-#endif
-        QCoreApplication::processEvents();
+    // (the input pipe is a child of the server; null if the main process did not connect)
+    if ( _backgroundIPCServer->waitForNewConnection(5000) ) {
+        _backgroundInputPipe = _backgroundIPCServer->nextPendingConnection();
     }
 } // ProcessInputChannel::initialize
 

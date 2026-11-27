@@ -30,11 +30,16 @@
 
 #include "Global/Macros.h"
 
+#include <atomic>
+#include <chrono>
+#include <cstdlib>
 #include <exception>
+#include <functional>
 #include <initializer_list>
 #include <iostream>
 #include <map>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <QByteArray>
@@ -289,6 +294,58 @@ private:
     NATRON_NAMESPACE::KnobChoice* _knob;
     int _savedValue;
     std::map<QString, QByteArray> _ofxCacheFiles;
+};
+
+// If the threads deadlock, nothing else can report it: abort after a while.
+class Watchdog
+{
+    std::atomic<bool> _done;
+    std::thread _thread;
+
+public:
+    explicit Watchdog(const std::string& testName)
+        : _done(false)
+    {
+        _thread = std::thread([this, testName]() {
+            for (int i = 0; i < 600 && !_done; ++i) {
+                std::this_thread::sleep_for( std::chrono::milliseconds(100) );
+            }
+            if (!_done) {
+                std::cerr << testName << ": deadlock? (total time of 60 s exceeded)" << std::endl;
+                std::abort();
+            }
+        });
+    }
+
+    ~Watchdog()
+    {
+        _done = true;
+        if ( _thread.joinable() ) {
+            _thread.join();
+        }
+    }
+};
+
+// Joins its thread when destroyed, also when the test exits early (CP.25).
+class JoiningThread
+{
+    std::thread _thread;
+
+public:
+    explicit JoiningThread(const std::function<void()>& f)
+        : _thread(f)
+    {
+    }
+
+    ~JoiningThread()
+    {
+        if ( _thread.joinable() ) {
+            _thread.join();
+        }
+    }
+
+    JoiningThread(const JoiningThread&) = delete;
+    JoiningThread& operator=(const JoiningThread&) = delete;
 };
 } // namespace NatronTest
 
