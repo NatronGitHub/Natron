@@ -389,6 +389,8 @@ public:
     public:
         NestedEventLoopRAII();
         ~NestedEventLoopRAII();
+        NestedEventLoopRAII(const NestedEventLoopRAII&) = delete;
+        NestedEventLoopRAII& operator=(const NestedEventLoopRAII&) = delete;
     };
 
     /// The number of nested event loops currently running, see NestedEventLoopRAII

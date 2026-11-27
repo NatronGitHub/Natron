@@ -876,6 +876,7 @@ Project::finishLoad(bool isAutoSave)
 #ifdef DEBUG
         boost_adaptbx::floating_point::exception_trapping trap(0);
 #endif
+        AppManager::NestedEventLoopRAII nestedLoop; // a quit waits until the load is done (#1786)
         QCoreApplication::processEvents();
     }
 }

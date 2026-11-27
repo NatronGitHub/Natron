@@ -570,6 +570,8 @@ ProgressPanel::updateTask(const NodePtr& node,
 #ifdef DEBUG
                 boost_adaptbx::floating_point::exception_trapping trap(0);
 #endif
+                // a quit waits until the task that reports its progress returns here (#1786)
+                AppManager::NestedEventLoopRAII nestedLoop;
                 QCoreApplication::processEvents();
             }
             --_imp->processEventsRecursionCounter;

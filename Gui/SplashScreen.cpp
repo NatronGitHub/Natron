@@ -168,6 +168,7 @@ LoadProjectSplashScreen::updateText(const QString & text)
 #ifdef DEBUG
         boost_adaptbx::floating_point::exception_trapping trap(0);
 #endif
+        AppManager::NestedEventLoopRAII nestedLoop; // a quit waits until this returns (#1786)
         QCoreApplication::processEvents();
     }
 }

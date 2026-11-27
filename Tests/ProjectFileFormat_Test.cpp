@@ -49,6 +49,7 @@
 #include <QElapsedTimer>
 #include <QFile>
 #include <QFileInfo>
+#include <QObject>
 #include <QRegularExpression>
 #include <QSaveFile>
 #include <QTemporaryDir>
@@ -1776,5 +1777,43 @@ TEST(ProjectFileFormat, LargeProject)
               << "save (best of " << n << "): text " << saveText / 1000. << " ms, binary " << saveBinary / 1000. << " ms\n"
               << "parse (best of " << n << "): text " << parseText / 1000. << " ms, binary " << parseBinary / 1000. << " ms\n"
               << "load (parse and create the nodes): text " << loadText / 1000. << " ms, binary " << loadBinary / 1000. << " ms" << std::endl;
+    project->resetProject();
+}
+
+// The end of a project load (Project::finishLoad()) processes the events, at the level of the main event loop
+// when File > Open runs after startup. A quit (natron.quit(), a termination signal) that comes then must wait
+// until the load returns, else it deletes the project under the loading code (#1786): these events run in a
+// declared nested event loop, which AppManager::mustDeferQuit() checks.
+TEST(ProjectFileFormat, LoadEventsDeferQuit)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const QString name = QString::fromUtf8("LoadEventsDeferQuit.ntp");
+    ProjectPtr project = appPTR->getTopLevelInstance()->getProject();
+    project->resetProject();
+    ASSERT_TRUE( saveCopy(project, dir, name, eProjectFileFormatBinary) );
+
+    // projectNameChanged() is emitted with the loaded file just before finishLoad(): an event posted then runs in
+    // its processEvents()
+    std::vector<int> nestedLoopsInEvents;
+    QObject context; // cancels the posted calls that did not run when the test returns
+    QMetaObject::Connection connection =
+        QObject::connect( project.get(), &Project::projectNameChanged, &context, [&](const QString& file, bool) {
+        if (file != dir + name) {
+            return;
+        }
+        QMetaObject::invokeMethod( &context, [&]() {
+            nestedLoopsInEvents.push_back( appPTR->getNestedEventLoopsCount() );
+        }, Qt::QueuedConnection );
+    } );
+    ASSERT_TRUE( project->loadProject(dir, name) );
+    QObject::disconnect(connection);
+
+    ASSERT_FALSE( nestedLoopsInEvents.empty() ) << "no event was processed during the load";
+    for (std::size_t i = 0; i < nestedLoopsInEvents.size(); ++i) {
+        EXPECT_GT( nestedLoopsInEvents[i], 0 ) << "a quit there would not have been deferred";
+    }
+    EXPECT_EQ( 0, appPTR->getNestedEventLoopsCount() );
     project->resetProject();
 }
