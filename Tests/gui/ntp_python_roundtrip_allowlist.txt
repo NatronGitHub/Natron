@@ -30,10 +30,6 @@
 #2007 /Project/NodesCollection/*{Viewer*}
 #2007 /ProjectGui/NodesGui/*{Viewer*}
 
-# The node colours, with 4 significant digits, and positions, rounded
-#2008 /ProjectGui/NodesGui/*/[rgb]
-#2008 /ProjectGui/NodesGui/*/[XY]_position
-
 # The Viewer settings and the window layout
 #1937 /ProjectGui/Gui_Layout/*
 #1937 /ProjectGui/ViewersData/*
