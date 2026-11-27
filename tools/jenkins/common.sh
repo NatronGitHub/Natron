@@ -292,9 +292,42 @@ else
 fi
 
 # Natron mirror of the SDK source tarballs (on SourceForge): build-Linux-sdk.sh only uses it when
-# the master site of a package fails (see download() there)
+# every other source of a package fails (see download_urls() there)
 THIRD_PARTY_SRC_URL=https://sourceforge.net/projects/natron/files/Third_Party/Sources
 THIRD_PARTY_BIN_URL=https://natrongithub.github.io/files/bin
+
+# get-pip.py and the Python packages that the installers (build-{Linux,OSX,Windows}-installer.sh)
+# put into the bundled Python, at fixed versions, so that a release doesn't depend on the day it
+# was built. get-pip.py comes from a fixed pypa/get-pip commit (pip 26.3, Python 3.10 or later)
+# and is checked against its sha256 before it runs. To update: take the commit of a newer
+# pypa/get-pip tag and its sha256, and versions that support the bundled Pythons (3.11 to 3.14).
+GET_PIP_COMMIT=8c427468071b5d15717839ffd76c53a96df8b703
+GET_PIP_SHA256=356e0d0de21cdc348c3394084d90939b85e4246c4d14c76aee6ca4f46646ea98
+GET_PIP_PIP=pip==26.3
+# get-pip.py also installs the latest setuptools and wheel (which needs packaging) when the Python
+# is older than 3.12 and doesn't have them, as in the Linux and macOS bundles (Python 3.11): the
+# Linux and macOS installers pass these pins to it. Windows (Python 3.12 or later) doesn't get them.
+GET_PIP_SETUPTOOLS=(setuptools==84.2.1 wheel==0.48.0 packaging==26.4)
+# pure Python (packaging: needed by qtpy, and pinned as in GET_PIP_SETUPTOOLS)
+BUNDLED_PYTHON_PACKAGES=(qtpy==2.4.3 packaging==26.4 six==1.17.0)
+# compiled (abi3 wheels for Linux and macOS, x86_64 and arm64; not installed on Windows)
+BUNDLED_PYTHON_PSUTIL=psutil==7.2.2
+
+# Downloads get-pip.py (see GET_PIP_COMMIT) into the current directory and checks its sha256.
+fetch_get_pip() {
+    local sum
+    rm -f get-pip.py
+    $CURL --fail --output get-pip.py "https://raw.githubusercontent.com/pypa/get-pip/${GET_PIP_COMMIT}/public/get-pip.py"
+    if command -v sha256sum >/dev/null 2>&1; then
+        sum=$(sha256sum get-pip.py | cut -d' ' -f1)
+    else
+        sum=$(shasum -a 256 get-pip.py | cut -d' ' -f1)
+    fi
+    if [ "$sum" != "$GET_PIP_SHA256" ]; then
+        (>&2 echo "Error: get-pip.py has sha256 $sum, expected $GET_PIP_SHA256")
+        exit 1
+    fi
+}
 
 
 # Threads

@@ -280,25 +280,13 @@ NATRON_PYTHON="${TMP_PORTABLE_DIR}/bin/natron-python"
 # Install pip
 if [ -x "${NATRON_PYTHON}" ]; then
     pushd "$PYDIR/../.."
-    # get-pip.py of a fixed pypa/get-pip commit (pip 26.3, Python 3.10 or later), checked against
-    # its sha256 before it runs: the bundle's Python runs it (ensurepip is not shipped, see
-    # python-exclude.txt). To update: take the commit of a newer pypa/get-pip tag and its sha256.
-    GET_PIP_COMMIT=8c427468071b5d15717839ffd76c53a96df8b703
-    GET_PIP_SHA256=356e0d0de21cdc348c3394084d90939b85e4246c4d14c76aee6ca4f46646ea98
-    rm -f get-pip.py
-    $CURL --fail --output get-pip.py "https://raw.githubusercontent.com/pypa/get-pip/${GET_PIP_COMMIT}/public/get-pip.py"
-    if ! echo "${GET_PIP_SHA256}  get-pip.py" | sha256sum -c -; then
-        echo "Error: get-pip.py does not have the expected sha256"
-        exit 1
-    fi
-    # pip and the Python packages that Natron ships, at fixed versions (pure Python)
-    "${NATRON_PYTHON}" get-pip.py pip==26.3
+    # pip and the Python packages that Natron ships, at the versions of common.sh (GET_PIP_COMMIT).
+    # The bundle's Python runs get-pip.py (ensurepip is not shipped, see python-exclude.txt).
+    fetch_get_pip
+    "${NATRON_PYTHON}" get-pip.py "$GET_PIP_PIP"
     rm get-pip.py
-    # Install qtpy
-    "${NATRON_PYTHON}" -m pip install qtpy==2.4.3
-
-    # Useful Python packages
-    "${NATRON_PYTHON}" -m pip install six==1.17.0 #psutil
+    # qtpy, and other useful Python packages (no psutil)
+    "${NATRON_PYTHON}" -m pip install "${BUNDLED_PYTHON_PACKAGES[@]}"
     # Run extra user provided pip install scripts
     if [ -f "${EXTRA_PYTHON_MODULES_SCRIPT:-}" ]; then
         "${NATRON_PYTHON}" "$EXTRA_PYTHON_MODULES_SCRIPT" || true
