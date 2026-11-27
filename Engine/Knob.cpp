@@ -32,6 +32,7 @@
 #include <sstream> // stringstream
 #include <cctype> // isspace
 #include <cstring> // memcpy
+#include <iostream>
 
 #include <QDataStream>
 #include <QDateTime>
@@ -3072,9 +3073,23 @@ catchErrors(PyObject* mainModule,
     PythonGILLocker pgl;
 
     if ( PyErr_Occurred() ) {
-        PyErr_Print();
-        ///Gui session, do stdout, stderr redirection
-        if ( PyObject_HasAttrString(mainModule, "catchErr") ) {
+        if ( PyErr_ExceptionMatches(PyExc_SystemExit) ) {
+            // sys.exit() in an expression, or the SystemExit of natron.quit() at the -t prompt (see
+            // raiseSystemExitAtPrompt()): PyErr_Print() exits, as before
+            PyErr_Print();
+        }
+        // PyObject_HasAttrString() clears the pending exception when there is no such attribute: keep it
+        PyObject *excType, *excValue, *excTraceback;
+        PyErr_Fetch(&excType, &excValue, &excTraceback);
+        const bool captured = PyObject_HasAttrString(mainModule, "catchErr");
+        PyErr_Restore(excType, excValue, excTraceback);
+        if (!captured) {
+            // background session: sys.stderr is not captured, so PyErr_Print() would not give the error (#1789)
+            *error = NATRON_PYTHON_NAMESPACE::takePythonException();
+            std::cerr << *error << std::flush;
+        } else {
+            PyErr_Print();
+            ///Gui session, do stdout, stderr redirection
             PyObject* errCatcher = PyObject_GetAttrString(mainModule, "catchErr"); //get our catchOutErr created above, new ref
             PyObject *errorObj = 0;
             if (errCatcher) {
@@ -3086,6 +3101,10 @@ catchErrors(PyObject* mainModule,
                 Py_DECREF(errorObj);
                 Py_DECREF(errCatcher);
             }
+        }
+        if ( error->empty() ) {
+            // an empty error means a valid expression (see KnobHelper::isExpressionValid())
+            *error = "Python error";
         }
 
         return false;

@@ -916,6 +916,12 @@ bool interpretPythonScript(const std::string& script, std::string* error, std::s
  **/
 bool runPythonScriptFile(const std::string& script, std::string* error, std::string* output);
 
+/**
+ * @brief Returns the message and traceback of the pending Python exception, and clears it.
+ * The GIL must be held.
+ **/
+std::string takePythonException();
+
 std::string makeNameScriptFriendlyWithDots(const std::string& str);
 std::string makeNameScriptFriendly(const std::string& str);
 

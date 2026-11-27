@@ -129,3 +129,42 @@ TEST_F(KnobInvalidExpressionTest, KnobInvalidatedDuringRecheckStaysListed)
 
     NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("del natronTestBroken, natronTestFrame\n", &error, 0);
 }
+
+// An expression that fails when it is evaluated, in a background session (NatronRenderer, and the Tests program:
+// sys.stderr is not captured), is invalid, with the Python error as message (#1789). It was listed, but with an
+// empty message, which means valid: isExpressionValid() returned true, and the next re-check dropped it.
+TEST_F(KnobInvalidExpressionTest, FailedEvaluationIsInvalidWithMessage)
+{
+    if ( skipped() ) {
+        return;
+    }
+    ASSERT_TRUE( appPTR->isBackground() );
+    KnobDoublePtr from = std::dynamic_pointer_cast<KnobDouble>( knob("doubleFrom") );
+    ASSERT_TRUE( bool(from) );
+
+    std::string error;
+    ASSERT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("natronTestBroken = False\n", &error, 0) ) << error;
+    from->setExpression(0, "natronTestMissing if natronTestBroken else 1.", false, false);
+    EXPECT_TRUE( from->isExpressionValid(0, &error) ) << error;
+    EXPECT_FALSE( isListed(from) );
+
+    ASSERT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("natronTestBroken = True\n", &error, 0) ) << error;
+    testing::internal::CaptureStderr();
+    const double failedValue = from->getValueAtTime(2.); // a frame that is not in the expression cache
+    Q_UNUSED(failedValue);
+    const std::string errOutput = testing::internal::GetCapturedStderr();
+    EXPECT_FALSE( from->isExpressionValid(0, &error) );
+    EXPECT_NE( std::string::npos, error.find("natronTestMissing") ) << error;
+    EXPECT_TRUE( isListed(from) );
+    // still printed on the standard error, as before
+    EXPECT_NE( std::string::npos, errOutput.find("natronTestMissing") ) << errOutput;
+
+    // valid again once it evaluates
+    ASSERT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("natronTestBroken = False\n", &error, 0) ) << error;
+    EXPECT_EQ( 1., from->getValueAtTime(3.) );
+    EXPECT_TRUE( from->isExpressionValid(0, &error) ) << error;
+    EXPECT_FALSE( isListed(from) );
+
+    from->clearExpression(0, true);
+    NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("del natronTestBroken\n", &error, 0);
+}

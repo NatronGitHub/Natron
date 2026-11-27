@@ -4552,10 +4552,10 @@ forwardToScriptEditor(std::string text,
         std::cerr << text << std::endl;
     }
 }
+} // anon namespace
 
-// Returns the message and traceback of the pending Python exception, and clears it. The GIL must be held.
 std::string
-takePythonException()
+NATRON_PYTHON_NAMESPACE::takePythonException()
 {
     std::string ret;
     PyObject *pyExcType;
@@ -4616,7 +4616,6 @@ takePythonException()
 
     return ret;
 }
-} // anon namespace
 
 // Raises SystemExit at the interactive prompt of the -t option, once no
 // interpretPythonScript() is running in this thread, the main thread, where CPython runs the pending
@@ -4721,7 +4720,7 @@ interpretPythonScriptImpl(const std::string& script,
     }
     if (ex) {
         assert(status < 0);
-        exceptionText = takePythonException();
+        exceptionText = NATRON_PYTHON_NAMESPACE::takePythonException();
     }
 
     // What this script wrote to sys.stdout and sys.stderr
