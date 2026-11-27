@@ -1032,13 +1032,20 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
 #endif
 
     double par = getAspectRatio();
+    // A plug-in that needs its frames in order (kOfxImageEffectInstancePropSequentialRender = 1, e.g. WriteFFmpeg) puts
+    // them in order itself when Natron renders the frames of a render on disk in parallel: its render action waits for
+    // the earlier frames. It must not keep its source images locked meanwhile: an earlier frame may have to render into
+    // one of them (a cached image of a node upstream that both frames use, e.g. one that a Transform passes through), and
+    // would wait for the write lock forever (#248). It gets a copy of its source images.
+    const OfxImageCommon::AccessEnum sourceAccess = ( effect->getSequentialPreference() == eSequentialPreferenceOnlySequential ) ?
+                                              OfxImageCommon::eAccessReadCopy : OfxImageCommon::eAccessRead;
     OfxImageCommon* retCommon = 0;
     if (retImage) {
-        OfxImage* ofxImage = new OfxImage(renderData, image, true, renderWindow, transform, components, nComps, par);
+        OfxImage* ofxImage = new OfxImage(renderData, image, sourceAccess, renderWindow, transform, components, nComps, par);
         *retImage = ofxImage;
         retCommon = ofxImage;
     } else if (retTexture) {
-        OfxTexture* ofxTex = new OfxTexture(renderData, image, true, renderWindow, transform, components, nComps, par);
+        OfxTexture* ofxTex = new OfxTexture(renderData, image, sourceAccess, renderWindow, transform, components, nComps, par);
         *retTexture = ofxTex;
         retCommon = ofxTex;
     }
@@ -1188,11 +1195,11 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
     double par = getAspectRatio();
     OfxImageCommon* retCommon = 0;
     if (retImage) {
-        OfxImage* ret =  new OfxImage(renderData, outputImage, false, renderWindow, Transform::Matrix3x3Ptr(), ofxComponents, nComps, par);
+        OfxImage* ret =  new OfxImage(renderData, outputImage, OfxImageCommon::eAccessWrite, renderWindow, Transform::Matrix3x3Ptr(), ofxComponents, nComps, par);
         *retImage = ret;
         retCommon = ret;
     } else if (retTexture) {
-        OfxTexture* ret =  new OfxTexture(renderData, outputImage, false, renderWindow, Transform::Matrix3x3Ptr(), ofxComponents, nComps, par);
+        OfxTexture* ret =  new OfxTexture(renderData, outputImage, OfxImageCommon::eAccessWrite, renderWindow, Transform::Matrix3x3Ptr(), ofxComponents, nComps, par);
         *retTexture = ret;
         retCommon = ret;
     }
@@ -1365,7 +1372,7 @@ OfxImageCommon::getComponentsString() const
 OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
                                const OfxClipInstance::RenderActionDataPtr& renderData,
                                const NATRON_NAMESPACE::ImagePtr& internalImage,
-                               bool isSrcImage,
+                               AccessEnum accessMode,
                                const RectI& renderWindow,
                                const Transform::Matrix3x3Ptr& mat,
                                const std::string& components,
@@ -1373,6 +1380,7 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
                                double par)
     : _imp( new OfxImageCommonPrivate(ofxImageBase, internalImage, renderData) )
 {
+    const bool isSrcImage = accessMode != eAccessWrite;
     _imp->components = components;
 
     assert(internalImage);
@@ -1414,8 +1422,9 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
         // and if it does so, it may modify the cached output of the node from which this input image comes from.
         // To circumvent this, we copy the source image into a local temporary buffer only used by the plug-in which is released
         // when this OfxImage is destroyed. By default this local copy is deactivated, to activate it, the user has to go
-        // in the preferences and check "Use input image copy for plug-ins rendering"
-        const bool copySrcToPluginLocalData = appPTR->isCopyInputImageForPluginRenderEnabled();
+        // in the preferences and check "Use input image copy for plug-ins rendering". The caller may also ask for a copy
+        // (eAccessReadCopy), so that the image is not locked while the plug-in holds it.
+        const bool copySrcToPluginLocalData = accessMode == eAccessReadCopy || appPTR->isCopyInputImageForPluginRenderEnabled();
         const NATRON_NAMESPACE::Image::ReadAccessPtr& access = readAccess;
 
         const std::size_t srcRowSize = bounds.width() * nComps  * dataSizeOf;

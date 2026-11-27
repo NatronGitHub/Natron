@@ -80,6 +80,7 @@
 #define kNatronTestPluginParamRoD "net.natron.test.ParamRoD"
 #define kNatronTestPluginMaskIdentity "net.natron.test.MaskIdentity"
 #define kNatronTestPluginMaskIdentityNoTiles "net.natron.test.MaskIdentityNoTiles"
+#define kNatronTestPluginInOrder "net.natron.test.InOrder"
 
 namespace NatronTestPlugin {
 using NatronTest::createNode;
