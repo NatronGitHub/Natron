@@ -69,6 +69,14 @@ build() {
   # osmesa-install wants an existing, writable prefix.
   mkdir -p "${MINGW_PREFIX}/osmesa"
 
+  # GLU 9.0.1 is C++98 code that uses 'register', which C++17 (clang's default
+  # standard) removed: gcc only warns, clang (CLANGARM64, #1494) stops with
+  # "ISO C++17 does not allow 'register' storage class specifier". osmesa-install
+  # passes CXXFLAGS to Mesa and GLU; Mesa doesn't use 'register'.
+  case "${MINGW_PACKAGE_PREFIX}" in
+    *-clang-*) export CXXFLAGS="${CXXFLAGS:-} -Wno-register" ;;
+  esac
+
   env OSMESA_VERSION="${_osmesa}" OSMESA_DRIVER=3 \
     OSMESA_PREFIX="${MINGW_PREFIX}/osmesa" \
     LLVM_PREFIX="${MINGW_PREFIX}" LLVM_BUILD=auto \
