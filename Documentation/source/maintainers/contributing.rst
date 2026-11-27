@@ -386,6 +386,20 @@ for pre-release tags, in the Rocky Linux 9 SDK Docker image, and
 release builds are made outside GitHub Actions, with ``tools/tart`` (in a macOS
 VM on a maintainer's Apple Silicon Mac).
 
+``project_python_roundtrip.yml`` checks, every Sunday (13:37 UTC, after the
+package workflows) and by hand, that the Python project format keeps everything
+the ``.ntp`` keeps: ``Tests/gui/run_ntp_python_roundtrip_test.py`` saves each
+Natron-Tests project (BayMax and Spaceship included) and each project of
+``Tests/data`` as a text ``.ntp``, and as Python, which it loads and saves as a
+text ``.ntp`` again, and compares the two ``.ntp`` files. It uses the packaged
+builds, which have the plug-ins, without building them: the Linux x86_64 archive
+of the ``natron_testing`` pre-release and the Windows portable tree of the last
+successful ``build_installer.yml`` run on RB-2.6 (a manual run can name other
+runs). A difference fails the job unless
+``Tests/gui/ntp_python_roundtrip_allowlist.txt`` lists it, with the issue that
+tracks it; remove the entry when the issue is fixed. The ``NtpPythonRoundTripTest``
+ctest runs the same check on the built-in projects only.
+
 Where to start
 --------------
 

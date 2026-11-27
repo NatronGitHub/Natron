@@ -276,6 +276,38 @@ def _only_in(side, element, path):
     return differences
 
 
+# A check of compare(), on two small files: nodes and parameters in another
+# order, the same numbers written differently, and three losses
+SELF_TEST_A = """<Project><NodesCollection>
+<item><Plugin_script_name>Dot1</Plugin_script_name><KnobsCount>2</KnobsCount>
+<item><Name>a</Name><Type>Double</Type><Secret>0</Secret><item><Enabled>1</Enabled><Value>1</Value><Default>0</Default></item></item>
+<item><Name>b</Name><Type>Double</Type><Secret>1</Secret><item><Enabled>1</Enabled><Value>0</Value><Default>0</Default></item></item>
+</item>
+<item><Plugin_script_name>Dot2</Plugin_script_name><Inputs_map><item><first>0</first><second>Dot1</second></item></Inputs_map></item>
+</NodesCollection></Project>"""
+SELF_TEST_B = """<Project><NodesCollection>
+<item><Plugin_script_name>Dot2</Plugin_script_name><Inputs_map><item><first>0</first><second>Dot3</second></item></Inputs_map></item>
+<item><Plugin_script_name>Dot1</Plugin_script_name><KnobsCount>1</KnobsCount>
+<item><Name>a</Name><Type>Double</Type><Secret>0</Secret><item><Enabled>1</Enabled><Value>1.0e+00</Value><Default>0</Default></item></item>
+</item>
+<item><Plugin_script_name>Dot3</Plugin_script_name></item>
+</NodesCollection></Project>"""
+SELF_TEST_DIFFERENCES = [
+    ("/NodesCollection/{Dot1}/{b}/Secret", "only in A: secret"),
+    ("/NodesCollection/{Dot2}/Inputs_map/#0/second", "A 'Dot1', B 'Dot3'"),
+    ("/NodesCollection/{Dot3}", "only in B"),
+]
+
+
+def _check_compare():
+    """True if compare() finds the differences of SELF_TEST_A and SELF_TEST_B."""
+    got = sorted(compare(ET.fromstring(SELF_TEST_A), ET.fromstring(SELF_TEST_B)))
+    if got == SELF_TEST_DIFFERENCES:
+        return True
+    print("FAILED: compare() found %r instead of %r" % (got, SELF_TEST_DIFFERENCES))
+    return False
+
+
 def _shorten(text, length=200):
     return text if len(text) <= length else text[:length] + "..."
 
@@ -414,6 +446,8 @@ def main(argv):
       The exit status.
     """
     options = _parse_args(argv[1:])
+    if not _check_compare():
+        return 1
     allowlist = Allowlist(options.allowlist)
     renderer = natronrunner.wrapper(["--debugger"] if options.debugger else []) + [
         options.renderer, "--no-settings"]

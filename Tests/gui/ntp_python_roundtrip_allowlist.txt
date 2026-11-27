@@ -1,0 +1,32 @@
+# The known differences of run_ntp_python_roundtrip_test.py (#2001): what a project loses when it is
+# saved as Python, compared with the .ntp. Each entry names the issue that tracks the loss; remove it
+# when the issue is fixed (the test prints the entries that no difference used).
+#
+# Each line: <issue> <difference path pattern> [<project pattern>]
+# The patterns are shell patterns (* also matches /), on the paths that the test prints, e.g.
+# /Project/NodesCollection/{Group1}/{myDouble}/#0/Value ({name}: a node or a parameter; #n: the
+# n-th item of a list), and on the project as given to the test (default: every project).
+# Lines that start with "# " are comments.
+
+# The disk-cache keys of the nodes
+#2004 */CacheID
+#2004 */KnobsAge
+
+# The enabled state of the GPU Rendering project parameter, which comes from the preferences
+#2005 /Project/{gpuRendering}/#0/Enabled
+
+# The visibility and enabled state that plug-ins give their parameters (the Write of all planes)
+#2006 /Project/NodesCollection/{AllPlanes}/{*}/Secret ProjectPythonTest.ntp
+#2006 /Project/NodesCollection/{AllPlanes}/{*}/#*/Enabled ProjectPythonTest.ntp
+
+# NatronRenderer drops the Viewers of Python projects
+#2007 /Project/NodesCollection/*{Viewer*}
+#2007 /ProjectGui/NodesGui/*{Viewer*}
+
+# The node colours, with 4 significant digits
+#2008 /ProjectGui/NodesGui/*/[rgb]
+
+# The Viewer settings and the window layout
+#1937 /ProjectGui/Gui_Layout/*
+#1937 /ProjectGui/ViewersData/*
+#1937 /ProjectGui/OpenedPanels/*
