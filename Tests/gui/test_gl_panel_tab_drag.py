@@ -30,7 +30,7 @@ CURVE_EDITOR = "Curve Editor"  # the tab labels
 DOPE_SHEET = "Dope Sheet"
 VIEWER = "Viewer1"
 TAB_BAR_NAME = "dragTabBar"  # given by this test to the tab bar of the dragged tab
-LABEL_RGB = (255, 0, 255)  # the scale colour set by this test: no other drawing of these views is magenta
+LABEL_RGB = (255, 0, 255)  # the scale colour set by this test (labels, and the Dope Sheet's grid): no other magenta
 VIEWER_TEXT_RGB = (200, 200, 200)  # the colour of the viewer's text (ViewerGL::Implementation::textRenderingColor)
 
 # for each tab: the class of its OpenGL view, and its name for GuiApp.saveScreenshot()
@@ -132,8 +132,9 @@ def drag_tab_to(label, global_pos, steps=20):
 
 
 def view_pixels(label, what):
-    """The OpenGL view of the tab label as drawn on screen: rows of (r, g, b) in device pixels, and the
-    number of device pixels per widget pixel.
+    """The OpenGL view of the tab label as drawn on screen, and its device pixel ratio.
+
+    The view is returned as rows of (r, g, b) tuples, in device pixels.
 
     GuiApp.saveScreenshot() draws each OpenGL widget from its framebuffer (QOpenGLWidget::grabFramebuffer()),
     which renders it again. The test doesn't call grabFramebuffer() itself: Qt 6 moved QOpenGLWidget to
@@ -164,22 +165,39 @@ def view_pixels(label, what):
     return rows, scale
 
 
-def solid_block(rows, is_text, min_w, min_h):
-    """The (x, y, w, h) of a block of at least min_w x min_h pixels of one colour that is_text(), or None.
+def text_marks(rows, is_text):
+    """For each pixel of rows, whether its colour is_text(), outside the rows and columns of grid lines.
+
+    The grid lines are the rows and columns that are is_text() on more than 90% of their length (the
+    Dope Sheet draws its grid in its scale colour, and centres each label on a line).
+    """
+    height, width = len(rows), len(rows[0]) if rows else 0
+    marks = [[is_text(c) for c in row] for row in rows]
+    lines_x = [x for x in range(width) if sum(marks[y][x] for y in range(height)) > 0.9 * height]
+    lines_y = [y for y in range(height) if sum(marks[y]) > 0.9 * width]
+    for y in lines_y:
+        marks[y] = [False] * width
+    for row in marks:
+        for x in lines_x:
+            row[x] = False
+    return marks
+
+
+def solid_block(rows, marks, min_w, min_h):
+    """The (x, y, w, h) of a block of at least min_w x min_h marked pixels of one colour, or None.
 
     A glyph drawn without its texture is a solid rectangle of the text colour, as wide as the advance of
     the character and as high as the font. The strokes of a glyph drawn from its texture are thinner than
     min_w, and anti-aliased.
     """
     height, width = len(rows), len(rows[0]) if rows else 0
-    run = [0] * width  # for each column, the height of the run of one text colour that ends at row y
+    run = [0] * width  # for each column, the height of the run of one marked colour that ends at row y
     for y in range(height):
         row = rows[y]
         for x in range(width):
-            c = row[x]
-            if not is_text(c):
+            if not marks[y][x]:
                 run[x] = 0
-            elif run[x] > 0 and rows[y - 1][x] == c:
+            elif run[x] > 0 and rows[y - 1][x] == row[x]:
                 run[x] += 1
             else:
                 run[x] = 1
@@ -203,38 +221,41 @@ def is_label(c):
     return abs(r - b) <= 3 and r - g >= 40
 
 
-def text_pixels(rows, is_text):
-    """The number of pixels that is_text(), outside the rows and columns of grid lines (mostly is_text())."""
-    height, width = len(rows), len(rows[0]) if rows else 0
-    marks = [[is_text(c) for c in row] for row in rows]
-    lines_x = set(x for x in range(width) if sum(marks[y][x] for y in range(height)) > height // 2)
-    lines_y = set(y for y in range(height) if sum(marks[y]) > width // 2)
-    return sum(1 for y in range(height) if y not in lines_y
-               for x in range(width) if marks[y][x] and x not in lines_x)
+def view_pixels_drawn(label, what):
+    """The pixels of the OpenGL view of the tab label (see view_pixels()), which must not be uniform."""
+    rows, scale = view_pixels(label, what)
+    colours = set(c for row in rows for c in row)
+    check(len(colours) > 1, "the %s is a uniform %r after %s" % (label, next(iter(colours), None), what))
+    return rows, scale
+
+
+def check_text(label, what, rows, scale, is_text, min_pixels):
+    """At least min_pixels pixels of text colour (is_text()), and no glyph drawn as a solid rectangle."""
+    marks = text_marks(rows, is_text)
+    n = sum(sum(row) for row in marks)
+    print("%s after %s: %dx%d device pixels, %d text pixels" % (label, what, len(rows[0]), len(rows), n))
+    check(n >= min_pixels, "the %s draws no text after %s (%d text pixels)" % (label, what, n))
+    # thicker than the strokes of a glyph, taller than digits
+    block = solid_block(rows, marks, round(4 * scale), round(10 * scale))
+    check(block is None, "the %s draws a solid rectangle %r of the text colour %r after %s: a glyph without its texture"
+          % (label, block, block and rows[block[1]][block[0]], what))
 
 
 def check_view_drawn(label, what):
-    """The OpenGL view of the tab label is shown and drawn: its labels as text, the viewer's image."""
-    if label == VIEWER:
-        fit_viewer()  # the image fills the viewer, whatever its new size
-    rows, scale = view_pixels(label, what)
-    height, width = len(rows), len(rows[0]) if rows else 0
-    colours = set(c for row in rows for c in row)
-    check(len(colours) > 1, "the %s is a uniform %r after %s" % (label, next(iter(colours), None), what))
-    min_w, min_h = round(4 * scale), round(8 * scale)
-    if label == VIEWER:
-        # the Generator's image: its colour at the centre
-        c = rows[height // 2][width // 2]
-        check(all(abs(v - srgb8(0.5)) <= 3 for v in c),
-              "the viewer shows %r at its centre after %s, not the image (%d)" % (c, what, srgb8(0.5)))
-        block = solid_block(rows, lambda p: p == VIEWER_TEXT_RGB, min_w, min_h)
-    else:
-        n = text_pixels(rows, is_label)
-        print("%s after %s: %dx%d device pixels, %d label pixels" % (label, what, width, height, n))
-        check(n >= 20, "the %s has no scale labels after %s (%d label pixels)" % (label, what, n))
-        block = solid_block(rows, is_label, min_w, min_h)
-    check(block is None, "the %s draws a solid rectangle %r of the text colour %r after %s: a glyph without its texture"
-          % (label, block, block and rows[block[1]][block[0]], what))
+    """The OpenGL view of the tab label is shown and drawn: the scale labels of the Curve Editor and of the
+    Dope Sheet, the image and the text of the viewer."""
+    if label != VIEWER:
+        rows, scale = view_pixels_drawn(label, what)
+        check_text(label, what, rows, scale, is_label, 20)
+        return
+    fit_viewer()  # the image fills the viewer, whatever its new size
+    rows, scale = view_pixels_drawn(label, what)
+    # the Generator's image at the centre (188), its format border (125) and RoD (100): only the viewer's
+    # text (e.g. the format name, VIEWER_TEXT_RGB) is a grey of at least 195
+    c = rows[len(rows) // 2][len(rows[0]) // 2]
+    check(all(abs(v - srgb8(0.5)) <= 3 for v in c),
+          "the viewer shows %r at its centre after %s, not the image (%d)" % (c, what, srgb8(0.5)))
+    check_text(label, what, rows, scale, lambda p: p[0] == p[1] == p[2] >= 195, 5)
 
 
 def floating_windows():
@@ -253,13 +274,10 @@ def free_point(screen, main):
     return None
 
 
-def float_and_dock(label, home):
-    """Drags the tab label out of the main window (a floating window), then into the pane named home."""
-    screen = QtGui.QGuiApplication.primaryScreen().geometry()
-    drop_pos = free_point(screen, main)
-    if drop_pos is None:
-        # no free point on the screen: off the screen, where there is no widget either
-        drop_pos = QtCore.QPoint(screen.left() - 50, screen.top() - 50)
+def float_and_dock(label, main, home):
+    """Drags the tab label out of the main window main (a floating window), then into the pane named home."""
+    drop_pos = free_point(QtGui.QGuiApplication.primaryScreen().geometry(), main)
+    check(drop_pos is not None, "no free point right of the main window, where the %s could float" % label)
     drag_tab_to(label, drop_pos)
     floating = gl_view(label)[0].window()
     check(floating is not main, "the %s tab dropped outside the main window did not float" % label)
@@ -296,13 +314,13 @@ viewer_pane = pane_of(VIEWER)[0]
 check(workshop != viewer_pane, "the %s tab is in the viewer's pane" % CURVE_EDITOR)
 check(pane_of(DOPE_SHEET)[0] == workshop, "the %s tab is not in the pane of the %s" % (DOPE_SHEET, CURVE_EDITOR))
 
-# room right of the main window on the screen, for the floating windows
+# room right of the main window, so that the floating windows open on the screen
 screen = QtGui.QGuiApplication.primaryScreen().geometry()
 print("screen %r, main window %r" % (screen.getRect(), main.frameGeometry().getRect()))
-if free_point(screen, main) is None:
-    main.setGeometry(screen.x(), screen.y(), screen.width() * 2 // 3, screen.height())
-    wait_idle()
-    print("main window resized to %r" % (main.frameGeometry().getRect(),))
+main.setGeometry(screen.x(), screen.y(), screen.width() // 2, screen.height())
+wait_idle()
+print("main window resized to %r" % (main.frameGeometry().getRect(),))
+check(free_point(screen, main) is not None, "no free point right of the main window on the screen")
 
 # docked, before any drag: the checks pass when the views are drawn right
 for label in (CURVE_EDITOR, DOPE_SHEET, VIEWER):
@@ -320,7 +338,7 @@ check_view_drawn(CURVE_EDITOR, "the drag to the viewer's pane")
 # 2. each panel out of the main window, and back into the Node Graph's pane; the viewer last, because
 #    it leaves its pane empty
 for label in (CURVE_EDITOR, DOPE_SHEET, VIEWER):
-    float_and_dock(label, workshop)
+    float_and_dock(label, main, workshop)
 
 # Natron is still alive and responsive
 app.getViewer(VIEWER).renderCurrentFrame(True)
