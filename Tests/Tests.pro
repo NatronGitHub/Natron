@@ -158,6 +158,7 @@ SOURCES += \
     TrackerHeadless_Test.cpp \
     ViewerCache_Test.cpp \
     ViewerTexture_Test.cpp \
+    WriteNodeReadBack_Test.cpp \
     WriteNodeViews_Test.cpp \
     wmain.cpp
 
