@@ -31,6 +31,7 @@
 #include <limits>
 #include <cassert>
 #include <stdexcept>
+#include <cstdint>
 #include <cstring> // for std::memcpy, std::memset
 #include <sstream> // stringstream
 
@@ -3317,43 +3318,126 @@ appendFeatherPatchSide(cairo_pattern_t* mesh,
     cairo_mesh_pattern_curve_to(mesh, first.x, first.y, second.x, second.y, to.x, to.y);
 }
 
-// Adds to mesh one patch per segment of the shape, between the segment and the matching segment of the feather,
-// opaque on the inner side and transparent on the outer side.
+// Adds to mesh the feather patch k (1 <= k <= the number of points) as an opaque gray: between the segment of the
+// shape from point k - 1 to point k (modulo the number of points) and the matching segment of the feather, 1 on the
+// inner side and 0 on the outer side.
 void
-addFeatherPatches(const SampledFeather& sampled,
-                  const double shapeColor[3],
-                  double fallOff,
-                  cairo_pattern_t* mesh)
+addFeatherPatch(const SampledFeather& sampled,
+                std::size_t k,
+                double fallOff,
+                cairo_pattern_t* mesh)
 {
-    ///Note that we do not use the opacity when rendering the bezier, it is rendered with correct floating point opacity/color when converting
-    ///to the Natron image.
-    const std::size_t n = sampled.shape.size();
+    const std::size_t a = k - 1;
+    const std::size_t b = k % sampled.shape.size();
+    const Point& p0 = sampled.shape[a];
+    const Point& p1 = sampled.feather[a];
+    const Point& p2 = sampled.feather[b];
+    const Point& p3 = sampled.shape[b];
 
-    for (std::size_t k = 1; k <= n; ++k) {
-        const std::size_t a = k - 1;
-        const std::size_t b = k % n;
-        const Point& p0 = sampled.shape[a];
-        const Point& p1 = sampled.feather[a];
-        const Point& p2 = sampled.feather[b];
-        const Point& p3 = sampled.shape[b];
-
-        cairo_mesh_pattern_begin_patch(mesh);
-        cairo_mesh_pattern_move_to(mesh, p0.x, p0.y);
-        appendFeatherPatchSide(mesh, p0, p1, !sampled.inward[a], fallOff);
-        cairo_mesh_pattern_line_to(mesh, p2.x, p2.y);
-        appendFeatherPatchSide(mesh, p2, p3, sampled.inward[b], fallOff);
-        cairo_mesh_pattern_line_to(mesh, p0.x, p0.y);
-        // the corners 0 to 3 are p0 to p3
-        const double shapeOpacity[2] = { sampled.inward[a] ? 0. : 1., sampled.inward[b] ? 0. : 1. };
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, shapeColor[0], shapeColor[1], shapeColor[2], shapeOpacity[0]);
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor[0], shapeColor[1], shapeColor[2], 1. - shapeOpacity[0]);
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor[0], shapeColor[1], shapeColor[2], 1. - shapeOpacity[1]);
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor[0], shapeColor[1], shapeColor[2], shapeOpacity[1]);
-        assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
-
-        cairo_mesh_pattern_end_patch(mesh);
-    }
+    cairo_mesh_pattern_begin_patch(mesh);
+    cairo_mesh_pattern_move_to(mesh, p0.x, p0.y);
+    appendFeatherPatchSide(mesh, p0, p1, !sampled.inward[a], fallOff);
+    cairo_mesh_pattern_line_to(mesh, p2.x, p2.y);
+    appendFeatherPatchSide(mesh, p2, p3, sampled.inward[b], fallOff);
+    cairo_mesh_pattern_line_to(mesh, p0.x, p0.y);
+    // the corners 0 to 3 are p0 to p3
+    const double shapeValue[2] = { sampled.inward[a] ? 0. : 1., sampled.inward[b] ? 0. : 1. };
+    cairo_mesh_pattern_set_corner_color_rgb(mesh, 0, shapeValue[0], shapeValue[0], shapeValue[0]);
+    cairo_mesh_pattern_set_corner_color_rgb(mesh, 1, 1. - shapeValue[0], 1. - shapeValue[0], 1. - shapeValue[0]);
+    cairo_mesh_pattern_set_corner_color_rgb(mesh, 2, 1. - shapeValue[1], 1. - shapeValue[1], 1. - shapeValue[1]);
+    cairo_mesh_pattern_set_corner_color_rgb(mesh, 3, shapeValue[1], shapeValue[1], shapeValue[1]);
+    assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
+    cairo_mesh_pattern_end_patch(mesh);
 }
+
+// The product of two 8-bit values, rounded as cairo (pixman) does when it composites
+unsigned char
+multiplyUnorm8(unsigned int a,
+               unsigned int b)
+{
+    const unsigned int t = a * b + 0x80;
+
+    return (unsigned char)( ( (t >> 8) + t ) >> 8 );
+}
+
+// Paints the feather onto cr, over what it holds.
+// Where feather patches overlap (e.g. at a concave corner of the shape, or where feather points cross), each pixel
+// takes the largest of their values (#147): in a cairo mesh pattern, a patch covers the patches added before it, with a
+// hard edge where it ends over one of them. So each patch is painted on its own, as an opaque gray, with the LIGHTEN
+// (maximum) operator, in an RGB image. The alpha of the feather is the square of that gray, as the former
+// cairo_mask() of the mesh pattern of all the patches by itself gave, rounded the same way.
+void
+paintFeather(cairo_t* cr,
+             const SampledFeather& sampled,
+             double fallOff)
+{
+    if ( sampled.shape.empty() ) {
+        return;
+    }
+
+    // the pixels of the target image that the patches cover (their sides are inside the bounding box of their corners)
+    double x1 = std::numeric_limits<double>::infinity();
+    double y1 = x1;
+    double x2 = -x1;
+    double y2 = -x1;
+    for (const std::vector<Point>* polygon : { &sampled.shape, &sampled.feather }) {
+        for (const Point& p : *polygon) {
+            x1 = std::min(x1, p.x);
+            y1 = std::min(y1, p.y);
+            x2 = std::max(x2, p.x);
+            y2 = std::max(y2, p.y);
+        }
+    }
+    cairo_surface_t* target = cairo_get_target(cr);
+    double offsetX, offsetY;
+    cairo_surface_get_device_offset(target, &offsetX, &offsetY);
+    // in user space, the target covers [-offsetX, -offsetX + width) x [-offsetY, -offsetY + height)
+    const double left = std::max(std::floor(x1), -offsetX);
+    const double bottom = std::max(std::floor(y1), -offsetY);
+    const double right = std::min(std::ceil(x2) + 1., -offsetX + cairo_image_surface_get_width(target));
+    const double top = std::min(std::ceil(y2) + 1., -offsetY + cairo_image_surface_get_height(target));
+    if ( (left >= right) || (bottom >= top) ) {
+        return;
+    }
+    const int width = (int)(right - left);
+    const int height = (int)(top - bottom);
+
+    cairo_surface_t* gray = cairo_image_surface_create(CAIRO_FORMAT_RGB24, width, height);
+    cairo_surface_t* alpha = cairo_image_surface_create(CAIRO_FORMAT_A8, width, height);
+    if ( (cairo_surface_status(gray) == CAIRO_STATUS_SUCCESS) && (cairo_surface_status(alpha) == CAIRO_STATUS_SUCCESS) ) {
+        cairo_t* grayCr = cairo_create(gray); // a new RGB24 image is black
+        cairo_translate(grayCr, -left, -bottom);
+        cairo_set_operator(grayCr, CAIRO_OPERATOR_LIGHTEN);
+        for (std::size_t k = 1; k <= sampled.shape.size(); ++k) {
+            cairo_pattern_t* patch = cairo_pattern_create_mesh();
+            addFeatherPatch(sampled, k, fallOff, patch);
+            cairo_set_source(grayCr, patch);
+            cairo_paint(grayCr);
+            cairo_pattern_destroy(patch);
+        }
+        cairo_destroy(grayCr);
+        cairo_surface_flush(gray);
+
+        const unsigned char* grayRow = cairo_image_surface_get_data(gray);
+        const int grayStride = cairo_image_surface_get_stride(gray);
+        unsigned char* alphaRow = cairo_image_surface_get_data(alpha);
+        const int alphaStride = cairo_image_surface_get_stride(alpha);
+        for (int y = 0; y < height; ++y, grayRow += grayStride, alphaRow += alphaStride) {
+            for (int x = 0; x < width; ++x) {
+                std::uint32_t pixel; // native-endian
+                std::memcpy(&pixel, grayRow + 4 * x, sizeof(pixel));
+                const unsigned int value = (pixel >> 16) & 0xff; // the red channel
+                alphaRow[x] = multiplyUnorm8(value, value);
+            }
+        }
+        cairo_surface_mark_dirty(alpha);
+
+        cairo_set_source_rgba(cr, 1., 1., 1., 1.);
+        cairo_mask_surface(cr, alpha, left, bottom);
+    }
+    cairo_surface_destroy(alpha);
+    cairo_surface_destroy(gray);
+} // paintFeather
 
 // Appends the closed polygon to the current path of cr
 void
@@ -3428,7 +3512,6 @@ RotoContextPrivate::renderBezier(cairo_t* cr,
         Q_UNUSED(opacity);
 #else
         const SampledFeather feather = sampleFeather(*bezier, t, mipmapLevel, featherDist);
-        addFeatherPatches(feather, shapeColor, fallOff, mesh);
 
         // The shape is opaque inside both the shape and its feather: where the feather is inward, the fill stops at
         // the feather, and the feather patches fade it out from there to the shape (#157).
@@ -3443,6 +3526,7 @@ RotoContextPrivate::renderBezier(cairo_t* cr,
         if (feather.hasInwardPoint) {
             cairo_restore(cr);
         }
+        paintFeather(cr, feather, fallOff);
 
 #endif
         

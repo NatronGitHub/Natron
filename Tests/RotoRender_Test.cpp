@@ -17,7 +17,8 @@
  * ***** END LICENSE BLOCK ***** */
 
 // What the Roto node renders, compared with the expected alpha:
-// - the feather ramp of a shape, outward and inward (#157).
+// - the feather ramp of a shape, outward and inward (#157);
+// - overlapping feathers (#147).
 //
 // With a feather fall-off of 1, the alpha of a feather of width w at the distance d from the opaque edge is
 // (1 - d / w)^2 (the feather patches interpolate 1 - d / w, and RotoContextPrivate::renderBezier() squares it).
@@ -273,4 +274,33 @@ TEST_F(RotoRenderTest, InwardFeatherRamp)
     EXPECT_NEAR( featherRamp(25., 50.), alpha.at(375, y), kRampTolerance );
     EXPECT_NEAR( featherRamp(25., 50.), alpha.at(250, 125), kRampTolerance );
     EXPECT_NEAR( featherRamp(25., 50.), alpha.at(250, 375), kRampTolerance );
+}
+
+// #147: a U shape with a feather distance of 80 px; the feathers of the two sides of its 100 px wide gap overlap.
+// The alpha in the gap is the largest of the two feathers, a continuous and symmetric profile; one feather used to
+// cover the other, with a jump from 0 to 0.66 where it ended.
+TEST_F(RotoRenderTest, OverlappingFeathers)
+{
+    if (!_havePlugins) {
+        return;
+    }
+    NodePtr roto = makeRoto();
+    ASSERT_TRUE( bool(roto) );
+    const std::vector<XY> u = { {100., 100.}, {400., 100.}, {400., 400.}, {300., 400.}, {300., 200.}, {200., 200.}, {200., 400.}, {100., 400.} };
+    const double width = 80.;
+    ASSERT_TRUE( bool( makePolygon(roto->getRotoContext(), u, width) ) );
+    const Alpha alpha( renderFrame(roto) );
+
+    // away from the corners
+    const int y = 350;
+    for (int x = 200; x < 300; ++x) {
+        const double center = x + 0.5;
+        const double expected = std::max( featherRamp(center - 200., width), featherRamp(300. - center, width) );
+        EXPECT_NEAR(expected, alpha.at(x, y), 0.02) << "x=" << x;
+        EXPECT_NEAR(alpha.at(x, y), alpha.at(499 - x, y), 0.02) << "x=" << x;
+    }
+    // the outer side is not changed
+    for (int x = 20; x < 100; ++x) {
+        EXPECT_NEAR(featherRamp(100. - (x + 0.5), width), alpha.at(x, 250), 0.02) << "x=" << x;
+    }
 }
