@@ -91,9 +91,9 @@ install the packages into another directory with ``--target``, and add that dire
 
 ``export`` and ``set`` only reach a Natron started from the same shell. For a Natron started
 from the desktop (Finder or Dock, Start menu, a desktop launcher), set ``PYTHONPATH`` for the
-session instead (for example ``setx PYTHONPATH %USERPROFILE%\natron-python-modules`` on Windows,
-or ``launchctl setenv PYTHONPATH ~/natron-python-modules`` on macOS, not tested), or add the
-directory to ``sys.path`` in ``init.py`` (see :ref:`startupScripts`).
+programs started afterwards: ``setx PYTHONPATH %USERPROFILE%\natron-python-modules`` on Windows
+(it stays set), or ``launchctl setenv PYTHONPATH ~/natron-python-modules`` on macOS (until you log
+out; not tested). You can also add the directory to ``sys.path`` in ``init.py`` (see :ref:`startupScripts`).
 
 On macOS, installing into ``Natron.app`` modifies the signed application bundle, so prefer
 ``--target`` there.
