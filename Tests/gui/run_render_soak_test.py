@@ -24,13 +24,20 @@ Usage: run_render_soak_test.py /path/to/NatronRenderer [options] [--debugger]
 
 Each run starts NatronRenderer on one graph of render_soak_graph.py (the "writers" graph: four Write nodes
 after generators, a Read of an image sequence, Reformat, expressions, motion blur, Merge, FrameHold, Blur and
-DiskCache; the "sequential" graph: a plug-in rendered in frame order, and WriteFFmpeg), driven one of two ways:
+DiskCache; the "sequential" graph: a plug-in rendered in frame order, and WriteFFmpeg; the "baymax" graph: the
+four configurations of Natron-Tests' BayMax project, rendered from the command line as runTests.sh does), driven one
+of two ways:
 - cli: "NatronRenderer -w <Write> <file> ... project.ntp first-last", all the Write nodes rendered at once;
 - python: "NatronRenderer -t render_soak_graph.py", which renders with app.render(): one Write node in many
   short renders, the others together, and the last one aborted with natron.quit() from a callback;
   a second NatronRenderer then renders that Write node again (restart).
 with one threading configuration (--setting, see CONFIGS): the runs go through the combinations in turn. Each run
-has its own disk cache, seeded with the OFX plug-in cache of the setup. Renders in the Natron GUI are not covered.
+has its own disk cache, seeded with the OFX plug-in cache of the setup, and is a new NatronRenderer (its own RAM
+cache); Grade nodes after the generators and the Read nodes ("RunGain", "SoakRunGain" in BayMax) change slightly
+from run to run, so that no image can come from an earlier run. The cli runs use render statistics (-s): each frame
+must show a cache miss of a frame-varying node (PROBES), or the run fails. The Python driver renders each frame
+once per Write node, except one pass that re-renders frames from the cache on purpose (labelled in its output).
+Renders in the Natron GUI are not covered.
 
 A watchdog follows the progress: the "<Write> ==> Frame: N" lines of NatronRenderer and the files written in the
 output directory. When nothing progresses for --stall-timeout seconds, it prints the backtrace of every thread
@@ -43,12 +50,16 @@ Options:
   --runs N           number of runs (default: one per graph and driver)
   --duration S       keep starting runs for S seconds (instead of --runs)
   --stall-timeout S  seconds without progress that count as a stall (default 120)
-  --graphs LIST      comma-separated graphs (default writers,sequential)
+  --graphs LIST      comma-separated graphs: writers, sequential, baymax (default writers,sequential)
   --drivers LIST     comma-separated drivers (default cli,python)
   --configs LIST     comma-separated threading configurations (default: all, see CONFIGS)
   --size WxH         size of the rendered images (default 320x180)
   --out DIR          keep the logs, backtraces and summary in DIR (default: a temporary directory, removed)
   --ofx-path DIR     add DIR to OFX_PLUGIN_PATH (the test plug-ins, for net.natron.test.Sequential)
+  --natron-tests DIR a Natron-Tests checkout, with BayMax/Robot (runTests.sh downloads it), for --graphs baymax
+  --pyplug-path DIR  add DIR to NATRON_PLUGIN_PATH (BayMax needs the LightWrap PyPlug of Gui/Resources/PyPlugs)
+  --idiff PATH       idiff, to compare the first frame of each BayMax configuration with its reference (default:
+                     idiff on PATH; no comparison without it)
   --debugger         run NatronRenderer under natron-lldb.sh (or set NATRON_TEST_WRAPPER, see natronrunner.py)
 
 Exit status: 0 on success, 77 if skipped (no OpenColorIO configuration, or the plug-ins of openfx-misc and
@@ -92,6 +103,59 @@ CONFIGS = {
 }
 DEBUGGER_TIMEOUT = 120  # seconds for a debugger to print the backtraces of a stalled NatronRenderer
 INPUT_FRAMES = 50  # frames of the sequence that the Read node of the writers graph reads (it loops)
+# The frame-varying node of each graph whose render statistics (NatronRenderer -s) must show a cache miss at each frame,
+# in the statistics of at least one Write node: the frame was rendered, not taken from a cache.
+PROBES = {"writers": "Grade", "sequential": "Grade", "baymax": "SoakRunGain"}
+# Natron-Tests' BayMax project: its configurations, as runTests.sh reads them, and the idiff options it uses for BayMax
+BAYMAX_CONFS = ("conf", "conf2", "conf3", "conf4")
+BAYMAX_IDIFF_OPTS = ["-warn", "0.001", "-fail", "0.008", "-failpercent", "0.2", "-hardfail", "0.08", "-abs", "-scale", "30"]
+# Run by NatronRenderer -l on a BayMax project: inserts a Grade by the run's gain after each Read node, and adds the
+# WriteOIIO that renders the output node of the configuration (as runTests.sh does).
+BAYMAX_ONLOAD = """
+import os
+from NatronEngine import natron
+
+gain = float(os.environ["SOAK_RUN_GAIN"])
+
+def children(group):
+    for node in group.getChildren():
+        yield node
+        if node.getPluginID() == "fr.inria.built-in.Group":
+            for child in children(node):
+                yield child
+
+nodes = list(children(app))
+reads = [n for n in nodes if n.getPluginID() == "fr.inria.built-in.Read"]
+for index, read in enumerate(reads):
+    grade = app.createNode("net.sf.openfx.GradePlugin", -1, read.getContainerGroup())
+    grade.setScriptName("SoakRunGain%d" % index)
+    grade.getParam("multiply").set(gain, gain, gain, gain)
+    for node in nodes:
+        for i in range(node.getMaxInputCount()):
+            if node.getInput(i) == read:  # Effects compare equal when they are the same node (#777)
+                node.connectInput(i, grade)
+    grade.connectInput(0, read)
+print("SOAK inserted %d SoakRunGain nodes" % len(reads))
+writer = app.createNode("fr.inria.openfx.WriteOIIO")
+writer.setScriptName("SoakWrite")
+writer = app.SoakWrite
+writer.connectInput(0, getattr(app, os.environ["SOAK_OUTPUT_NODE"]))
+writer.filename.set(os.environ["SOAK_OUTPUT_FILE"])
+writer.encodingPluginChoice.set("fr.inria.openfx.WriteOIIO")
+writer.frameRange.set(2)
+writer.firstFrame.set(int(os.environ["SOAK_FIRST"]))
+writer.lastFrame.set(int(os.environ["SOAK_LAST"]))
+writer.quality.set(int(os.environ["SOAK_QUALITY"]))
+"""
+# Run by NatronRenderer -l on the saved projects of the other graphs: the run's gain
+GAIN_ONLOAD = """
+import os
+gain = float(os.environ["SOAK_RUN_GAIN"])
+for name in ("RunGain", "RunGainRead"):
+    node = getattr(app, name, None)
+    if node is not None:
+        node.getParam("multiply").set(gain, gain, gain, gain)
+"""
 
 
 def parse_args(argv):
@@ -108,6 +172,11 @@ def parse_args(argv):
     parser.add_argument("--size", default="320x180")
     parser.add_argument("--out", default="")
     parser.add_argument("--ofx-path", default="")
+    parser.add_argument("--natron-tests", default="", help="a Natron-Tests checkout with BayMax/Robot, for the baymax graph")
+    parser.add_argument("--pyplug-path", default="",
+                        help="add this directory to NATRON_PLUGIN_PATH (BayMax uses the LightWrap PyPlug: "
+                             "Gui/Resources/PyPlugs of the sources, for a build tree)")
+    parser.add_argument("--idiff", default="", help="idiff, to compare frames of BayMax with the references (default: on PATH)")
     parser.add_argument("--debugger", action="store_true")
     opts = parser.parse_args(argv)
     unknown = [c for c in opts.configs.split(",") if c not in CONFIGS]
@@ -280,18 +349,57 @@ def dump_backtraces(proc, wrapped):
     return ret
 
 
+def frame_path(out_dir, pattern, frame):
+    """The file of frame for pattern: "png_####.png" (zero-padded to the number of #) or "output#.jpg"."""
+    hashes = pattern.count("#")
+    return os.path.join(out_dir, pattern.replace("#" * hashes, "%0*d" % (hashes, frame)))
+
+
 def frames_written(out_dir, pattern, first, last):
-    """The frames first..last of pattern ("png_####.png") that exist and are not empty."""
-    if "#" not in pattern:  # a video: one file
+    """The frames first..last of pattern (see frame_path()) that exist and are not empty; a video is one file."""
+    if "#" not in pattern:
         path = os.path.join(out_dir, pattern)
         return list(range(first, last + 1)) if os.path.isfile(path) and os.path.getsize(path) > 0 else []
-    prefix, _, suffix = pattern.partition("####")
+    return [frame for frame in range(first, last + 1)
+            if os.path.isfile(frame_path(out_dir, pattern, frame)) and os.path.getsize(frame_path(out_dir, pattern, frame)) > 0]
+
+
+def probe_misses(stats_path, probe):
+    """The cache misses of the nodes whose name starts with probe, in a render statistics file (NatronRenderer -s)."""
+    misses = 0
+    node = None
+    try:
+        with open(stats_path, errors="replace") as f:
+            for line in f:
+                if line.startswith("------------------------------- "):
+                    node = line.split()[1].rstrip("-")
+                elif line.startswith("Nb cache miss: ") and node and node.startswith(probe):
+                    misses += int(line.split(":")[1])
+    except (OSError, ValueError):
+        pass
+    return misses
+
+
+def unrendered_frames(out_dir, writers, first, last, probe):
+    """The frames whose render statistics show no cache miss of probe for any image-sequence Write node.
+
+    A frame whose frame-varying probe node never missed the cache was not rendered: its images came from a cache.
+    """
+    sequences = [pattern for pattern in writers.values() if "#" in pattern]
     ret = []
     for frame in range(first, last + 1):
-        path = os.path.join(out_dir, "%s%04d%s" % (prefix, frame, suffix))
-        if os.path.isfile(path) and os.path.getsize(path) > 0:
+        stats = [os.path.splitext(frame_path(out_dir, pattern, frame))[0] + "-stats.txt" for pattern in sequences]
+        if sequences and not any(probe_misses(path, probe) for path in stats):
             ret.append(frame)
     return ret
+
+
+def compare_with_reference(idiff, reference, output):
+    """None if output matches reference (idiff with the BayMax options of Natron-Tests), else the idiff output."""
+    result = subprocess.run([idiff, reference, output] + BAYMAX_IDIFF_OPTS, stdin=subprocess.DEVNULL,
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=300, check=False)
+    out = result.stdout.decode(errors="replace")
+    return out if "FAILURE" in out or result.returncode not in (0, 1) else None
 
 
 def reported_frames(lines, writer):
@@ -338,6 +446,31 @@ def setup_graph(renderer, wrapper, work, graph, opts, timeout):
     return project, writers
 
 
+def setup_baymax(work, natron_tests):
+    """Copies BayMax from a Natron-Tests checkout into work; returns its configurations, or None to skip it.
+
+    Each configuration is a dict: conf (its file name), project, first, last, node (the output node), quality, and
+    pattern (the output files).
+    """
+    source = os.path.join(natron_tests, "BayMax") if natron_tests else ""
+    if not os.path.isdir(os.path.join(source, "Robot")):
+        print("graph baymax skipped: no BayMax/Robot in the Natron-Tests checkout %r (--natron-tests; runTests.sh "
+              "downloads Robot)" % natron_tests)
+        return None
+    target = os.path.join(work, "BayMax")
+    if not os.path.isdir(target):
+        shutil.copytree(source, target, ignore=shutil.ignore_patterns("output*", "comp*", "*.lock", "*.autosave"))
+    confs = []
+    for conf in BAYMAX_CONFS:
+        with open(os.path.join(target, conf)) as f:
+            lines = [line.strip() for line in f]
+        first, last = (int(v) for v in lines[1].split())
+        confs.append({"conf": conf, "project": os.path.join(target, lines[0]), "first": first, "last": last,
+                      "node": lines[2], "quality": lines[4] if len(lines) > 4 and lines[4] else "85",
+                      "pattern": "%s_output#.%s" % (conf, lines[3])})
+    return confs
+
+
 def write_input_sequence(directory, count, width, height):
     """Writes the image sequence that the Read node of the writers graph reads (in_0001.png ...)."""
     os.makedirs(directory, exist_ok=True)
@@ -348,8 +481,12 @@ def write_input_sequence(directory, count, width, height):
 
 def one_run(index, renderer, wrapper, work, graph, setup, driver, config, opts):
     """Runs one soak run; returns its summary (a dict)."""
-    project, writers = setup
-    first, last = 1, opts.frames
+    if graph == "baymax":
+        writers = {c["conf"]: c["pattern"] for c in setup}
+        first, last = min(c["first"] for c in setup), max(c["last"] for c in setup)
+    else:
+        project, writers = setup
+        first, last = 1, opts.frames
     run_dir = os.path.join(work, "run%03d" % index)
     out_dir = os.path.join(run_dir, "out")
     os.makedirs(out_dir)
@@ -362,14 +499,31 @@ def one_run(index, renderer, wrapper, work, graph, setup, driver, config, opts):
     # again, which may take longer than the stall timeout on a slow machine.
     cache = os.path.join(run_dir, "cache")
     shutil.copytree(os.path.join(work, "cache"), cache)
+    # A gain that changes from run to run (Grade nodes after the generators and the Read nodes): no image of this run
+    # can be one of an earlier run. Each run is also a new NatronRenderer, with a RAM cache of its own.
+    gain = 1 + (index % 10 + 1) * 1e-4
     base_env = dict(SOAK_OUT=out_dir, SOAK_GRAPH=graph, SOAK_SIZE=opts.size, SOAK_INPUT=os.path.join(work, "input"),
-                    NATRON_DISK_CACHE_PATH=cache)
+                    NATRON_DISK_CACHE_PATH=cache, SOAK_RUN_GAIN=repr(gain))
     summary = {"run": index, "graph": graph, "driver": driver, "config": config, "frames": last - first + 1,
                "writers": len(writers), "result": "ok", "seconds": 0., "longest_gap": 0., "details": ""}
     frame_range = "%d-%d" % (first, last)
     steps = []
-    if driver == "cli":
-        cmd = wrapper + [renderer, "--no-settings"] + settings
+    if graph == "baymax":
+        # each configuration of Natron-Tests, as runTests.sh renders it, with render statistics (-s)
+        onload = os.path.join(run_dir, "baymax_onload.py")
+        with open(onload, "w") as f:
+            f.write(BAYMAX_ONLOAD)
+        for c in setup:
+            env = dict(base_env, SOAK_OUTPUT_NODE=c["node"], SOAK_OUTPUT_FILE=os.path.join(out_dir, c["pattern"]),
+                       SOAK_FIRST=str(c["first"]), SOAK_LAST=str(c["last"]), SOAK_QUALITY=c["quality"])
+            steps.append((wrapper + [renderer, "--no-settings"] + settings +
+                          ["-s", "-w", "SoakWrite", "-l", onload, c["project"]], env, [0]))
+    elif driver == "cli":
+        onload = os.path.join(run_dir, "gain_onload.py")
+        with open(onload, "w") as f:
+            f.write(GAIN_ONLOAD)
+        # render statistics (-s): each frame must show a cache miss of the probe node
+        cmd = wrapper + [renderer, "--no-settings"] + settings + ["-s", "-l", onload]
         for name, pattern in writers.items():
             # the project was saved with the output directory of setup_graph()
             cmd += ["-w", name, os.path.join(out_dir, pattern)]
@@ -406,18 +560,40 @@ def one_run(index, renderer, wrapper, work, graph, setup, driver, config, opts):
     if summary["result"] == "ok":
         missing = []
         for name, pattern in writers.items():
-            done = frames_written(out_dir, pattern, first, last)
-            if len(done) != last - first + 1:
-                missing.append("%s: %d of %d frames" % (name, len(done), last - first + 1))
+            if graph == "baymax":
+                conf = [c for c in setup if c["conf"] == name][0]
+                expected = conf["last"] - conf["first"] + 1
+                done = frames_written(out_dir, pattern, conf["first"], conf["last"])
+            else:
+                expected = last - first + 1
+                done = frames_written(out_dir, pattern, first, last)
+            if len(done) != expected:
+                missing.append("%s: %d of %d frames" % (name, len(done), expected))
             elif "#" not in pattern:
                 # a video is one file: each frame must have been reported, by one NatronRenderer (each one writes the
                 # whole file again; the restart step renders it in one render)
                 reported = reported_frames(last_lines, name)
                 if len(reported) != last - first + 1:
                     missing.append("%s: %d of %d frames reported" % (name, len(reported), last - first + 1))
+        if driver == "cli" and not missing:
+            if graph == "baymax":
+                cached = [f for c in setup for f in unrendered_frames(out_dir, {c["conf"]: c["pattern"]}, c["first"],
+                                                                         c["last"], PROBES[graph])]
+            else:
+                cached = unrendered_frames(out_dir, writers, first, last, PROBES[graph])
+            if cached:
+                missing.append("frames %s not rendered (no cache miss of %s in their render statistics)"
+                               % (",".join(str(f) for f in cached[:20]), PROBES[graph]))
+        if graph == "baymax" and not missing and opts.idiff_path:
+            # the first frame of each configuration, against the reference of Natron-Tests
+            for c in setup:
+                diff = compare_with_reference(opts.idiff_path, os.path.join(work, "BayMax", "reference%d.jpg" % c["first"]),
+                                              frame_path(out_dir, c["pattern"], c["first"]))
+                if diff:
+                    missing.append("%s frame %d differs from the reference: %s" % (c["conf"], c["first"], diff[-300:]))
         if missing:
             summary["result"] = "FAIL"
-            summary["details"] = "missing frames: " + "; ".join(missing)
+            summary["details"] = "; ".join(missing)
     # the images are checked: remove them, so that thousands of frames over many runs don't fill the disk
     shutil.rmtree(out_dir, ignore_errors=True)
     shutil.rmtree(cache, ignore_errors=True)
@@ -434,7 +610,10 @@ def run_soak(renderer, wrapper, work, opts):
     setups = {}
     for graph in opts.graphs.split(","):
         try:
-            setup = setup_graph(renderer, wrapper, work, graph, opts, 600)
+            if graph == "baymax":
+                setup = setup_baymax(work, opts.natron_tests)
+            else:
+                setup = setup_graph(renderer, wrapper, work, graph, opts, 600)
         except SetupError as e:
             print("FAILED: %s" % e)
             return 1
@@ -443,7 +622,10 @@ def run_soak(renderer, wrapper, work, opts):
     if not setups:
         print("SKIP: no graph could be built (set OFX_PLUGIN_PATH to openfx-misc and openfx-io)")
         return natronrunner.SKIP
-    combos = list(itertools.product(sorted(setups), opts.drivers.split(",")))
+    # BayMax is a project: rendered from the command line only
+    combos = [(g, d) for g, d in itertools.product(sorted(setups), opts.drivers.split(",")) if g != "baymax" or d == "cli"]
+    if "baymax" in setups and ("baymax", "cli") not in combos:
+        combos.append(("baymax", "cli"))
     configs = opts.configs.split(",")
     runs = opts.runs or len(combos)
     deadline = time.time() + opts.duration if opts.duration else None
@@ -472,12 +654,14 @@ def run_soak(renderer, wrapper, work, opts):
 def main(argv):
     opts = parse_args(argv[1:])
     wrapper = natronrunner.wrapper(["--debugger"] if opts.debugger else [])
-    if opts.ofx_path:
-        paths = [p for p in os.environ.get("OFX_PLUGIN_PATH", "").split(os.pathsep) if p]
-        os.environ["OFX_PLUGIN_PATH"] = os.pathsep.join([opts.ofx_path] + paths)
+    for option, variable in ((opts.ofx_path, "OFX_PLUGIN_PATH"), (opts.pyplug_path, "NATRON_PLUGIN_PATH")):
+        if option:
+            paths = [p for p in os.environ.get(variable, "").split(os.pathsep) if p]
+            os.environ[variable] = os.pathsep.join([option] + paths)
     if not os.path.isfile(os.environ.get("OCIO", "")):
         print("SKIP: the writers of openfx-io need an OpenColorIO configuration: set OCIO")
         return natronrunner.SKIP
+    opts.idiff_path = opts.idiff or shutil.which("idiff") or ""
     work = opts.out or tempfile.mkdtemp(prefix="natron-soak-")
     os.makedirs(work, exist_ok=True)
     try:

@@ -2,25 +2,43 @@ name: Render soak
 
 # Long soak test of disk renders with NatronRenderer (#248: "Rendering silently stalls after X frames"), on
 # Linux and Windows: Tests/gui/run_render_soak_test.py renders thousands of frames per run, run after run, with
-# several Write nodes, a sequential plug-in and WriteFFmpeg, renders driven from the command line and from
-# Python, an abort and a restart, and threading settings from single-threaded to 8 parallel renders. When a
-# render makes no progress for stall_timeout seconds, it saves the backtraces of all threads (gdb) and fails.
-# The logs, backtraces and summary are in the "render soak" artifacts. ctest runs a short version
-# (RenderSoakTest) in every CI build.
+# several Write nodes, Natron-Tests' BayMax project, a sequential plug-in and WriteFFmpeg, renders driven from the
+# command line and from Python, an abort and a restart, and threading settings from single-threaded to 8 parallel
+# renders. When a render makes no progress for stall_timeout seconds, it saves the backtraces of all threads (gdb)
+# and fails. The logs, backtraces and summary are in the "render soak" artifacts. ctest runs a short version
+# (RenderSoakTest, without BayMax) in every CI build.
 #
-# On demand only (it takes hours). natron_ref builds another commit of Natron, e.g. one before a fix, to check
-# that the soak catches the stall there; the soak scripts always come from the ref the workflow runs on.
+# On demand only (it takes hours). What is soaked (natron_build):
+# - package (default): the Natron that users get, with all the bundled plug-ins: on Linux the portable archive of
+#   the natron_testing pre-release (RB-2.6, replaced by the weekly linux_packages.yml runs), on Windows the portable
+#   tree of the last successful build_installer.yml run on RB-2.6; package_run_id picks a run of linux_packages.yml
+#   (Linux) or build_installer.yml (Windows) instead. To soak an older commit with a package, dispatch those
+#   workflows on a branch at that commit, then pass their run ids.
+# - source: builds natron_ref (default: the ref of this run) from source, RelWithDebInfo, with the openfx-io and
+#   openfx-misc natron_testing plug-ins (BayMax needs no others) and the test plug-ins.
+# The soak scripts always come from the ref the workflow runs on.
 on:
   workflow_dispatch:
     inputs:
+      natron_build:
+        description: 'package: the Natron packages (all plug-ins); source: build natron_ref'
+        type: choice
+        options: [package, source]
+        default: package
       natron_ref:
-        description: 'Natron commit, branch or tag to build and soak (default: the ref of this run)'
+        description: 'natron_build=source: Natron commit, branch or tag to build (default: the ref of this run)'
         default: ''
+      package_run_id:
+        description: 'natron_build=package: a linux_packages.yml run (Linux) or build_installer.yml run (Windows) to soak instead of the default packages'
+        default: ''
+      graphs:
+        description: 'Graphs (comma-separated: writers, sequential, baymax)'
+        default: 'writers,sequential,baymax'
       frames:
-        description: 'Frames per Write node and run'
+        description: 'Frames per Write node and run (writers and sequential graphs)'
         default: '1200'
       duration:
-        description: 'Minutes of soak per OS (runs are started until then; at most 240, so that the build and the last run fit in the 360-minute job)'
+        description: 'Minutes of soak per OS (runs are started until then; at most 240, so that the setup and the last run fit in the 360-minute job)'
         default: '150'
       stall_timeout:
         description: 'Seconds without progress that count as a stall'
@@ -31,14 +49,20 @@ on:
 
 permissions:
   contents: read
+  # gh run download of the package artifacts
+  actions: read
 
 env:
   OCIO_CONFIG_VERSION: 2.5
+  NATRON_BUILD: ${{ inputs.natron_build || 'package' }}
   NATRON_REF: ${{ inputs.natron_ref || github.sha }}
+  PACKAGE_RUN_ID: ${{ inputs.package_run_id }}
+  SOAK_GRAPHS: ${{ inputs.graphs || 'writers,sequential,baymax' }}
   SOAK_FRAMES: ${{ inputs.frames || '1200' }}
   SOAK_DURATION: ${{ inputs.duration || '150' }}
   SOAK_STALL_TIMEOUT: ${{ inputs.stall_timeout || '180' }}
   SOAK_CONFIGS: ${{ inputs.configs }}
+  GH_TOKEN: ${{ github.token }}
 
 jobs:
   linux:
@@ -52,59 +76,98 @@ jobs:
       - name: Check the inputs
         run: |
           if [ "$SOAK_DURATION" -gt 240 ]; then
-            echo "::error::duration is $SOAK_DURATION minutes: at most 240, so that the build and the last run fit in the job"
+            echo "::error::duration is $SOAK_DURATION minutes: at most 240, so that the setup and the last run fit in the job"
             exit 1
           fi
+      - name: Checkout the soak scripts
+        uses: actions/checkout@v4.1.1
+        with:
+          path: soak
+      - name: Checkout Natron-Tests
+        uses: actions/checkout@v4.1.1
+        with:
+          repository: NatronGitHub/Natron-Tests
+          path: Natron-Tests
 
-      - name: Checkout the Natron to soak
+      - name: Install Linux system packages
+        run: |
+          sudo apt-get update
+          pkgs=(gdb unzip curl xz-utils)
+          if [ "$NATRON_BUILD" = source ]; then
+            pkgs+=(build-essential libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev
+                   qt5-qmake qtbase5-dev qtdeclarative5-dev
+                   python3-dev libshiboken2-dev libpyside2-dev python3-pyside2.qtwidgets python3-qtpy
+                   libwayland-dev libwayland-client0 libwayland-egl1 extra-cmake-modules libgtest-dev)
+          fi
+          sudo apt-get install -y "${pkgs[@]}"
+          # the watchdog attaches gdb to NatronRenderer, which is not its child
+          sudo sysctl -w kernel.yama.ptrace_scope=0
+
+      - name: Download OpenColorIO-Configs and BayMax
+        run: |
+          wget -q https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v${OCIO_CONFIG_VERSION}.tar.gz
+          tar xzf Natron-v${OCIO_CONFIG_VERSION}.tar.gz
+          mv OpenColorIO-Configs-Natron-v${OCIO_CONFIG_VERSION} OpenColorIO-Configs
+          bash soak/tools/utils/download_baymax.sh Natron-Tests
+
+      - name: Get Natron (package)
+        if: env.NATRON_BUILD == 'package'
+        run: |
+          mkdir dist
+          if [ -n "$PACKAGE_RUN_ID" ]; then
+            gh run download "$PACKAGE_RUN_ID" -R "$GITHUB_REPOSITORY" -n Natron-Linux-x86_64 -D dist
+          else
+            gh release download natron_testing -R "$GITHUB_REPOSITORY" -p 'Natron-*-Linux-x86_64.tar.xz' -p natron_testing-commit.txt -D dist
+            echo "natron_testing commit: $(cat dist/natron_testing-commit.txt)"
+          fi
+          tar -xJf dist/*.tar.xz -C dist
+          P=$(dirname "$(find "$PWD/dist" -maxdepth 2 -name NatronRenderer -type f | head -1)")
+          [ -x "$P/NatronRenderer" ] || { echo "::error::no NatronRenderer in the package"; exit 1; }
+          "$P/NatronRenderer" -v | head -3 || true
+          {
+            echo "RENDERER=$P/NatronRenderer"
+            echo "IDIFF=$([ -x "$P/bin/idiff" ] && echo "$P/bin/idiff")"
+            echo "OFX_DIRS="
+            echo "PYPLUGS="
+          } >> "$GITHUB_ENV"
+
+      - name: Checkout the Natron to build (source)
+        if: env.NATRON_BUILD == 'source'
         uses: actions/checkout@v4.1.1
         with:
           ref: ${{ env.NATRON_REF }}
           submodules: recursive
           path: natron
-      - name: Checkout the soak scripts
-        uses: actions/checkout@v4.1.1
-        with:
-          path: soak
-          sparse-checkout: Tests/gui
 
-      - name: Install Linux system packages
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev \
-            qt5-qmake qtbase5-dev qtdeclarative5-dev \
-            python3-dev libshiboken2-dev libpyside2-dev python3-pyside2.qtwidgets python3-qtpy \
-            libwayland-dev libwayland-client0 libwayland-egl1 \
-            extra-cmake-modules libgtest-dev gdb
-          # the watchdog attaches gdb to NatronRenderer, which is not its child
-          sudo sysctl -w kernel.yama.ptrace_scope=0
-
-      - name: Download OpenColorIO-Configs and the plug-ins
-        run: |
-          wget -q https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v${OCIO_CONFIG_VERSION}.tar.gz
-          tar xzf Natron-v${OCIO_CONFIG_VERSION}.tar.gz
-          mv OpenColorIO-Configs-Natron-v${OCIO_CONFIG_VERSION} OpenColorIO-Configs
-          mkdir Plugins && cd Plugins
-          wget -q https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-ubuntu_24-testing.zip
-          unzip -q openfx-io-build-ubuntu_24-testing.zip
-          wget -q https://github.com/NatronGitHub/openfx-misc/releases/download/natron_testing/openfx-misc-build-ubuntu_24-testing.zip
-          unzip -q openfx-misc-build-ubuntu_24-testing.zip
-
-      - name: Build NatronRenderer (RelWithDebInfo)
+      - name: Build NatronRenderer (source, RelWithDebInfo)
+        if: env.NATRON_BUILD == 'source'
         run: |
           git -C natron log -1 --format='Soaking Natron %H (%ci) %s'
+          mkdir Plugins && (cd Plugins
+            wget -q https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-ubuntu_24-testing.zip
+            unzip -q openfx-io-build-ubuntu_24-testing.zip
+            wget -q https://github.com/NatronGitHub/openfx-misc/releases/download/natron_testing/openfx-misc-build-ubuntu_24-testing.zip
+            unzip -q openfx-misc-build-ubuntu_24-testing.zip)
           cmake -S natron -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
           cmake --build build -j$(nproc) --target NatronRenderer
           # the test plug-ins (net.natron.test.Sequential); an old commit may not have them
           cmake --build build -j$(nproc) --target NatronTestPlugin || echo "::warning::no NatronTestPlugin target"
+          {
+            echo "RENDERER=$PWD/build/Renderer/NatronRenderer"
+            echo "IDIFF="
+            echo "OFX_DIRS=$PWD/Plugins:$PWD/build/Tests/OfxPlugins"
+            echo "PYPLUGS=$PWD/natron/Gui/Resources/PyPlugs"
+          } >> "$GITHUB_ENV"
 
       - name: Soak
         run: |
-          configs=(); [ -n "$SOAK_CONFIGS" ] && configs=(--configs "$SOAK_CONFIGS")
-          OFX_PLUGIN_PATH=$PWD/Plugins OCIO=$PWD/OpenColorIO-Configs/blender/config.ocio \
-            python3 soak/Tests/gui/run_render_soak_test.py build/Renderer/NatronRenderer \
-              --frames "$SOAK_FRAMES" --duration $((SOAK_DURATION * 60)) --stall-timeout "$SOAK_STALL_TIMEOUT" \
-              "${configs[@]}" --ofx-path "$PWD/build/Tests/OfxPlugins" --out "$PWD/soak-out"
+          args=(--graphs "$SOAK_GRAPHS" --frames "$SOAK_FRAMES" --duration $((SOAK_DURATION * 60))
+                --stall-timeout "$SOAK_STALL_TIMEOUT" --natron-tests "$PWD/Natron-Tests" --out "$PWD/soak-out")
+          [ -n "$SOAK_CONFIGS" ] && args+=(--configs "$SOAK_CONFIGS")
+          [ -n "$IDIFF" ] && args+=(--idiff "$IDIFF")
+          [ -n "$PYPLUGS" ] && args+=(--pyplug-path "$PYPLUGS")
+          OFX_PLUGIN_PATH=$OFX_DIRS OCIO=$PWD/OpenColorIO-Configs/blender/config.ocio \
+            python3 soak/Tests/gui/run_render_soak_test.py "$RENDERER" "${args[@]}"
 
       - name: Upload the soak logs
         if: always()
@@ -126,80 +189,134 @@ jobs:
         shell: msys2 {0}
     steps:
       - name: Check the inputs
+        shell: bash
         run: |
           if [ "$SOAK_DURATION" -gt 240 ]; then
-            echo "::error::duration is $SOAK_DURATION minutes: at most 240, so that the build and the last run fit in the job"
+            echo "::error::duration is $SOAK_DURATION minutes: at most 240, so that the setup and the last run fit in the job"
             exit 1
           fi
-
-      - name: Checkout the Natron to soak
-        uses: actions/checkout@v4.1.1
-        with:
-          ref: ${{ env.NATRON_REF }}
-          submodules: recursive
-          path: natron
+      - name: Keep LF line endings
+        # Git for Windows has core.autocrlf=true: the Natron-Tests conf files must keep LF
+        shell: bash
+        run: git config --global core.autocrlf false
       - name: Checkout the soak scripts
         uses: actions/checkout@v4.1.1
         with:
           path: soak
-          sparse-checkout: Tests/gui
+      - name: Checkout Natron-Tests
+        uses: actions/checkout@v4.1.1
+        with:
+          repository: NatronGitHub/Natron-Tests
+          path: Natron-Tests
 
       - name: Set up MSYS2
         uses: msys2/setup-msys2@v2
         with:
           msystem: UCRT64
           update: true
-          install: git unzip
+          install: git unzip curl
 
-      - name: Install Natron build dependencies
+      - name: Install the dependencies
         run: |
-          pkgs=(
-            ${MINGW_PACKAGE_PREFIX}-cc ${MINGW_PACKAGE_PREFIX}-cmake ${MINGW_PACKAGE_PREFIX}-ninja
-            ${MINGW_PACKAGE_PREFIX}-pkgconf ${MINGW_PACKAGE_PREFIX}-wget ${MINGW_PACKAGE_PREFIX}-gdb
-            ${MINGW_PACKAGE_PREFIX}-boost ${MINGW_PACKAGE_PREFIX}-cairo ${MINGW_PACKAGE_PREFIX}-fontconfig
-            ${MINGW_PACKAGE_PREFIX}-expat ${MINGW_PACKAGE_PREFIX}-python
-            ${MINGW_PACKAGE_PREFIX}-qt5-base ${MINGW_PACKAGE_PREFIX}-pyside2 ${MINGW_PACKAGE_PREFIX}-shiboken2
-            ${MINGW_PACKAGE_PREFIX}-python-qtpy ${MINGW_PACKAGE_PREFIX}-gtest
-            ${MINGW_PACKAGE_PREFIX}-clang ${MINGW_PACKAGE_PREFIX}-llvm-tools
-          )
+          pkgs=(${MINGW_PACKAGE_PREFIX}-gdb ${MINGW_PACKAGE_PREFIX}-python ${MINGW_PACKAGE_PREFIX}-wget)
+          if [ "$NATRON_BUILD" = source ]; then
+            pkgs+=(
+              ${MINGW_PACKAGE_PREFIX}-cc ${MINGW_PACKAGE_PREFIX}-cmake ${MINGW_PACKAGE_PREFIX}-ninja
+              ${MINGW_PACKAGE_PREFIX}-pkgconf
+              ${MINGW_PACKAGE_PREFIX}-boost ${MINGW_PACKAGE_PREFIX}-cairo ${MINGW_PACKAGE_PREFIX}-fontconfig
+              ${MINGW_PACKAGE_PREFIX}-expat
+              ${MINGW_PACKAGE_PREFIX}-qt5-base ${MINGW_PACKAGE_PREFIX}-pyside2 ${MINGW_PACKAGE_PREFIX}-shiboken2
+              ${MINGW_PACKAGE_PREFIX}-python-qtpy ${MINGW_PACKAGE_PREFIX}-gtest
+              ${MINGW_PACKAGE_PREFIX}-clang ${MINGW_PACKAGE_PREFIX}-llvm-tools
+            )
+          fi
           # mirror.msys2.org sometimes stalls: retry, as in ci.yml
           for i in 1 2 3 4 5; do
             pacman -Syu --needed --noconfirm "${pkgs[@]}" && break
             if [ $i = 5 ]; then
-              echo "::error::pacman failed to install the build dependencies"
+              echo "::error::pacman failed to install the dependencies"
               exit 1
             fi
             echo "pacman failed (attempt $i), retrying in 30s..."
             sleep 30
           done
 
-      - name: Download OpenColorIO-Configs and the plug-ins
+      - name: Download OpenColorIO-Configs and BayMax
         run: |
           wget -q https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v${OCIO_CONFIG_VERSION}.tar.gz
           tar xzf Natron-v${OCIO_CONFIG_VERSION}.tar.gz
           mv OpenColorIO-Configs-Natron-v${OCIO_CONFIG_VERSION} OpenColorIO-Configs
-          mkdir ofx-plugins && cd ofx-plugins
-          wget -q https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-windows_ucrt64-testing.zip
-          unzip -q openfx-io-build-windows_ucrt64-testing.zip
-          wget -q https://github.com/NatronGitHub/openfx-misc/releases/download/natron_testing/openfx-misc-build-windows_ucrt64-testing.zip
-          unzip -q openfx-misc-build-windows_ucrt64-testing.zip
+          bash soak/tools/utils/download_baymax.sh Natron-Tests
 
-      - name: Build NatronRenderer (RelWithDebInfo)
+      - name: Get Natron (package)
+        if: env.NATRON_BUILD == 'package'
+        shell: bash
+        run: |
+          run_id="$PACKAGE_RUN_ID"
+          if [ -z "$run_id" ]; then
+            run_id=$(gh run list -R "$GITHUB_REPOSITORY" -w build_installer.yml -b RB-2.6 -s success -L 1 --json databaseId --jq '.[0].databaseId')
+          fi
+          [ -n "$run_id" ] || { echo "::error::no successful build_installer.yml run on RB-2.6"; exit 1; }
+          echo "build_installer.yml run $run_id"
+          # the unzipped portable tree (not the -prerelease zip or the -tests artifacts)
+          gh run download "$run_id" -R "$GITHUB_REPOSITORY" -p 'Natron-*-Windows-x86_64' -D dist
+          exe=$(find "$PWD/dist" -name NatronRenderer.exe -path '*/bin/*' | head -1)
+          [ -n "$exe" ] || { echo "::error::no bin/NatronRenderer.exe in the artifact"; exit 1; }
+          bin=$(dirname "$exe")
+          {
+            echo "RENDERER=$(cygpath -m "$exe")"
+            echo "IDIFF=$([ -f "$bin/idiff.exe" ] && cygpath -m "$bin/idiff.exe")"
+            echo "OFX_DIRS="
+            echo "PYPLUGS="
+            # the bundle's DLLs first, as the installed Natron finds them
+            echo "BUNDLE_BIN=$(cygpath -u "$bin")"
+          } >> "$GITHUB_ENV"
+
+      - name: Checkout the Natron to build (source)
+        if: env.NATRON_BUILD == 'source'
+        uses: actions/checkout@v4.1.1
+        with:
+          ref: ${{ env.NATRON_REF }}
+          submodules: recursive
+          path: natron
+
+      - name: Build NatronRenderer (source, RelWithDebInfo)
+        if: env.NATRON_BUILD == 'source'
         run: |
           git -C natron log -1 --format='Soaking Natron %H (%ci) %s'
+          mkdir ofx-plugins && (cd ofx-plugins
+            wget -q https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-windows_ucrt64-testing.zip
+            unzip -q openfx-io-build-windows_ucrt64-testing.zip
+            wget -q https://github.com/NatronGitHub/openfx-misc/releases/download/natron_testing/openfx-misc-build-windows_ucrt64-testing.zip
+            unzip -q openfx-misc-build-windows_ucrt64-testing.zip)
           cmake -S natron -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
           ninja -C build NatronRenderer
           ninja -C build NatronTestPlugin || echo "::warning::no NatronTestPlugin target"
+          {
+            echo "RENDERER=$(cygpath -m "$PWD/build/Renderer/NatronRenderer.exe")"
+            echo "IDIFF="
+            echo "OFX_DIRS=$(cygpath -w "$PWD/ofx-plugins");$(cygpath -w "$PWD/build/Tests/OfxPlugins")"
+            echo "PYPLUGS=$(cygpath -w "$PWD/natron/Gui/Resources/PyPlugs")"
+            echo "BUNDLE_BIN="
+          } >> "$GITHUB_ENV"
 
       - name: Soak
         run: |
-          configs=(); [ -n "$SOAK_CONFIGS" ] && configs=(--configs "$SOAK_CONFIGS")
-          # see ci.yml for PYTHONLEGACYWINDOWSDLLLOADING (#1147)
-          PYTHONLEGACYWINDOWSDLLLOADING=1 PYTHONHOME=${MINGW_PREFIX} \
-          OFX_PLUGIN_PATH=$(cygpath -w "$PWD/ofx-plugins") OCIO=$(cygpath -w "$PWD/OpenColorIO-Configs/blender/config.ocio") \
-            python soak/Tests/gui/run_render_soak_test.py build/Renderer/NatronRenderer.exe \
-              --frames "$SOAK_FRAMES" --duration $((SOAK_DURATION * 60)) --stall-timeout "$SOAK_STALL_TIMEOUT" \
-              "${configs[@]}" --ofx-path "$(cygpath -w "$PWD/build/Tests/OfxPlugins")" --out "$(cygpath -w "$PWD/soak-out")"
+          args=(--graphs "$SOAK_GRAPHS" --frames "$SOAK_FRAMES" --duration $((SOAK_DURATION * 60))
+                --stall-timeout "$SOAK_STALL_TIMEOUT" --natron-tests "$(cygpath -w "$PWD/Natron-Tests")"
+                --out "$(cygpath -w "$PWD/soak-out")")
+          [ -n "$SOAK_CONFIGS" ] && args+=(--configs "$SOAK_CONFIGS")
+          [ -n "$IDIFF" ] && args+=(--idiff "$IDIFF")
+          [ -n "$PYPLUGS" ] && args+=(--pyplug-path "$PYPLUGS")
+          if [ -n "$BUNDLE_BIN" ]; then
+            # the package: its own Python and DLLs (as installed), not MSYS2's
+            export PATH="$BUNDLE_BIN:$PATH"
+          else
+            # see ci.yml for PYTHONLEGACYWINDOWSDLLLOADING (#1147)
+            export PYTHONLEGACYWINDOWSDLLLOADING=1 PYTHONHOME=${MINGW_PREFIX}
+          fi
+          OFX_PLUGIN_PATH="$OFX_DIRS" OCIO=$(cygpath -w "$PWD/OpenColorIO-Configs/blender/config.ocio") \
+            python soak/Tests/gui/run_render_soak_test.py "$RENDERER" "${args[@]}"
 
       - name: Upload the soak logs
         if: always()

@@ -27,6 +27,8 @@ command line) or with -t. The environment gives the parameters:
   thread, before a PNG Write, and a WriteFFmpeg, which needs its frames in order);
 - SOAK_SIZE: "WxH", the size of the rendered images;
 - SOAK_INPUT: the directory of the image sequence in_####.png that the Read node of the writers graph reads;
+- SOAK_RUN_GAIN: the gain of the "RunGain" Grade nodes, after the generators and the Read node, which the test
+  changes slightly from run to run, so that no image of a run can come from a cache of another one;
 - SOAK_SAVE: if set, save the project there and quit (no render);
 - SOAK_RENDER: if set, render from Python (app.render) instead of from the command line:
   "first-last", and SOAK_WRITERS (comma-separated, default all), SOAK_ABORT_FRAME (natron.quit(3) from the
@@ -50,6 +52,7 @@ SKIP = 77
 CHUNKS = [1, 2, 3, 50, 1, 7, 200, 2]
 
 IDS = set(natron.getPluginIDs())
+RUN_GAIN = float(os.environ.get("SOAK_RUN_GAIN", "1"))
 # natron.quit() is recent (2.6): without it (to soak an older Natron), no abort, and the exit status is 0
 CAN_QUIT = hasattr(natron, "quit")
 
@@ -116,6 +119,11 @@ def reformat(app, name, source, width, height):
                 boxFixed=True) or source
 
 
+def run_gain(app, name, source):
+    """A Grade of source by RUN_GAIN (see the module docstring), or source."""
+    return make(app, "net.sf.openfx.GradePlugin", name, [source], multiply=(RUN_GAIN,) * 4) or source
+
+
 def build_writers(app, out_dir, width, height):
     """Four Write nodes after a graph like those of the reports in #248."""
     writers = []
@@ -124,8 +132,8 @@ def build_writers(app, out_dir, width, height):
         return writers
     # every expression reads this one (odditica's "clock" NoOp node in #248)
     clock.createDoubleParam("t", "t").setExpression("(frame % 48) / 48.", False, 0)
-    checker = reformat(app, "CheckerReformat", make(app, "net.sf.openfx.CheckerBoardPlugin", "Checker"),
-                       width, height)
+    checker = run_gain(app, "RunGain", reformat(app, "CheckerReformat",
+                                                make(app, "net.sf.openfx.CheckerBoardPlugin", "Checker"), width, height))
     noise = make(app, "net.sf.openfx.Noise", "Noise", seed=("expr", "frame"))
     if noise is not None:
         noise = reformat(app, "NoiseReformat", noise, width, height)
@@ -149,7 +157,7 @@ def build_writers(app, out_dir, width, height):
                     except Exception:  # pylint: disable=broad-except
                         param.set(1)  # Natron without choice options by name: "Loop" is the second option
             merge = make(app, "net.sf.openfx.MergePlugin", "MergeRead",
-                         [merge, reformat(app, "ReadReformat", read, width, height)]) or merge
+                         [merge, run_gain(app, "RunGainRead", reformat(app, "ReadReformat", read, width, height))]) or merge
     blur = make(app, "net.sf.cimg.CImgBlur", "Blur", [merge], size=(3., 3.)) or merge
     cached = make(app, "fr.inria.built-in.DiskCache", "DiskCache", [blur]) or blur
     color = make(app, "net.sf.openfx.ColorCorrectPlugin", "ColorCorrect", [merge],
@@ -166,8 +174,8 @@ def build_sequential(app, out_dir, width, height):
     writers = []
     if "net.sf.openfx.CheckerBoardPlugin" not in IDS:
         return writers
-    checker = reformat(app, "CheckerReformat", make(app, "net.sf.openfx.CheckerBoardPlugin", "Checker"),
-                       width, height)
+    checker = run_gain(app, "RunGain", reformat(app, "CheckerReformat",
+                                                make(app, "net.sf.openfx.CheckerBoardPlugin", "Checker"), width, height))
     sequential = make(app, "net.natron.test.Sequential", "Sequential", [checker])
     if sequential is not None:
         grade = make(app, "net.sf.openfx.GradePlugin", "Grade", [sequential], multiply=("expr", "1. + (frame % 7) / 7."))
@@ -209,8 +217,10 @@ def render_from_python(app, writers, first, last, abort_frame):
         end = min(last, start + CHUNKS[i % len(CHUNKS)] - 1)
         app.render(chunked, start, end)
         start, i = end + 1, i + 1
-    # the same frames again, one render each: the images upstream are cached, so a render can end before the
-    # scheduler waits for its end
+    # The same frames again, one render each, intentionally from the cache (the only renders of the test that are):
+    # the images upstream are cached, so a render can end before the scheduler waits for its end (#1607).
+    say("re-rendering %s, frames %d-%d, from the cache on purpose" % (chunked.getScriptName(), first,
+                                                                       min(last, first + 99)))
     for frame in range(first, min(last, first + 99) + 1):
         app.render(chunked, frame, frame)
     say("rendered %s in %d renders" % (chunked.getScriptName(), i + min(last, first + 99) - first + 1))
