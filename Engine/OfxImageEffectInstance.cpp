@@ -114,6 +114,11 @@ OfxImageEffectInstance::OfxImageEffectInstance(const OfxImageEffectInstance& oth
     , _pluginEditHolder()
     , _progressStarted(false)
 {
+    // A render clone (OfxEffectInstance::createRenderClone()) is a new plug-in instance: its kOfxPropInstanceData
+    // starts at NULL, the default, and not at the main instance's pointer, which the copied property set holds
+    // ("This data pointer is unique to each plug-in instance", ofxCore.h). Otherwise a plug-in that reads it in
+    // kOfxActionCreateInstance would take the main instance's private data for its own.
+    getProps().setPointerProperty(kOfxPropInstanceData, NULL);
 }
 
 OfxImageEffectInstance::~OfxImageEffectInstance()

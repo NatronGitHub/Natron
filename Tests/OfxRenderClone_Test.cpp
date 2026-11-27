@@ -22,6 +22,8 @@
 // destroyed by ~EffectInstance() of the main instance, after ~OfxEffectInstance() had destroyed its
 // parameters, so that the destructor of a clone went through dangling parameters: Natron crashed on quit
 // in OfxEffectInstance::destroyInteracts() (#1801).
+// A render clone is a new instance of the plug-in: in its kOfxActionCreateInstance, kOfxPropInstanceData is
+// NULL (its default, "unique to each plug-in instance", ofxCore.h), not the main instance's pointer (#1385).
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -75,6 +77,7 @@ TEST(OfxRenderClone, DestroyedBeforeMainInstance)
     }
     const int created = NatronTestPlugin::counter("RenderClone.created");
     const int destroyedBeforeLater = NatronTestPlugin::counter("RenderClone.destroyedBeforeLater");
+    const int instanceDataAtCreate = NatronTestPlugin::counter("RenderClone.instanceDataAtCreate");
     ASSERT_EQ( 0, NatronTestPlugin::counter("RenderClone.live") );
 
     NodePtr node = NatronTestPlugin::createNode(kNatronTestPluginRenderClone);
@@ -101,6 +104,8 @@ TEST(OfxRenderClone, DestroyedBeforeMainInstance)
     EXPECT_TRUE(rendered2);
     // the main instance and its clone, which the effect keeps for the next renders
     EXPECT_EQ( 2, NatronTestPlugin::counter("RenderClone.live") );
+    // the clone started with no instance data, although the main instance had set its own
+    EXPECT_EQ( instanceDataAtCreate, NatronTestPlugin::counter("RenderClone.instanceDataAtCreate") );
 
     // as on quit (Project::reset(), Node::doDestroyNodeInternalEnd()), where the crash was seen; this also
     // destroys any node that an earlier test left in the project, as DeepGraphRender_Test.cpp does
