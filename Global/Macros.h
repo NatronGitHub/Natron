@@ -782,52 +782,6 @@ GCC_ONLY_DIAG_OFF(pragmas)  // warning: unknown option after '#pragma GCC diagno
 
 // Bonus definitions and stuff from older WTF versions
 
-#if defined(__clang__)
-
-#ifdef __has_extension
-#define COMPILER_HAS_CLANG_EXTENSION(x) __has_extension(x)
-#else
-#define COMPILER_HAS_CLANG_FEATURE(x) COMPILER_HAS_CLANG_FEATURE(x) /* Compatibility with older versions of clang */
-#endif
-
-/* Specific compiler features */
-#define NATRON_COMPILER_SUPPORTS_CXX_VARIADIC_TEMPLATES __has_extension(cxx_variadic_templates)
-
-/* There is a bug in clang that comes with Xcode 4.2 where AtomicStrings can't be implicitly converted to Strings
- in the presence of move constructors and/or move assignment operators. This bug has been fixed in Xcode 4.3 clang, so we
- check for both cxx_rvalue_references as well as the unrelated cxx_nonstatic_member_init feature which we know was added in 4.3 */
-#define NATRON_COMPILER_SUPPORTS_CXX_RVALUE_REFERENCES COMPILER_HAS_CLANG_EXTENSION(cxx_rvalue_references) && COMPILER_HAS_CLANG_EXTENSION(cxx_nonstatic_member_init)
-
-#define NATRON_COMPILER_SUPPORTS_CXX_DELETED_FUNCTIONS COMPILER_HAS_CLANG_EXTENSION(cxx_deleted_functions)
-#define NATRON_SUPPORTS_CXX_NULLPTR COMPILER_HAS_CLANG_FEATURE(cxx_nullptr)
-#define NATRON_COMPILER_SUPPORTS_CXX_EXPLICIT_CONVERSIONS COMPILER_HAS_CLANG_FEATURE(cxx_explicit_conversions)
-#define NATRON_COMPILER_SUPPORTS_CXX_OVERRIDE_CONTROL COMPILER_HAS_CLANG_EXTENSION(cxx_override_control)
-#define NATRON_COMPILER_SUPPORTS_HAS_TRIVIAL_DESTRUCTOR COMPILER_HAS_CLANG_EXTENSION(has_trivial_destructor)
-#endif
-
-#if defined(_MSC_VER)
-/* Specific compiler features */
-#if !COMPILER(CLANG)
-#define NATRON_SUPPORTS_CXX_NULLPTR 1
-#endif
-
-#if !COMPILER(CLANG)
-#define NATRON_COMPILER_SUPPORTS_CXX_OVERRIDE_CONTROL 1
-#define NATRON_COMPILER_QUIRK_FINAL_IS_CALLED_SEALED 1
-#endif
-
-#endif // defined(_MSC_VER)
-
-
-/* Specific compiler features */
-#if COMPILER(GCC) && !COMPILER(CLANG)
-#define NATRON_COMPILER_SUPPORTS_CXX_RVALUE_REFERENCES 1
-#define NATRON_COMPILER_SUPPORTS_CXX_DELETED_FUNCTIONS 1
-#define NATRON_SUPPORTS_CXX_NULLPTR 1
-#define NATRON_COMPILER_SUPPORTS_CXX_OVERRIDE_CONTROL 1
-#define NATRON_COMPILER_QUIRK_GCC11_GLOBAL_ISINF_ISNAN 1
-#endif // COMPILER(GCC) && !COMPILER(CLANG)
-
 /* ignore_result */
 // a very simple template function to actually ignore the return value of functions define with WARN_UNUSED_RETURN
 #if COMPILER(GCC)
@@ -852,19 +806,9 @@ ignore_result(T x)
 
 /* OVERRIDE and FINAL */
 
-#if COMPILER_SUPPORTS(CXX_OVERRIDE_CONTROL) && !COMPILER(MSVC) //< patch so msvc 2010 ignores the override and final keywords.
+// The C++11 keywords, which every C++17 compiler supports.
 #define OVERRIDE override
-
-#if COMPILER_QUIRK(FINAL_IS_CALLED_SEALED)
-#define FINAL sealed
-#else
 #define FINAL final
-#endif
-
-#else
-#define OVERRIDE
-#define FINAL
-#endif
 
 
 #endif // ifndef NATRON_GLOBAL_MACROS_H
