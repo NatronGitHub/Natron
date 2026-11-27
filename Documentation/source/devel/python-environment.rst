@@ -36,11 +36,15 @@ third-party packages in the ``site-packages`` directory:
 - `pip <https://pip.pypa.io>`_, to install other packages (see below);
 - `qtpy <https://github.com/spyder-ide/qtpy>`_, see `Qt bindings`_;
 - `six <https://six.readthedocs.io>`_, Python 2 and 3 compatibility utilities;
-- `psutil <https://github.com/giampaolo/psutil>`_, on Linux and macOS only.
+- `psutil <https://github.com/giampaolo/psutil>`_, on Linux and macOS only;
+- the packages that these need, such as ``packaging`` (for qtpy), and ``setuptools`` and
+  ``wheel`` where pip's installer adds them (with Python 3.11).
 
 The ``future`` package (python-future), which earlier versions bundled for scripts written for
-Python 2, is no longer bundled since Natron 2.6. A script that needs it can install it like any
-other package: ``natron-python -m pip install future``.
+Python 2, is no longer bundled since Natron 2.6. A script that uses it fails with an error such as
+``ModuleNotFoundError: No module named 'past'`` (or ``'future'``, ``'builtins'``,
+``'libfuturize'``, ``'libpasteurize'``). Install it like any other package:
+``natron-python -m pip install future``.
 
 natron-python
 -------------
@@ -85,6 +89,12 @@ install the packages into another directory with ``--target``, and add that dire
     "C:\Program Files\Natron\bin\natron-python.exe" -m pip install --target %USERPROFILE%\natron-python-modules numpy
     set PYTHONPATH=%USERPROFILE%\natron-python-modules
 
+``export`` and ``set`` only reach a Natron started from the same shell. For a Natron started
+from the desktop (Finder or Dock, Start menu, a desktop launcher), set ``PYTHONPATH`` for the
+session instead (for example ``setx PYTHONPATH %USERPROFILE%\natron-python-modules`` on Windows,
+or ``launchctl setenv PYTHONPATH ~/natron-python-modules`` on macOS, not tested), or add the
+directory to ``sys.path`` in ``init.py`` (see :ref:`startupScripts`).
+
 On macOS, installing into ``Natron.app`` modifies the signed application bundle, so prefer
 ``--target`` there.
 
@@ -95,8 +105,7 @@ could hide other modules.
 Packages with compiled code must have a wheel (or be buildable) for Natron's Python version and
 platform; pure-Python packages work everywhere.
 
-Tested: the macOS recipe with a pure-Python package and the natron-python of a Qt 5 build; the
-Linux and Windows recipes are not tested.
+The Linux and Windows recipes are not tested.
 
 Installing extra packages from the Script Editor
 ------------------------------------------------
@@ -104,7 +113,7 @@ Installing extra packages from the Script Editor
 In Natron, ``sys.executable`` is the Natron executable itself (``Natron`` or ``NatronRenderer``),
 not a Python interpreter: ``sys.executable -m pip`` would start another Natron. Run the
 natron-python that is next to the Natron executable instead, then add the target directory to
-``sys.path`` and import the package::
+``sys.path`` and import the package (``--upgrade`` replaces an earlier copy)::
 
     import importlib
     import os
@@ -113,13 +122,17 @@ natron-python that is next to the Natron executable instead, then add the target
 
     from qtpy import QtCore
 
-    # In Natron, sys.executable is Natron itself, not a Python: use the natron-python next to it.
-    natron_dir = QtCore.QCoreApplication.applicationDirPath()
-    natron_python = os.path.join(natron_dir, "natron-python.exe" if sys.platform == "win32" else "natron-python")
+    exe = "natron-python.exe" if sys.platform == "win32" else "natron-python"
+    natron_python = os.path.join(
+        QtCore.QCoreApplication.applicationDirPath(), exe)
     target = os.path.join(os.path.expanduser("~"), "natron-python-modules")
 
-    result = subprocess.run([natron_python, "-m", "pip", "install", "--target", target, "tabulate"],
-                            capture_output=True, text=True)
+    result = subprocess.run(
+        [natron_python, "-m", "pip", "install", "--upgrade",
+         "--target", target, "tabulate"],
+        capture_output=True, text=True,
+        # no console window on Windows
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     print(result.stdout, result.stderr)
     result.check_returncode()
 
@@ -134,8 +147,8 @@ files that pip has just written. The ``sys.path`` change lasts until Natron quit
 packages in the next sessions, add the target directory to ``PYTHONPATH`` (see above), or append
 it to ``sys.path`` in ``init.py`` (see :ref:`startupScripts`).
 
-Tested: with ``NatronRenderer -t`` and a pure-Python package, on a macOS Qt 5 build; not tested in
-the Script Editor of the Natron user interface, nor on Linux or Windows.
+This recipe is tested with ``NatronRenderer -t`` on macOS; not tested in the Script Editor of the
+Natron user interface, nor on Linux or Windows.
 
 Qt bindings
 -----------
