@@ -6,7 +6,8 @@
 #
 #   macos_x86_64_sdk.sh find KEY MODE    print "name run_id what" of the SDK artifact to start from
 #                                        (what: reuse, update or scratch; see below)
-#   macos_x86_64_sdk.sh hide-homebrew    move the runner's Homebrew (/usr/local) out of the way
+#   macos_x86_64_sdk.sh hide-homebrew    move the runner's Homebrew (/usr/local, and /opt/homebrew on
+#                                        arm64) out of the way
 #   macos_x86_64_sdk.sh unhide-homebrew  put it back (its zstd and git are used to save the SDK)
 #   macos_x86_64_sdk.sh download NAME RUN DIR   download the SDK or state artifact NAME of run RUN into
 #                                        DIR, checked with zstd -t, with retries (needs Homebrew's gh
@@ -58,17 +59,21 @@ hide-homebrew)
     # On Intel Macs Homebrew lives in /usr/local, whose include and lib directories the compilers
     # and the linker search by default: it must be gone, not only off the PATH. /usr is read-only
     # (signed system volume), so its contents are moved.
+    # On Apple Silicon Macs Homebrew is /opt/homebrew, and /usr/local has other tools (and dyld
+    # looks for libraries in /usr/local/lib by default): both are moved away.
     hidden=$HOME/usr-local.homebrew
     if [ -d "$hidden" ]; then echo "already hidden"; exit 0; fi
     sudo mkdir "$hidden"
     sudo find /usr/local -mindepth 1 -maxdepth 1 -exec mv {} "$hidden/" \;
     [ -z "$(ls -A /usr/local)" ] || { echo "could not empty /usr/local:"; ls -A /usr/local; exit 1; }
+    [ ! -d /opt/homebrew ] || sudo mv /opt/homebrew "$HOME/opt-homebrew.homebrew"
     ;;
 unhide-homebrew)
     hidden=$HOME/usr-local.homebrew
     [ -d "$hidden" ] || exit 0
     sudo find "$hidden" -mindepth 1 -maxdepth 1 -exec mv {} /usr/local/ \;
     sudo rmdir "$hidden"
+    [ ! -d "$HOME/opt-homebrew.homebrew" ] || sudo mv "$HOME/opt-homebrew.homebrew" /opt/homebrew
     ;;
 download)
     # not actions/download-artifact: it once ended "successfully" after 71 MB of a 4.3 GB SDK

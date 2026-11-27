@@ -10,6 +10,8 @@
 # NATRON_TESTS_DIR is a Natron-Tests checkout with known_failures/ (its result.txt, summary.txt and
 # failed/ are overwritten). TEST=TestFoo or TESTCUSTOM=TestBar run a single test (see runTests.sh);
 # TEST_TIMEOUT (seconds, default 14400) limits the whole suite; ALL_PROXY is passed on to runTests.sh.
+# KNOWN_FAILURES_ARCH (arm64 or x86_64, default: the architecture of NatronRenderer) selects the
+# known_failures/ list of the CPU architecture.
 # Results in OUTDIR:
 #   NAME-tests.txt                  runTests.sh's result.txt (one "Test : PASS", "FAIL",
 #                                   "KNOWN FAIL" or "UNEXPECTED PASS" line per test)
@@ -21,7 +23,7 @@
 # a known failure, a known failure passed (UNEXPECTED PASS), or the suite did not run.
 set -euo pipefail
 
-[ $# = 4 ] || { sed -n 2,21p "$0"; exit 2; }
+[ $# = 4 ] || { sed -n 2,23p "$0"; exit 2; }
 SRC=$1
 TESTS=$(cd "$2" && pwd)
 mkdir -p "$3"
@@ -55,6 +57,12 @@ else
     APP=$(cd "$SRC" && pwd)
 fi
 [ -x "$APP/Contents/MacOS/NatronRenderer" ] || { echo "no NatronRenderer in $APP" >&2; exit 2; }
+# the known failures of the app's architecture, not of the machine's: an x86_64 app may run on an
+# arm64 Mac (Rosetta), where runTests.sh would take arm64 from uname -m
+if [ -z "${KNOWN_FAILURES_ARCH:-}" ]; then
+    KNOWN_FAILURES_ARCH=$(lipo -archs "$APP/Contents/MacOS/NatronRenderer")
+    case $KNOWN_FAILURES_ARCH in *" "*) KNOWN_FAILURES_ARCH=$(uname -m) ;; esac   # universal: the native one
+fi
 
 # gtimeout (GNU coreutils) is what runTests.sh uses on macOS: a minimal one in Perl (part of macOS)
 mkdir -p "$work/bin"
@@ -86,7 +94,7 @@ status=0
     env -i HOME="$HOME" USER="$USER" LOGNAME="$USER" SHELL=/bin/bash TMPDIR="${TMPDIR:-/tmp}" LANG=en_US.UTF-8 \
         PATH="$work/bin:/usr/bin:/bin:/usr/sbin:/sbin" \
         ${ALL_PROXY:+ALL_PROXY=$ALL_PROXY NO_PROXY=localhost,127.0.0.1} \
-        ${TEST:+"TEST=$TEST"} ${TESTCUSTOM:+"TESTCUSTOM=$TESTCUSTOM"} \
+        ${TEST:+"TEST=$TEST"} ${TESTCUSTOM:+"TESTCUSTOM=$TESTCUSTOM"} KNOWN_FAILURES_ARCH="$KNOWN_FAILURES_ARCH" \
         NATRON_DISK_CACHE_PATH="$work/NatronTmpCacheDir" \
         OCIO="$APP/Contents/Resources/OpenColorIO-Configs/blender/config.ocio" \
         FFMPEG="$APP/Contents/MacOS/ffmpeg" COMPARE="$APP/Contents/MacOS/idiff" \
