@@ -20,7 +20,8 @@
 // set the clip depths in kOfxImageEffectActionGetClipPreferences: "the host will transparently map all of an
 // effect's input and output clips to a single depth [...] the deepest depth of any input clip mapped to a depth
 // the plugin supports" (ofxClipPreferences.rst). Natron makes the depth properties read-only, but accepted the
-// plug-in's write (with a warning) and used it for every clip (#1385).
+// plug-in's write (with a warning) and used it for every clip (#1385). A plug-in that supports multiple clip
+// depths still sets its output depth.
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -35,14 +36,31 @@
 #include "OfxTestPlugin.h"
 
 #define kNatronTestPluginDepthWrite "net.natron.test.DepthWrite"
+#define kNatronTestPluginDepthWriteMulti "net.natron.test.DepthWriteMulti"
 
 NATRON_NAMESPACE_USING
 
+namespace {
+// true if both test plug-ins were loaded; otherwise reports the missing one
+bool
+pluginsAvailable(const char* pluginID)
+{
+    const char* const ids[] = { pluginID, kNatronTestPluginGenerator };
+    for (const char* id : ids) {
+        if ( !NatronTestPlugin::isAvailable(id) ) {
+            NatronTestPlugin::reportMissing(id);
+
+            return false;
+        }
+    }
+
+    return true;
+}
+} // anonymous namespace
+
 TEST(OfxClipDepth, PluginWithoutMultipleDepthsCannotSetTheDepth)
 {
-    if ( !NatronTestPlugin::isAvailable(kNatronTestPluginDepthWrite) || !NatronTestPlugin::isAvailable(kNatronTestPluginGenerator) ) {
-        NatronTestPlugin::reportMissing(kNatronTestPluginDepthWrite);
-
+    if ( !pluginsAvailable(kNatronTestPluginDepthWrite) ) {
         return;
     }
     // a float input; the plug-in supports 8-bit and float images, and sets its output depth to 8 bits
@@ -57,6 +75,27 @@ TEST(OfxClipDepth, PluginWithoutMultipleDepthsCannotSetTheDepth)
     EXPECT_EQ( eImageBitDepthFloat, node->getEffectInstance()->getBitDepth(0) );
 
     // what the plug-in sees in render: its render fails unless Source and Output are float images
+    EXPECT_TRUE( bool( NatronTestPlugin::renderFrame(node, 1.) ) );
+
+    node->destroyNode(true, false);
+    generator->destroyNode(true, false);
+}
+
+TEST(OfxClipDepth, PluginWithMultipleDepthsSetsTheOutputDepth)
+{
+    if ( !pluginsAvailable(kNatronTestPluginDepthWriteMulti) ) {
+        return;
+    }
+    // a float input; the plug-in supports multiple clip depths, and sets its output depth to 8 bits
+    NodePtr generator = NatronTestPlugin::createNode(kNatronTestPluginGenerator);
+    NodePtr node = NatronTestPlugin::createNode(kNatronTestPluginDepthWriteMulti);
+    ASSERT_TRUE( generator && node );
+    ASSERT_TRUE( node->getApp()->getProject()->connectNodes(0, generator, node) );
+
+    EXPECT_EQ( eImageBitDepthByte, node->getEffectInstance()->getBitDepth(-1) );
+    EXPECT_EQ( eImageBitDepthFloat, node->getEffectInstance()->getBitDepth(0) );
+
+    // its render fails unless Output is an 8-bit image and Source a float image
     EXPECT_TRUE( bool( NatronTestPlugin::renderFrame(node, 1.) ) );
 
     node->destroyNode(true, false);
