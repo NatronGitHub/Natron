@@ -438,6 +438,9 @@ checkDownscaleIntegerDepth(ImageBitDepthEnum depth, int maxValue)
     }
     boundsList.push_back( RectI(3, 2, 40, 3) );
     boundsList.push_back( RectI(-5, 3, -4, 30) );
+    // mean errors per level, pooled over all bounds (see below), for 2D images ([0]) and for rows and columns ([1])
+    double sumError[2][4] = { { 0., 0., 0., 0. }, { 0., 0., 0., 0. } };
+    int n[2][4] = { { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };
     unsigned int seed = 1549;
     for (const RectI& bounds : boundsList) {
         const RectD rod( bounds.x1, bounds.y1, bounds.x2, bounds.y2 );
@@ -445,6 +448,7 @@ checkDownscaleIntegerDepth(ImageBitDepthEnum depth, int maxValue)
                   eImagePremultiplicationPremultiplied, eImageFieldingOrderNone, false);
         fillCodes<PIX>(src, maxValue, seed);
         ++seed;
+        const int is1D = (bounds.width() == 1) || (bounds.height() == 1);
         for (unsigned int level = 1; level <= 3; ++level) {
             const RectI dstBounds = bounds.downscalePowerOfTwoSmallestEnclosing(level);
             Image dst(ImagePlaneDesc::getRGBAComponents(), rod, dstBounds, level, 1., depth,
@@ -481,13 +485,25 @@ checkDownscaleIntegerDepth(ImageBitDepthEnum depth, int maxValue)
                         }
                         const double e = double(d[c]) - sum / ( (sx2 - sx1) * (sy2 - sy1) );
                         maxError = std::max( maxError, std::abs(e) );
+                        sumError[is1D][level] += e;
+                        ++n[is1D][level];
                     }
                 }
             }
-            // each level rounds once, so the error grows by less than one code per level
-            EXPECT_LT(maxError, level) << "depth=" << (int)depth << " bounds=(" << bounds.x1 << "," << bounds.y1 << ","
+            // each level rounds once, to the nearest value, so the error grows by at most 1/2 code per level
+            // (truncating gives up to 3/4 code per level)
+            EXPECT_LE(maxError, 0.5 * level) << "depth=" << (int)depth << " bounds=(" << bounds.x1 << "," << bounds.y1 << ","
                                              << bounds.x2 << "," << bounds.y2 << ") level=" << level;
         }
+    }
+    // The error is not biased towards black: truncating gives a mean error of -3/8 code per level for
+    // 2D images (averages of 4 codes) and -1/4 for rows and columns (averages of 2 codes), rounding to
+    // nearest with ties to even none.
+    for (unsigned int level = 1; level <= 3; ++level) {
+        ASSERT_GT(n[0][level], 0);
+        ASSERT_GT(n[1][level], 0);
+        EXPECT_LE(std::abs(sumError[0][level] / n[0][level]), 0.25 * level) << "2D depth=" << (int)depth << " level=" << level;
+        EXPECT_LE(std::abs(sumError[1][level] / n[1][level]), 0.125 * level) << "1D depth=" << (int)depth << " level=" << level;
     }
 }
 

@@ -28,6 +28,7 @@
 #include <algorithm> // min, max
 #include <cassert>
 #include <cstring> // for std::memcpy, std::memset
+#include <limits>
 #include <stdexcept>
 
 #include <QDebug>
@@ -1806,6 +1807,25 @@ Image::getRowElements() const
     return getComponentsCount() * _bounds.width();
 }
 
+// The average of n pixel values, given their sum: rounded to the nearest value, ties to even, for
+// 8- and 16-bit images, so that mipmap levels have no bias (a truncating integer division made each
+// level darker than the float one, rounding ties up would make it lighter).
+template <typename PIX, typename SUM>
+static inline PIX
+averagePixels(SUM sum,
+              int n)
+{
+    if constexpr (std::numeric_limits<PIX>::is_integer) {
+        const SUM q = sum / n; // sum >= 0
+        const SUM r = sum % n;
+        const bool up = (2 * r > n) || ( (2 * r == n) && (q % 2 == 1) );
+
+        return PIX(q + up);
+    } else {
+        return PIX(sum / n);
+    }
+}
+
 // code proofread and fixed by @devernay on 4/12/2014
 template <typename PIX, int maxValue>
 void
@@ -1951,7 +1971,7 @@ Image::halveRoIForDepth(const RectI & roi,
 #endif
                 assert( sumW == 2 || ( sumW == 1 && ( (a == 0 && c == 0) || (b == 0 && d == 0) ) ) );
                 assert( sumH == 2 || ( sumH == 1 && ( (a == 0 && b == 0) || (c == 0 && d == 0) ) ) );
-                dstPixStart[k] = (a + b + c + d) / sum;
+                dstPixStart[k] = averagePixels<PIX>(a + b + c + d, sum);
             }
 
             if (copyBitMap) {
@@ -2063,7 +2083,7 @@ Image::halve1DImageForDepth(const RectI & roi,
                 assert( !std::isnan(*src) ); // check for NaN
                 assert( !std::isnan(*(src + _nbComponents)) ); // check for NaN
 #endif
-                *dst = PIX( (float)( *src + *(src + _nbComponents) ) / 2. );
+                *dst = averagePixels<PIX>(*src + *(src + _nbComponents), 2);
 #ifdef DEBUG_NAN
                 assert( !std::isnan(*dst) ); // check for NaN
 #endif
@@ -2091,7 +2111,7 @@ Image::halve1DImageForDepth(const RectI & roi,
                 assert( !std::isnan(src[k]) ); // check for NaN
                 assert( !std::isnan(src[k + rowSize]) ); // check for NaN
 #endif
-                dst[k] = PIX( (float)( src[k] + src[k + rowSize] ) / 2. );
+                dst[k] = averagePixels<PIX>(src[k] + src[k + rowSize], 2);
 #ifdef DEBUG_NAN
                 assert( !std::isnan(dst[k]) ); // check for NaN
 #endif
