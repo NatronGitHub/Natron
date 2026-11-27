@@ -70,14 +70,15 @@ export LD_LIBRARY_PATH
 # - the desktop libraries, which every Linux desktop has and which must match the system's
 #   display server and sound system: the X11 client libraries (libX11, libX11-xcb, libXext,
 #   libXrender, libXau, libXdmcp, libXi, libXfixes, ... i.e. libX*), the core libxcb, libSM,
-#   libICE, and ALSA (libasound). Following the AppImage excludelist
-#   (https://github.com/AppImageCommunity/pkg2appimage/blob/master/excludelist): libX11 and
-#   libX11-xcb, because a bundled libX11 needs symbols of the matching libxcb (e.g.
-#   xcb_wait_for_reply64), and libxcb, because the system's Mesa needs symbols of its own
-#   libxcb (xcb_send_fd, xcb_send_request_with_fds); libxcb-dri2 and libxcb-dri3 too, which
-#   only Mesa's drivers use and which need those libxcb symbols; libSM and libICE, which
-#   every desktop has; ALSA, which must match the system's sound server.
-#   The other xcb libraries are bundled instead (see BUNDLED_DESKTOP_LIBS_RE).
+#   libICE, and ALSA (libasound). For the X11 and xcb libraries, this follows the AppImage
+#   excludelist (https://github.com/AppImageCommunity/pkg2appimage/blob/master/excludelist):
+#   libX11, because a bundled libX11 needs symbols of the matching libxcb (e.g.
+#   xcb_wait_for_reply64), and libX11-xcb, which must match libX11; libxcb, because the
+#   system's Mesa needs symbols of its own libxcb (xcb_send_fd, xcb_send_request_with_fds);
+#   libxcb-dri2 and libxcb-dri3 too, which only Mesa's drivers use and which need those libxcb
+#   symbols; libSM and libICE, which every desktop has; ALSA, which must match the system's
+#   sound server. The other libX* libraries stay system libraries too (every X11 desktop has
+#   them), and the other xcb libraries are bundled instead (see BUNDLED_DESKTOP_LIBS_RE).
 # INSTALL_LINUX.md lists them ("Runtime requirements of the Linux binaries"). The OpenGL, DRM, udev,
 # SELinux and GPU driver libraries are the same as in openfx's Support/include/linuxCheckBundle.sh.
 # Unlike there, libcrypt is not a system library: Debian and Ubuntu don't have libcrypt.so.2, so a
@@ -114,8 +115,10 @@ function isSystemLib() {
 # xinerama, xinput, xkb), libxkbcommon and libxkbcommon-x11, and a desktop doesn't always have
 # them all (a clean Ubuntu 26.04 lacks libxcb-shape, -xinerama and -xinput, #2024). As in the
 # AppImage excludelist, only libxcb itself, libxcb-dri2 and libxcb-dri3 stay system libraries
-# (SYSTEM_LIBS_RE, which is checked first). They are MIT/X11-licensed: bundleDesktopLibs also
-# copies their licence notices.
+# (SYSTEM_LIBS_RE, which is checked first). The system's Mesa then uses the bundled libxcb-glx,
+# -randr, -shm, -sync and -xfixes (already loaded under the same soname), as in AppImages: it
+# needs nothing newer from them than Rocky Linux 9's libxcb 1.13.1. They are MIT/X11-licensed:
+# bundleDesktopLibs also copies their licence notices.
 BUNDLED_DESKTOP_LIBS_RE='^lib(xcb-.*|xkbcommon|xkbcommon-x11)\.so(\..*)?$'
 
 # Print the libraries of BUNDLED_DESKTOP_LIBS_RE needed, directly or not, by the given ELF files.
@@ -130,9 +133,12 @@ function desktopDepends() {
 }
 
 # Copy the libraries of BUNDLED_DESKTOP_LIBS_RE needed by the ELF files in the given directories
-# to the bundle's lib directory, and the licence files of their packages (rpm -qL, or the
-# COPYING/LICENSE files of rpm -qd) to docs/licenses/<package>/. Fails if a library belongs to
-# no package or a package has no licence file.
+# to the bundle's lib directory, and the licence files of their packages (rpm -qL) to
+# docs/licenses/<package>/. Three EL9 packages have no %license file: libxcb (all the libxcb-*
+# extension libraries), libxkbcommon-x11 (its LICENSE is in libxkbcommon) and xcb-util-keysyms;
+# their upstream notices (libxcb 1.13.1, libxkbcommon 1.0.3, xcb-util-keysyms 0.4.0, whose
+# notice is in its sources, COPYING came later) are in $INC_PATH/licenses/<package>/. Fails if
+# a library belongs to no package, or a package has no licence file in either place.
 function bundleDesktopLibs() {
     local libs l pkg lic
     libs="$(desktopDepends $(find "$@" -type f \( -name '*.so' -o -name '*.so.*' -o -perm -u+x \)))"
@@ -143,10 +149,13 @@ function bundleDesktopLibs() {
             exit 1
         fi
         [ -d "${TMP_PORTABLE_DIR}/docs/licenses/$pkg" ] && continue
-        lic="$(rpm -qL "$pkg" | grep -v '^(contains no files)$' || true)"
-        [ -n "$lic" ] || lic="$(rpm -qd "$pkg" | grep -E '/(COPYING|LICENSE)[^/]*$' || true)"
+        # (only the files on disk: an image installed with tsflags=nodocs may lack some)
+        lic="$(rpm -qL "$pkg" | while read -r f; do [ ! -f "$f" ] || echo "$f"; done)"
+        if [ -z "$lic" ] && [ -d "$INC_PATH/licenses/$pkg" ]; then
+            lic="$(find "$INC_PATH/licenses/$pkg" -type f)"
+        fi
         if [ -z "$lic" ]; then
-            (>&2 echo "Error: package $pkg (of $l) has no licence file")
+            (>&2 echo "Error: package $pkg (of $l) has no licence file (rpm -qL), and $INC_PATH/licenses/$pkg doesn't exist")
             exit 1
         fi
         mkdir -p "${TMP_PORTABLE_DIR}/docs/licenses/$pkg"
