@@ -1130,6 +1130,21 @@ Node::computeHash()
     computeHashDownstream(marked);
 } // computeHash
 
+void
+Node::computeHashAfterInputChange()
+{
+    AppInstancePtr app = getApp();
+
+    // While a node tree is created, not after each connection: the tree is not complete yet. Before #1847 the hashes
+    // were not computed at all, so that a pasted node kept the hash it had before its inputs were connected: after a
+    // disconnection, its hash was the same, and the images cached while it was connected were used.
+    if ( app && app->computeHashAfterNodeTreeCreation( shared_from_this() ) ) {
+        return;
+    }
+    computeHash();
+    _imp->ifGroupForceHashChangeOfInputs();
+}
+
 
 void
 Node::loadKnobs(const NodeSerialization & serialization,

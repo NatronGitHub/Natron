@@ -133,8 +133,9 @@ createChainNode(const char* pluginID)
 // The generator and the filters are created and connected as one node tree, as when nodes are pasted
 // or a PyPlug is created: connecting them one at a time runs the "input changed" action of each new
 // filter with render args on the whole chain upstream of it, which is quadratic in the length of the
-// chain (5000 filters took 161 s on Linux CI). Their input-related data and their hashes are then
-// computed once for the whole chain. The output is connected as usual, with the chain upstream of it.
+// chain (5000 filters took 161 s on Linux CI). Their hashes are computed once for the whole chain when the
+// tree is complete (#1847), then their input-related data. The output is connected as usual, with the chain
+// upstream of it.
 struct DeepChain
 {
     std::vector<NodePtr> nodes; // from the generator to the output
@@ -163,9 +164,6 @@ struct DeepChain
             }
         }
         project->forceComputeInputDependentDataOnAllTrees();
-        // The connections made while the tree was created did not refresh the hashes downstream, and
-        // forceComputeInputDependentDataOnAllTrees() doesn't either (pasting nodes doesn't refresh them).
-        nodes.front()->incrementKnobsAge();
         NodePtr output = createChainNode(PLUGINID_NATRON_DISKCACHE);
         if ( !output || !project->connectNodes(0, nodes.back(), output) ) {
             return;

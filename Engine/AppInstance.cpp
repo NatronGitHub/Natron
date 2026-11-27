@@ -171,6 +171,9 @@ public:
 
     //When a node tree is created
     int _creatingTree;
+    // The nodes whose inputs changed while the node tree was created: their hashes are computed at the end
+    // (see Node::computeHashAfterInputChange()). Protected by creatingGroupMutex.
+    std::vector<NodeWPtr> nodesToHashAfterTreeCreation;
     mutable QMutex renderQueueMutex;
     std::list<RenderQueueItem> renderQueue, activeRenders;
     mutable QMutex invalidExprKnobsMutex;
@@ -195,6 +198,7 @@ public:
         , quitPending(false)
         , _creatingNodeQueue()
         , _creatingTree(0)
+        , nodesToHashAfterTreeCreation()
         , renderQueueMutex()
         , renderQueue()
         , activeRenders()
@@ -300,17 +304,57 @@ AppInstance::isCreatingNodeTree() const
 void
 AppInstance::setIsCreatingNodeTree(bool b)
 {
-    QMutexLocker k(&_imp->creatingGroupMutex);
+    std::vector<NodeWPtr> nodesToHash;
+    {
+        QMutexLocker k(&_imp->creatingGroupMutex);
 
-    if (b) {
-        ++_imp->_creatingTree;
-    } else {
-        if (_imp->_creatingTree >= 1) {
-            --_imp->_creatingTree;
+        if (b) {
+            ++_imp->_creatingTree;
         } else {
-            _imp->_creatingTree = 0;
+            if (_imp->_creatingTree >= 1) {
+                --_imp->_creatingTree;
+            } else {
+                _imp->_creatingTree = 0;
+            }
+            if (_imp->_creatingTree == 0) {
+                nodesToHash.swap(_imp->nodesToHashAfterTreeCreation);
+            }
         }
     }
+    // The tree is complete: compute the hashes, in the order of the connections, without the lock (the hashes of the
+    // nodes downstream are computed too, and a node whose hash doesn't change stops the propagation, so that a tree
+    // connected from its top is walked once)
+    for (std::vector<NodeWPtr>::const_iterator it = nodesToHash.begin(); it != nodesToHash.end(); ++it) {
+        const NodePtr node = it->lock();
+        if (node) {
+            // The actions run while the tree was created (e.g. a RoD asked by a PyPlug's createInstance()) cached their
+            // results under the hash the node had before its inputs changed, which it gets again if they are
+            // disconnected: forget them, as the project load does (Node::refreshAllInputRelatedData())
+            const EffectInstancePtr effect = node->getEffectInstance();
+            if (effect) {
+                effect->clearActionsCache();
+            }
+            node->computeHashAfterInputChange();
+        }
+    }
+}
+
+bool
+AppInstance::computeHashAfterNodeTreeCreation(const NodePtr& node)
+{
+    // On project load, the hashes are computed from the saved knobs ages when the input-related data are refreshed
+    // (Node::refreshAllInputRelatedData())
+    const bool loadingProject = getProject()->isLoadingProject();
+    QMutexLocker k(&_imp->creatingGroupMutex);
+
+    if (_imp->_creatingTree <= 0) {
+        return false;
+    }
+    if (!loadingProject) {
+        _imp->nodesToHashAfterTreeCreation.push_back(node);
+    }
+
+    return true;
 }
 
 void
@@ -832,27 +876,30 @@ AppInstance::loadPythonScript(const QFileInfo& file)
         {
             // Declared before createNodeTree, so that the previews are refreshed once the tree is created.
             RefreshPreviewsOfCreatedNodes_RAII refreshPreviews( shared_from_this(), getProject() );
-            std::string output;
-            FlagIncrementer flag(&_imp->_creatingGroup, &_imp->creatingGroupMutex);
-            CreatingNodeTreeFlag_RAII createNodeTree( shared_from_this() );
-            if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &err, &output) ) {
-                if ( !err.empty() ) {
-                    Dialogs::errorDialog(tr("Python").toStdString(), err);
-                }
+            {
+                std::string output;
+                FlagIncrementer flag(&_imp->_creatingGroup, &_imp->creatingGroupMutex);
+                CreatingNodeTreeFlag_RAII createNodeTree( shared_from_this() );
+                if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &err, &output) ) {
+                    if ( !err.empty() ) {
+                        Dialogs::errorDialog(tr("Python").toStdString(), err);
+                    }
 
-                return false;
-            } else {
-                if ( !output.empty() ) {
-                    if ( appPTR->isBackground() ) {
-                        std::cout << output << std::endl;
-                    } else {
-                        appendToScriptEditor(output);
+                    return false;
+                } else {
+                    if ( !output.empty() ) {
+                        if ( appPTR->isBackground() ) {
+                            std::cout << output << std::endl;
+                        } else {
+                            appendToScriptEditor(output);
+                        }
                     }
                 }
-            }
+            } // CreatingNodeTreeFlag_RAII createNodeTree: the hashes of the new nodes are computed
 
+            // after the tree creation, which skips the refresh of every node (Node::refreshInputRelatedDataRecursiveInternal())
             getProject()->forceComputeInputDependentDataOnAllTrees();
-        } // CreatingNodeTreeFlag_RAII createNodeTree, RefreshPreviewsOfCreatedNodes_RAII refreshPreviews
+        } // RefreshPreviewsOfCreatedNodes_RAII refreshPreviews
     } else {
         // Its failure is given by its result, not by what it or other code wrote to sys.stderr; its output
         // goes to the Script Editor (#1489)

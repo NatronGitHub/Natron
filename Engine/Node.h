@@ -224,6 +224,16 @@ public:
      **/
     U64 getHashValue() const;
 
+    /**
+     * @brief Recomputes the hashes after a change of the inputs of this node: its own hash, the hashes downstream, and,
+     * for a group, the hashes of the nodes inside it that read its inputs. While a node tree is created
+     * (CreatingNodeTreeFlag_RAII: a paste, a PyPlug instance, a Python project), this is done when the outermost tree
+     * creation ends (AppInstance::setIsCreatingNodeTree()), once the whole tree is connected (#1847). On project load,
+     * the hashes are computed from the saved knobs ages when the input-related data are refreshed
+     * (refreshAllInputRelatedData()).
+     **/
+    void computeHashAfterInputChange();
+
     virtual std::string getCacheID() const OVERRIDE FINAL;
 
     /**
