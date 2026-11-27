@@ -854,9 +854,18 @@ bezierSegmentEval(bool useGuiCurves,
         double length = std::sqrt(dx1 * dx1 + dy1 * dy1) +
                         std::sqrt(dx2 * dx2 + dy2 * dy2) +
                         std::sqrt(dx3 * dx3 + dy3 * dy3);
-        // at most 100000 points: a segment that long is far outside any image (e.g. near the line at infinity of a
-        // perspective transform), and the conversion to int must not overflow
-        nbPointsPerSegment = (int)std::min(std::max(length * 0.25, 2.), 100000.);
+        // At most kMaxPointsPerSegment points, so that the conversion to int can't overflow for a segment that
+        // goes near the line at infinity of a perspective extra matrix. The cap is a stopgap: the result stays
+        // exact only for segments up to 4 * kMaxPointsPerSegment pixels long (400 000 px, far beyond any image).
+        // The proper solution (#1954) samples by adaptive subdivision (de Casteljau) with convex-hull culling:
+        // a piece whose control-point hull, and its feather segment's, lies entirely outside the render window
+        // expanded by the feather distance is replaced by its chord. The area between the curve and the chord
+        // is then outside that window, so the fill and the feather of every pixel inside it are unchanged, and
+        // the number of points follows the visible length instead of the total length. Clipping the segments
+        // to the render window would not be correct: it breaks the winding of the closed contour and the
+        // pairing of the shape and feather points used by computeTriangles().
+        const double kMaxPointsPerSegment = 100000.;
+        nbPointsPerSegment = (int)std::min(std::max(length * 0.25, 2.), kMaxPointsPerSegment);
     }
 
     double incr = 1. / (double)(nbPointsPerSegment - 1);
