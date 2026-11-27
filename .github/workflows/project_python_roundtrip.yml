@@ -1,0 +1,179 @@
+name: Python project round trip
+
+# Checks that the Python project format keeps everything the .ntp keeps (#2001), on every
+# Natron-Tests project (BayMax and Spaceship included) and the projects of Tests/data, with the
+# packaged Linux and Windows builds, which have the plug-ins: Tests/gui/run_ntp_python_roundtrip_test.py
+# saves each project as a text .ntp (A), and as Python, which it loads and saves as a text .ntp (B),
+# and compares A and B. A difference fails the job unless Tests/gui/ntp_python_roundtrip_allowlist.txt
+# has it, with its issue. The ctest NtpPythonRoundTripTest runs the same check on the built-in
+# projects only, in every CI build.
+# The builds are not made here: Linux uses the x86_64 archive of the natron_testing pre-release (the
+# last weekly or on-demand run of linux_packages.yml on RB-2.6 whose packages and Natron-Tests
+# passed), Windows the portable tree of the last successful build_installer.yml run on RB-2.6 (or the
+# runs given by hand). The check itself (the driver and the allowlist) comes from the branch of the
+# run. Weekly (Sunday, after the package workflows) and on demand; never skipped: the packages are
+# rebuilt every week, with the plug-ins' moving branches.
+on:
+  workflow_dispatch:
+    inputs:
+      linux_run_id:
+        description: 'Optional: ID of a "Linux packages" run whose Natron-Linux-x86_64 artifact is used instead of the natron_testing pre-release'
+        required: false
+        default: ''
+      windows_run_id:
+        description: 'Optional: ID of a "Build Installer" run whose Windows x86_64 portable tree is used instead of the last successful run on RB-2.6'
+        required: false
+        default: ''
+  schedule:
+  # Sunday, after linux_packages.yml (04:47) and build_installer.yml (06:17), which take a few hours
+  - cron: '37 13 * * 0'
+  # TEMPORARY, to validate this workflow from its branch (GitHub dispatches only workflows that are
+  # on the default branch): remove before the pull request is ready
+  push:
+    branches:
+    - ntp-python-roundtrip
+
+permissions:
+  contents: read
+  # to download the artifacts of other runs
+  actions: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # projects at a time (each runs NatronRenderer three times)
+  JOBS: '3'
+
+jobs:
+  roundtrip:
+    name: Round trip (${{ matrix.os }})
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - os: Linux
+          runner: ubuntu-24.04
+        - os: Windows
+          runner: windows-latest
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - name: Keep LF line endings
+      # as build_installer.yml's natron-tests job: Natron-Tests has no .gitattributes
+      if: matrix.os == 'Windows'
+      run: git config --global core.autocrlf false
+
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+        path: Natron
+
+    - uses: actions/checkout@v4
+      with:
+        repository: NatronGitHub/Natron-Tests
+        ref: master
+        path: Natron-Tests
+        persist-credentials: false
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Download the Linux package
+      if: matrix.os == 'Linux'
+      env:
+        GH_TOKEN: ${{ github.token }}
+        RUN_ID: ${{ inputs.linux_run_id }}
+      run: |
+        mkdir dist
+        if [ -n "${RUN_ID}" ]; then
+          gh run download "${RUN_ID}" -R "${GITHUB_REPOSITORY}" -n Natron-Linux-x86_64 -D dist
+        else
+          gh release download natron_testing -R "${GITHUB_REPOSITORY}" -D dist \
+            -p 'Natron-RB-2.6-Linux-x86_64.tar.xz' -p 'Natron-RB-2.6-Linux-x86_64-commits.txt'
+        fi
+        archive=(dist/*.tar.xz)
+        [ ${#archive[@]} = 1 ] && [ -f "${archive[0]}" ] || { echo "::error::expected one archive in dist"; ls -l dist; exit 1; }
+        mkdir natron
+        tar -xJf "${archive[0]}" -C natron --strip-components=1
+        cat dist/*-commits.txt 2> /dev/null || true
+        echo "RENDERER=${GITHUB_WORKSPACE}/natron/NatronRenderer" >> "${GITHUB_ENV}"
+        echo "OCIO=${GITHUB_WORKSPACE}/natron/Resources/OpenColorIO-Configs/blender/config.ocio" >> "${GITHUB_ENV}"
+        # the system libraries that the archive doesn't bundle (INSTALL_LINUX.md), as
+        # tools/docker/natron-test.sh installs them in Rocky Linux; most are on the runner already
+        sudo apt-get -qq update
+        sudo apt-get -qq install -y --no-install-recommends libgl1 libegl1 libopengl0 libglx0 \
+          libx11-6 libx11-xcb1 libxext6 libxrender1 libxi6 libxfixes3 libxrandr2 libxcursor1 libxinerama1 \
+          libxcomposite1 libxdamage1 libxtst6 libsm6 libice6 libxcb1 libxcb-icccm4 libxcb-image0 \
+          libxcb-keysyms1 libxcb-render-util0 libxkbcommon0 libxkbcommon-x11-0 libasound2t64 \
+          libgomp1 fontconfig fonts-dejavu-core > /dev/null
+
+    - name: Download the Windows package
+      if: matrix.os == 'Windows'
+      env:
+        GH_TOKEN: ${{ github.token }}
+        RUN_ID: ${{ inputs.windows_run_id }}
+      run: |
+        if [ -z "${RUN_ID}" ]; then
+          RUN_ID=$(gh run list -R "${GITHUB_REPOSITORY}" -w build_installer.yml -b RB-2.6 -s success -L 1 --json databaseId --jq '.[0].databaseId')
+          [ -n "${RUN_ID}" ] || { echo "::error::no successful Build Installer run on RB-2.6"; exit 1; }
+        fi
+        echo "Build Installer run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}"
+        # the unzipped portable tree (not the -tests, -unit_tests_failures or compare- artifacts)
+        gh run download "${RUN_ID}" -R "${GITHUB_REPOSITORY}" -p 'Natron-*-Windows-x86_64' -D dist
+        RENDERER=$(find dist -name NatronRenderer.exe -path '*/bin/*')
+        [ "$(echo "${RENDERER}" | grep -c .)" = 1 ] || { echo "::error::not exactly one NatronRenderer.exe:"; echo "${RENDERER}"; exit 1; }
+        APP=$(dirname "$(dirname "${RENDERER}")")
+        echo "RENDERER=$(cygpath -m "${GITHUB_WORKSPACE}/${RENDERER}")" >> "${GITHUB_ENV}"
+        echo "OCIO=$(cygpath -m "${GITHUB_WORKSPACE}/${APP}/Resources/OpenColorIO-Configs/blender/config.ocio")" >> "${GITHUB_ENV}"
+
+    - name: Download the BayMax and Spaceship assets
+      # as runTests.sh: the images that their projects read (from SourceForge, which is sometimes
+      # slow or flaky; a project whose images are missing still loads)
+      working-directory: Natron-Tests
+      run: |
+        for p in Spaceship:Natron_2.3.12_Spaceship:Natron_project/Sources BayMax:Natron_2.3.12_BayMax:Robot; do
+          IFS=: read -r dir name src <<< "$p"
+          if curl -fsSL --retry 3 --max-time 1800 -o "$name.zip" "https://downloads.sourceforge.net/project/natron/Examples/$name.zip" &&
+              (cd "$dir" && unzip -o -qq "../$name.zip" && mv "$name/$src" .); then
+            echo "$dir: $(basename "$src") extracted"
+          else
+            echo "::warning::could not download or extract $name.zip: the $dir projects are checked without their images"
+          fi
+          rm -f "$name.zip"
+        done
+
+    - name: Python project round trip
+      working-directory: Natron-Tests
+      run: |
+        "${RENDERER}" -v < /dev/null | head -n 5 || true
+        # every project of Natron-Tests (not the copies in the zips), and the built-in corpus
+        git ls-files '*.ntp' > ../projects.txt
+        echo "$(wc -l < ../projects.txt) Natron-Tests projects"
+        status=0
+        python ../Natron/Tests/gui/run_ntp_python_roundtrip_test.py "${RENDERER}" --builtin --next-to-project \
+          --jobs "${JOBS}" --keep ../results/differences --projects-from ../projects.txt \
+          > ../results.log 2>&1 || status=$?
+        mkdir -p ../results
+        mv ../results.log ../results/roundtrip.log
+        {
+          echo "## Python project round trip (${{ matrix.os }})"
+          echo '```'
+          sed -n '/^\*\*\* [0-9]* passed/,$p' ../results/roundtrip.log
+          echo '```'
+        } >> "${GITHUB_STEP_SUMMARY}"
+        grep -E '^(\*\*\* [0-9]+ passed|  /|FAIL|SKIP|allowlist)' ../results/roundtrip.log | sed -n '1,400p'
+        exit ${status}
+
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: python-roundtrip-${{ matrix.os }}
+        path: results/
+        retention-days: 14
+        if-no-files-found: warn
