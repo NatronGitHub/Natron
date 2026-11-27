@@ -736,6 +736,12 @@ public:
         return _glTexture ? _glTexture->getTexID() : 0;
     }
 
+    // the OpenGL texture could not be allocated (GL_OUT_OF_MEMORY)
+    bool isGLTextureAllocationFailed() const
+    {
+        return _glTexture && _glTexture->allocationFailed();
+    }
+
     int getGLTextureTarget() const
     {
         return _glTexture ? _glTexture->getTexTarget() : 0;
@@ -1145,6 +1151,11 @@ public:
     U32 getGLTextureID() const
     {
         return _data.getGLTextureID();
+    }
+
+    bool isGLTextureAllocationFailed() const
+    {
+        return _data.isGLTextureAllocationFailed();
     }
 
     int getGLTextureFormat() const

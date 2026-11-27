@@ -30,6 +30,7 @@
 
 #include <list>
 #include <bitset>
+#include <new> // std::bad_alloc
 
 #include "Global/GlobalDefines.h"
 #include "Global/KeySymbols.h"
@@ -107,6 +108,21 @@
 #define kReaderParamNameOriginalFrameRange "originalFrameRange"
 
 NATRON_NAMESPACE_ENTER
+
+/**
+ * @brief Thrown by EffectInstance::convertRAMImageToOpenGLTexture() when the texture can't be made (#1945). It is a
+ * std::bad_alloc, which HostSupport's clipLoadTexture returns as kOfxStatErrMemory; renderRoI() catches it to
+ * render the frame again without OpenGL.
+ **/
+class OpenGLTextureAllocationError
+    : public std::bad_alloc
+{
+public:
+    virtual const char* what() const noexcept OVERRIDE
+    {
+        return "the OpenGL texture could not be allocated";
+    }
+};
 
 /**
  * @brief This is the base class for visual effects.
@@ -619,7 +635,7 @@ public:
      * @brief Converts the given RAM-stored image to an OpenGL texture.
      * THe resulting texture will not be cached and will destroyed when the shared pointer is released.
      * The OpenGL context should have been made current prior to calling this function.
-     * Throws std::bad_alloc if the texture can't be created (larger than GL_MAX_TEXTURE_SIZE, or out of memory):
+     * Throws OpenGLTextureAllocationError if the texture can't be created (larger than GL_MAX_TEXTURE_SIZE, or out of memory):
      * the OpenGL render that needs it is then done again on the CPU, if the plug-in can (#1945).
      **/
     ImagePtr convertRAMImageToOpenGLTexture(const ImagePtr& image);

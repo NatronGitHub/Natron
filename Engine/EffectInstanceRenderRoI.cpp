@@ -1479,6 +1479,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             continue;
         }
         RenderRoIRetCode inputCode;
+        bool inputTextureFailed = false;
         {
             const RectD canonicalRoI = it->rect.toCanonical(renderFullScaleThenDownscale ? 0 : args.mipmapLevel, par, rod);
 
@@ -1499,14 +1500,15 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                     *neededComps,
                                                     &it->imgs,
                                                     &it->inputRois);
-            } catch (const std::bad_alloc&) {
-                if (storage != eStorageModeGLTex) {
-                    throw;
-                }
-                // An input could not be loaded into an OpenGL texture (EffectInstance::convertRAMImageToOpenGLTexture())
-                // or rendered (#1945). Nothing was allocated or rendered for this node yet.
-                return renderAgainWithoutOpenGL();
+            } catch (const OpenGLTextureAllocationError&) {
+                // An input could not be loaded into an OpenGL texture (#1945)
+                inputTextureFailed = true;
             }
+        }
+        if (inputTextureFailed) {
+            // Nothing was allocated or rendered for this node yet (and for an OpenGL render no frame-order claim or
+            // trimap guard is held)
+            return renderAgainWithoutOpenGL();
         }
         if ( planesToRender->inputPremult.empty() ) {
             for (InputImagesMap::iterator it2 = it->imgs.begin(); it2 != it->imgs.end(); ++it2) {
