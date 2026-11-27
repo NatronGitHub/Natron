@@ -139,6 +139,8 @@ jobs:
       with:
         path: assets
         key: natron-tests-assets-2.3.12
+        # one cache for Linux and Windows (the Windows download is the slowest)
+        enableCrossOsArchive: true
 
     - name: Extract the BayMax and Spaceship assets
       # as runTests.sh: the images that their projects read (a project whose images are missing still
