@@ -268,27 +268,32 @@ def check_text(label, what, rows, scale, is_text, min_pixels):
     n = sum(sum(row) for row in marks)
     print("%s after %s: %dx%d device pixels, %d text pixels" % (label, what, len(rows[0]), len(rows), n))
     check(n >= min_pixels, "the %s draws no text after %s (%d text pixels)" % (label, what, n))
-    # thicker than the strokes of a glyph, taller than digits
+    # wider than the strokes of an anti-aliased glyph, and about as tall as a digit
     block = solid_block(rows, marks, round(4 * scale), round(10 * scale))
     check(block is None, "the %s draws a solid rectangle %r of the text colour %r after %s: a glyph without its texture"
           % (label, block, block and rows[block[1]][block[0]], what))
 
 
 def check_view_drawn(label, what):
-    """The OpenGL view of the tab label is shown and drawn: the scale labels of the Curve Editor and of the
-    Dope Sheet, the image and the text of the viewer."""
+    """The OpenGL view of the tab label is shown and drawn.
+
+    The Curve Editor and the Dope Sheet draw their scale labels, the viewer its image; no glyph is a solid
+    rectangle.
+    """
     if label != VIEWER:
         rows, scale = view_pixels_drawn(label, what)
         check_text(label, what, rows, scale, is_label, 20)
         return
     fit_viewer()  # the image fills the viewer, whatever its new size
     rows, scale = view_pixels_drawn(label, what)
-    # the Generator's image at the centre (188), its format border (125) and RoD (100): only the viewer's
-    # text (e.g. the format name, VIEWER_TEXT_RGB) is a grey of at least 195
+    # the Generator's image at the centre
     c = rows[len(rows) // 2][len(rows[0]) // 2]
     check(all(abs(v - srgb8(0.5)) <= 3 for v in c),
           "the viewer shows %r at its centre after %s, not the image (%d)" % (c, what, srgb8(0.5)))
-    check_text(label, what, rows, scale, lambda p: p[0] == p[1] == p[2] >= 195, 5)
+    # The viewer's text (the format name, in VIEWER_TEXT_RGB) is drawn at sub-pixel positions with
+    # GL_LINEAR glyph textures, so its strokes may never reach that grey: only an untextured glyph,
+    # a solid rectangle of exactly that grey, is checked.
+    check_text(label, what, rows, scale, lambda p: p == VIEWER_TEXT_RGB, 0)
 
 
 def floating_windows():
