@@ -380,9 +380,6 @@ public Q_SLOTS:
 
     void onPasteActionTriggered();
 
-    void onLinkToActionTriggered();
-    void linkTo(int dimension);
-
     void onResetDefaultValuesActionTriggered();
 
     ///Actually restores all dimensions, the parameter is disregarded.

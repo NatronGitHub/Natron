@@ -84,7 +84,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/KnobGuiGroup.h"
 #include "Gui/LineEdit.h"
-#include "Gui/LinkToKnobDialog.h"
 #include "Gui/Menu.h"
 #include "Gui/Menu.h"
 #include "Gui/NodeCreationDialog.h"
