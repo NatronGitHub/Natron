@@ -51,16 +51,21 @@ makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
 # patch-libavcodec-simple_idct10-saturate.diff: the patch of Natron's macOS and Linux FFmpeg
 # (NatronGitHub/Natron#1601): 10-bit DNxHD/DNxHR decoded with black columns on ARM64, which
 # uses FFmpeg's C 10-bit IDCT (x86 uses its SIMD version, which saturates).
+# patch-libavcodec-dnxhdenc-mb_qscale.diff: also as on macOS and Linux (NatronGitHub/openfx-io#267,
+# NatronGitHub/Natron#1953): the DNxHR encoder aborted when rate control chose a qscale above 255.
 source=(https://ffmpeg.org/releases/${_realname}-${pkgver}.tar.xz
-        patch-libavcodec-simple_idct10-saturate.diff)
+        patch-libavcodec-simple_idct10-saturate.diff
+        patch-libavcodec-dnxhdenc-mb_qscale.diff)
 sha256sums=('8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e'
-            '328d3a95101aaf8b73869a0a93788f5eb37161424a1566abdb437705836e079e')
+            '328d3a95101aaf8b73869a0a93788f5eb37161424a1566abdb437705836e079e'
+            'd8e00ed145b38fbce972d9b5a56257edfdf3d2322f94aa9fea8cde81ed74d8f2')
 
 prepare() {
   cd "${srcdir}/${_realname}-${pkgver}"
   # rename VERSION to avoid a conflict with the C++20 <version> header (as MSYS2 does)
   mv VERSION VERSION.txt
   patch -p0 -i "${srcdir}/patch-libavcodec-simple_idct10-saturate.diff"
+  patch -p0 -i "${srcdir}/patch-libavcodec-dnxhdenc-mb_qscale.diff"
 }
 
 build() {
