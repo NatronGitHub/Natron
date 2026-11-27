@@ -77,7 +77,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGraphUndoRedo.h"
-#include "Gui/NodeGuiSerialization.h"
+#include "Engine/NodeGuiSerialization.h"
 #include "Gui/NodeGraphTextItem.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/SequenceFileDialog.h"

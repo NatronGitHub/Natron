@@ -1288,6 +1288,11 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
 
     bool isSilentCreation = args.getProperty<bool>(kCreateNodeArgsPropSilent);
 
+    if ( findId == QString::fromUtf8(PLUGINID_NATRON_VIEWER) ) {
+        // a Viewer is GUI data (see Project::fileHasGuiData()), even in background mode, which has none
+        getProject()->onGuiDataSet();
+    }
+
 
 #ifdef NATRON_ENABLE_IO_META_NODES
     NodePtr argsIOContainer = args.getProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer);
@@ -1556,10 +1561,13 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
             if ( input && output && !output->getInput(0) ) {
                 output->connectInput(input, 0);
 
-                double x, y;
-                output->getPosition(&x, &y);
-                y -= 100;
-                input->setPosition(x, y);
+                // without a GUI, the nodes have no position (see Node::setPosition())
+                if ( output->hasGuiData() ) {
+                    double x, y;
+                    output->getPosition(&x, &y);
+                    y -= 100;
+                    input->setPosition(x, y);
+                }
             }
             onGroupCreationFinished(node, serialization, autoConnect);
 

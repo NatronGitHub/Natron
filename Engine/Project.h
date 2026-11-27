@@ -217,6 +217,10 @@ public:
     /// It describes the loaded file, saving doesn't change it. See App.projectFileHasGuiData() in App.rst.
     bool fileHasGuiData() const WARN_UNUSED_RETURN;
 
+    /// Called when a node sets its position, size or colour (see Node::setPosition()), or a Viewer is created:
+    /// while a Python project runs, its file has GUI data.
+    void onGuiDataSet();
+
     /// Whether something in the project file was not loaded, so that saving would lose it (set before
     /// afterProjectLoad; warnings don't set it). See App.projectLoadedWithErrors() in App.rst.
     bool fileLoadedWithErrors() const WARN_UNUSED_RETURN;

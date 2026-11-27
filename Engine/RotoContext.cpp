@@ -508,12 +508,15 @@ RotoContext::makeStroke(RotoStrokeType type,
     }
     assert(parentLayer);
     RotoStrokeItemPtr curve( new RotoStrokeItem( type, this_shared, name, RotoLayerPtr() ) );
+    // Its nodes first, as makeBezier() and the paint brush do: inserting it rebuilds the RotoPaint tree
+    // (RotoLayer::insertItem()), which uses them, and if a plug-in is missing (createNodes() throws), there is
+    // no stroke without nodes in the layer.
+    curve->createNodes();
     int indexInLayer = -1;
     if (parentLayer) {
         indexInLayer = 0;
         parentLayer->insertItem(curve, 0);
     }
-    curve->createNodes();
 
     _imp->lastInsertedItem = curve;
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Install fribidi (for libass and ffmpeg)
+# Install fribidi (for pango)
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/fribidi.html
 FRIBIDI_VERSION=1.0.18
 FRIBIDI_TAR="fribidi-${FRIBIDI_VERSION}.tar.xz"

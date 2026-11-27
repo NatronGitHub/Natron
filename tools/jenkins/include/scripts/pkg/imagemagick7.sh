@@ -14,7 +14,7 @@ MAGICK7_TAR="ImageMagick-${MAGICK7_VERSION}.tar.xz"
 # (imagemagick.org/archive/releases only keeps the latest releases)
 MAGICK7_SITE="https://github.com/ImageMagick/ImageMagick/releases/download/${MAGICK7_VERSION}"
 if download_step; then
-    download "$MAGICK7_SITE" "$MAGICK7_TAR"
+    download "$MAGICK7_SITE" "$MAGICK7_TAR" "$MAGICK7_SHA256"
 fi
 # The full installed version (e.g. 7.1.2-36): pkg-config only gives 7.1.2, which wouldn't
 # trigger a rebuild for a new patch level.
@@ -25,10 +25,6 @@ magick7_installed_version() {
 }
 if build_step && { force_build || { [ ! -s "$SDK_HOME/magick7/lib/pkgconfig/Magick++.pc" ] || [ "$(magick7_installed_version)" != "$MAGICK7_VERSION" ]; }; }; then
     start_build
-    if [ -n "${MAGICK7_SHA256:-}" ] && [ "$(sha256sum "$SRC_PATH/$MAGICK7_TAR" | cut -d' ' -f1)" != "$MAGICK7_SHA256" ]; then
-        (>&2 echo "Error: $SRC_PATH/$MAGICK7_TAR: sha256 mismatch (expected $MAGICK7_SHA256)")
-        exit 1
-    fi
     untar "$SRC_PATH/$MAGICK7_TAR"
     pushd "ImageMagick-${MAGICK7_VERSION}"
     MAGICK_CFLAGS="-DMAGICKCORE_EXCLUDE_DEPRECATED=1"

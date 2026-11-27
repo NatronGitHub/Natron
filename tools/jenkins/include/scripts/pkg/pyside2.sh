@@ -10,12 +10,12 @@
 # installed, as before.
 # The source build needs libclang, installed by the Dockerfile: on Rocky Linux 9, EPEL's
 # clang19-devel/llvm19-devel (in /usr/lib64/llvm19), because AppStream's clang 22 is too
-# recent for shiboken2 5.15.19; on Rocky Linux 8, AppStream's clang-devel 18 (see
-# SHIBOKEN2_CLANG_VERSION in build-Linux-sdk.sh).
+# recent for shiboken2 5.15.19 (see SHIBOKEN2_CLANG_VERSION in build-Linux-sdk.sh).
 if [ -n "${ROCKY:-}" ] || [ "${ARCH:-x86_64}" != "x86_64" ]; then
     PYSIDE2_FROM_SOURCE=1
     # the latest open-source 5.15 release
     PYSIDE2_VERSION="5.15.19"
+    PYSIDE2_SHA256=c5640f5fc754522d4ac4b21af89d9922f7146fd32ab62d3494f58c7c7055d4c5
 else
     PYSIDE2_FROM_SOURCE=0
     PYSIDE2_VERSION="5.15.2.1"
@@ -32,7 +32,7 @@ PYSIDE2_TAR="pyside-setup-opensource-src-${PYSIDE2_VERSION}.tar.xz"
 PYSIDE2_SITE="https://download.qt.io/official_releases/QtForPython/pyside2/PySide2-${PYSIDE2_VERSION}-src"
 
 if [ "$PYSIDE2_FROM_SOURCE" = 1 ] && download_step; then
-    download "$PYSIDE2_SITE" "$PYSIDE2_TAR"
+    download "$PYSIDE2_SITE" "$PYSIDE2_TAR" "$PYSIDE2_SHA256"
 fi
 if [ "$PYSIDE2_FROM_SOURCE" = 1 ]; then
     PYSIDE2_SHIBOKEN2="$SDK_HOME/bin/shiboken2"

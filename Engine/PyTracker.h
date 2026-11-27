@@ -52,6 +52,14 @@ public:
     void setScriptName(const QString& scriptName);
     QString getScriptName() const;
 
+    void setLabel(const QString& label);
+    QString getLabel() const;
+
+    // The frames of the keyframes set by the user (the reference frames of the pattern when tracking)
+    void getUserKeyframes(std::list<int>* frames) const;
+    void setUserKeyframe(int frame);
+    void removeUserKeyframe(int frame);
+
     Param* getParam(const QString& scriptName) const;
 
     std::list<Param*> getParams() const;
@@ -83,6 +91,8 @@ public:
     void getSelectedTracks(std::list<Track*>* markers) const;
 
     Track* createTrack();
+    // A track that uses pattern matching (a TrackerPM plug-in) or not, whatever the "Use Pattern Matching" parameter
+    Track* createTrack(bool usePatternMatching);
 
     void startTracking(const std::list<Track*>& marks,
                        int start,

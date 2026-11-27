@@ -274,18 +274,26 @@ TrackerContext::generateUniqueTrackName(const std::string& baseName)
 TrackMarkerPtr
 TrackerContext::createMarker()
 {
+#ifdef NATRON_TRACKER_ENABLE_TRACKER_PM
+    return createMarker( isTrackerPMEnabled() );
+#else
+    return createMarker(false);
+#endif
+}
+
+TrackMarkerPtr
+TrackerContext::createMarker(bool usePatternMatching)
+{
     TrackMarkerPtr track;
 
-#ifdef NATRON_TRACKER_ENABLE_TRACKER_PM
-    bool usePM = isTrackerPMEnabled();
-    if (!usePM) {
+    if (!usePatternMatching) {
         track = TrackMarker::create( shared_from_this() );
     } else {
         track = TrackMarkerPM::create( shared_from_this() );
     }
-#else
-    track = TrackMarker::create( shared_from_this() );
-#endif
+
+    // before it is added: the knobs of a TrackMarkerPM throw if its tracker plug-in is missing (as in load())
+    track->initializeKnobsPublic();
 
     int index;
     {
@@ -293,8 +301,7 @@ TrackerContext::createMarker()
         index  = _imp->markers.size();
         _imp->markers.push_back(track);
     }
-    
-    track->initializeKnobsPublic();
+
     std::string name = generateUniqueTrackName(kTrackBaseName);
 
     track->setScriptName(name);
@@ -867,12 +874,14 @@ TrackerContext::exportTrackDataFromExportOptions()
         return;
     }
 
-    // Move the new node
-    double thisNodePos[2];
-    double thisNodeSize[2];
-    thisNode->getPosition(&thisNodePos[0], &thisNodePos[1]);
-    thisNode->getSize(&thisNodeSize[0], &thisNodeSize[1]);
-    createdNode->setPosition(thisNodePos[0] + thisNodeSize[0] * 2., thisNodePos[1]);
+    // Move the new node (without a GUI, the nodes have no position, see Node::setPosition())
+    if ( thisNode->hasGuiData() ) {
+        double thisNodePos[2];
+        double thisNodeSize[2];
+        thisNode->getPosition(&thisNodePos[0], &thisNodePos[1]);
+        thisNode->getSize(&thisNodeSize[0], &thisNodeSize[1]);
+        createdNode->setPosition(thisNodePos[0] + thisNodeSize[0] * 2., thisNodePos[1]);
+    }
 
     int timeForFromPoints = getTransformReferenceFrame();
 

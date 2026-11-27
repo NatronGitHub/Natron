@@ -4,8 +4,9 @@
 # Be careful when upgrading, v3.0 uses llvm and is probably not trivial to build.
 SEEXPR211_VERSION=2.11
 SEEXPR211_TAR="SeExpr-${SEEXPR211_VERSION}.tar.gz"
+SEEXPR211_SHA256=bf4a498f86aa3fc19aad3d7384de11d5df76f7f71587c9bd789f5e50f8090e1a
 if download_step; then
-    download_github wdas SeExpr "$SEEXPR211_VERSION" v "$SEEXPR211_TAR"
+    download_github wdas SeExpr "$SEEXPR211_VERSION" v "$SEEXPR211_TAR" "$SEEXPR211_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libSeExpr.so" ]; }; }; then
     start_build

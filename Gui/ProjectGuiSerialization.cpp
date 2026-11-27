@@ -23,7 +23,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "ProjectGuiSerialization.h"
+#include "Engine/ProjectGuiSerialization.h"
 
 #include <stdexcept>
 

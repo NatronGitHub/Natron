@@ -505,7 +505,7 @@ public:
      * @param mergingData Can be passed when mergingFunctor is not null to speed up the comparisons.
      *
      * @param displayOrder The order in which menus show the entries: the indices of entries, each once
-     * (OFX kOfxParamPropChoiceOrder). Empty, or not such a permutation: the natural order. It only affects
+     * (OFX kOfxParamPropChoiceOrder). Empty, 0..n-1, or not such a permutation: the natural order. It only affects
      * the menus: the value of the knob is still the index in entries.
      *
      * @returns true if something changed, false otherwise.
@@ -524,8 +524,9 @@ public:
     /// The indices of the entries, in the order in which menus show them (0..n-1 unless a display order is set).
     std::vector<int> getDisplayOrder_mt_safe() const;
 
-    /// The display order that was set (populateChoices(), setDisplayOrder()), empty if there is none: the
-    /// order to copy to another knob (a copy of a knob without an order has none either).
+    /// The display order that was set (populateChoices(), setDisplayOrder()), empty if there is none or if it
+    /// is the natural order 0..n-1: the order to copy to another knob (a copy of a knob without an order has
+    /// none either).
     std::vector<int> getExplicitDisplayOrder_mt_safe() const;
 
     bool isActiveEntryPresentInEntries() const;
@@ -629,7 +630,8 @@ private:
     // eOptionRestorationExactIDOrDefault), -1 if none; the caller holds _entriesMutex
     int matchOption_locked(const std::string& optionID, ChoiceOption* matchedEntry) const;
 
-    // displayOrder if it is a permutation of 0..nEntries-1, else an empty vector (the natural order)
+    // displayOrder if it is a permutation of 0..nEntries-1 other than the identity, else an empty vector (the
+    // natural order)
     static std::vector<int> validDisplayOrder(const std::vector<int>& displayOrder, std::size_t nEntries);
 
     virtual bool canAnimate() const OVERRIDE FINAL;
@@ -644,7 +646,7 @@ private:
 
     mutable QMutex _entriesMutex;
     std::vector<ChoiceOption> _entries;
-    std::vector<int> _displayOrder; // protected by _entriesMutex; empty: the natural order
+    std::vector<int> _displayOrder; // protected by _entriesMutex; empty: the natural order (never the identity)
     ChoiceOption _currentEntry; // protected by _entriesMutex
     bool _addNewChoice;
     static const std::string _typeNameStr;

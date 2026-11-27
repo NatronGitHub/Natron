@@ -38,6 +38,7 @@
 #include <list>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -59,6 +60,7 @@
 #include "Engine/RotoContext.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoPaintInteract.h"
+#include "Engine/RotoPoint.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/ViewIdx.h"
 
@@ -671,4 +673,72 @@ TEST_F(RotoPaintOverlayTest, CloneToolKeepsChosenSource)
 
     selectTool(kRotoUIParamCloneBrushToolButton, kRotoUIParamRevealToolButtonAction);
     EXPECT_EQ( 3, sourceType->getValue() ) << "the Reveal tool lost its source";
+}
+
+// A stroke made from the points of a painted one (RotoStrokeItem::addStroke(), which Python projects use, see
+// StrokeItem.addStroke()) must be the same stroke: the same points and the same interpolation between them, also
+// for points that came too close in time, which appendPoint() spaces out (issue 1928).
+TEST_F(RotoPaintOverlayTest, StrokeFromPointsMatchesPaintedStroke)
+{
+    if (!_havePlugins) {
+        return;
+    }
+    selectTool(kRotoUIParamPaintBrushToolButton, kRotoUIParamDrawBrushToolButtonAction);
+    // (x, y, pressure, timestamp in seconds), as a tablet gives them: the second point is 4 ms after the first one
+    const double points[][4] = { { 100., 100., 0.3, 1000. }, { 120., 110., 0.5, 1000.004 }, { 150.3, 130., 0.8, 1000.03 },
+                                 { 190., 135.7, 0.6, 1000.07 } };
+    const int count = sizeof(points) / sizeof(points[0]);
+    for (int i = 0; i < count; ++i) {
+        const QPointF pos(points[i][0], points[i][1]);
+        if (i == 0) {
+            EXPECT_TRUE( ( (*_effect).*OverlayActions::penDown() )(kTime, RenderScale(), ViewIdx(0), pos, pos, points[i][2], points[i][3], ePenTypeLMB, KeyboardModifiers()) );
+        } else {
+            EXPECT_TRUE( ( (*_effect).*OverlayActions::penMotion() )(kTime, RenderScale(), ViewIdx(0), pos, pos, points[i][2], points[i][3], KeyboardModifiers()) );
+        }
+    }
+    const QPointF last(points[count - 1][0], points[count - 1][1]);
+    const bool redraw = ( (*_effect).*OverlayActions::penUp() )(kTime, RenderScale(), ViewIdx(0), last, last, points[count - 1][2], points[count - 1][3], KeyboardModifiers());
+    Q_UNUSED(redraw);
+
+    const std::list<RotoStrokeItemPtr> strokes = getStrokes();
+    ASSERT_EQ( 1u, strokes.size() );
+    const RotoStrokeItemPtr painted = strokes.front();
+    const std::vector<std::vector<RotoPoint> > lines = painted->getStrokesPoints();
+    ASSERT_EQ( 1u, lines.size() );
+    ASSERT_GE( lines[0].size(), 3u );
+
+    RotoStrokeItemPtr copy = _context->makeStroke(eRotoStrokeTypeSolid, "Copy", false);
+    ASSERT_TRUE( bool(copy) );
+    for (std::size_t i = 0; i < lines.size(); ++i) {
+        copy->addStroke(lines[i]);
+    }
+    copy->setStrokeFinished();
+
+    const std::vector<std::vector<RotoPoint> > copiedLines = copy->getStrokesPoints();
+    ASSERT_EQ( lines.size(), copiedLines.size() );
+    for (std::size_t i = 0; i < lines.size(); ++i) {
+        ASSERT_EQ( lines[i].size(), copiedLines[i].size() );
+        for (std::size_t j = 0; j < lines[i].size(); ++j) {
+            EXPECT_EQ( lines[i][j].pos().x, copiedLines[i][j].pos().x );
+            EXPECT_EQ( lines[i][j].pos().y, copiedLines[i][j].pos().y );
+            EXPECT_EQ( lines[i][j].pressure(), copiedLines[i][j].pressure() );
+            EXPECT_EQ( lines[i][j].timestamp(), copiedLines[i][j].timestamp() );
+        }
+    }
+    // the interpolated points, which depend on the derivatives of the curves
+    std::list<std::list<std::pair<Point, double> > > paintedPoints, copiedPoints;
+    painted->evaluateStroke(0, kTime, &paintedPoints);
+    copy->evaluateStroke(0, kTime, &copiedPoints);
+    ASSERT_EQ( paintedPoints.size(), copiedPoints.size() );
+    std::list<std::list<std::pair<Point, double> > >::const_iterator c = copiedPoints.begin();
+    for (std::list<std::list<std::pair<Point, double> > >::const_iterator p = paintedPoints.begin(); p != paintedPoints.end(); ++p, ++c) {
+        ASSERT_EQ( p->size(), c->size() );
+        ASSERT_FALSE( p->empty() );
+        std::list<std::pair<Point, double> >::const_iterator cp = c->begin();
+        for (std::list<std::pair<Point, double> >::const_iterator pp = p->begin(); pp != p->end(); ++pp, ++cp) {
+            EXPECT_EQ( pp->first.x, cp->first.x );
+            EXPECT_EQ( pp->first.y, cp->first.y );
+            EXPECT_EQ( pp->second, cp->second );
+        }
+    }
 }

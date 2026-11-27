@@ -66,7 +66,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
-#include "Gui/ProjectGuiSerialization.h"
+#include "Engine/ProjectGuiSerialization.h"
 #include "Gui/PythonPanels.h"
 #include "Gui/RegisteredTabs.h"
 #include "Gui/ScriptEditor.h"
@@ -280,7 +280,6 @@ static
 void
 loadNodeGuiSerialization(Gui* gui,
                          const std::map<std::string, ViewerData > & viewersProjections,
-                         const SettingsPtr& settings,
                          double leftBound,
                          double rightBound,
                          const NodeGuiSerialization& serialization)
@@ -303,47 +302,10 @@ loadNodeGuiSerialization(Gui* gui,
         nGui->togglePreview();
     }
 
-    EffectInstancePtr iseffect = nGui->getNode()->getEffectInstance();
-
     if ( serialization.colorWasFound() ) {
-        std::list<std::string> grouping;
-        nGui->getNode()->getPluginGrouping(&grouping);
-        std::string majGroup = grouping.empty() ? "" : grouping.front();
         BackdropGui* isBd = dynamic_cast<BackdropGui*>( nGui.get() );
-        float defR, defG, defB;
-
-        if ( iseffect->isReader() ) {
-            settings->getReaderColor(&defR, &defG, &defB);
-        } else if ( iseffect->isWriter() ) {
-            settings->getWriterColor(&defR, &defG, &defB);
-        } else if ( iseffect->isGenerator() ) {
-            settings->getGeneratorColor(&defR, &defG, &defB);
-        } else if (majGroup == PLUGIN_GROUP_COLOR) {
-            settings->getColorGroupColor(&defR, &defG, &defB);
-        } else if (majGroup == PLUGIN_GROUP_FILTER) {
-            settings->getFilterGroupColor(&defR, &defG, &defB);
-        } else if (majGroup == PLUGIN_GROUP_CHANNEL) {
-            settings->getChannelGroupColor(&defR, &defG, &defB);
-        } else if (majGroup == PLUGIN_GROUP_KEYER) {
-            settings->getKeyerGroupColor(&defR, &defG, &defB);
-        } else if (majGroup == PLUGIN_GROUP_MERGE) {
-            settings->getMergeGroupColor(&defR, &defG, &defB);
-        } else if (majGroup == PLUGIN_GROUP_PAINT) {
-            settings->getDrawGroupColor(&defR, &defG, &defB);
-        } else if (majGroup == PLUGIN_GROUP_TIME) {
-            settings->getTimeGroupColor(&defR, &defG, &defB);
-        } else if (majGroup == PLUGIN_GROUP_TRANSFORM) {
-            settings->getTransformGroupColor(&defR, &defG, &defB);
-        } else if (majGroup == PLUGIN_GROUP_MULTIVIEW) {
-            settings->getViewsGroupColor(&defR, &defG, &defB);
-        } else if (majGroup == PLUGIN_GROUP_DEEP) {
-            settings->getDeepGroupColor(&defR, &defG, &defB);
-        } else if (isBd) {
-            settings->getDefaultBackdropColor(&defR, &defG, &defB);
-        } else {
-            settings->getDefaultNodeColor(&defR, &defG, &defB);
-        }
-
+        double defR, defG, defB;
+        internalNode->getDefaultColor(&defR, &defG, &defB);
 
         float r, g, b;
         serialization.getColor(&r, &g, &b);
@@ -430,7 +392,7 @@ loadNodeGuiSerialization(Gui* gui,
 
     const std::list<NodeGuiSerializationPtr> & nodesGuiSerialization = serialization.getChildren();
     for (std::list<NodeGuiSerializationPtr>::const_iterator it = nodesGuiSerialization.begin(); it != nodesGuiSerialization.end(); ++it) {
-        loadNodeGuiSerialization(gui, viewersProjections, settings, leftBound, rightBound, **it);
+        loadNodeGuiSerialization(gui, viewersProjections, leftBound, rightBound, **it);
     }
 } // loadNodeGuiSerialization
 
@@ -447,11 +409,9 @@ ProjectGui::load(bool isAutosave,  Archive & archive)
     _project.lock()->getFrameRange(&leftBound, &rightBound);
 
 
-    ///default color for nodes
-    SettingsPtr settings = appPTR->getCurrentSettings();
     const std::list<NodeGuiSerialization> & nodesGuiSerialization = obj.getSerializedNodesGui();
     for (std::list<NodeGuiSerialization>::const_iterator it = nodesGuiSerialization.begin(); it != nodesGuiSerialization.end(); ++it) {
-        loadNodeGuiSerialization(_gui, viewersProjections, settings, leftBound, rightBound,  *it);
+        loadNodeGuiSerialization(_gui, viewersProjections, leftBound, rightBound,  *it);
     }
 
 
@@ -573,8 +533,10 @@ ProjectGui::load(bool isAutosave,  Archive & archive)
     // we have to give the tr() context explicitly due to a bug in lupdate
     _gui->getApp()->updateProjectLoadStatus( QObject::tr("Restoring layout", "ProjectGui") );
 
-    // For auto-saves, always load the workspace
-    bool loadWorkspace = isAutosave || appPTR->getCurrentSettings()->getLoadProjectWorkspce();
+    // For auto-saves, always load the workspace. A project saved in background mode from a file without one (a
+    // Python project, see Project::saveProjectInternal()) has none: keep the current one.
+    const bool hasWorkspace = obj.getVersion() < PROJECT_GUI_SERIALIZATION_MAJOR_OVERHAUL || !obj.getGuiLayout()._windows.empty();
+    bool loadWorkspace = hasWorkspace && ( isAutosave || appPTR->getCurrentSettings()->getLoadProjectWorkspce() );
     if (loadWorkspace) {
         _gui->restoreLayout( true, obj.getVersion() < PROJECT_GUI_SERIALIZATION_MAJOR_OVERHAUL, obj.getGuiLayout() );
     }

@@ -5,7 +5,7 @@
 FREETYPE_VERSION=2.15.0
 FREETYPE_TAR="freetype-${FREETYPE_VERSION}.tar.xz"
 FREETYPE_SHA256=93cd47eb719c325107f2d3cf087d06299e944c3b48a40b55537302304dea1dd5
-FREETYPE_SITE="https://downloads.sourceforge.net/freetype"
+FREETYPE_SITE="https://download.savannah.gnu.org/releases/freetype"
 # 2.15.0 + the upstream ULABS/UABS fix 05f343a (rotated text near 45 degrees, openfx-arena #86 #88),
 # as on macOS (tools/MacPorts/print/freetype) and Windows (tools/MINGW-packages/mingw-w64-freetype).
 # Drop the patch, and the "+05f343a" suffix, with the first release that contains it (2.15.1).

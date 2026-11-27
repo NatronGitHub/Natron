@@ -419,19 +419,23 @@ step_osmesa() {
 step_compiler() {
     $PORT install libomp
     sudo port setrequested libomp
-    printf '#include <omp.h>\nint main(){ int n = 0;\n#pragma omp parallel for schedule(dynamic) reduction(+:n)\nfor (int i = 0; i < 4; ++i) n += i;\nreturn n == 6 && omp_get_max_threads() > 0 ? 0 : 1; }\n' > /tmp/t.cpp
-    /usr/bin/clang++ -Xpreprocessor -fopenmp -I/opt/local/include/libomp /tmp/t.cpp -o /tmp/t -L/opt/local/lib/libomp -lomp
+    local probe=$NATRON/tools/jenkins/omp-probe.cpp
+    /usr/bin/clang++ -std=c++17 -DREQUIRED_CPLUSPLUS=201703L -Xpreprocessor -fopenmp -I/opt/local/include/libomp "$probe" -o /tmp/t -L/opt/local/lib/libomp -lomp
+    /tmp/t
     otool -L /tmp/t
     sudo port select clang none || true
     $PORT install clang-${clang_version}
     sudo port setrequested clang-${clang_version}
-    clang++-mp-${clang_version} -stdlib=libc++ -fopenmp /tmp/t.cpp -o /tmp/t
+    clang++-mp-${clang_version} -stdlib=libc++ -std=c++17 -DREQUIRED_CPLUSPLUS=201703L -fopenmp "$probe" -o /tmp/t
+    /tmp/t
     otool -L /tmp/t
 }
 
 step_tools() {
     $PORT install gsed gawk coreutils findutils keychain tmux gzip bash wget bison flex doxygen \
         texinfo ncdu1 meson ninja help2man unzip tcl expect
+    # Google Test for the Tests binary (Tests/CMakeLists.txt; a static library, not in the DMG)
+    $PORT install gtest
     $PORT install privoxy     # HTTP->SOCKS proxy for pip in VMs without direct internet access
 }
 
@@ -828,6 +832,11 @@ step_update() {
     if ! port -q installed ImageMagick7 2>/dev/null | grep -q '+natron.*(active)'; then
         echo "===== installing ImageMagick7 +natron"
         $PORT install ImageMagick7 +natron -x11 -openexr
+    fi
+    # Google Test, for the images created before step_tools had it
+    if ! port -q installed gtest 2>/dev/null | grep -q '(active)'; then
+        echo "===== installing gtest"
+        $PORT install gtest
     fi
     # rebuild OSMesa/LLVM if missing or built for a newer macOS (delete /opt/osmesa/lib to force a rebuild)
     step_osmesa

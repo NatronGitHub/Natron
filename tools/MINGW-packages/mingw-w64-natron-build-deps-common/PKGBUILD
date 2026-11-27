@@ -2,7 +2,7 @@
 
 pkgname="${MINGW_PACKAGE_PREFIX}-natron-build-deps-common"
 pkgver=2026.11
-pkgrel=5
+pkgrel=6
 pkgdesc="Minimal package set for building Natron installer for any version of Qt"
 url="https://natrongithub.github.io/"
 arch=("any")
@@ -21,6 +21,8 @@ depends=(
   # Natron deps
   "${MINGW_PACKAGE_PREFIX}-boost"
   "${MINGW_PACKAGE_PREFIX}-cairo"
+  # Google Test, for Natron's Tests.exe (build-Windows-installer.sh doesn't ship libgtest.dll)
+  "${MINGW_PACKAGE_PREFIX}-gtest"
 
   # openfx-misc deps (llvm-config, used by build-plugins.sh with OSMesa)
   "${MINGW_PACKAGE_PREFIX}-osmesa"

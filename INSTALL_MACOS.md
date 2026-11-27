@@ -283,9 +283,8 @@ In those cases, `tools/jenkins/compiler-common.sh` uses the newest installed `cl
 On a new macOS or clang version, check that OpenMP programs, built with Apple clang and with the MacPorts clang, link against the system libc++ and MacPorts' libomp (`tools/tart/provision.sh` does the same):
 
 ```Shell
-printf '#include <omp.h>\nint main(){ int n = 0;\n#pragma omp parallel for schedule(dynamic) reduction(+:n)\nfor (int i = 0; i < 4; ++i) n += i;\nreturn n == 6 && omp_get_max_threads() > 0 ? 0 : 1; }\n' > /tmp/t.cpp
-/usr/bin/clang++ -Xpreprocessor -fopenmp -I/opt/local/include/libomp /tmp/t.cpp -o /tmp/t -L/opt/local/lib/libomp -lomp && otool -L /tmp/t
-clang++-mp-$CLANG -stdlib=libc++ -fopenmp /tmp/t.cpp -o /tmp/t && otool -L /tmp/t
+/usr/bin/clang++ -std=c++17 -DREQUIRED_CPLUSPLUS=201703L -Xpreprocessor -fopenmp -I/opt/local/include/libomp $NATRON_SRC/tools/jenkins/omp-probe.cpp -o /tmp/t -L/opt/local/lib/libomp -lomp && /tmp/t && otool -L /tmp/t
+clang++-mp-$CLANG -stdlib=libc++ -std=c++17 -DREQUIRED_CPLUSPLUS=201703L -fopenmp $NATRON_SRC/tools/jenkins/omp-probe.cpp -o /tmp/t && /tmp/t && otool -L /tmp/t
 # expect /usr/lib/libc++.1.dylib and /opt/local/lib/libomp/libomp.dylib
 ```
 
@@ -293,8 +292,10 @@ clang++-mp-$CLANG -stdlib=libc++ -fopenmp /tmp/t.cpp -o /tmp/t && otool -L /tmp/
 
 ```Shell
 sudo port -v -N install gsed gawk coreutils findutils keychain tmux gzip bash wget bison flex doxygen \
-    texinfo meson ninja help2man unzip tcl expect
+    texinfo meson ninja help2man unzip tcl expect gtest
 ```
+
+(`gtest` is Google Test, required to build the unit tests: a static library, linked into the `Tests` program only, so not part of the DMG.)
 
 #### 7. Libraries
 

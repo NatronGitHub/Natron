@@ -413,9 +413,15 @@ Returns the ID of the plug-in that this node instantiate.
     :rtype: :class:`tuple`
 
 Returns the current position of the node on the node-graph. This is a 2
-dimensional [X,Y] tuple.
-Note that in background mode, if used, this function will always return [0,0] and
-should NOT be used.
+dimensional [X,Y] tuple. In background mode, [0,0] for a node that has none.
+
+Without a GUI (NatronRenderer, ``Natron -b``), the node keeps the position, size and colour
+that its project file or :meth:`setPosition()<NatronEngine.Effect.setPosition>`,
+:meth:`setSize()<NatronEngine.Effect.setSize>` and :meth:`setColor()<NatronEngine.Effect.setColor>`
+gave it, and saving the project saves them
+(see :meth:`App.projectFileHasGuiData()<NatronEngine.App.projectFileHasGuiData>`). There,
+:meth:`getColor()<NatronEngine.Effect.getColor>` is (0, 0, 0) for a node that has no colour; a
+*.ntp* project saves it with its default colour.
 
 
 .. method:: Effect.getPremult()
@@ -482,8 +488,8 @@ information about the script-name.
     :rtype: :class:`tuple`
 
 Returns the size of this node on the node-graph as a 2 dimensional [Width,Height] tuple.
-Note that calling this function will in background mode will always return [0,0] and
-should not be used.
+In background mode, [0,0] for a node that has none.
+See :meth:`getPosition()<NatronEngine.Effect.getPosition>` for background mode.
 
 
 
@@ -538,8 +544,7 @@ Convenience function to return the user page parameter if this Effect has one.
     :param b: :class:`float`
 
 Set the color of the node as it appears on the node graph.
-Note that calling this function will in background mode will do nothing and
-should not be used.
+See :meth:`getPosition()<NatronEngine.Effect.getPosition>` for background mode.
 
 
 
@@ -562,8 +567,7 @@ See :ref:`this<autoVar>` section for an explanation of the difference between th
 
 
 Set the position of the node as it appears on the node graph.
-Note that calling this function will in background mode will do nothing and
-should not be used.
+See :meth:`getPosition()<NatronEngine.Effect.getPosition>` for background mode.
 
 
 
@@ -606,8 +610,7 @@ but using app1.Blur1 would report the following error::
     :param h: :class:`float`
 
 Set the size of the node as it appears on the node graph.
-Note that calling this function will in background mode will do nothing and
-should not be used.
+See :meth:`getPosition()<NatronEngine.Effect.getPosition>` for background mode.
 
 .. method:: Effect.setSubGraphEditable(editable)
 

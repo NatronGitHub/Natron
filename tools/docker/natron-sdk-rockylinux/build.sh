@@ -1,9 +1,9 @@
 #!/bin/sh
 # Build the Rocky Linux Natron SDK image for one architecture.
 #
-# Usage: [ROCKY=9|8] ./build.sh [amd64|arm64]
+# Usage: ./build.sh [amd64|arm64]
 #
-# ROCKY is the Rocky Linux major version (default: 9, the Natron 2.6 baseline).
+# The image is built on Rocky Linux 9, the Natron 2.6 baseline (ROCKY=9, the only value).
 # The architecture defaults to the one of the docker host. Building for another
 # architecture works through emulation (qemu/binfmt), but is very slow.
 # DOCKER can be set to another docker-compatible command, e.g. DOCKER=podman.

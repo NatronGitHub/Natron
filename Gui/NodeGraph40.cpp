@@ -64,7 +64,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Gui/GuiTest.h"
 #include "Gui/NodeClipBoard.h"
 #include "Gui/NodeGui.h"
-#include "Gui/NodeGuiSerialization.h"
+#include "Engine/NodeGuiSerialization.h"
 
 #include "Global/QtCompat.h"
 

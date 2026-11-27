@@ -124,6 +124,7 @@ public Q_SLOTS:
     void onTrackCloned(const TrackMarkerPtr& marker);
 
     void onTrackInserted(const TrackMarkerPtr& marker, int index);
+    void onTrackLabelChanged(const TrackMarkerPtr& marker);
     void onTrackRemoved(const TrackMarkerPtr& marker);
 
     void onEnabledChanged(const TrackMarkerPtr& marker, int reason);

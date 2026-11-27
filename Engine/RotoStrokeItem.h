@@ -31,6 +31,7 @@
 #include <list>
 #include <set>
 #include <string>
+#include <vector>
 
 // clang-format off
 CLANG_DIAG_OFF(deprecated-declarations)
@@ -82,6 +83,17 @@ public:
     void addStroke(const CurvePtr& xCurve,
                    const CurvePtr& yCurve,
                    const CurvePtr& pCurve);
+
+    /**
+     * @brief Adds a stroke made of points, with the interpolation that appendPoint() gives them (Catmull-Rom).
+     * The timestamps of the points are the times of the keyframes of the stroke's curves.
+     **/
+    void addStroke(const std::vector<RotoPoint>& points);
+
+    /**
+     * @brief The points of each stroke: the keyframes of its x, y and pressure curves
+     **/
+    std::vector<std::vector<RotoPoint> > getStrokesPoints() const;
 
     /**
      * @brief Returns true if the stroke should be removed

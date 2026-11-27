@@ -7,6 +7,7 @@
 PY3_VERSION=3.11.18
 PY3_VERSION_SHORT=${PY3_VERSION%.*}
 PY3_TAR="Python-${PY3_VERSION}.tar.xz"
+PY3_SHA256=9120e0a653868f6e3698d36cdd99e5a58903ec9469e448f21d98f7b16d8fa290
 PY3_SITE="https://www.python.org/ftp/python/${PY3_VERSION}"
 
 PY3VER="${PY3_VERSION_SHORT}"
@@ -28,7 +29,7 @@ if [ -z "${PYV:-}" ] || [ "$PYV" = "3" ]; then
 fi
 
 if download_step; then
-    download "$PY3_SITE" "$PY3_TAR"
+    download "$PY3_SITE" "$PY3_TAR" "$PY3_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/python3.pc" ] || [ "$(pkg-config --modversion python3)" != "$PY3_VERSION_SHORT" ]; }; }; then
     start_build

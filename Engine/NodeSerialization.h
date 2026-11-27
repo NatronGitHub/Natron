@@ -167,6 +167,12 @@ public:
         return _inputs;
     }
 
+    // the names the inputs have now (see NodeCollection::getViewersWithoutGui())
+    void setInputs(const std::map<std::string, std::string>& inputs)
+    {
+        _inputs = inputs;
+    }
+
     int getPluginMajorVersion() const
     {
         return _pluginMajorVersion;

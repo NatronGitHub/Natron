@@ -4,9 +4,10 @@
 # see https://sourceforge.net/projects/tinyxml/files/tinyxml
 TINYXML_VERSION=2.6.2
 TINYXML_TAR="tinyxml_${TINYXML_VERSION//./_}.tar.gz"
-TINYXML_SITE="http://sourceforge.net/projects/tinyxml/files/tinyxml/${TINYXML_VERSION}"
+TINYXML_SHA256=15bdfdcec58a7da30adc87ac2b078e4417dbe5392f3afb719f9ba6d062645593
+TINYXML_SITE="https://sourceforge.net/projects/tinyxml/files/tinyxml/${TINYXML_VERSION}"
 if download_step; then
-    download "$TINYXML_SITE" "$TINYXML_TAR"
+    download "$TINYXML_SITE" "$TINYXML_TAR" "$TINYXML_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/tinyxml.pc" ] || [ "$(pkg-config --modversion tinyxml)" != "$TINYXML_VERSION" ]; }; }; then
     start_build
