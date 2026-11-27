@@ -194,7 +194,7 @@ TEST_F(TrackerHeadlessTest, SmoothedTranslationSamplesTheFirstResult)
     ASSERT_TRUE( knob<KnobInt>(kTrackerParamSmooth) && knob<KnobDouble>(kTransformParamTranslate) );
     const std::vector<std::vector<double> > expected = {
         // 1 result: the unfixed average was 0 too, only Debug builds asserted (SmoothedCornerPinFromASingleResult
-        // also fails in Release builds)
+        // fails without the fix in Release builds too)
         { 0. },
         { 5., 5. },                 // 2 results
         { 5., 10., 20., 30., 35. }, // N = 5 results
