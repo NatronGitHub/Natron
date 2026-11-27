@@ -3796,18 +3796,6 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
             return;
         }
     }
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-    CurrentFrameFunctorArgsPtr functorArgs( new CurrentFrameFunctorArgs(view,
-                                                                                        frame,
-                                                                                        stats,
-                                                                                        _imp->viewer,
-                                                                                        viewerHash,
-                                                                                        _imp.get(),
-                                                                                        canAbort,
-                                                                                        rotoPaintNode,
-                                                                                        curStroke,
-                                                                                        isRotoNeatRender) );
-#else
     CurrentFrameFunctorArgsPtr functorArgs = std::make_shared<CurrentFrameFunctorArgs>(view,
                                                                                                          frame,
                                                                                                          stats,
@@ -3818,7 +3806,6 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
                                                                                                          rotoPaintNode,
                                                                                                          curStroke,
                                                                                                          isRotoNeatRender);
-#endif
     functorArgs->args[0] = args[0];
     functorArgs->args[1] = args[1];
 

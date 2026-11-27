@@ -199,9 +199,6 @@ unix:LIBS += $$QMAKE_LIBS_DYNLOAD
   GCCVer = $$system($$QMAKE_CXX --version)
   contains(GCCVer,[0-3]\\.[0-9]+.*) {
   } else {
-    contains(GCCVer,4\\.7.*) {
-      QMAKE_CXXFLAGS += -Wno-c++11-extensions
-    }
     contains(GCCVer,[5-9]\\.[0-9]+.*) {
       # Eigen uses std::binder1st which is deprecated in C++11
       QMAKE_CXXFLAGS += -Wno-deprecated-declarations
@@ -534,7 +531,6 @@ unix {
 
 *clang* {
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
-  QMAKE_CXXFLAGS_WARN_ON += -Wno-c++11-extensions
   QMAKE_CXXFLAGS += -std=$$NATRON_CXXSTD
 }
 

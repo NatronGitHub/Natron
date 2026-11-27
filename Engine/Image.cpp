@@ -734,19 +734,6 @@ Image::Image(const ImagePlaneDesc& components,
     , _useBitmap(useBitmap)
 {
     setCacheEntry(makeKey(0, 0, false, 0, ViewIdx(0), false, false),
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-                  ImageParamsPtr( new ImageParams(regionOfDefinition,
-                                                                  par,
-                                                                  mipmapLevel,
-                                                                  bounds,
-                                                                  bitdepth,
-                                                                  fielding,
-                                                                  premult,
-                                                                  false /*isRoDProjectFormat*/,
-                                                                  components,
-                                                                  storage,
-                                                                  textureTarget) ),
-#else
                   std::make_shared<ImageParams>(regionOfDefinition,
                                                   par,
                                                   mipmapLevel,
@@ -758,7 +745,6 @@ Image::Image(const ImagePlaneDesc& components,
                                                   components,
                                                   storage,
                                                   textureTarget),
-#endif
                   NULL /*cacheAPI*/
                   );
 
@@ -832,19 +818,6 @@ Image::makeParams(const RectD & rod,
 {
     const RectI bounds = rod.toPixelEnclosing(mipmapLevel, par);
 
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-    return ImageParamsPtr( new ImageParams(rod,
-                                                           par,
-                                                           mipmapLevel,
-                                                           bounds,
-                                                           bitdepth,
-                                                           fielding,
-                                                           premult,
-                                                           isRoDProjectFormat,
-                                                           components,
-                                                           storage,
-                                                           textureTarget) );
-#else
     return std::make_shared<ImageParams>(rod,
                                            par,
                                            mipmapLevel,
@@ -856,7 +829,6 @@ Image::makeParams(const RectD & rod,
                                            components,
                                            storage,
                                            textureTarget);
-#endif
 }
 
 ImageParamsPtr
@@ -878,19 +850,6 @@ Image::makeParams(const RectD & rod,    // the image rod in canonical coordinate
             bounds.bottom() >= pixelRod.bottom() && bounds.top() <= pixelRod.top() );
 #endif
 
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-    return ImageParamsPtr( new ImageParams(rod,
-                                                           par,
-                                                           mipmapLevel,
-                                                           bounds,
-                                                           bitdepth,
-                                                           fielding,
-                                                           premult,
-                                                           isRoDProjectFormat,
-                                                           components,
-                                                           storage,
-                                                           textureTarget) );
-#else
     return std::make_shared<ImageParams>(rod,
                                            par,
                                            mipmapLevel,
@@ -902,7 +861,6 @@ Image::makeParams(const RectD & rod,    // the image rod in canonical coordinate
                                            components,
                                            storage,
                                            textureTarget);
-#endif
 }
 
 // code proofread and fixed by @devernay on 8/8/2014
@@ -1294,11 +1252,7 @@ Image::pasteFrom(const Image & src,
         assert(gpuData);
         if (gpuData) {
             // update data directly on the mapped buffer
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-            ImagePtr tmpImg( new Image( ImagePlaneDesc::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM) );
-#else
             ImagePtr tmpImg = std::make_shared<Image>( ImagePlaneDesc::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM);
-#endif
             tmpImg->pasteFrom(src, roi);
 
             Image::ReadAccess racc(tmpImg ? tmpImg.get() : this);
@@ -1356,11 +1310,7 @@ Image::pasteFrom(const Image & src,
         glFinish();
         glCheckError();
         // Read to a temporary RGBA buffer then convert to the image which may not be RGBA
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-        ImagePtr tmpImg( new Image( ImagePlaneDesc::getRGBAComponents(), getRoD(), roi, 0, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), false, eStorageModeRAM) );
-#else
         ImagePtr tmpImg = std::make_shared<Image>( ImagePlaneDesc::getRGBAComponents(), getRoD(), roi, 0, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), false, eStorageModeRAM);
-#endif
 
         {
             Image::WriteAccess tmpAcc(tmpImg ? tmpImg.get() : this);

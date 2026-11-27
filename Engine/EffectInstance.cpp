@@ -1583,11 +1583,7 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
     bool useTmpImage = image->getComponentsCount() != 4;
     ImagePtr tmpImg;
     if (useTmpImage) {
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-        tmpImg.reset( new Image( ImagePlaneDesc::getRGBAComponents(), image->getRoD(), bounds, 0, image->getPixelAspectRatio(), image->getBitDepth(), image->getPremultiplication(), image->getFieldingOrder(), false, eStorageModeRAM) );
-#else
         tmpImg = std::make_shared<Image>( ImagePlaneDesc::getRGBAComponents(), image->getRoD(), bounds, 0, image->getPixelAspectRatio(), image->getBitDepth(), image->getPremultiplication(), image->getFieldingOrder(), false, eStorageModeRAM);
-#endif
         tmpImg->setKey(image->getKey());
         if (tmpImg->getComponents() == image->getComponents()) {
             tmpImg->pasteFrom(*image, bounds);
@@ -2885,17 +2881,6 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
                     /*
                      * BitDepth/Components conversion required as well as downscaling, do conversion to a tmp buffer
                      */
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-                    ImagePtr tmp( new Image(it->second.fullscaleImage->getComponents(),
-                                            it->second.tmpImage->getRoD(),
-                                            renderMappedRectToRender,
-                                            mipmapLevel,
-                                            it->second.tmpImage->getPixelAspectRatio(),
-                                            it->second.fullscaleImage->getBitDepth(),
-                                            it->second.fullscaleImage->getPremultiplication(),
-                                            it->second.fullscaleImage->getFieldingOrder(),
-                                            false) );
-#else
                     ImagePtr tmp = std::make_shared<Image>(it->second.fullscaleImage->getComponents(),
                                                              it->second.tmpImage->getRoD(),
                                                              renderMappedRectToRender,
@@ -2905,7 +2890,6 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
                                                              it->second.fullscaleImage->getPremultiplication(),
                                                              it->second.fullscaleImage->getFieldingOrder(),
                                                              false);
-#endif
 
                     it->second.tmpImage->convertToFormat( renderMappedRectToRender,
                                                           _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( it->second.tmpImage->getBitDepth() ),
@@ -3025,18 +3009,6 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImagePlaneDes
          * Allocate a temporary image for rendering only if using cache
          */
         if (useCache) {
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-            p.tmpImage.reset( new Image(p.renderMappedImage->getComponents(),
-                                        p.renderMappedImage->getRoD(),
-                                        tls->currentRenderArgs.renderWindowPixel,
-                                        p.renderMappedImage->getMipmapLevel(),
-                                        p.renderMappedImage->getPixelAspectRatio(),
-                                        p.renderMappedImage->getBitDepth(),
-                                        p.renderMappedImage->getPremultiplication(),
-                                        p.renderMappedImage->getFieldingOrder(),
-                                        false /*useBitmap*/,
-                                        img->getParams()->getStorageInfo().mode) );
-#else
             p.tmpImage = std::make_shared<Image>(p.renderMappedImage->getComponents(),
                                                    p.renderMappedImage->getRoD(),
                                                    tls->currentRenderArgs.renderWindowPixel,
@@ -3047,7 +3019,6 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImagePlaneDes
                                                    p.renderMappedImage->getFieldingOrder(),
                                                    false /*useBitmap*/,
                                                    img->getParams()->getStorageInfo().mode);
-#endif
         } else {
             p.tmpImage = p.renderMappedImage;
         }
@@ -4915,20 +4886,6 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
             if (isAbortable) {
                 isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, node->getEffectInstance() );
             }
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-            setter.reset( new ParallelRenderArgsSetter( time,
-                                                        viewIdx, //view
-                                                        isRenderUserInteraction, // isRenderUserInteraction
-                                                        isSequentialRender, // isSequential
-                                                        abortInfo, // abortInfo
-                                                        node, // treeRoot
-                                                        0, //texture index
-                                                        getApp()->getTimeLine().get(),
-                                                        NodePtr(), // activeRotoPaintNode
-                                                        true, // isAnalysis
-                                                        false, // draftMode
-                                                        RenderStatsPtr() ) );
-#else
             setter = std::make_shared<ParallelRenderArgsSetter>( time,
                                                                   viewIdx, //view
                                                                   isRenderUserInteraction, // isRenderUserInteraction
@@ -4941,7 +4898,6 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
                                                                   true, // isAnalysis
                                                                   false, // draftMode
                                                                   RenderStatsPtr() );
-#endif
         }
         {
             RECURSIVE_ACTION();
