@@ -1345,6 +1345,73 @@ TEST(DeepGraphRender, NodesOnPathsUpstreamOfDiamonds)
     EXPECT_EQ( 0, countDirty() );
 }
 
+// After a change at the top, the refresh of the input-related data reaches every node downstream, also the other outputs
+// of a node that was refreshed through the dirty inputs of another node (#1951). Here the walk downstream from D refreshes
+// A, then M, whose dirty input B is refreshed first, upstream; the walk downstream must still visit B to reach C, which is
+// not downstream of M. Before #1951, the two walks shared their visited set, the walk downstream skipped B, and C stayed
+// dirty.
+//
+//  Generator --> Dot D --> Dot A --> MultiPAR M (inputs A, B)
+//                      \-> Dot B -/
+//                                \-> Dot C
+TEST(DeepGraphRender, InputRelatedDataOfOtherOutputsOfInputsRefreshedUpstream)
+{
+    if ( !canRunTest() ) {
+        return;
+    }
+    SmallProject smallProject;
+    TestNodes nodes;
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+    NodePtr generator, d, a, b, m, c;
+    {
+        CreatingNodeTreeFlag_RAII creatingNodeTree(app);
+        generator = nodes.add(kNatronTestPluginGenerator);
+        d = nodes.add(PLUGINID_NATRON_DOT);
+        a = nodes.add(PLUGINID_NATRON_DOT);
+        b = nodes.add(PLUGINID_NATRON_DOT);
+        m = nodes.add(kNatronTestPluginMultiPAR);
+        c = nodes.add(PLUGINID_NATRON_DOT);
+        ASSERT_TRUE( generator && d && a && b && m && c );
+        ASSERT_LE( 2, m->getNInputs() );
+        ASSERT_TRUE( project->connectNodes(0, generator, d) );
+        // A before B in the outputs of D: the walk downstream reaches M through A, before it reaches B
+        ASSERT_TRUE( project->connectNodes(0, d, a) );
+        ASSERT_TRUE( project->connectNodes(0, d, b) );
+        ASSERT_TRUE( project->connectNodes(0, a, m) );
+        ASSERT_TRUE( project->connectNodes(1, b, m) );
+        ASSERT_TRUE( project->connectNodes(0, b, c) );
+    }
+    NodesList outputsOfD;
+    d->getOutputsWithGroupRedirection(outputsOfD);
+    NodesList expected;
+    expected.push_back(a);
+    expected.push_back(b);
+    ASSERT_EQ( scriptNames(expected), scriptNames(outputsOfD) );
+    const auto dirtyNodes = [&nodes]() {
+        NodesList dirty;
+        for (std::vector<NodePtr>::const_iterator it = nodes.nodes.begin(); it != nodes.nodes.end(); ++it) {
+            if ( (*it)->isInputRelatedDataDirty() ) {
+                dirty.push_back(*it);
+            }
+        }
+
+        return scriptNames(dirty);
+    };
+    project->forceComputeInputDependentDataOnAllTrees();
+    EXPECT_EQ( "", dirtyNodes() );
+
+    // the refresh that Node::endInputEdition() runs after a change of the input of D
+    d->forceRefreshAllInputRelatedData();
+    EXPECT_EQ( "", dirtyNodes() );
+
+    // the same change, as the user makes it
+    ASSERT_TRUE( Project::disconnectNodes(generator, d) );
+    EXPECT_EQ( "", dirtyNodes() );
+    ASSERT_TRUE( Project::connectNodes(0, generator, d) );
+    EXPECT_EQ( "", dirtyNodes() );
+}
+
 // The refresh of the input-related data (metadata, layer menus...) on project load and after a connection doesn't
 // overflow the stack in a very deep chain (#1628). On project load, the nodes are split into trees, and each tree is
 // refreshed from its output, which first refreshes its dirty inputs; after a connection, the data of every node

@@ -198,7 +198,9 @@ order of the recursions they replaced: the refresh of the input-related data on
 connection and project load (the marking downstream, a ``visitNodesDepthFirst``
 user, the walk downstream of
 ``Node::refreshInputRelatedDataRecursiveInternal`` and the walk upstream of
-``Node::refreshInputRelatedDataInternal``), the split of the nodes into trees
+``Node::refreshInputRelatedDataInternal``; the walk downstream also visits the
+nodes that the walk upstream refreshed, so that their other outputs are
+refreshed too, #1951), the split of the nodes into trees
 on project load (``Project::extractTreesFromNodes``), and the RotoPaint stroke walks
 (``Node::getNodesOnPathsUpstreamTo``), which visit each node once instead of
 once per path, which was exponential on chains of diamonds. Also iterative
