@@ -3166,6 +3166,208 @@ RotoContext::allocateAndRenderSingleDotStroke(int brushSizePixel,
     return true;
 }
 
+namespace {
+// The feather of a closed Bezier at a given time, sampled: the points of the shape, and the matching points of the
+// feather, with the feather distance applied. The feather is inward at a point if it is inside the shape (#157):
+// the shape is then transparent at the shape point and opaque at the feather point, instead of the opposite.
+struct SampledFeather
+{
+    std::vector<Point> shape;
+    std::vector<Point> feather;
+    std::vector<bool> inward;
+    bool hasInwardPoint = false;
+};
+
+std::vector<Point>
+toPoints(const std::list<ParametricPoint>& polygon)
+{
+    std::vector<Point> points;
+
+    points.reserve( polygon.size() );
+    for (const ParametricPoint& p : polygon) {
+        Point q;
+        q.x = p.x;
+        q.y = p.y;
+        points.push_back(q);
+    }
+
+    return points;
+}
+
+// Twice the signed area of the polygon: positive if it is counterclockwise (with y up)
+double
+signedDoubleArea(const std::vector<Point>& polygon)
+{
+    double area = 0.;
+
+    for (std::size_t i = 0, n = polygon.size(); i < n; ++i) {
+        const Point& p = polygon[i];
+        const Point& q = polygon[(i + 1) % n];
+        area += p.x * q.y - q.x * p.y;
+    }
+
+    return area;
+}
+
+// Empty if there is nothing to render, e.g. if the shape crosses the line at infinity of a perspective transform (see
+// Bezier::hasFiniteImageAtTime()), which may have changed since renderBezier() checked it.
+SampledFeather
+sampleFeather(const Bezier& bezier,
+              double time,
+              unsigned int mipmapLevel,
+              double featherDist)
+{
+    /*
+     * We descretize the feather control points to obtain a polygon so that the feather distance will be of the same thickness around all the shape.
+     * If we were to extend only the end points, the resulting bezier interpolation would create a feather with different thickness around the shape,
+     * yielding an unwanted behaviour for the end user.
+     */
+    std::list<ParametricPoint> featherPolygon;
+    std::list<ParametricPoint> bezierPolygon;
+    RectD featherPolyBBox;
+
+    featherPolyBBox.setupInfinity();
+
+    bezier.evaluateFeatherPointsAtTime_DeCasteljau(false, time, mipmapLevel,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
+                                                   50,
+#else
+                                                   1,
+#endif
+                                                   true, &featherPolygon, &featherPolyBBox);
+    bezier.evaluateAtTime_DeCasteljau(false, time, mipmapLevel,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
+                                      50,
+#else
+                                      1,
+#endif
+                                      &bezierPolygon, NULL);
+
+    SampledFeather sampled;
+    // both have the same number of points per segment, or are empty
+    assert( featherPolygon.empty() || bezierPolygon.empty() || featherPolygon.size() == bezierPolygon.size() );
+    if ( (featherPolygon.size() < 2) || ( featherPolygon.size() != bezierPolygon.size() ) ) {
+        return sampled;
+    }
+
+    sampled.shape = toPoints(bezierPolygon);
+    const std::vector<Point> feather = toPoints(featherPolygon);
+    const std::size_t n = feather.size();
+
+    // move each feather point by the feather distance, along the normal of the feather polygon, outward
+    const bool clockWise = bezier.isFeatherPolygonClockwiseOriented(false, time);
+    const double absFeatherDist = std::abs(featherDist);
+    sampled.feather.reserve(n);
+    for (std::size_t i = 0; i < n; ++i) {
+        const Point& prev = feather[(i + n - 1) % n];
+        const Point& next = feather[(i + 1) % n];
+        const double norm = std::sqrt( (next.x - prev.x) * (next.x - prev.x) + (next.y - prev.y) * (next.y - prev.y) );
+        const double dx = (norm != 0) ? -( (next.y - prev.y) / norm ) : 0.;
+        const double dy = (norm != 0) ? ( (next.x - prev.x) / norm ) : 0.;
+        Point p = feather[i];
+        if (!clockWise) {
+            p.x -= dx * absFeatherDist;
+            p.y -= dy * absFeatherDist;
+        } else {
+            p.x += dx * absFeatherDist;
+            p.y += dy * absFeatherDist;
+        }
+        sampled.feather.push_back(p);
+    }
+
+    // a feather point is inward if it is on the inner side of the shape, from the outward normal of the shape there
+    const double orientation = signedDoubleArea(sampled.shape);
+    sampled.inward.reserve(n);
+    for (std::size_t i = 0; i < n; ++i) {
+        const Point& prev = sampled.shape[(i + n - 1) % n];
+        const Point& next = sampled.shape[(i + 1) % n];
+        // the tangent (next - prev) turned a quarter turn clockwise: outward for a counterclockwise shape
+        const double normalX = next.y - prev.y;
+        const double normalY = -(next.x - prev.x);
+        const double offset = (sampled.feather[i].x - sampled.shape[i].x) * normalX + (sampled.feather[i].y - sampled.shape[i].y) * normalY;
+        const bool inward = orientation * offset < 0.;
+        sampled.inward.push_back(inward);
+        sampled.hasInwardPoint = sampled.hasInwardPoint || inward;
+    }
+
+    return sampled;
+} // sampleFeather
+
+// Appends the side of a feather patch from point from to point to (one is a shape point, the other the matching
+// feather point): a cubic curve along the segment, whose control points the feather fall-off moves toward one end.
+// fromIsOpaque says which end is opaque.
+void
+appendFeatherPatchSide(cairo_pattern_t* mesh,
+                       const Point& from,
+                       const Point& to,
+                       bool fromIsOpaque,
+                       double fallOff)
+{
+    const Point& opaque = fromIsOpaque ? from : to;
+    const Point& transparent = fromIsOpaque ? to : from;
+    const double fallOffInverse = 1. / fallOff;
+    Point nearOpaque, nearTransparent;
+
+    nearOpaque.x = (opaque.x * fallOff * 2. + fallOffInverse * transparent.x) / (fallOff * 2. + fallOffInverse);
+    nearOpaque.y = (opaque.y * fallOff * 2. + fallOffInverse * transparent.y) / (fallOff * 2. + fallOffInverse);
+    nearTransparent.x = (opaque.x * fallOff + 2. * fallOffInverse * transparent.x) / (fallOff + 2. * fallOffInverse);
+    nearTransparent.y = (opaque.y * fallOff + 2. * fallOffInverse * transparent.y) / (fallOff + 2. * fallOffInverse);
+    const Point& first = fromIsOpaque ? nearOpaque : nearTransparent;
+    const Point& second = fromIsOpaque ? nearTransparent : nearOpaque;
+    cairo_mesh_pattern_curve_to(mesh, first.x, first.y, second.x, second.y, to.x, to.y);
+}
+
+// Adds to mesh one patch per segment of the shape, between the segment and the matching segment of the feather,
+// opaque on the inner side and transparent on the outer side.
+void
+addFeatherPatches(const SampledFeather& sampled,
+                  const double shapeColor[3],
+                  double fallOff,
+                  cairo_pattern_t* mesh)
+{
+    ///Note that we do not use the opacity when rendering the bezier, it is rendered with correct floating point opacity/color when converting
+    ///to the Natron image.
+    const std::size_t n = sampled.shape.size();
+
+    for (std::size_t k = 1; k <= n; ++k) {
+        const std::size_t a = k - 1;
+        const std::size_t b = k % n;
+        const Point& p0 = sampled.shape[a];
+        const Point& p1 = sampled.feather[a];
+        const Point& p2 = sampled.feather[b];
+        const Point& p3 = sampled.shape[b];
+
+        cairo_mesh_pattern_begin_patch(mesh);
+        cairo_mesh_pattern_move_to(mesh, p0.x, p0.y);
+        appendFeatherPatchSide(mesh, p0, p1, !sampled.inward[a], fallOff);
+        cairo_mesh_pattern_line_to(mesh, p2.x, p2.y);
+        appendFeatherPatchSide(mesh, p2, p3, sampled.inward[b], fallOff);
+        cairo_mesh_pattern_line_to(mesh, p0.x, p0.y);
+        // the corners 0 to 3 are p0 to p3
+        const double shapeOpacity[2] = { sampled.inward[a] ? 0. : 1., sampled.inward[b] ? 0. : 1. };
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, shapeColor[0], shapeColor[1], shapeColor[2], shapeOpacity[0]);
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor[0], shapeColor[1], shapeColor[2], 1. - shapeOpacity[0]);
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor[0], shapeColor[1], shapeColor[2], 1. - shapeOpacity[1]);
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor[0], shapeColor[1], shapeColor[2], shapeOpacity[1]);
+        assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
+
+        cairo_mesh_pattern_end_patch(mesh);
+    }
+}
+
+// Appends the closed polygon to the current path of cr
+void
+appendPolygon(cairo_t* cr,
+              const std::vector<Point>& polygon)
+{
+    cairo_new_path(cr);
+    for (const Point& p : polygon) {
+        cairo_line_to(cr, p.x, p.y);
+    }
+    cairo_close_path(cr);
+}
+} // anonymous namespace
+
 void
 RotoContextPrivate::renderBezier(cairo_t* cr,
                                  const Bezier* bezier,
@@ -3225,13 +3427,23 @@ RotoContextPrivate::renderBezier(cairo_t* cr,
         renderInternalShape_cairo(internalTriangles, internalFans, internalStrips, shapeColor, mesh);
         Q_UNUSED(opacity);
 #else
-        renderFeather(bezier, t, mipmapLevel, shapeColor, opacity, featherDist, fallOff, mesh);
+        const SampledFeather feather = sampleFeather(*bezier, t, mipmapLevel, featherDist);
+        addFeatherPatches(feather, shapeColor, fallOff, mesh);
 
-
+        // The shape is opaque inside both the shape and its feather: where the feather is inward, the fill stops at
+        // the feather, and the feather patches fade it out from there to the shape (#157).
+        if (feather.hasInwardPoint) {
+            cairo_save(cr);
+            appendPolygon(cr, feather.feather);
+            cairo_clip(cr);
+        }
         // strangely, the above-mentioned cairo bug doesn't affect this function
         BezierCPs cps = bezier->getControlPoints_mt_safe();
         renderInternalShape(t, mipmapLevel, shapeColor, opacity, transform, cr, mesh, cps);
-        
+        if (feather.hasInwardPoint) {
+            cairo_restore(cr);
+        }
+
 #endif
         
         
@@ -3239,243 +3451,6 @@ RotoContextPrivate::renderBezier(cairo_t* cr,
     }
 } // RotoContextPrivate::renderBezier
 
-void
-RotoContextPrivate::renderFeather(const Bezier* bezier,
-                                  double time,
-                                  unsigned int mipmapLevel,
-                                  double shapeColor[3],
-                                  double /*opacity*/,
-                                  double featherDist,
-                                  double fallOff,
-                                  cairo_pattern_t* mesh)
-{
-    ///Note that we do not use the opacity when rendering the bezier, it is rendered with correct floating point opacity/color when converting
-    ///to the Natron image.
-
-    double fallOffInverse = 1. / fallOff;
-    /*
-     * We descretize the feather control points to obtain a polygon so that the feather distance will be of the same thickness around all the shape.
-     * If we were to extend only the end points, the resulting bezier interpolation would create a feather with different thickness around the shape,
-     * yielding an unwanted behaviour for the end user.
-     */
-    ///here is the polygon of the feather bezier
-    ///This is used only if the feather distance is different of 0 and the feather points equal
-    ///the control points in order to still be able to apply the feather distance.
-    std::list<ParametricPoint> featherPolygon;
-    std::list<ParametricPoint> bezierPolygon;
-    RectD featherPolyBBox;
-
-    featherPolyBBox.setupInfinity();
-
-    bezier->evaluateFeatherPointsAtTime_DeCasteljau(false, time, mipmapLevel,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-                                                    50,
-#else
-                                                    1,
-#endif
-                                                    true, &featherPolygon, &featherPolyBBox);
-    bezier->evaluateAtTime_DeCasteljau(false, time, mipmapLevel,
-#ifdef ROTO_BEZIER_EVAL_ITERATIVE
-                                       50,
-#else
-                                       1,
-#endif
-                                       &bezierPolygon, NULL);
-
-    if ( featherPolygon.empty() || bezierPolygon.empty() ) {
-        // e.g. the shape crosses the line at infinity of a perspective transform (see Bezier::hasFiniteImageAtTime()),
-        // which may have changed since renderBezier() checked it
-        return;
-    }
-
-    bool clockWise = bezier->isFeatherPolygonClockwiseOriented(false, time);
-
-
-    std::list<Point> featherContour;
-
-    // prepare iterators
-    std::list<ParametricPoint>::iterator next = featherPolygon.begin();
-    ++next;  // can only be valid since we assert the list is not empty
-    if ( next == featherPolygon.end() ) {
-        next = featherPolygon.begin();
-    }
-    std::list<ParametricPoint>::iterator prev = featherPolygon.end();
-    --prev; // can only be valid since we assert the list is not empty
-    std::list<ParametricPoint>::iterator bezIT = bezierPolygon.begin();
-    std::list<ParametricPoint>::iterator prevBez = bezierPolygon.end();
-    --prevBez; // can only be valid since we assert the list is not empty
-
-    // prepare p1
-    double absFeatherDist = std::abs(featherDist);
-    Point p1;
-    p1.x = featherPolygon.begin()->x;
-    p1.y = featherPolygon.begin()->y;
-    double norm = sqrt( (next->x - prev->x) * (next->x - prev->x) + (next->y - prev->y) * (next->y - prev->y) );
-    assert(norm != 0);
-    double dx = (norm != 0) ? -( (next->y - prev->y) / norm ) : 0;
-    double dy = (norm != 0) ? ( (next->x - prev->x) / norm ) : 1;
-
-    if (!clockWise) {
-        p1.x -= dx * absFeatherDist;
-        p1.y -= dy * absFeatherDist;
-    } else {
-        p1.x += dx * absFeatherDist;
-        p1.y += dy * absFeatherDist;
-    }
-
-
-    double innerOpacity = 1.;
-    double outterOpacity = 0.;
-
-    Point origin = p1;
-    featherContour.push_back(p1);
-
-
-    // increment for first iteration
-    std::list<ParametricPoint>::iterator cur = featherPolygon.begin();
-    // ++cur, ++prev, ++next, ++bezIT, ++prevBez
-    // all should be valid, actually
-    assert( cur != featherPolygon.end() &&
-            prev != featherPolygon.end() &&
-            next != featherPolygon.end() &&
-            bezIT != bezierPolygon.end() &&
-            prevBez != bezierPolygon.end() );
-    if ( cur != featherPolygon.end() ) {
-        ++cur;
-    }
-    if ( prev != featherPolygon.end() ) {
-        ++prev;
-    }
-    if ( next != featherPolygon.end() ) {
-        ++next;
-    }
-    if ( bezIT != bezierPolygon.end() ) {
-        ++bezIT;
-    }
-    if ( prevBez != bezierPolygon.end() ) {
-        ++prevBez;
-    }
-
-    for (;; ++cur) { // for each point in polygon
-        if ( next == featherPolygon.end() ) {
-            next = featherPolygon.begin();
-        }
-        if ( prev == featherPolygon.end() ) {
-            prev = featherPolygon.begin();
-        }
-        if ( bezIT == bezierPolygon.end() ) {
-            bezIT = bezierPolygon.begin();
-        }
-        if ( prevBez == bezierPolygon.end() ) {
-            prevBez = bezierPolygon.begin();
-        }
-        bool mustStop = false;
-        if ( cur == featherPolygon.end() ) {
-            mustStop = true;
-            cur = featherPolygon.begin();
-        }
-
-        ///skip it
-        /*if ( (cur->x == prev->x) && (cur->y == prev->y) ) {
-            continue;
-        }*/
-
-        Point p0, p0p1, p1p0, p2, p2p3, p3p2, p3;
-        p0.x = prevBez->x;
-        p0.y = prevBez->y;
-        p3.x = bezIT->x;
-        p3.y = bezIT->y;
-
-        if (!mustStop) {
-            norm = sqrt( (next->x - prev->x) * (next->x - prev->x) + (next->y - prev->y) * (next->y - prev->y) );
-            if (norm == 0) {
-                dx = 0;
-                dy = 0;
-            } else {
-                dx = -( (next->y - prev->y) / norm );
-                dy = ( (next->x - prev->x) / norm );
-            }
-            p2.x = cur->x;
-            p2.y = cur->y;
-
-            if (!clockWise) {
-                p2.x -= dx * absFeatherDist;
-                p2.y -= dy * absFeatherDist;
-            } else {
-                p2.x += dx * absFeatherDist;
-                p2.y += dy * absFeatherDist;
-            }
-        } else {
-            p2.x = origin.x;
-            p2.y = origin.y;
-        }
-        featherContour.push_back(p2);
-
-        ///linear interpolation
-        p0p1.x = (p0.x * fallOff * 2. + fallOffInverse * p1.x) / (fallOff * 2. + fallOffInverse);
-        p0p1.y = (p0.y * fallOff * 2. + fallOffInverse * p1.y) / (fallOff * 2. + fallOffInverse);
-        p1p0.x = (p0.x * fallOff + 2. * fallOffInverse * p1.x) / (fallOff + 2. * fallOffInverse);
-        p1p0.y = (p0.y * fallOff + 2. * fallOffInverse * p1.y) / (fallOff + 2. * fallOffInverse);
-
-
-        p2p3.x = (p3.x * fallOff + 2. * fallOffInverse * p2.x) / (fallOff + 2. * fallOffInverse);
-        p2p3.y = (p3.y * fallOff + 2. * fallOffInverse * p2.y) / (fallOff + 2. * fallOffInverse);
-        p3p2.x = (p3.x * fallOff * 2. + fallOffInverse * p2.x) / (fallOff * 2. + fallOffInverse);
-        p3p2.y = (p3.y * fallOff * 2. + fallOffInverse * p2.y) / (fallOff * 2. + fallOffInverse);
-
-
-        ///move to the initial point
-        cairo_mesh_pattern_begin_patch(mesh);
-        cairo_mesh_pattern_move_to(mesh, p0.x, p0.y);
-        cairo_mesh_pattern_curve_to(mesh, p0p1.x, p0p1.y, p1p0.x, p1p0.y, p1.x, p1.y);
-        cairo_mesh_pattern_line_to(mesh, p2.x, p2.y);
-        cairo_mesh_pattern_curve_to(mesh, p2p3.x, p2p3.y, p3p2.x, p3p2.y, p3.x, p3.y);
-        cairo_mesh_pattern_line_to(mesh, p0.x, p0.y);
-        ///Set the 4 corners color
-        ///inner is full color
-
-        // IMPORTANT NOTE:
-        // The two sqrt below are due to a probable cairo bug.
-        // To check whether the bug is present is a given cairo version,
-        // make any shape with a very large feather and set
-        // opacity to 0.5. Then, zoom on the polygon border to check if the intensity is continuous
-        // and approximately equal to 0.5.
-        // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
-        // older Cairo versions.
-        cairo_mesh_pattern_set_corner_color_rgba( mesh, 0, shapeColor[0], shapeColor[1], shapeColor[2], innerOpacity);
-        ///outer is faded
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor[0], shapeColor[1], shapeColor[2], outterOpacity);
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor[0], shapeColor[1], shapeColor[2], outterOpacity);
-        ///inner is full color
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor[0], shapeColor[1], shapeColor[2], innerOpacity);
-        assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
-
-        cairo_mesh_pattern_end_patch(mesh);
-
-        if (mustStop) {
-            break;
-        }
-
-        //std::swap(innerOpacity, outterOpacity);
-
-        p1 = p2;
-
-        // increment for next iteration
-        // ++prev, ++next, ++bezIT, ++prevBez
-        if ( prev != featherPolygon.end() ) {
-            ++prev;
-        }
-        if ( next != featherPolygon.end() ) {
-            ++next;
-        }
-        if ( bezIT != bezierPolygon.end() ) {
-            ++bezIT;
-        }
-        if ( prevBez != bezierPolygon.end() ) {
-            ++prevBez;
-        }
-    }  // for each point in polygon
-} // RotoContextPrivate::renderFeather
 
 void
 RotoContextPrivate::renderFeather_cairo(const std::list<RotoFeatherVertex>& vertices, double shapeColor[3], double fallOff, cairo_pattern_t * mesh)
