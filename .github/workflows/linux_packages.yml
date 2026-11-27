@@ -385,8 +385,8 @@ jobs:
   # pre-release tags only: attach the archives and the test results to the GitHub pre-release
   release:
     needs: [package, test]
-    # what was built, even if one arch failed
-    if: ${{ !cancelled() && startsWith(github.ref, 'refs/tags/') && needs.package.result != 'skipped' }}
+    # what was built, even if one arch failed; never the results of a natron_tests_ref under test
+    if: ${{ !cancelled() && startsWith(github.ref, 'refs/tags/') && (inputs.natron_tests_ref || 'master') == 'master' && needs.package.result != 'skipped' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: write
