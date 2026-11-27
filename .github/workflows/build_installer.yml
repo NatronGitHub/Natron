@@ -124,8 +124,10 @@ jobs:
           cd tools/jenkins
 
           # CMake build (NATRON_BUILD_SYSTEM defaults to cmake), no crash reporter until #1183. GPL
-          # only: there are no COMMERCIAL builds in CI, weekly builds or releases.
-          WORKSPACE=${NATRON_BUILD_WORKSPACE_UNIX} BUILD_NAME=natron BUILD_NUMBER=1 BITS=64 NATRON_LICENSE=GPL GIT_URL=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git GIT_URL_IS_NATRON=1 SNAPSHOT_BRANCH=${GITHUB_REF_NAME} QT_VERSION_MAJOR=5 DISABLE_BREAKPAD=1 NOUPDATE=1 MKJOBS=$(nproc) MINIMIZE_DISK_USAGE=1 UNIT_TESTS=true ./launchBuildMain.sh
+          # only: there are no COMMERCIAL builds in CI, weekly builds or releases. No Natron-Tests
+          # here (UNIT_TESTS=false): they run on the Setup.exe-installed Natron, without MSYS2
+          # ("Install with Setup.exe and run Natron-Tests", #1655).
+          WORKSPACE=${NATRON_BUILD_WORKSPACE_UNIX} BUILD_NAME=natron BUILD_NUMBER=1 BITS=64 NATRON_LICENSE=GPL GIT_URL=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git GIT_URL_IS_NATRON=1 SNAPSHOT_BRANCH=${GITHUB_REF_NAME} QT_VERSION_MAJOR=5 DISABLE_BREAKPAD=1 NOUPDATE=1 MKJOBS=$(nproc) MINIMIZE_DISK_USAGE=1 UNIT_TESTS=false ./launchBuildMain.sh
 
           # the architecture in the installer name, as common.sh sets WIN_ARCH
           case "${MSYSTEM_CARCH}" in
@@ -153,10 +155,11 @@ jobs:
           TEST_RESULTS_NAME="${INSTALLER_NAME}-tests"
           echo "TEST_RESULTS_NAME=${TEST_RESULTS_NAME}" >> $GITHUB_OUTPUT
           echo "TEST_RESULTS_FILE=$(cygpath -m ${TEST_RESULTS_FILE})" >> $GITHUB_OUTPUT
-          # runTests.sh's summary.txt (the counts and RESULT: PASS or FAIL)
+          # runTests.sh's summary.txt (the counts and RESULT: PASS or FAIL) and output
           echo "TEST_SUMMARY_FILE=$(cygpath -m ${ARCHIVE_DIR}/${INSTALLER_NAME}-tests-summary.txt)" >> $GITHUB_OUTPUT
+          echo "TEST_LOG_FILE=$(cygpath -m ${ARCHIVE_DIR}/${INSTALLER_NAME}-tests.log)" >> $GITHUB_OUTPUT
 
-          # runUnitTests.sh zips the failed tests' outputs (only if a test failed)
+          # the failed tests' outputs (only if a test failed)
           TEST_FAILURES_ZIP="${ARCHIVE_DIR}/${INSTALLER_NAME}-unit_tests_failures.zip"
           TEST_FAILURES_NAME="${INSTALLER_NAME}-unit_tests_failures"
           echo "TEST_FAILURES_NAME=${TEST_FAILURES_NAME}" >> $GITHUB_OUTPUT
@@ -226,23 +229,6 @@ jobs:
           path:  ${{ steps.build.outputs.INSTALLER_DIR }}
           retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
 
-      - name: Upload test results
-        uses: actions/upload-artifact@v4.3.1
-        with:
-          name:  ${{ steps.build.outputs.TEST_RESULTS_NAME }}
-          path: |
-            ${{ steps.build.outputs.TEST_RESULTS_FILE }}
-            ${{ steps.build.outputs.TEST_SUMMARY_FILE }}
-          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
-
-      - name: Upload test failures
-        uses: actions/upload-artifact@v4.3.1
-        with:
-          name:  ${{ steps.build.outputs.TEST_FAILURES_NAME }}
-          path:  ${{ steps.build.outputs.TEST_FAILURES_ZIP }}
-          if-no-files-found: ignore
-          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
-
       - name: Verify plugin loading
         run: |
           INSTALLER_DIR=$(cygpath -u '${{ steps.build.outputs.INSTALLER_DIR }}')/${{ steps.build.outputs.INSTALLER_NAME }}
@@ -254,7 +240,7 @@ jobs:
       - name: Run the bundle without MSYS2
         # After the build dependencies are uninstalled, with only the bundle's bin/ and the Windows
         # directories on PATH: a DLL, Python module or PySide module missing from the bundle fails
-        # here (Tests.exe, the docs and Natron-Tests ran with /ucrt64/bin on PATH).
+        # here (Tests.exe and the docs ran with /ucrt64/bin on PATH).
         run: |
           INSTALLER_DIR=$(cygpath -u '${{ steps.build.outputs.INSTALLER_DIR }}')/${{ steps.build.outputs.INSTALLER_NAME }}
           SYSPATH="$(cygpath -u -S):$(cygpath -u -W)"
@@ -418,6 +404,76 @@ jobs:
           fi
           exit ${errors}
 
+      - name: Install with Setup.exe and run Natron-Tests
+        # Natron-Tests on Natron as users get it (#1655): installed by Setup.exe into a new folder
+        # (the default "full" type, as an interactive install), after "Uninstall Natron
+        # dependencies", and run with only MSYS2's own tools (/usr/bin, for runTests.sh) and the
+        # Windows directories on PATH: no /ucrt64/bin or /clangarm64/bin, no bin\ of Natron (the
+        # programs find their DLLs next to them). The results go where the Build step's outputs
+        # say (TEST_*): the job fails in "Check the Natron-Tests results", after the uploads.
+        # This step fails only if Natron could not be installed or Natron-Tests could not start.
+        id: natron_tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        timeout-minutes: 150
+        run: |
+          INSTALLER_DIR=$(cygpath -u '${{ steps.build.outputs.INSTALLER_DIR }}')/${{ steps.build.outputs.INSTALLER_NAME }}
+          # on the drive of the build workspace, with short paths (MAX_PATH)
+          DRIVE="${NATRON_BUILD_WORKSPACE%%/*}"
+          APP_W="${DRIVE}\\nt"
+          APP=$(cygpath -u "${APP_W}")
+          TESTS=$(cygpath -u "${DRIVE}/ntt")
+          SYSPATH="$(cygpath -u -S):$(cygpath -u -W)"
+          RESULTS=$(cygpath -u '${{ steps.build.outputs.TEST_RESULTS_FILE }}')
+          SUMMARY=$(cygpath -u '${{ steps.build.outputs.TEST_SUMMARY_FILE }}')
+          TESTLOG=$(cygpath -u '${{ steps.build.outputs.TEST_LOG_FILE }}')
+          FAILURES=$(cygpath -u '${{ steps.build.outputs.TEST_FAILURES_ZIP }}')
+          for d in "${APP}" "${TESTS}"; do
+            if [ -e "$d" ]; then echo "::error::$d already exists"; exit 1; fi
+          done
+          rm -f "${RESULTS}" "${SUMMARY}" "${TESTLOG}" "${FAILURES}"
+          MSYS2_ARG_CONV_EXCL='*' "${INSTALLER_DIR}/Setup.exe" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CURRENTUSER "/DIR=${APP_W}" /TYPE=full "/LOG=$(cygpath -w "${GITHUB_WORKSPACE}/setup-tests.log")" || { cat setup-tests.log; echo "::error::Setup.exe failed"; exit 1; }
+          for f in bin/NatronRenderer.exe bin/ffmpeg.exe bin/idiff.exe Resources/OpenColorIO-Configs/blender/config.ocio; do
+            if [ ! -f "${APP}/$f" ]; then echo "::error::Setup.exe did not install $f"; exit 1; fi
+          done
+          git clone -q --depth 1 https://github.com/NatronGitHub/Natron-Tests.git "${TESTS}" || { echo "::error::could not clone Natron-Tests"; exit 1; }
+          echo "Natron-Tests: $(git -C "${TESTS}" log -1 --format='%h %cs %s')"
+          # Natron's caches and settings: none left by the build's runs of Natron (as runUnitTests.sh)
+          rm -rf "$(cygpath -u "${LOCALAPPDATA:?}")/INRIA/Natron"
+          # (OCIO: a Windows path, as Natron reads it)
+          status=0
+          (cd "${TESTS}" && timeout -s KILL 7200 env PATH="/usr/bin:${SYSPATH}" \
+            OCIO="$(cygpath -m "${APP}/Resources/OpenColorIO-Configs/blender/config.ocio")" \
+            FFMPEG="${APP}/bin/ffmpeg.exe" COMPARE="${APP}/bin/idiff.exe" \
+            bash runTests.sh "${APP}/bin/NatronRenderer.exe" < /dev/null > "${TESTLOG}" 2>&1) || status=$?
+          echo "runTests.sh exited with status ${status} (output: the ${{ steps.build.outputs.TEST_RESULTS_NAME }} artifact)"
+          # a render killed by the timeout may leave NatronRenderer running
+          taskkill -f -im NatronRenderer.exe -t > /dev/null 2>&1 || true
+          cd "${TESTS}"
+          [ ! -f result.txt ] || mv result.txt "${RESULTS}"
+          [ ! -f summary.txt ] || { cat summary.txt; mv summary.txt "${SUMMARY}"; }
+          if [ -n "$(ls -A failed 2> /dev/null)" ]; then (cd failed && zip -r -q "${FAILURES}" .); fi
+          if [ ! -f "${RESULTS}" ]; then tail -n 50 "${TESTLOG}"; fi
+
+      - name: Upload test results
+        if: ${{ !cancelled() && steps.natron_tests.outcome != 'skipped' }}
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name:  ${{ steps.build.outputs.TEST_RESULTS_NAME }}
+          path: |
+            ${{ steps.build.outputs.TEST_RESULTS_FILE }}
+            ${{ steps.build.outputs.TEST_SUMMARY_FILE }}
+            ${{ steps.build.outputs.TEST_LOG_FILE }}
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+
+      - name: Upload test failures
+        if: ${{ !cancelled() && steps.natron_tests.outcome != 'skipped' }}
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name:  ${{ steps.build.outputs.TEST_FAILURES_NAME }}
+          path:  ${{ steps.build.outputs.TEST_FAILURES_ZIP }}
+          if-no-files-found: ignore
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+
       - name: Compare the passing tests with the 2.5.0 release
         # Informative: 2.5.0 was a Qt4 MINGW64 (x86-64) build, so differences are expected
         if: matrix.msystem == 'UCRT64'
@@ -448,8 +504,9 @@ jobs:
           retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
 
       - name: Check the Natron-Tests results
-        # Last, so that every other check and upload runs first. launchBuildMain.sh doesn't fail the
-        # build when Natron-Tests fails. A known failure that passed (UNEXPECTED PASS) fails the job:
+        # Last, so that every other check and upload runs first. The results are those of the
+        # Setup.exe-installed Natron ("Install with Setup.exe and run Natron-Tests", which doesn't
+        # fail when a test fails). A known failure that passed (UNEXPECTED PASS) fails the job:
         # Natron-Tests' known_failures/ lists must be updated. Other failures are only warnings, as
         # long as the Windows known failures aren't checked against a 2.6 run (#1629).
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
