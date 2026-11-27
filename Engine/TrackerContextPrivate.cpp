@@ -2207,12 +2207,11 @@ static void averageDataFunctor(SrcIterator srcBegin,
     assert(results);
     initializeResults<DstDataType>(results);
 
-    // Get halfJitter samples before the given time
+    // Get the sample at the given time and halfJitter samples before it, down to srcBegin included (#1941)
     int nSamplesBefore = 0;
     {
         SrcIterator prevHalfIt = itResults;
-        while (prevHalfIt != srcBegin && nSamplesBefore <= halfJitter) {
-
+        for (;;) {
             DstDataType sample;
             if (extractSample<SrcIterator, UserDataType, DstDataType>(prevHalfIt, userData, &sample)) {
                 appendSample<DstDataType>(sample, results);
@@ -2221,6 +2220,9 @@ static void averageDataFunctor(SrcIterator srcBegin,
                     *dataAtIt = sample;
                 }
                 ++nSamplesBefore;
+            }
+            if (prevHalfIt == srcBegin || nSamplesBefore > halfJitter) {
+                break;
             }
             --prevHalfIt;
         }
