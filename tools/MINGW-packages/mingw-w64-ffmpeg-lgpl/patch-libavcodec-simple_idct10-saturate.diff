@@ -1,0 +1,85 @@
+Saturate the row outputs of the C 10-bit int16 simple IDCT.
+
+The 10-bit int16 IDCT (ROW_SHIFT 12) has no headroom in its 16-bit row
+outputs: a flat 1023 block already gives 32736, 31 below INT16_MAX, so a
+quantisation overshoot of about 1 code wraps the int16 and the whole column
+decodes as 0 (black 1-pixel columns in 10-bit DNxHD/DNxHR with full white).
+aarch64, x86-32, the other arches and builds without asm run this C code;
+the x86_64 SSE2/AVX version saturates with packssdw, and its output is
+identical to the patched C output. 8-bit and 12-bit are unchanged
+(bit-exact). ProRes 10-bit (EXTRA_SHIFT) shares this code; it has about 2x
+headroom, so the clip only affects invalid streams, where it matches the
+packssdw of the x86 ProRes asm.
+Regression from 2fd14dd8eb ("avcodec/simple_idct10: improve precision").
+Natron: https://github.com/NatronGitHub/openfx-io/issues/266
+Not yet submitted upstream.
+
+--- libavcodec/simple_idct_template.c.orig
++++ libavcodec/simple_idct_template.c
+@@ -42,6 +42,7 @@
+ #undef DC_SHIFT
+ #undef MUL
+ #undef MAC
++#undef ROW_CLIP
+ 
+ #if BIT_DEPTH == 8
+ 
+@@ -108,6 +109,17 @@
+ 
+ #endif
+ 
++#if IN_IDCT_DEPTH == 16 && BIT_DEPTH == 10
++/* The 10-bit int16 IDCT (ROW_SHIFT 12) has no headroom in its 16-bit row
++ * outputs: a flat block of 1023 already gives 32736, so a quantisation
++ * overshoot wraps and the whole column decodes as 0. Saturate them, as the
++ * x86 SIMD does with packssdw. ProRes (EXTRA_SHIFT) shares this code; it has
++ * about 2x headroom and only clips on invalid input, as its x86 asm does. */
++#define ROW_CLIP(x) av_clip_int16(x)
++#else
++#define ROW_CLIP(x) (x)
++#endif
++
+ #ifdef EXTRA_SHIFT
+ static inline void FUNC(idctRowCondDC_extrashift)(int16_t *row, int extra_shift)
+ #else
+@@ -123,7 +135,7 @@
+     if (((AV_RN64A(row) & ~ROW0_MASK) | AV_RN64A(row+4)) == 0) {
+         uint64_t temp;
+         if (DC_SHIFT - extra_shift >= 0) {
+-            temp = (row[0] * (1 << (DC_SHIFT - extra_shift))) & 0xffff;
++            temp = ROW_CLIP(row[0] * (1 << (DC_SHIFT - extra_shift))) & 0xffff;
+         } else {
+             temp = ((row[0] + (1<<(extra_shift - DC_SHIFT-1))) >> (extra_shift - DC_SHIFT)) & 0xffff;
+         }
+@@ -140,7 +152,7 @@
+           row[1])) {
+         uint32_t temp;
+         if (DC_SHIFT - extra_shift >= 0) {
+-            temp = (row[0] * (1 << (DC_SHIFT - extra_shift))) & 0xffff;
++            temp = ROW_CLIP(row[0] * (1 << (DC_SHIFT - extra_shift))) & 0xffff;
+         } else {
+             temp = ((row[0] + (1<<(extra_shift - DC_SHIFT-1))) >> (extra_shift - DC_SHIFT)) & 0xffff;
+         }
+@@ -196,14 +208,14 @@
+         MAC(b3, -W1, row[7]);
+     }
+ 
+-    row[0] = (int)(a0 + b0) >> (ROW_SHIFT + extra_shift);
+-    row[7] = (int)(a0 - b0) >> (ROW_SHIFT + extra_shift);
+-    row[1] = (int)(a1 + b1) >> (ROW_SHIFT + extra_shift);
+-    row[6] = (int)(a1 - b1) >> (ROW_SHIFT + extra_shift);
+-    row[2] = (int)(a2 + b2) >> (ROW_SHIFT + extra_shift);
+-    row[5] = (int)(a2 - b2) >> (ROW_SHIFT + extra_shift);
+-    row[3] = (int)(a3 + b3) >> (ROW_SHIFT + extra_shift);
+-    row[4] = (int)(a3 - b3) >> (ROW_SHIFT + extra_shift);
++    row[0] = ROW_CLIP((int)(a0 + b0) >> (ROW_SHIFT + extra_shift));
++    row[7] = ROW_CLIP((int)(a0 - b0) >> (ROW_SHIFT + extra_shift));
++    row[1] = ROW_CLIP((int)(a1 + b1) >> (ROW_SHIFT + extra_shift));
++    row[6] = ROW_CLIP((int)(a1 - b1) >> (ROW_SHIFT + extra_shift));
++    row[2] = ROW_CLIP((int)(a2 + b2) >> (ROW_SHIFT + extra_shift));
++    row[5] = ROW_CLIP((int)(a2 - b2) >> (ROW_SHIFT + extra_shift));
++    row[3] = ROW_CLIP((int)(a3 + b3) >> (ROW_SHIFT + extra_shift));
++    row[4] = ROW_CLIP((int)(a3 - b3) >> (ROW_SHIFT + extra_shift));
+ }
+ 
+ #define IDCT_COLS do {                                  \
