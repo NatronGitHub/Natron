@@ -146,7 +146,6 @@ private:
                              const bool isPeriodic,
                              const double parametricXMin,
                              const double parametricXMax,
-                             KeyFrameSet::const_iterator* lastUpperIt,
                              double* x2,
                              KeyFrame* key,
                              bool* isKey );

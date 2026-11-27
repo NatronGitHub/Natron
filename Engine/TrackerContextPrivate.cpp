@@ -1527,18 +1527,14 @@ euclideanToHomogenous(const Point& p)
     return r;
 }
 
-static Point
+/// The image of p by the homography h. Returns false if h sends p to the line at infinity, where it has
+/// no image (see Transform::toEuclidean()): h is then degenerate for p.
+static bool
 applyHomography(const Point& p,
-                const Transform::Matrix3x3& h)
+                const Transform::Matrix3x3& h,
+                Point* ret)
 {
-    Transform::Point3D a = euclideanToHomogenous(p);
-    Transform::Point3D r = Transform::matApply(h, a);
-    Point ret;
-
-    ret.x = r.x / r.z;
-    ret.y = r.y / r.z;
-
-    return ret;
+    return Transform::toEuclidean( Transform::matApply( h, euclideanToHomogenous(p) ), &ret->x, &ret->y );
 }
 
 using namespace openMVG::robust;
@@ -1707,8 +1703,9 @@ TrackerContextPrivate::computeHomographyFromNPoints(const bool dataSetIsManual,
     assert( x1.size() == x2.size() );
     for (std::size_t i = 0; i < x1.size(); ++i) {
         if (!dataSetIsManual && inliers[i]) {
-            Point p2 = applyHomography(x1[i], *homog);
-            if ( (std::abs(p2.x - x2[i].x) >  0.02) ||
+            Point p2 = {0., 0.};
+            if ( !applyHomography(x1[i], *homog, &p2) ||
+                 (std::abs(p2.x - x2[i].x) >  0.02) ||
                  ( std::abs(p2.y - x2[i].y) > 0.02) ) {
                 qDebug() << "[BUG]: Inlier for Homography2DSolver failed to fit the found model: X1 (" << x1[i].x << ',' << x1[i].y << ')' << "X2 (" << x2[i].x << ',' << x2[i].y << ')'  << "P2 (" << p2.x << ',' << p2.y << ')';
             }
@@ -1989,6 +1986,31 @@ struct CornerPinPoints
     Point pts[4];
 };
 
+/// The images of the corners from by the homography h. Returns false if h sends one of them to the line at
+/// infinity (see applyHomography()), or the corners to both sides of it (the signs of z differ): the
+/// corner pin would then be folded across the horizon, as Bezier.cpp also refuses for Roto shapes.
+static bool
+applyHomography(const CornerPinPoints& from,
+                const Transform::Matrix3x3& h,
+                CornerPinPoints* to)
+{
+    int zSign = 0;
+    for (int c = 0; c < 4; ++c) {
+        const Transform::Point3D p = Transform::matApply( h, euclideanToHomogenous(from.pts[c]) );
+        if ( !Transform::toEuclidean(p, &to->pts[c].x, &to->pts[c].y) ) {
+            return false;
+        }
+        const int sign = p.z > 0. ? 1 : -1;
+        if (zSign == 0) {
+            zSign = sign;
+        } else if (sign != zSign) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 struct TranslateData
 {
     Point p;
@@ -2050,10 +2072,8 @@ bool extractSample(QList<TrackerContextPrivate::CornerPinData>::const_iterator i
                   CornerPinPoints* sample)
 {
     assert(userData);
-    for (int c = 0; c < 4; ++c) {
-        sample->pts[c] = applyHomography(userData->pts[c], it->h);
-    }
-    return true;
+
+    return applyHomography(*userData, it->h, sample);
 }
 
 template <>
@@ -2277,6 +2297,18 @@ TrackerContextPrivate::computeCornerParamsFromTracksEnd(double refTime,
         refFrom.pts[c].y = fromPointsKnob[c]->getValueAtTime(refTime, 1);
     }
 
+    // A homography that sends a reference corner to the line at infinity gives it no image, and one that sends
+    // the corners to both sides of it folds the corner pin: drop the result at that time, as if the fit had failed.
+    // The corner pin is then interpolated from the other times.
+    for (QList<CornerPinData>::iterator it = validResults.begin(); it != validResults.end();) {
+        CornerPinPoints to;
+        if ( applyHomography(refFrom, it->h, &to) ) {
+            ++it;
+        } else {
+            it = validResults.erase(it);
+        }
+    }
+
     // Create temporary curves and clone the toPoint internal curves at once because setValueAtTime will be slow since it emits
     // signals to create keyframes in keyframeSet
     Curve tmpToPointsCurveX[4], tmpToPointsCurveY[4];
@@ -2296,9 +2328,12 @@ TrackerContextPrivate::computeCornerParamsFromTracksEnd(double refTime,
 
 
         if (smoothJitter <= 1) {
+            CornerPinPoints to;
+            const bool hasImage = applyHomography(refFrom, dataAtTime.h, &to);
+            assert(hasImage); // the results without an image were dropped above
+            Q_UNUSED(hasImage);
             for (int c = 0; c < 4; ++c) {
-                Point toPoint;
-                toPoint = applyHomography(refFrom.pts[c], dataAtTime.h);
+                const Point& toPoint = to.pts[c];
                 KeyFrame kx(dataAtTime.time, toPoint.x);
                 KeyFrame ky(dataAtTime.time, toPoint.y);
                 tmpToPointsCurveX[c].addKeyFrame(kx);

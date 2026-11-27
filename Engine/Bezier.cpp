@@ -323,6 +323,62 @@ Bezier::bezierPointBboxUpdate(const Point & p0,
     }
 }
 
+// A perspective transform (e.g. the extra matrix of the shape) may send points to or beyond the line at
+// infinity (z <= 0 once transformed): such a point has no finite image, or is on the other side of the
+// horizon. The curves are evaluated as Bezier curves of the transformed control points, which are finite
+// when all the control points have finite images. We also require the control points to be on the same side
+// of the line at infinity (the same sign of z): otherwise the shape crosses it, and its true image is not a
+// closed bounded curve. Like Transform::transformRegionFromPoints(), which gives an infinite region in that
+// case, we don't try to give such a shape a finite image: the evaluation and bounding box functions below give
+// no points for it, and Bezier::hasFiniteImageAtTime() (control and feather points together) is false.
+// zSign: the sign of z of the points already checked (e.g. the control points before the feather points), or 0.
+static bool
+controlPointsHaveFiniteImage(bool useGuiCurves,
+                             const BezierCPs& cps,
+                             double time,
+                             ViewIdx view,
+                             const Transform::Matrix3x3& transform,
+                             int* zSign)
+{
+    for (BezierCPs::const_iterator it = cps.begin(); it != cps.end(); ++it) {
+        Transform::Point3D p[3];
+        (*it)->getPositionAtTime(useGuiCurves, time, view, &p[0].x, &p[0].y);
+        (*it)->getLeftBezierPointAtTime(useGuiCurves, time, view, &p[1].x, &p[1].y);
+        (*it)->getRightBezierPointAtTime(useGuiCurves, time, view, &p[2].x, &p[2].y);
+        for (int i = 0; i < 3; ++i) {
+            p[i].z = 1.;
+            p[i] = Transform::matApply(transform, p[i]);
+            double x, y;
+            if ( !Transform::toEuclidean(p[i], &x, &y) ) {
+                return false;
+            }
+            const int sign = p[i].z > 0. ? 1 : -1;
+            if (*zSign == 0) {
+                *zSign = sign;
+            } else if (sign != *zSign) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+// The perspective divide of the four transformed control points of a segment, checked by
+// controlPointsHaveFiniteImage(). Returns false (and the segment gives no points) if one has no finite image.
+static bool
+segmentToEuclidean(const Transform::Point3D (&pM)[4],
+                   Point (&p)[4])
+{
+    for (int i = 0; i < 4; ++i) {
+        if ( !Transform::toEuclidean(pM[i], &p[i].x, &p[i].y) ) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 // compute a bounding box for the bezier segment
 // algorithm:
 // - compute extrema of the cubic, i.e. values of t for
@@ -341,7 +397,6 @@ bezierSegmentBboxUpdate(bool useGuiCurves,
                         const Transform::Matrix3x3& transform,
                         RectD* bbox) ///< input/output
 {
-    Point p0, p1, p2, p3;
     Transform::Point3D p0M, p1M, p2M, p3M;
 
     assert(bbox);
@@ -357,20 +412,21 @@ bezierSegmentBboxUpdate(bool useGuiCurves,
 
     p0M.z = p1M.z = p2M.z = p3M.z = 1;
 
-    p0M = Transform::matApply(transform, p0M);
-    p1M = Transform::matApply(transform, p1M);
-    p2M = Transform::matApply(transform, p2M);
-    p3M = Transform::matApply(transform, p3M);
+    const Transform::Point3D pM[4] = {
+        Transform::matApply(transform, p0M), Transform::matApply(transform, p1M),
+        Transform::matApply(transform, p2M), Transform::matApply(transform, p3M)
+    };
+    Point pE[4];
+    if ( !segmentToEuclidean(pM, pE) ) {
+        // the caller checked controlPointsHaveFiniteImage()
+        assert(false);
 
-    p0.x = p0M.x / p0M.z;
-    p1.x = p1M.x / p1M.z;
-    p2.x = p2M.x / p2M.z;
-    p3.x = p3M.x / p3M.z;
-
-    p0.y = p0M.y / p0M.z;
-    p1.y = p1M.y / p1M.z;
-    p2.y = p2M.y / p2M.z;
-    p3.y = p3M.y / p3M.z;
+        return;
+    }
+    Point& p0 = pE[0];
+    Point& p1 = pE[1];
+    Point& p2 = pE[2];
+    Point& p3 = pE[3];
 
     if (mipmapLevel > 0) {
         int pot = 1 << mipmapLevel;
@@ -403,6 +459,11 @@ Bezier::bezierSegmentListBboxUpdate(bool useGuiCurves,
     if ( points.empty() ) {
         return;
     }
+    int zSign = 0;
+    if ( !controlPointsHaveFiniteImage(useGuiCurves, points, time, view, transform, &zSign) ) {
+        // the shape crosses the line at infinity: no bounding box
+        return;
+    }
     if (points.size() == 1) {
         // only one point
         Transform::Point3D p0;
@@ -410,10 +471,16 @@ Bezier::bezierSegmentListBboxUpdate(bool useGuiCurves,
         p->getPositionAtTime(useGuiCurves, time, view, &p0.x, &p0.y);
         p0.z = 1;
         p0 = Transform::matApply(transform, p0);
-        bbox->x1 = p0.x;
-        bbox->x2 = p0.x;
-        bbox->y1 = p0.y;
-        bbox->y2 = p0.y;
+        Point q;
+        if ( !Transform::toEuclidean(p0, &q.x, &q.y) ) {
+            assert(false); // checked above
+
+            return;
+        }
+        bbox->x1 = q.x;
+        bbox->x2 = q.x;
+        bbox->y1 = q.y;
+        bbox->y2 = q.y;
 
         return;
     }
@@ -728,7 +795,6 @@ bezierSegmentEval(bool useGuiCurves,
                   RectD* bbox = NULL) ///< input/output (optional)
 {
     Transform::Point3D p0M, p1M, p2M, p3M;
-    Point p0, p1, p2, p3;
 
     try {
         first.getPositionAtTime(useGuiCurves, time, view, &p0M.x, &p0M.y);
@@ -741,15 +807,21 @@ bezierSegmentEval(bool useGuiCurves,
 
     p0M.z = p1M.z = p2M.z = p3M.z = 1;
 
-    p0M = matApply(transform, p0M);
-    p1M = matApply(transform, p1M);
-    p2M = matApply(transform, p2M);
-    p3M = matApply(transform, p3M);
+    const Transform::Point3D pM[4] = {
+        matApply(transform, p0M), matApply(transform, p1M),
+        matApply(transform, p2M), matApply(transform, p3M)
+    };
+    Point pE[4];
+    if ( !segmentToEuclidean(pM, pE) ) {
+        // the caller checked controlPointsHaveFiniteImage()
+        assert(false);
 
-    p0.x = p0M.x / p0M.z; p0.y = p0M.y / p0M.z;
-    p1.x = p1M.x / p1M.z; p1.y = p1M.y / p1M.z;
-    p2.x = p2M.x / p2M.z; p2.y = p2M.y / p2M.z;
-    p3.x = p3M.x / p3M.z; p3.y = p3M.y / p3M.z;
+        return;
+    }
+    Point& p0 = pE[0];
+    Point& p1 = pE[1];
+    Point& p2 = pE[2];
+    Point& p3 = pE[3];
 
 
     if (mipmapLevel > 0) {
@@ -782,7 +854,21 @@ bezierSegmentEval(bool useGuiCurves,
         double length = std::sqrt(dx1 * dx1 + dy1 * dy1) +
                         std::sqrt(dx2 * dx2 + dy2 * dy2) +
                         std::sqrt(dx3 * dx3 + dy3 * dy3);
-        nbPointsPerSegment = (int)std::max(length * 0.25, 2.);
+        // At most kMaxPointsPerSegment points, so that the conversion to int can't overflow for a segment that
+        // goes near the line at infinity of a perspective extra matrix. The cap is a stopgap: the usual density
+        // (one point per 4 px of control-polygon length, an upper bound of the arc length) is kept only up to
+        // 4 * kMaxPointsPerSegment px (400 000 px, far beyond any image).
+        // The proper solution (#1954) samples by adaptive subdivision (de Casteljau) with convex-hull culling:
+        // a piece whose control points, taken together with those of its feather piece over the same t range,
+        // have a convex hull entirely outside the render window expanded by the feather distance is replaced by
+        // its chord (and so is the feather piece). The area between each piece and its chord, and every feather
+        // triangle between the two pieces, are then inside that hull, so outside the window: the fill and the
+        // feather of every pixel inside it are unchanged, and the number of points follows the visible length
+        // instead of the total length. Dropping the parts of the segments outside the render window would not
+        // be correct: it opens the closed contour (its winding) and breaks the pairing of the shape and feather
+        // points used by computeTriangles().
+        const double kMaxPointsPerSegment = 100000.;
+        nbPointsPerSegment = (int)std::min(std::max(length * 0.25, 2.), kMaxPointsPerSegment);
     }
 
     double incr = 1. / (double)(nbPointsPerSegment - 1);
@@ -2224,14 +2310,16 @@ Bezier::transformPoint(const BezierCPPtr & point,
         leftCp = matApply(*matrix, leftCp);
         rightCp = matApply(*matrix, rightCp);
 
-        cp.x /= cp.z; cp.y /= cp.z;
-        leftCp.x /= leftCp.z; leftCp.y /= leftCp.z;
-        rightCp.x /= rightCp.z; rightCp.y /= rightCp.z;
+        // A point that the matrix sends to the line at infinity has no image: don't move it.
+        Point newCp, newLeftCp, newRightCp;
+        const bool hasImage = Transform::toEuclidean(cp, &newCp.x, &newCp.y) &&
+                              Transform::toEuclidean(leftCp, &newLeftCp.x, &newLeftCp.y) &&
+                              Transform::toEuclidean(rightCp, &newRightCp.x, &newRightCp.y);
 
-        if (autoKeying || isonKeyframe) {
-            point->setPositionAtTime(useGuiCurve, time, cp.x, cp.y);
-            point->setLeftBezierPointAtTime(useGuiCurve, time, leftCp.x, leftCp.y);
-            point->setRightBezierPointAtTime(useGuiCurve, time, rightCp.x, rightCp.y);
+        if ( hasImage && (autoKeying || isonKeyframe) ) {
+            point->setPositionAtTime(useGuiCurve, time, newCp.x, newCp.y);
+            point->setLeftBezierPointAtTime(useGuiCurve, time, newLeftCp.x, newLeftCp.y);
+            point->setRightBezierPointAtTime(useGuiCurve, time, newRightCp.x, newRightCp.y);
             if (!isonKeyframe) {
                 keySet = true;
             }
@@ -2548,6 +2636,11 @@ Bezier::deCastelJau(bool isOpenBezier,
                     RectD* bbox)
 {
     assert((points && !pointsSingleList) || (!points && pointsSingleList));
+    int zSign = 0;
+    if ( !controlPointsHaveFiniteImage(useGuiCurves, cps, time, ViewIdx(0), transform, &zSign) ) {
+        // the shape crosses the line at infinity: no points
+        return;
+    }
     BezierCPs::const_iterator next = cps.begin();
 
     if ( next != cps.end() ) {
@@ -2743,6 +2836,11 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(bool useGuiPoints,
 
     Transform::Matrix3x3 transform;
     getTransformAtTime(time, &transform);
+    int zSign = 0;
+    if ( !controlPointsHaveFiniteImage(useGuiPoints, _imp->featherPoints, time, ViewIdx(0), transform, &zSign) ) {
+        // the feather crosses the line at infinity: no points
+        return;
+    }
 
     for (BezierCPs::const_iterator it = _imp->featherPoints.begin(); it != _imp->featherPoints.end();
          ++it) {
@@ -2870,6 +2968,20 @@ Bezier::getMotionBlurSettings(const double time,
 #endif
 }
 
+bool
+Bezier::hasFiniteImageAtTime(bool useGuiCurves,
+                             double time) const
+{
+    Transform::Matrix3x3 transform;
+
+    getTransformAtTime(time, &transform);
+    QMutexLocker l(&itemMutex);
+    int zSign = 0;
+
+    return controlPointsHaveFiniteImage(useGuiCurves, _imp->points, time, ViewIdx(0), transform, &zSign) &&
+           ( !useFeatherPoints() || controlPointsHaveFiniteImage(useGuiCurves, _imp->featherPoints, time, ViewIdx(0), transform, &zSign) );
+}
+
 RectD
 Bezier::getBoundingBox(double time) const
 {
@@ -2893,10 +3005,18 @@ Bezier::getBoundingBox(double time) const
         getTransformAtTime(t, &transform);
 
         QMutexLocker l(&itemMutex);
+        const bool useFeather = useFeatherPoints() && !_imp->isOpenBezier;
+        int zSign = 0;
+        if ( !controlPointsHaveFiniteImage(false, _imp->points, t, ViewIdx(0), transform, &zSign) ||
+             ( useFeather && !controlPointsHaveFiniteImage(false, _imp->featherPoints, t, ViewIdx(0), transform, &zSign) ) ) {
+            // the shape crosses the line at infinity at this time: it is not rendered, and adds nothing to the
+            // bounding box (which stays empty if it is never rendered)
+            continue;
+        }
         bezierSegmentListBboxUpdate(false, _imp->points, _imp->finished, _imp->isOpenBezier, t, ViewIdx(0), 0, transform, &subBbox);
 
 
-        if (useFeatherPoints() && !_imp->isOpenBezier) {
+        if (useFeather) {
             bezierSegmentListBboxUpdate(false, _imp->featherPoints, _imp->finished, _imp->isOpenBezier, t, ViewIdx(0), 0, transform, &subBbox);
             // EDIT: Partial fix, just pad the BBOX by the feather distance. This might not be accurate but gives at least something
             // enclosing the real bbox and close enough
