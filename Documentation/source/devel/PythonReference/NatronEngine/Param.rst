@@ -86,6 +86,12 @@ A Param can have several functions to control some properties, namely:
 
 Note that most of the functions in the API of Params take a *dimension* parameter. This is a 0-based index of the dimension on which to operate.
 
+A Param object can outlive its parameter: the parameter is deleted with its node
+(:func:`Effect.destroy()<NatronEngine.Effect.destroy>`), or by
+:func:`removeParam()<NatronEngine.UserParamHolder.removeParam>`. Any function of such a Param
+then raises :class:`RuntimeError`. Up to Natron 2.5, it returned 0, an empty string or False, or
+did nothing, and the script went on with wrong values.
+
 
 The following table sums up the different properties for all parameters including type-specific properties not listed above.
 
