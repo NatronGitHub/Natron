@@ -4094,6 +4094,16 @@ EffectInstance::getFrameRange_public(U64 hash,
             }
         }
 
+        // The frame range of an effect usually depends on the frame ranges of its inputs: this recurses upstream, once
+        // per node. Stop before the stack overflows (#1440), with the frame range of an effect that has no input. The
+        // frame ranges computed meanwhile are not cached (ActionsCache::setTimeDomainResult()).
+        GraphDepthGuard depthGuard(eGraphTraversalFrameRange, this);
+        if ( depthGuard.isTooDeep() ) {
+            *first = std::numeric_limits<int>::min();
+            *last = std::numeric_limits<int>::max();
+
+            return;
+        }
         NON_RECURSIVE_ACTION();
         getFrameRange(first, last);
         _imp->actionsCache->setTimeDomainResult(hash, *first, *last);

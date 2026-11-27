@@ -452,6 +452,20 @@ TEST(DeepGraphRender, TooDeepIsReported)
         EXPECT_EQ(eStatusFailed, stat);
         EXPECT_TRUE( isGraphTooDeepError(output) ) << output;
 
+        // the frame range (#1846), with new hashes, so that nothing is cached: it stops at the limit, before the
+        // generator, with the frame range of an effect without inputs
+        chain.nodes.front()->incrementKnobsAge();
+        const EffectInstancePtr outputEffect = chain.output()->getEffectInstance();
+        const int timeDomainsBefore = NatronTestPlugin::counter("Generator.getTimeDomain");
+        double first = 0., last = 0.;
+        testing::internal::CaptureStdout();
+        outputEffect->getFrameRange_public(outputEffect->getHash(), &first, &last);
+        output = testing::internal::GetCapturedStdout();
+        EXPECT_EQ( 0, NatronTestPlugin::counter("Generator.getTimeDomain") - timeDomainsBefore );
+        EXPECT_TRUE( isGraphTooDeepError(output) ) << output;
+        EXPECT_EQ( (double)std::numeric_limits<int>::min(), first );
+        EXPECT_EQ( (double)std::numeric_limits<int>::max(), last );
+
         // on a thread of the global thread pool
         testing::internal::CaptureStdout();
         std::pair<bool, bool> result = renderFrameOnGlobalThreadPool( chain.lastFilter() );
@@ -466,6 +480,15 @@ TEST(DeepGraphRender, TooDeepIsReported)
         output = testing::internal::GetCapturedStdout();
         EXPECT_EQ( 0, NatronTestPlugin::counter("MultiPAR.render") - rendersBefore );
         EXPECT_TRUE( isGraphTooDeepError(output) ) << output;
+    }
+
+    // without the limit, the frame range is computed down to the generator: nothing was cached by the failure
+    {
+        const EffectInstancePtr outputEffect = chain.output()->getEffectInstance();
+        const int timeDomainsBefore = NatronTestPlugin::counter("Generator.getTimeDomain");
+        double first = 0., last = 0.;
+        outputEffect->getFrameRange_public(outputEffect->getHash(), &first, &last);
+        EXPECT_EQ( 1, NatronTestPlugin::counter("Generator.getTimeDomain") - timeDomainsBefore );
     }
 
     // without the limit, the chain renders on every kind of thread
@@ -548,6 +571,24 @@ checkVeryDeepChain(const NodePtr& output,
         const int renders = NatronTestPlugin::counter("MultiPAR.render") - rendersBefore;
         EXPECT_TRUE( (renders == length) || isGraphTooDeepError(out) ) << out;
         printStep(isGraphTooDeepError(out) ? "render on a render thread: too deep" : "render on a render thread: OK");
+    }
+
+    // the frame range, on the main thread, with new hashes so that nothing is cached (#1846)
+    {
+        NodePtr top = lastFilter;
+        while ( top->getInput(0) ) {
+            top = top->getInput(0);
+        }
+        top->incrementKnobsAge();
+        const EffectInstancePtr outputEffect = output->getEffectInstance();
+        const int timeDomainsBefore = NatronTestPlugin::counter("Generator.getTimeDomain");
+        double first = 0., last = 0.;
+        testing::internal::CaptureStdout();
+        outputEffect->getFrameRange_public(outputEffect->getHash(), &first, &last);
+        std::string out = testing::internal::GetCapturedStdout();
+        const bool computed = NatronTestPlugin::counter("Generator.getTimeDomain") > timeDomainsBefore;
+        EXPECT_TRUE( computed || isGraphTooDeepError(out) ) << out;
+        printStep(computed ? "frame range: OK" : "frame range: too deep");
     }
 }
 } // anon namespace
@@ -982,6 +1023,10 @@ private:
 // see callWithLittleStackLeft()
 char* volatile gStackChunk = nullptr;
 
+// The chunks of GraphDepthGuard's safety margin that callWithLittleStackLeft() uses to leave 128 KB of stack (56 of the
+// 64 chunks of 16 KB of the 1 MB margin)
+const int kLittleStackMarginChunks = 56;
+
 // Calls f with about 256 KB of stack left on the main thread, whose stack size can't be changed, to overflow its stack
 // with a short chain: first uses the stack down to GraphDepthGuard's safety margin, then 768 KB of that margin, which is
 // 1 MB on stacks of 8 MB or more (the main thread's on every platform, see StackBounds).
@@ -1096,6 +1141,27 @@ TEST(DeepGraphRender, VeryDeepDotChainRenderArgsAndHash)
         const std::string output = testing::internal::GetCapturedStdout();
         EXPECT_TRUE( isGraphTooDeepError(output) ) << output;
         printStep("render on a render thread");
+    }
+
+    // the frame range, which recurses upstream once per node, with 128 KB of stack left on the main thread and new
+    // hashes (nothing cached): it fails with the "Node graph too deep" error instead of overflowing the stack (#1846)
+    {
+        first->incrementKnobsAge();
+        const EffectInstancePtr rootEffect = root->getEffectInstance();
+        double firstFrame = 0., lastFrame = 0.;
+        testing::internal::CaptureStdout();
+        callWithLittleStackLeft( [&rootEffect, &firstFrame, &lastFrame]() {
+            rootEffect->getFrameRange_public(rootEffect->getHash(), &firstFrame, &lastFrame);
+        }, kLittleStackMarginChunks );
+        const std::string output = testing::internal::GetCapturedStdout();
+        EXPECT_TRUE( isGraphTooDeepError(output) ) << output;
+        printStep("frame range with little stack left");
+
+        // with the whole stack of the main thread, it is computed down to the generator: the failure wasn't cached
+        const int timeDomainsBefore = NatronTestPlugin::counter("Generator.getTimeDomain");
+        rootEffect->getFrameRange_public(rootEffect->getHash(), &firstFrame, &lastFrame);
+        EXPECT_EQ( 1, NatronTestPlugin::counter("Generator.getTimeDomain") - timeDomainsBefore );
+        printStep("frame range");
     }
 }
 

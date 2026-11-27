@@ -25,7 +25,10 @@
 
 #include "EffectInstancePrivate.h"
 
+#include <algorithm> // find
 #include <cassert>
+#include <iterator> // next
+#include <list>
 #include <stdexcept>
 #include <sstream> // stringstream
 
@@ -768,6 +771,26 @@ EffectInstance::Implementation::ScopedRenderArgs::~ScopedRenderArgs()
     tlsData->currentRenderArgs.outputPlanes.clear();
     tlsData->currentRenderArgs.inputImages.clear();
     tlsData->currentRenderArgs.validArgs = false;
+}
+
+EffectInstance::Implementation::ScopedFrameArgs::ScopedFrameArgs(const EffectTLSDataPtr& tlsData,
+                                                                 const ParallelRenderArgsPtr& frameArgs)
+    : _tlsData(tlsData)
+    , _frameArgs(frameArgs)
+{
+    assert(_tlsData && _frameArgs);
+    _tlsData->frameArgs.push_back(_frameArgs);
+}
+
+EffectInstance::Implementation::ScopedFrameArgs::~ScopedFrameArgs()
+{
+    // The render args set on this thread after these are removed before them (ParallelRenderArgsSetter, ScopedFrameArgs)
+    std::list<ParallelRenderArgsPtr>& frameArgs = _tlsData->frameArgs;
+    assert( !frameArgs.empty() && (frameArgs.back() == _frameArgs) );
+    const std::list<ParallelRenderArgsPtr>::reverse_iterator found = std::find(frameArgs.rbegin(), frameArgs.rend(), _frameArgs);
+    if ( found != frameArgs.rend() ) {
+        frameArgs.erase( std::next(found).base() );
+    }
 }
 
 void

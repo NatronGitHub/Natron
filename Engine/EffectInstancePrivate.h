@@ -338,6 +338,27 @@ public:
         ~ScopedRenderArgs();
     };
 
+    /**
+     * @brief Sets the render args of a frame on the thread-local storage of the effect for its lifetime, as
+     * ParallelRenderArgsSetter does for each node of the tree of a render: renderRoI() sets its own if it is called
+     * without them (#1846).
+     **/
+    class ScopedFrameArgs
+    {
+public:
+        ScopedFrameArgs(const EffectTLSDataPtr& tlsData,
+                        const ParallelRenderArgsPtr& frameArgs);
+
+        ScopedFrameArgs(const ScopedFrameArgs&) = delete;
+        ScopedFrameArgs& operator=(const ScopedFrameArgs&) = delete;
+
+        ~ScopedFrameArgs();
+
+private:
+        const EffectTLSDataPtr _tlsData;
+        const ParallelRenderArgsPtr _frameArgs;
+    };
+
     void addInputImageTempPointer(int inputNb, const ImagePtr & img);
 
     void clearInputImagePointers();
