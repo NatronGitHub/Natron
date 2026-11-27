@@ -18,7 +18,8 @@
 
 // The decoder of a Read node and the encoder of a Write node, chosen in their Decoder/Encoder menu, with
 // the openfx-io plug-ins and PNG files (ReadPNG and WritePNG, or ReadOIIO and WriteOIIO): a choice that
-// isn't the default plug-in of the file extension is kept when the project is saved and loaded (#1783).
+// isn't the default plug-in of the file extension is kept when the project is saved and loaded (#1783). The
+// parameters of a Read node set before its first file name are kept when that file creates its decoder (#1784).
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -226,3 +227,105 @@ TEST(ReadWriteDecoderChoice, NonDefaultChoiceKeptOnReload)
     }
 }
 
+// The parameters of a Read node that are kept when its file changes (onMissingFrame, before, after,
+// customFps, frameRate: see genericReaderKnobNames in Engine/ReadNode.cpp), set before its first file name,
+// are kept when that file name creates its decoder, as for the Write node (#1574): they were reset to the
+// defaults of the decoder (#1784).
+TEST(ReadWriteDecoderChoice, ReadKnobsSetBeforeTheFirstFileAreKept)
+{
+    // ReadOIIO is the placeholder decoder of a Read node without a file (READ_NODE_DEFAULT_READER)
+    if ( !NatronTest::requirePlugins({ PLUGINID_OFX_READPNG, PLUGINID_OFX_READOIIO }, "openfx-io") ) {
+        return;
+    }
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    ASSERT_TRUE( writePNG( dir + QString::fromUtf8("input.png") ) );
+    NatronTest::NodeScope nodes;
+
+    NodePtr read = nodes.add( createIONode( PLUGINID_NATRON_READ, std::string() ) );
+    ASSERT_TRUE(read);
+    // another value than the default one
+    int choiceValues[3];
+    const char* const choiceNames[3] = { "onMissingFrame", "before", "after" };
+    for (int i = 0; i < 3; ++i) {
+        SCOPED_TRACE(choiceNames[i]);
+        KnobChoicePtr knob = std::dynamic_pointer_cast<KnobChoice>( read->getKnobByName(choiceNames[i]) );
+        ASSERT_TRUE(knob);
+        ASSERT_GE(knob->getNumEntries(), 2);
+        choiceValues[i] = (knob->getDefaultValue(0) + 1) % knob->getNumEntries();
+        knob->setValue(choiceValues[i]);
+    }
+    KnobBoolPtr customFps = std::dynamic_pointer_cast<KnobBool>( read->getKnobByName("customFps") );
+    KnobDoublePtr frameRate = std::dynamic_pointer_cast<KnobDouble>( read->getKnobByName("frameRate") );
+    ASSERT_TRUE(customFps && frameRate);
+    const bool customFpsValue = !customFps->getDefaultValue(0);
+    const double frameRateValue = frameRate->getDefaultValue(0) + 1.5;
+    customFps->setValue(customFpsValue);
+    frameRate->setValue(frameRateValue);
+    customFps.reset();
+    frameRate.reset();
+
+    KnobFilePtr file = std::dynamic_pointer_cast<KnobFile>( read->getKnobByName(kOfxImageEffectFileParamName) );
+    ASSERT_TRUE(file);
+    file->setValue( dir.toStdString() + "input.png" );
+    file.reset();
+    ASSERT_EQ( appPTR->getReaderPluginIDForFileType("png"), embeddedPluginID(read) );
+
+    for (int i = 0; i < 3; ++i) {
+        KnobChoicePtr knob = std::dynamic_pointer_cast<KnobChoice>( read->getKnobByName(choiceNames[i]) );
+        ASSERT_TRUE(knob) << choiceNames[i];
+        EXPECT_EQ( choiceValues[i], knob->getValue() ) << choiceNames[i];
+    }
+    customFps = std::dynamic_pointer_cast<KnobBool>( read->getKnobByName("customFps") );
+    frameRate = std::dynamic_pointer_cast<KnobDouble>( read->getKnobByName("frameRate") );
+    ASSERT_TRUE(customFps && frameRate);
+    EXPECT_EQ( customFpsValue, customFps->getValue() );
+    EXPECT_EQ( frameRateValue, frameRate->getValue() );
+    // the decoder got the change of customFps: it enables Frame Rate
+    EXPECT_TRUE( frameRate->isEnabled(0) );
+}
+
+// The parameters that the decoder guesses from its file are still guessed, also for a first file that doesn't
+// exist yet (e.g. a sequence not rendered yet): ParamExistingInstance, which the placeholder decoder of a Read
+// node without a file has, is not kept for the first decoder (#1784).
+TEST(ReadWriteDecoderChoice, ReadGuessesFromItsFirstFile)
+{
+    // ReadOIIO: the placeholder decoder, see ReadKnobsSetBeforeTheFirstFileAreKept
+    if ( !NatronTest::requirePlugins({ PLUGINID_OFX_READPNG, PLUGINID_OFX_READOIIO }, "openfx-io") ) {
+        return;
+    }
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    ASSERT_TRUE( writePNG( dir + QString::fromUtf8("input.png") ) );
+    NatronTest::NodeScope nodes;
+
+    // the parameters guessed from the file by a Read node created with it
+    NodePtr reference = nodes.add( createIONode( PLUGINID_NATRON_READ, dir.toStdString() + "input.png" ) );
+    ASSERT_TRUE(reference);
+    const char* const guessedNames[2] = { "outputComponents", "filePremult" };
+
+    // the first file name of a Read node created without a file exists...
+    NodePtr read = nodes.add( createIONode( PLUGINID_NATRON_READ, std::string() ) );
+    // ...or not yet
+    NodePtr laterRead = nodes.add( createIONode( PLUGINID_NATRON_READ, std::string() ) );
+    ASSERT_TRUE(read && laterRead);
+    KnobFilePtr file = std::dynamic_pointer_cast<KnobFile>( read->getKnobByName(kOfxImageEffectFileParamName) );
+    KnobFilePtr laterFile = std::dynamic_pointer_cast<KnobFile>( laterRead->getKnobByName(kOfxImageEffectFileParamName) );
+    ASSERT_TRUE(file && laterFile);
+    file->setValue( dir.toStdString() + "input.png" );
+    laterFile->setValue( dir.toStdString() + "notyet.png" );
+    file.reset();
+    laterFile.reset();
+
+    for (const char* name : guessedNames) {
+        KnobChoicePtr expected = std::dynamic_pointer_cast<KnobChoice>( reference->getKnobByName(name) );
+        KnobChoicePtr knob = std::dynamic_pointer_cast<KnobChoice>( read->getKnobByName(name) );
+        ASSERT_TRUE(expected && knob) << name;
+        EXPECT_EQ( expected->getActiveEntry().id, knob->getActiveEntry().id ) << name;
+    }
+    KnobBoolPtr existingInstance = std::dynamic_pointer_cast<KnobBool>( laterRead->getKnobByName("ParamExistingInstance") );
+    ASSERT_TRUE(existingInstance);
+    EXPECT_FALSE( existingInstance->getValue() );
+}
