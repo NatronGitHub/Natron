@@ -410,7 +410,7 @@ jobs:
         # dependencies", and run with only MSYS2's own tools (/usr/bin, for runTests.sh) and the
         # Windows directories on PATH: no /ucrt64/bin or /clangarm64/bin, no bin\ of Natron (the
         # programs find their DLLs next to them). The results go where the Build step's outputs
-        # say (TEST_*): the job fails in "Check the Natron-Tests results", after the uploads.
+        # say (TEST_*) and are judged in "Check the Natron-Tests results", after the uploads.
         # This step fails only if Natron could not be installed or Natron-Tests could not start.
         id: natron_tests
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
@@ -439,7 +439,9 @@ jobs:
           echo "Natron-Tests: $(git -C "${TESTS}" log -1 --format='%h %cs %s')"
           # Natron's caches and settings: none left by the build's runs of Natron (as runUnitTests.sh)
           rm -rf "$(cygpath -u "${LOCALAPPDATA:?}")/INRIA/Natron"
-          # (OCIO: a Windows path, as Natron reads it)
+          # /usr/bin before the Windows directories, whose find.exe, sort.exe and timeout.exe aren't
+          # the POSIX ones (fc-cache isn't found any more: runTests.sh ignores that). OCIO: a Windows
+          # path, as Natron reads it.
           status=0
           (cd "${TESTS}" && timeout -s KILL 7200 env PATH="/usr/bin:${SYSPATH}" \
             OCIO="$(cygpath -m "${APP}/Resources/OpenColorIO-Configs/blender/config.ocio")" \
@@ -508,8 +510,9 @@ jobs:
         # Setup.exe-installed Natron ("Install with Setup.exe and run Natron-Tests", which doesn't
         # fail when a test fails). A known failure that passed (UNEXPECTED PASS) fails the job:
         # Natron-Tests' known_failures/ lists must be updated. Other failures are only warnings, as
-        # long as the Windows known failures aren't checked against a 2.6 run (#1629).
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        # long as the Windows known failures aren't checked against a 2.6 run (#1629). Not if
+        # Natron-Tests could not start (that step failed already).
+        if: ${{ !cancelled() && steps.natron_tests.outcome == 'success' }}
         run: |
           RESULTS=$(cygpath -u '${{ steps.build.outputs.TEST_RESULTS_FILE }}')
           SUMMARY=$(cygpath -u '${{ steps.build.outputs.TEST_SUMMARY_FILE }}')
