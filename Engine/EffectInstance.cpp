@@ -1573,11 +1573,11 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
     }
 
     // The texture can't be created (#1945): the caller renders without OpenGL, as when the plug-in runs out of
-    // GPU memory (std::bad_alloc, which clipLoadTexture returns as kOfxStatErrMemory).
+    // GPU memory (clipLoadTexture returns the exception, a std::bad_alloc, as kOfxStatErrMemory).
     GLint maxTextureSize = 0;
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
     if ( (bounds.width() > maxTextureSize) || (bounds.height() > maxTextureSize) ) {
-        throw std::bad_alloc();
+        throw OpenGLTextureAllocationError();
     }
 
     bool useTmpImage = image->getComponentsCount() != 4;
@@ -1603,8 +1603,17 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
     GLuint pboID = context->getPBOId();
     assert(pboID != 0);
     glEnable(GL_TEXTURE_2D);
-    // bind PBO to update texture source
+    // bind PBO to update texture source; unbound on every exit, so that later pixel transfers in this context
+    // don't read from it (it is good idea to release PBOs with ID 0 after use: once bound with 0, all pixel
+    // operations are back to normal ways)
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pboID);
+    struct PBOUnbinder
+    {
+        ~PBOUnbinder()
+        {
+            glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+        }
+    } pboUnbinder;
 
     std::size_t dataSize = bounds.area() * 4 * info.dataTypeSize;
 
@@ -1620,30 +1629,22 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
     GLvoid* gpuData = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     if (!gpuData) {
         // the buffer could not be allocated: the texture would hold garbage
-        glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-        throw std::bad_alloc();
+        throw OpenGLTextureAllocationError();
     }
     // update data directly on the mapped buffer
     memcpy(gpuData, srcdata, dataSize);
-    GLboolean result = glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
-    assert(result == GL_TRUE);
-    Q_UNUSED(result);
+    if (glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB) != GL_TRUE) { // release the mapped buffer
+        // the buffer contents were lost (e.g. a display mode change)
+        throw OpenGLTextureAllocationError();
+    }
     glCheckError();
 
     // The creation of the image will use glTexImage2D and will get filled with the PBO
     ImagePtr gpuImage;
     getOrCreateFromCacheInternal(image->getKey(), params, false /*useCache*/, &gpuImage);
-    const bool outOfMemory = glGetError() == GL_OUT_OF_MEMORY;
-
-    // it is good idea to release PBOs with ID 0 after use.
-    // Once bound with 0, all pixel operations are back to normal ways.
-    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-    //glBindTexture(GL_TEXTURE_2D, 0); // useless, we didn't bind anything
-    glCheckError();
-
-    if (outOfMemory || !gpuImage) {
-        // glTexImage2D failed: the texture is unusable (gpuImage, if any, deletes it)
-        throw std::bad_alloc();
+    if ( !gpuImage || gpuImage->isGLTextureAllocationFailed() ) {
+        // glTexImage2D failed (GL_OUT_OF_MEMORY): the texture is unusable (gpuImage, if any, deletes it)
+        throw OpenGLTextureAllocationError();
     }
 
     return gpuImage;
@@ -2516,7 +2517,13 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
             return eRenderingFunctorRetOK;
         } else {
             EffectInstance::RenderRoIRetCode renderOk;
-            renderOk = tls->currentRenderArgs.identityInput->renderRoI(*renderArgs, &identityPlanes);
+            try {
+                renderOk = tls->currentRenderArgs.identityInput->renderRoI(*renderArgs, &identityPlanes);
+            } catch (const OpenGLTextureAllocationError&) {
+                // the input could not be loaded into a texture (#1945): render again without OpenGL, after the
+                // usual end of this OpenGL render (endSequenceRender, the context detached)
+                return eRenderingFunctorRetOutOfGPUMemory;
+            }
             if (renderOk == eRenderRoIRetCodeAborted) {
                 return eRenderingFunctorRetAborted;
             } else if (renderOk == eRenderRoIRetCodeFailed) {

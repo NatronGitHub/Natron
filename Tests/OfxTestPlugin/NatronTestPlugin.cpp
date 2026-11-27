@@ -1584,22 +1584,23 @@ gpuRenderFailedMain(const char* action,
 
 struct GPUFailurePlugin
 {
+    const char* identifier;
     const char* id; // the prefix of its counters
     bool cpuRenderSupported;
     GLFailureEnum failure;
 };
 
 const GPUFailurePlugin kGPUFailurePlugins[] = {
-    { "GPURenderFailed", true, eGLFailureGPURenderFailed },
-    { "GPUOnlyRenderFailed", false, eGLFailureGPURenderFailed },
-    { "GLErrMemory", true, eGLFailureErrMemory },
-    { "GLOnlyErrMemory", false, eGLFailureErrMemory },
-    { "GLTextureFailed", true, eGLFailureTexture },
-    { "GLOnlyTextureFailed", false, eGLFailureTexture },
-    { "GLTextureFailedInRender", true, eGLFailureTextureInRender },
+    { kGPURenderFailedPluginIdentifier, "GPURenderFailed", true, eGLFailureGPURenderFailed },
+    { kGPUOnlyRenderFailedPluginIdentifier, "GPUOnlyRenderFailed", false, eGLFailureGPURenderFailed },
+    { kGLErrMemoryPluginIdentifier, "GLErrMemory", true, eGLFailureErrMemory },
+    { kGLOnlyErrMemoryPluginIdentifier, "GLOnlyErrMemory", false, eGLFailureErrMemory },
+    { kGLTextureFailedPluginIdentifier, "GLTextureFailed", true, eGLFailureTexture },
+    { kGLOnlyTextureFailedPluginIdentifier, "GLOnlyTextureFailed", false, eGLFailureTexture },
+    { kGLTextureFailedInRenderPluginIdentifier, "GLTextureFailedInRender", true, eGLFailureTextureInRender },
 };
 
-// the main entry of kGPUFailurePlugins[index]
+// the main entry of kGPUFailurePlugins[index] (gPlugins lists them with the identifier of the same index)
 template <int index>
 OfxStatus
 gpuFailurePluginMain(const char* action,
@@ -1688,13 +1689,13 @@ OfxPlugin gPlugins[] = {
     { kOfxImageEffectPluginApi, 1, kSequentialPluginIdentifier, 1, 0, setHost, sequentialPluginMain },
     { kOfxImageEffectPluginApi, 1, kSequentialStatusPluginIdentifier, 1, 0, setHost, sequentialStatusPluginMain },
     { kOfxImageEffectPluginApi, 1, kTimeBlurPluginIdentifier, 1, 0, setHost, timeBlurPluginMain },
-    { kOfxImageEffectPluginApi, 1, kGPURenderFailedPluginIdentifier, 1, 0, setHost, gpuFailurePluginMain<0> },
-    { kOfxImageEffectPluginApi, 1, kGPUOnlyRenderFailedPluginIdentifier, 1, 0, setHost, gpuFailurePluginMain<1> },
-    { kOfxImageEffectPluginApi, 1, kGLErrMemoryPluginIdentifier, 1, 0, setHost, gpuFailurePluginMain<2> },
-    { kOfxImageEffectPluginApi, 1, kGLOnlyErrMemoryPluginIdentifier, 1, 0, setHost, gpuFailurePluginMain<3> },
-    { kOfxImageEffectPluginApi, 1, kGLTextureFailedPluginIdentifier, 1, 0, setHost, gpuFailurePluginMain<4> },
-    { kOfxImageEffectPluginApi, 1, kGLOnlyTextureFailedPluginIdentifier, 1, 0, setHost, gpuFailurePluginMain<5> },
-    { kOfxImageEffectPluginApi, 1, kGLTextureFailedInRenderPluginIdentifier, 1, 0, setHost, gpuFailurePluginMain<6> },
+    { kOfxImageEffectPluginApi, 1, kGPUFailurePlugins[0].identifier, 1, 0, setHost, gpuFailurePluginMain<0> },
+    { kOfxImageEffectPluginApi, 1, kGPUFailurePlugins[1].identifier, 1, 0, setHost, gpuFailurePluginMain<1> },
+    { kOfxImageEffectPluginApi, 1, kGPUFailurePlugins[2].identifier, 1, 0, setHost, gpuFailurePluginMain<2> },
+    { kOfxImageEffectPluginApi, 1, kGPUFailurePlugins[3].identifier, 1, 0, setHost, gpuFailurePluginMain<3> },
+    { kOfxImageEffectPluginApi, 1, kGPUFailurePlugins[4].identifier, 1, 0, setHost, gpuFailurePluginMain<4> },
+    { kOfxImageEffectPluginApi, 1, kGPUFailurePlugins[5].identifier, 1, 0, setHost, gpuFailurePluginMain<5> },
+    { kOfxImageEffectPluginApi, 1, kGPUFailurePlugins[6].identifier, 1, 0, setHost, gpuFailurePluginMain<6> },
     { kOfxImageEffectPluginApi, 1, kQuestionPluginIdentifier, 1, 0, setHost, questionPluginMain },
 };
 } // anonymous namespace
