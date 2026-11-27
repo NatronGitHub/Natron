@@ -63,18 +63,10 @@ Top-level directories
     ``OpenFX_extensions`` (the plug-in API), ``ceres``/``openMVG``/``libmv``
     (the tracker's solver and matcher), ``Eigen3`` (linear algebra headers),
     ``md4c`` (Markdown), ``libtess`` (tessellation),
-    ``qhttpserver`` (internal docs server), ``SequenceParsing`` and
-    ``google-breakpad`` (crash reporting).
+    ``qhttpserver`` (internal docs server) and ``SequenceParsing``.
 
 ``Tests/``
     Google Test unit tests.
-
-``CrashReporter/``, ``CrashReporterCLI/``, ``BreakpadClient/``
-    The out-of-process crash reporter (built on Google Breakpad) and its GUI/CLI
-    front-ends. The reporter starts Natron as a child process
-    (``CrashReporter/CallbacksManager.cpp``), so that it survives a crash of
-    Natron and can send the dump. Only the qmake build builds it (see
-    :ref:`maint-subsystems`).
 
 ``Documentation/``
     The Sphinx sources for this manual (see :ref:`maint-contributing` for how the

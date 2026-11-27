@@ -80,8 +80,7 @@ Some dependencies are **bundled** in ``libs/`` and built from source as part of
 the project: ``ceres``, ``openMVG`` and ``libmv`` (the tracker), ``Eigen3``
 (headers), ``md4c`` (CommonMark Markdown → HTML for node docs and tooltips),
 ``libtess`` (polygon tessellation for roto), ``qhttpserver`` (the internal
-documentation web server), ``SequenceParsing`` (image sequence detection) and
-``google-breakpad`` (crash reporting). With CMake, ``-DNATRON_SYSTEM_LIBS=ON``
+documentation web server) and ``SequenceParsing`` (image sequence detection). With CMake, ``-DNATRON_SYSTEM_LIBS=ON``
 uses system copies of some of these instead.
 
 Other dependencies must be present on the system: **Qt** (5 or 6), **Boost**
@@ -175,8 +174,7 @@ Build type, sanitizers and debugging
   stray ``NaN`` or division by zero aborts immediately instead of silently
   propagating through the image pipeline.
 - The qmake build supports ``CONFIG+=addresssanitizer`` for an
-  AddressSanitizer build (see the messages at the bottom of ``Project.pro``),
-  and ``CONFIG+=enable-breakpad`` to build with the Breakpad crash reporter.
+  AddressSanitizer build (see the messages at the bottom of ``Project.pro``).
   The CMake equivalents of the qmake ``CONFIG`` flags are listed below.
 
 macOS app bundle and install layout
@@ -358,8 +356,6 @@ passes, and the other ``global.pri`` flags, to CMake.
      - Always Python 3; choose it with ``-DPython3_EXECUTABLE=…``
    * - ``CONFIG+=enable-cairo``
      - Always on: cairo is required
-   * - ``CONFIG+=enable-breakpad``, ``CONFIG-=enable-breakpad``
-     - Not available: Breakpad is being replaced by sentry-native (#1183)
    * - ``CONFIG+=enable-osmesa OSMESA_PATH=… LLVM_PATH=…``
      - None: Natron itself doesn't use OSMesa (only openfx-misc's Shadertoy
        does), and the flag has no effect on the qmake build either
@@ -424,8 +420,8 @@ The installers are built by ``tools/jenkins/launchBuildMain.sh``, which calls
 former qmake release builds are intentional: there is no fast math, because
 ``-ffinite-math-only`` defeats the NaN and infinity checks (see #1277; the
 qmake path no longer adds ``CONFIG+=fast`` either, and
-``-DNATRON_FAST_MATH=ON`` brings it back), and there is no Breakpad crash
-reporter (#1183), so ``launchBuildMain.sh`` sets ``DISABLE_BREAKPAD=1``. The C++ standard is the one ``CMakeLists.txt`` sets;
+``-DNATRON_FAST_MATH=ON`` brings it back), and there is no crash reporter (the
+Breakpad one was removed in 2.6; sentry-native will replace it, #1183). The C++ standard is the one ``CMakeLists.txt`` sets;
 a ``-std=`` flag in ``$CXX`` is ignored.
 
 On RB-2.6, ``NATRON_BUILD_SYSTEM=qmake`` selects the deprecated qmake build

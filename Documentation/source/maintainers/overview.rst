@@ -449,9 +449,9 @@ unless noted):
    ``NatronEngine`` module (and ``NatronGui`` in the GUI) with
    ``PyImport_AppendInittab``, and starts the interpreter (see
    :ref:`maint-python`).
-3. ``loadInternal()`` sets the application name, starts logging and the crash
-   reporter client if Natron was launched by the crash reporter, creates and
-   restores the ``Settings``, then calls ``initGui()``.
+3. ``loadInternal()`` sets the application name, starts logging, installs the
+   shutdown signal handlers, creates and restores the ``Settings``, then calls
+   ``initGui()``.
 4. ``initGui()`` is virtual. In headless mode, ``AppManager::initGui()`` calls
    ``loadInternalAfterInitGui()`` directly. In the GUI,
    ``GuiApplicationManager::initGui()`` (``Gui/GuiApplicationManager.cpp``)

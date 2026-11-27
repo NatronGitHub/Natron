@@ -19,8 +19,6 @@
 #
 # Build packages and installer for Windows
 #
-# Options:
-# DISABLE_BREAKPAD=1: Disable automatic crash report
 
 set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
@@ -49,39 +47,16 @@ env MINGW_PREFIX="$SDK_HOME" TMP_BINARIES_PATH="$TMP_BINARIES_PATH" PYVER="$PYVE
 
 source dllVersions.sh
 
-# Pretty architecture/platform identifier (used for breakpad symbol files)
-if [ "$ARCH" = "x86_64" ]; then
-    PKGOS_BITS="${PKGOS}-x86_${BITS}bit"
-else
-    PKGOS_BITS="${PKGOS}-${WIN_ARCH}"
-fi
-
 if [ -z "${NATRON_BUILD_CONFIG:-}" ]; then
     echo "NATRON_BUILD_CONFIG empty"
     exit 1
 fi
-
-DUMP_SYMS="$SDK_HOME/bin/natron_dump_syms_dwarf.exe"
 
 # Qt modules that are GPL-3 only (no LGPL), left out of COMMERCIAL builds with their PySide modules
 # (QtCharts.pyd, ...) and the Qt plug-ins that link them; genDllVersions.sh doesn't bundle their
 # DLLs. check-commercial-bundle.sh (is_gpl_lib) rejects the same modules. GPL builds keep them.
 QT_GPL_LIBS=( Charts DataVisualization NetworkAuth Designer VirtualKeyboard Quick3D Bodymovin )
 
-dump_syms_safe() {
-    if [ $# != 2 ]; then
-        echo "Usage: dump_syms_safe <bin> <output>"
-        exit 1
-    fi
-    dumpfail=0
-    echo "*** dumping syms from $1"
-    "$DUMP_SYMS" "$1" > "$2" || dumpfail=1
-    if [ $dumpfail = 1 ]; then
-        echo "Error: $DUMP_SYMS failed on $1"
-        rm "$2"
-    fi
-    echo "*** dumping syms from $1... done!"
-}
 
 
 if [ -d "${BUILD_ARCHIVE_DIRECTORY}" ]; then
@@ -91,9 +66,6 @@ fi
 mkdir -p "${BUILD_ARCHIVE_DIRECTORY}"
 # the list of bundled DLLs, for comparing installers
 cp dllVersions.txt "${BUILD_ARCHIVE_DIRECTORY}/${INSTALLER_BASENAME}-dlls.txt"
-if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-    mkdir "${BUILD_ARCHIVE_DIRECTORY}/symbols"
-fi
 
 # If we are in DEBUG_SYMBOLS mode there might already be deployed installer, remove them
 if [ ! -z "$DEBUG_SCRIPTS" ]; then
@@ -102,14 +74,6 @@ fi
 
 
 mkdir -p "${TMP_PORTABLE_DIR}"
-
-
-# tag symbols we want to keep with 'release'
-VERSION_TAG="${CURRENT_DATE}"
-if [ "${NATRON_BUILD_CONFIG}" = "RELEASE" ] || [ "${NATRON_BUILD_CONFIG}" = "STABLE" ]; then
-    BPAD_TAG="-release"
-    VERSION_TAG="$NATRON_VERSION_FULL"
-fi
 
 # Everything goes into the portable tree ${TMP_PORTABLE_DIR}, which is zipped with Inno Setup's
 # Setup.exe: Setup.exe installs from the unzipped tree (Natron.iss, "external" files). The Qt
@@ -176,11 +140,6 @@ function installPlugin() {
     mkdir -p "${TMP_PORTABLE_DIR}/Plugins/OFX/Natron"
     cp -a "${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle" "${TMP_PORTABLE_DIR}/Plugins/OFX/Natron/"
 
-    # Dump symbols
-    if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-        dump_syms_safe "$bindir/${OFX_BINARY}.ofx" "${BUILD_ARCHIVE_DIRECTORY}/symbols/${OFX_BINARY}.ofx-${VERSION_TAG}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
-    fi
-
     if [ "${#deps[@]}" -gt 0 ]; then
         cp "${deps[@]}" "$bindir/"
     fi
@@ -228,15 +187,8 @@ cp "${TMP_BINARIES_PATH}/natron_convert_project.py" "$location/Plugins/"
 # the test program, run below and removed before the zip is made
 cp "${TMP_BINARIES_PATH}/bin/Tests.exe" "$location/bin/"
 
-if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-    cp "${TMP_BINARIES_PATH}/bin/Natron.exe" "$location/bin/Natron-bin.exe"
-    cp "${TMP_BINARIES_PATH}/bin/NatronRenderer.exe" "$location/bin/NatronRenderer-bin.exe"
-    cp "${TMP_BINARIES_PATH}/bin/NatronCrashReporter.exe" "$location/bin/Natron.exe"
-    cp "${TMP_BINARIES_PATH}/bin/NatronRendererCrashReporter.exe" "$location/bin/NatronRenderer.exe"
-else
-    cp "${TMP_BINARIES_PATH}/bin/Natron.exe" "$location/bin/Natron.exe"
-    cp "${TMP_BINARIES_PATH}/bin/NatronRenderer.exe" "$location/bin/NatronRenderer.exe"
-fi
+cp "${TMP_BINARIES_PATH}/bin/Natron.exe" "$location/bin/Natron.exe"
+cp "${TMP_BINARIES_PATH}/bin/NatronRenderer.exe" "$location/bin/NatronRenderer.exe"
 
 if [ -f "${TMP_BINARIES_PATH}/bin/NatronProjectConverter.exe" ]; then
     cp "${TMP_BINARIES_PATH}/bin/NatronProjectConverter.exe" "$location/bin/NatronProjectConverter.exe"
@@ -270,12 +222,6 @@ fi
 cp "${NATRON_DLL[@]}" "$location/bin/"
 
 strip_binaries "$location/bin"
-
-# Dump symbols for crash reporting on Natron binaries
-if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-    dump_syms_safe "${TMP_BINARIES_PATH}/bin/Natron.exe" "${BUILD_ARCHIVE_DIRECTORY}/symbols/Natron-${VERSION_TAG}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
-    dump_syms_safe "${TMP_BINARIES_PATH}/bin/NatronRenderer.exe" "${BUILD_ARCHIVE_DIRECTORY}/symbols/NatronRenderer-${VERSION_TAG}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
-fi
 
 # Copy Python distrib
 mkdir -p "${TMP_PORTABLE_DIR}/Plugins"

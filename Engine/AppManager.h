@@ -634,8 +634,6 @@ public:
     ///Closes the application not saving any projects.
     virtual void exitApp(bool warnUserForSave);
 
-    bool isSpawnedFromCrashReporter() const;
-
     virtual void reloadScriptEditorFonts() {}
 
     void setPluginsUseInputImageCopyToRender(bool b);
@@ -743,8 +741,6 @@ public Q_SLOTS:
     void onMaxPanelsOpenedChanged(int maxPanels);
 
     void onQueueRendersChanged(bool queuingEnabled);
-
-    void onCrashReporterNoLongerResponding();
 
     void onShutDownSignalReceived();
 

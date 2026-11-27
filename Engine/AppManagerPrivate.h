@@ -66,21 +66,6 @@
 #include "Engine/GenericSchedulerThreadWatcher.h"
 #include "Engine/TLSHolder.h"
 
-// include breakpad after Engine, because it includes /usr/include/AssertMacros.h on OS X which defines a check(x) macro, which conflicts with boost
-#ifdef NATRON_USE_BREAKPAD
-#if defined(Q_OS_DARWIN)
-GCC_DIAG_OFF(deprecated)
-#include "client/mac/handler/exception_handler.h"
-GCC_DIAG_ON(deprecated)
-#elif defined(Q_OS_LINUX)
-#include <fcntl.h>
-#include "client/linux/handler/exception_handler.h"
-#include "client/linux/crash_generation/crash_generation_server.h"
-#elif defined(Q_OS_WIN32)
-#include "client/windows/handler/exception_handler.h"
-#endif
-#endif
-
 #include "Engine/EngineFwd.h"
 #include "Global/FloatingPointExceptions.h"
 
@@ -201,13 +186,6 @@ public:
     PyObject* mainModule;
     PyThreadState* mainThreadState;
 
-#ifdef NATRON_USE_BREAKPAD
-    QString breakpadProcessExecutableFilePath;
-    Q_PID breakpadProcessPID;
-    std::shared_ptr<google_breakpad::ExceptionHandler> breakpadHandler;
-    ExistenceCheckerThreadPtr breakpadAliveThread;
-#endif
-
 #ifdef Q_OS_WIN32
     //On Windows only, track the UNC path we came across because the WIN32 API does not provide any function to map
     //from UNC path to path with drive letter.
@@ -277,12 +255,6 @@ public:
     Plugin* findPluginById(const QString& oldId, int major, int minor) const;
 
     void declareSettingsToPython();
-
-#ifdef NATRON_USE_BREAKPAD
-    void initBreakpad(const QString& breakpadPipePath, const QString& breakpadComPipePath, int breakpad_client_fd);
-
-    void createBreakpadHandler(const QString& breakpadPipePath, int breakpad_client_fd);
-#endif
 
     void initGl(bool checkRenderingReq);
 

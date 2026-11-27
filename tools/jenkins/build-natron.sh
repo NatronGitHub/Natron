@@ -21,7 +21,6 @@ set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
 #set -x # Print commands and their arguments as they are executed.
 
-# DISABLE_BREAKPAD=1: Disable automatic crash report
 # NATRON_BUILD_SYSTEM: cmake (the default) or qmake (deprecated, kept on RB-2.6 as a
 #   fallback until the CMake-built installers are shown to be equivalent, see #1181)
 # NATRON_EXTRA_CMAKE_FLAGS: extra arguments for cmake (CMake build), e.g. "-DNATRON_FAST_MATH=ON"
@@ -40,11 +39,6 @@ case "$NATRON_BUILD_SYSTEM" in
         exit 1
         ;;
 esac
-if [ "$NATRON_BUILD_SYSTEM" = "cmake" ] && [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-    # launchBuildMain.sh sets DISABLE_BREAKPAD=1 for CMake builds
-    echo "Error: the CMake build has no Breakpad crash reporter (#1183): set DISABLE_BREAKPAD=1, or NATRON_BUILD_SYSTEM=qmake"
-    exit 1
-fi
 
 NO_BUILD=0
 # If Natron is already built, exit when debugging scripts
@@ -433,13 +427,6 @@ if [ "$PYV" = "3" ]; then
     QMAKE_FLAGS_EXTRA+=(CONFIG+=python3)
 fi
 
-# use breakpad?
-if [ "${DISABLE_BREAKPAD:-}" = "1" ]; then
-    QMAKE_FLAGS_EXTRA+=(CONFIG-=enable-breakpad)
-else
-    QMAKE_FLAGS_EXTRA+=(CONFIG+=enable-breakpad)
-fi
-
 if [ "$COMPILER" = "clang" ]; then
     QMAKE_FLAGS_EXTRA+=(CONFIG-=openmp)
 else
@@ -510,8 +497,6 @@ NATRON_TEST="Tests"
 NATRON_BIN="Natron"
 NATRON_PYTHON_BIN="natron-python"
 RENDERER_BIN="NatronRenderer"
-CRASHGUI="NatronCrashReporter"
-CRASHCLI="NatronRendererCrashReporter"
 if [ "$PKGOS" = "Windows" ]; then
     WIN_BIN_TYPE=release
     if [ "${COMPILE_TYPE}" = "debug" ]; then
@@ -522,8 +507,6 @@ if [ "$PKGOS" = "Windows" ]; then
     NATRON_TEST="$WIN_BIN_TYPE/${NATRON_TEST}.exe"
     NATRON_BIN="$WIN_BIN_TYPE/${NATRON_BIN}.exe"
     RENDERER_BIN="$WIN_BIN_TYPE/${RENDERER_BIN}.exe"
-    CRASHGUI="$WIN_BIN_TYPE/${CRASHGUI}.exe"
-    CRASHCLI="$WIN_BIN_TYPE/${CRASHCLI}.exe"
 fi
 
 
@@ -531,7 +514,6 @@ if [ "$PKGOS" = "OSX" ]; then
     MAC_APP_PATH=/Natron.app/Contents/MacOS
     MAC_INFOPLIST=/Natron.app/Contents/Info.plist
     MAC_PKGINFO=/Natron.app/Contents/PkgInfo
-    MAC_CRASH_PATH=/NatronCrashReporter.app/Contents/MacOS
 fi
 
 CP_OR_MV=cp
@@ -587,12 +569,6 @@ fi
 
 mkdir -p "$TMP_BINARIES_PATH/docs/natron" || true
 cp "$srcdir"/LICENSE.txt "$TMP_BINARIES_PATH/docs/natron/"
-
-# install crashapp(s)
-if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-    ${CP_OR_MV} CrashReporter${MAC_CRASH_PATH:-}/$CRASHGUI "$TMP_BINARIES_PATH/bin/"
-    ${CP_OR_MV} CrashReporterCLI/$CRASHCLI "$TMP_BINARIES_PATH/bin/"
-fi
 
 if [ ! -d "$RES_DIR" ]; then
     mkdir -p "$RES_DIR"

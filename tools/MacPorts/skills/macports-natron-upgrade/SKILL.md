@@ -174,7 +174,7 @@ The full macOS build (Natron + OpenFX plugins, bundled into a `.dmg`) is driven 
 ```bash
 cd tools/jenkins
 nohup env NOUPDATE=1 WORKSPACE=$HOME/Development/workspace \
-  DISABLE_BREAKPAD=1 NATRON_LICENSE=GPL \
+  NATRON_LICENSE=GPL \
   GIT_URL=https://github.com/NatronGitHub/Natron.git GIT_BRANCH=RB-2.6 \
   UNIT_TESTS=false BUILD_NAME=natron_github_RB2 BUILD_NUMBER=1 \
   COMPILE_TYPE=release MKJOBS=8 \

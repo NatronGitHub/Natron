@@ -41,9 +41,9 @@ The following options can be passed to `launchBuildMain.sh` as environment varia
 
 `NATRON_LICENSE`: Must be `GPL` or `COMMERCIAL`. When GPL is selected, GPL components (such as certain codecs of ffmpeg or demosaic patterns of libraw) will be included. COMMERCIAL builds also leave out openfx-arena's ReadPDF (poppler) and AudioCurve (libsox, which links GPL libraries), and build openfx-gmic with only the G'MIC filters under CeCILL-C. openfx-gmic uses pocketfft (BSD-3-Clause) for its FFT in both licences (openfx-gmic#94): the SDKs don't provide FFTW. `build-plugins.sh` passes the licence to the plug-in repositories that have the option (`-DOFX_LICENSE`: openfx-arena, openfx-gmic, and openfx-misc once it has it; `LICENSE=` for the Makefiles), and openfx-io gets the FFmpeg and LibRaw of the licence. COMMERCIAL builds use an LGPL FFmpeg, a LibRaw without the demosaic packs and a libheif without the x264 and x265 encoders: on Windows the packages `natron_ffmpeg-lgpl`, `natron_libraw-lgpl` and `natron_libheif-lgpl` (`tools/MINGW-packages`), plus `natron_libtiff-lgpl` (MSYS2's libtiff without the GPL JBIG-KIT), on macOS the MacPorts subports `ffmpeg-lgpl`, `libraw-lgpl` and `libheif-lgpl` (`tools/MacPorts`, installed in `$SDK_HOME/libexec`), on Linux COMMERCIAL builds are not done yet, and `launchBuildMain.sh` refuses them (the SDK's libheif links x265 and its OpenImageIO links the GPL LibRaw). On Windows and macOS, the installer scripts (and, on macOS, `build-plugins.sh`) run `check-commercial-bundle.sh`, which fails a COMMERCIAL build if a bundled binary is or links a GPL library, contains an FFmpeg whose licence is not LGPL 2.1 or later, or a LibRaw with a GPL demosaic pack (#1302, #1177). The installers also leave out the Qt modules that are GPL-3 only (Qt Charts, Data Visualization, Network Authorization, Designer, ...) and their PySide modules, which the check rejects too. COMMERCIAL builds are never made in CI, weekly builds or releases (`build_installer.yml` builds GPL only): they are only built by hand, e.g. `tools/tart/natron-build.sh -l COMMERCIAL` on macOS, or `launchBuildMain.sh` with `NATRON_LICENSE=COMMERCIAL` in an MSYS2 UCRT64 shell on Windows. In COMMERCIAL builds, projects that use a left-out node (one of the G'MIC filters that are not under CeCILL-C, ReadPDF, AudioCurve) load without that node. A build of an openfx-gmic without `license.mk` is refused with `PLUGINS_BUILD_SYSTEM=make`, since it would link FFTW.
 
-`DISABLE_BREAKPAD`: If set to 1, natron will be built without crash reporting capabilities.
+`COMPILE_TYPE`: The type of build to do, i.e in terms of compilation. Valid values are (`relwithdebinfo`, `release`, `debug`).
 
-`COMPILE_TYPE`: The type of build to do, i.e in terms of compilation. Valid values are (`relwithdebinfo`, `release`, `debug`). Must be `relwithdebinfo` or `debug` if DISABLE_BREAKPAD is not 1.
+Natron is built without a crash reporter: the Breakpad one was removed in 2.6, and sentry-native will replace it (#1183). `DISABLE_BREAKPAD` is obsolete and ignored.
 
 `BITS`: Windows only: Must indicate if this is a 64 or 32 bits build.
 
@@ -53,7 +53,7 @@ The following options can be passed to `launchBuildMain.sh` as environment varia
 
 `NATRON_BUILD_NUMBER`: When doing a release this is the number of the release (if doing a rebuild).
 
-`NATRON_BUILD_SYSTEM`: `cmake` (the default) or `qmake`. The qmake build is deprecated and is kept on RB-2.6 as a fallback until the CMake-built installers are shown to be equivalent (#1181). The CMake build has no crash reporter yet (#1183), so it implies `DISABLE_BREAKPAD=1`. Linux builds always use `DISABLE_BREAKPAD=1`: the Linux SDK no longer builds Breakpad (`dump_syms`).
+`NATRON_BUILD_SYSTEM`: `cmake` (the default) or `qmake`. The qmake build is deprecated and is kept on RB-2.6 as a fallback until the CMake-built installers are shown to be equivalent (#1181).
 
 `NATRON_EXTRA_CMAKE_FLAGS`: Optional cmake flags to pass when building Natron with CMake, separated by spaces, e.g. `-DNATRON_FAST_MATH=ON`. The options are listed in `Documentation/source/maintainers/building.rst`.
 

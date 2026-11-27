@@ -39,9 +39,6 @@ NATRON_BUILD_CONFIG=""
 NATRON_BUILD_NUMBER=""
 NATRON_CUSTOM_BUILD_USER_NAME=""
 
-# If set to 1, natron will be built without crash reporting capabilities
-DISABLE_BREAKPAD=""
-
 
 # Url of the git that triggered the build
 GIT_TRIGGER_URL=""

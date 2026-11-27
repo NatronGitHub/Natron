@@ -96,13 +96,6 @@ if [ -d "$BUILD_DIR/compressed_no_installer" ]; then
     done
 fi
 
-# Upload symbols to the main symbols store
-if [ -d "$BUILD_DIR/symbols" ]; then
-    for f in "$BUILD_DIR/symbols/"*; do
-	rsync_remote "$f" "symbols/"
-    done
-fi
-
 
 # Local variables:
 # mode: shell-script

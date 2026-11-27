@@ -85,7 +85,6 @@ SOURCES += \
     EffectInstance.cpp \
     EffectInstancePrivate.cpp \
     EffectInstanceRenderRoI.cpp \
-    ExistenceCheckThread.cpp \
     FileDownloader.cpp \
     FileSystemModel.cpp \
     FitCurve.cpp \
@@ -246,7 +245,6 @@ HEADERS += \
     EffectInstance.h \
     EffectInstancePrivate.h \
     EngineFwd.h \
-    ExistenceCheckThread.h \
     FeatherPoint.h \
     FileDownloader.h \
     FileSystemModel.h \

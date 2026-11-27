@@ -72,7 +72,6 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Engine/CacheSerialization.h"
 #include "Engine/CLArgs.h"
-#include "Engine/ExistenceCheckThread.h"
 #include "Engine/Format.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/Image.h"
@@ -271,12 +270,6 @@ AppManagerPrivate::AppManagerPrivate()
     , nArgs(0)
     , mainModule(0)
     , mainThreadState(0)
-#ifdef NATRON_USE_BREAKPAD
-    , breakpadProcessExecutableFilePath()
-    , breakpadProcessPID(0)
-    , breakpadHandler()
-    , breakpadAliveThread()
-#endif
     , pluginsUseInputImageCopyToRender(false)
     , glRequirements()
     , glHasTextureFloat(false)
@@ -341,71 +334,6 @@ AppManagerPrivate::startDiskCachesInstanceFileToucher()
         }
     });
 }
-
-#ifdef NATRON_USE_BREAKPAD
-void
-AppManagerPrivate::initBreakpad(const QString& breakpadPipePath,
-                                const QString& breakpadComPipePath,
-                                int breakpad_client_fd)
-{
-    assert(!breakpadHandler);
-    createBreakpadHandler(breakpadPipePath, breakpad_client_fd);
-
-    /*
-       We check periodically that the crash reporter process is still alive. If the user killed it somehow, then we want
-       the Natron process to terminate
-     */
-    breakpadAliveThread = std::make_shared<ExistenceCheckerThread>(QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK),
-                                                                     QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK_ACK),
-                                                                     breakpadComPipePath);
-    QObject::connect( breakpadAliveThread.get(), SIGNAL(otherProcessUnreachable()), appPTR, SLOT(onCrashReporterNoLongerResponding()) );
-    breakpadAliveThread->start();
-}
-
-void
-AppManagerPrivate::createBreakpadHandler(const QString& breakpadPipePath,
-                                         int breakpad_client_fd)
-{
-    QString dumpPath = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
-
-    Q_UNUSED(breakpad_client_fd);
-    try {
-#if defined(Q_OS_DARWIN)
-        Q_UNUSED(breakpad_client_fd);
-        breakpadHandler = std::make_shared<google_breakpad::ExceptionHandler>( dumpPath.toStdString(),
-                                                                                 google_breakpad::ExceptionHandler::FilterCallback(NULL),
-                                                                                 google_breakpad::ExceptionHandler::MinidumpCallback(NULL) /*dmpcb*/,
-                                                                                 (void*)NULL,
-                                                                                 true,
-                                                                                 breakpadPipePath.toStdString().c_str() );
-#elif defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
-        Q_UNUSED(breakpadPipePath);
-        breakpadHandler = std::make_shared<google_breakpad::ExceptionHandler>( google_breakpad::MinidumpDescriptor( dumpPath.toStdString() ),
-                                                                                 google_breakpad::ExceptionHandler::FilterCallback(NULL),
-                                                                                 google_breakpad::ExceptionHandler::MinidumpCallback(NULL) /*dmpCb*/,
-                                                                                 (void*)NULL,
-                                                                                 true,
-                                                                                 breakpad_client_fd);
-#elif defined(Q_OS_WIN32)
-        Q_UNUSED(breakpad_client_fd);
-        breakpadHandler = std::make_shared<google_breakpad::ExceptionHandler>( dumpPath.toStdWString(),
-                                                                                 google_breakpad::ExceptionHandler::FilterCallback(NULL), //filter callback
-                                                                                 google_breakpad::ExceptionHandler::MinidumpCallback(NULL) /*dmpcb*/,
-                                                                                 (void*)NULL, //context
-                                                                                 google_breakpad::ExceptionHandler::HANDLER_ALL,
-                                                                                 MiniDumpNormal,
-                                                                                 breakpadPipePath.toStdWString().c_str(),
-                                                                                 (google_breakpad::CustomClientInfo*)NULL);
-#endif
-    } catch (const std::exception& e) {
-        qDebug() << e.what();
-
-        return;
-    }
-}
-
-#endif // NATRON_USE_BREAKPAD
-
 
 void
 AppManagerPrivate::initProcessInputChannel(const QString & mainProcessServerName)

@@ -145,13 +145,6 @@ public:
      */
     bool areDialogsDisabled() const;
 
-#ifdef NATRON_USE_BREAKPAD
-    const QString& getBreakpadProcessExecutableFilePath() const;
-    qint64 getBreakpadProcessPID() const;
-    int getBreakpadClientFD() const;
-    const QString& getBreakpadPipeFilePath() const;
-    const QString& getBreakpadComPipeFilePath() const;
-#endif
     const QString& getExportDocsPath() const;
 
     /*
