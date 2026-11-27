@@ -19,7 +19,7 @@ OSMESA_LLVM_SHA256=82401fea7b79d0078043f7598b835284d6650a75b93e64b6f761ea7b63097
 OSMESA_LLVM_SITE="https://github.com/llvm/llvm-project/releases/download/llvmorg-${OSMESA_LLVM_VERSION}"
 # osmesa-install.sh, the script that builds LLVM and Mesa: a fixed commit, as the tarballs
 OSMESA_INSTALL_GIT=https://github.com/devernay/osmesa-install
-OSMESA_INSTALL_COMMIT=a450c887e062a8b670502ea92746ab955bff03ff
+OSMESA_INSTALL_COMMIT=b9817c24ff9f2eee3b55d95e4b6d7fc1a85eda20
 # Mesa's meson build needs Python 3 with mako and PyYAML (and packaging, installed by meson.sh).
 # sha256 of the PyPI wheels, checked by pip --require-hashes (MarkupSafe and PyYAML: the CPython 3.11
 # manylinux wheels).
