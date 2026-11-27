@@ -74,8 +74,9 @@ Rules
   sha256 doesn't match: report it instead (the pin or the master site is
   wrong).
 - **One name, one content.** Never replace a file on the mirror with a
-  different file of the same name: older SDK scripts, which pin the old
-  sha256, would no longer find a valid copy. If a package changes the file
+  different file of the same name: the 2.5.x SDK scripts would compile the
+  new file unchecked (see above), and scripts that pin the old sha256 would no
+  longer find a valid copy. If a package changes the file
   it downloads (e.g. from a release tarball to a GitHub archive of the same
   version), give the new file a different name in the package script.
 - **Delete only after approval.** The mirror also serves the SDK scripts of
@@ -144,7 +145,7 @@ change the mirror.
    with::
 
       { echo 'cd /home/frs/project/natron/Third_Party/Sources'
-        sed 's/^/-rm /' approved.txt; } | sftp -b - <user>@frs.sourceforge.net
+        sed 's/^/-rm /' /tmp/sdk-src/approved.txt; } | sftp -b - <user>@frs.sourceforge.net
 
 #. **Upload the missing files**, by name, without deleting anything::
 
@@ -154,4 +155,6 @@ change the mirror.
 
 #. **Check the uploaded files** with the loop of step 3, reading
    ``missing.txt`` instead of ``present.txt``. A new file can take a few
-   minutes to reach the SourceForge download mirrors.
+   minutes to reach the SourceForge download mirrors, and a failed download
+   also shows as ``BAD``: run the loop again a few minutes later before acting
+   on a ``BAD`` file.
