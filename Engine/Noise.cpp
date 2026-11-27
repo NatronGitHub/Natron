@@ -250,14 +250,3 @@ template void FBM<4, 1, false, double>(const double*, double*, int, double, doub
 template void FBM<4, 3, false, double>(const double*, double*, int, double, double);
 NATRON_NAMESPACE_EXIT
 
-#ifdef MAINTEST
-int main(int argc, char* argv[]) {
-    typedef double T;
-    T sum = 0;
-    for (int i = 0; i < 10000000; i++) {
-        T foo[3] = {.3, .3, .3};
-        // for(int k=0;k<3;k++) foo[k]=(double)rand()/double(RAND_MAX)*100.;
-        sum += SeExpr2::noiseHelper<3, T, false>(foo);
-    }
-}
-#endif

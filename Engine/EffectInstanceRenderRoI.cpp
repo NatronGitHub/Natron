@@ -2175,19 +2175,6 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
             tiledArgs->planes = planesToRender;
             tiledArgs->compsNeeded = compsNeeded;
 
-
-#ifdef NATRON_HOSTFRAMETHREADING_SEQUENTIAL
-            std::vector<EffectInstance::RenderingFunctorRetEnum> ret( tiledData.size() );
-            int i = 0;
-            for (std::list<RectToRender>::const_iterator it = planesToRender->rectsToRender.begin(); it != planesToRender->rectsToRender.end(); ++it, ++i) {
-                ret[i] = self->_imp->tiledRenderingFunctor(tiledArgs,
-                                               *it,
-                                               currentThread);
-            }
-            std::vector<EffectInstance::RenderingFunctorRetEnum>::const_iterator it2;
-
-#else
-
             std::function<RenderingFunctorRetEnum(const RectToRender&)> render = [&](const RectToRender& rect) {
                 return self->_imp->tiledRenderingFunctor(*tiledArgs, rect, currentThread);
             };
@@ -2196,7 +2183,6 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
             ret.waitForFinished();
             QFuture<EffectInstance::RenderingFunctorRetEnum>::const_iterator it2;
 
-#endif
             for (it2 = ret.begin(); it2 != ret.end(); ++it2) {
                 if ( (*it2) == EffectInstance::eRenderingFunctorRetFailed ) {
                     renderStatus = eRenderingFunctorRetFailed;
