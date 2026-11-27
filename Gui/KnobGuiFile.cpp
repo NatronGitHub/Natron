@@ -172,9 +172,15 @@ KnobGuiFile::onReloadClicked()
 {
     if (_reloadButton) {
         KnobFilePtr knob = _knob.lock();
-        if (knob) {
-            knob->reloadFile();
+        if (!knob) {
+            return;
         }
+        // the button takes no focus: a path typed in the line edit but not committed yet (no Return, the
+        // line edit still has the focus) is committed first, then the file it names is reloaded (#1722).
+        // A new file type may rebuild the settings panel and release this KnobGui: keep it alive.
+        KnobGuiPtr self = shared_from_this();
+        onTextEdited();
+        knob->reloadFile();
     }
 }
 
@@ -580,9 +586,16 @@ KnobGuiOutputFile::onRewriteClicked()
 {
     if (_rewriteButton) {
         KnobOutputFilePtr knob = _knob.lock();
-        if (knob) {
-            knob->rewriteFile();
+        if (!knob) {
+            return;
         }
+        // as in KnobGuiFile::onReloadClicked(): commit a path typed but not committed yet (#1722).
+        // onTextEdited() pushes an undo command even if the path is the same: only call it if it changed.
+        if ( _lineEdit && (_lineEdit->text().toStdString() != knob->getValue()) ) {
+            KnobGuiPtr self = shared_from_this(); // see onReloadClicked()
+            onTextEdited();
+        }
+        knob->rewriteFile();
     }
 }
 
