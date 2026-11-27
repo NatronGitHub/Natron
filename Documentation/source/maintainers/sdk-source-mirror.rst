@@ -21,16 +21,25 @@ How the SDK uses the mirror
 ``THIRD_PARTY_SRC_URL`` in ``tools/jenkins/common.sh`` points to the mirror:
 https://sourceforge.net/projects/natron/files/Third_Party/Sources.
 
-Each package script calls ``download``, ``download_urls`` or
-``download_github`` with the file name, the project's own download URL (the
-*master site*) and the file's sha256, pinned in the script. These functions try
-the master site first and the mirror only if the master site fails. A file
-whose sha256 differs from the pinned one is deleted and counts as a failed
-download. The SDK build therefore never depends on the mirror while the master
-sites work, and a stale or wrong file on the mirror can't get into the SDK.
-At the end, ``build-Linux-sdk.sh`` lists the files that came from the mirror
-and the master URLs that failed: these URLs must be fixed in the package
-scripts.
+Each package script calls ``download`` or ``download_github`` with the file
+name, the project's own download URL (the *master site*) and the file's
+sha256, pinned in the script. These functions try the master site first and
+the mirror only if the master site fails. A file whose sha256 differs from the
+pinned one is deleted and counts as a failed download. The SDK build therefore
+doesn't depend on the mirror while the master sites work, and a wrong file on
+the mirror can't get into the SDK. At the end, ``build-Linux-sdk.sh`` lists
+the files that came from the mirror and the master URLs that failed: fix
+these URLs in the package scripts.
+
+A few downloads still have no pinned sha256 (an empty third argument, e.g. in
+packages that the SDK doesn't build by default): they accept any file. Add a
+pin before relying on the mirror for them.
+
+The SDK scripts of older releases (RB-2.5 and the tags up to 2.5.x) work the
+other way round: they take each file **from the mirror first**, without any
+sha256 check, and use the master site only when the mirror lacks the file.
+For those builds the mirror copy is exactly what gets compiled. This is why
+files on the mirror must never be replaced, and why deletions need care.
 
 Sources fetched with ``git clone`` (checked against a pinned commit) and the
 Python packages installed with ``pip`` don't go through the mirror.
@@ -49,8 +58,9 @@ Uploads need a SourceForge account with the *Release Technician* or *Admin*
 role in the ``natron`` project, and an SSH public key registered in that
 account's settings (`SSH Keys <https://sourceforge.net/p/forge/documentation/SSH%20Keys/>`_).
 The account name is the SSH user, e.g. ``<user>@frs.sourceforge.net``. Check
-the host key fingerprint of ``frs.sourceforge.net`` against the one SourceForge
-publishes before you accept it. Never put the key or a password in a script or
+the host key fingerprint of ``frs.sourceforge.net`` against
+`SSH Key Fingerprints <https://sourceforge.net/p/forge/documentation/SSH%20Key%20Fingerprints/>`_
+before you accept it. Never put the key or a password in a script or
 in the repository.
 
 Rules
@@ -85,15 +95,24 @@ Do this when a PR that changes a package version or adds a package is merged
 
    This downloads every source tarball of the SDK into ``/tmp/sdk-src/src``,
    builds nothing, and keeps only the files whose sha256 matches the pinned
-   one. If it stops with ``unable to download``, fix the URL or the pin first.
+   one. If it stops with ``unable to download``, fix the URL or the pin first;
+   if the project no longer distributes that file and the mirror lacks it,
+   tell the maintainer.
 
-#. **List the mirror**::
+   To cover an open SDK PR or the other maintained branch, run the same
+   command from its checkout into the same directory. A
+   ``*** removing ... (wrong checksum)`` line then means that two branches pin
+   different files under the same name: rename the file in one of them before
+   uploading anything.
+
+#. **List the mirror and find the missing files**::
 
       echo 'ls -1 /home/frs/project/natron/Third_Party/Sources' |
-          sftp -b - <user>@frs.sourceforge.net > mirror.txt
+          sftp -q -b - <user>@frs.sourceforge.net |
+          grep -v '^sftp>' | sed 's|.*/||' | sort > mirror.txt
+      ls /tmp/sdk-src/src | sort | comm -23 - mirror.txt > missing.txt
 
-   The files to upload are those in ``/tmp/sdk-src/src`` that are not in
-   ``mirror.txt``.
+   ``missing.txt`` lists the files to upload.
 
 #. **Upload the new files**, by name, without deleting anything::
 
@@ -101,12 +120,26 @@ Do this when a PR that changes a package version or adds a package is merged
       rsync -av --ignore-existing <file>... \
           <user>@frs.sourceforge.net:/home/frs/project/natron/Third_Party/Sources/
 
-#. **Check the uploaded files.** Download each one from the public URL and
-   check it against the pinned sha256 (``sha256sum -c`` with the values from
-   the package scripts). A new file can take a few minutes to reach the
-   SourceForge download mirrors.
+#. **Check the mirror copies.** Download each uploaded file from the public
+   URL and compare it with the local copy, which already matched its pin::
+
+      cd /tmp/sdk-src/src
+      for f in $(cat missing.txt); do
+          curl -fsSL "https://downloads.sourceforge.net/project/natron/Third_Party/Sources/$f" |
+              sha256sum | sed "s|-|$f|" | sha256sum -c --quiet - || echo "BAD $f"
+      done
+
+   A new file can take a few minutes to reach the SourceForge download
+   mirrors. Check the files that were already on the mirror the same way
+   from time to time (``comm -12`` instead of ``comm -23`` above lists them):
+   the SDK only reads them when a master site fails, so a bad copy would go
+   unnoticed until then.
 
 #. **Propose the clean-up.** List the files on the mirror that no maintained
    branch (RB-2.6, RB-2.7), no open SDK PR and no released tag downloads, with
-   their sizes, and ask the maintainer to approve the list. Delete the approved
-   files with ``rm`` in an ``sftp`` session.
+   their sizes; when in doubt, keep any file whose name or version appears
+   under ``tools/jenkins`` in a release tag (``git grep <name> <tag>``). Ask the
+   maintainer to approve the list, then delete exactly the approved files::
+
+      { echo 'cd /home/frs/project/natron/Third_Party/Sources'
+        sed 's/^/-rm /' approved.txt; } | sftp -b - <user>@frs.sourceforge.net
