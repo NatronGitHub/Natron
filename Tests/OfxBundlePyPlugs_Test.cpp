@@ -181,6 +181,28 @@ private:
     const bool _old;
 };
 
+// Resets the project when it goes out of scope, also when an ASSERT_* returns early, so that the next tests get an
+// empty project
+class ScopedProjectReset
+{
+public:
+    explicit ScopedProjectReset(const ProjectPtr& project)
+        : _project(project)
+    {
+    }
+
+    ~ScopedProjectReset()
+    {
+        _project->resetProject();
+    }
+
+    ScopedProjectReset(const ScopedProjectReset&) = delete;
+    ScopedProjectReset& operator=(const ScopedProjectReset&) = delete;
+
+private:
+    const ProjectPtr _project;
+};
+
 // Sets NATRON_PLUGIN_PATH for its lifetime
 class ScopedNatronPluginPath
 {
@@ -382,7 +404,9 @@ TEST(OfxBundlePyPlugs, ProjectFindsMovedPyPlugInBundle)
     AppInstancePtr app = appPTR->getTopLevelInstance();
     ASSERT_TRUE( bool(app) );
     ProjectPtr project = app->getProject();
+    ASSERT_TRUE( bool(project) );
     for (int loadFromPy = 0; loadFromPy < 2; ++loadFromPy) {
+        const ScopedProjectReset reset(project);
         const ScopedLoadFromPyFile pref( loadFromPy != 0 );
         ASSERT_TRUE( pref.isValid() );
         const QString name = QString::fromUtf8("MovedBundlePyPlug%1.ntp").arg(loadFromPy);
@@ -422,7 +446,6 @@ TEST(OfxBundlePyPlugs, ProjectFindsMovedPyPlugInBundle)
             // loaded from the project, which is unchanged
             EXPECT_EQ(contents, reloaded) << output;
         }
-        project->resetProject();
     }
 #endif // ifndef NATRON_TESTS_OFX_PLUGIN_DIR
 }
