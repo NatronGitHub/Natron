@@ -748,18 +748,20 @@ Project::loadProjectInternal(const QString & path,
 
     try {
         if (fileFormat == eProjectFileFormatText) {
-            FStreamsSupport::ifstream ifile;
-            FStreamsSupport::open( &ifile, filePath.toStdString() );
-            if (!ifile) {
-                throw std::runtime_error( tr("Failed to open %1").arg(filePath).toStdString() );
-            }
             // Parse a copy in memory: the look-ahead below needs tellg()/seekg(), which don't work on a
             // text-mode file stream with libc++ on Windows (MSYS2 CLANGARM64, #1494): its filebuf seeks
             // the C stream back by the number of buffered characters, which is wrong when the CRT has
             // translated CRLF line endings. The file is still read in text mode, so line endings are
             // translated as before.
             std::stringstream text;
-            text << ifile.rdbuf();
+            {
+                FStreamsSupport::ifstream ifile;
+                FStreamsSupport::open( &ifile, filePath.toStdString() );
+                if (!ifile) {
+                    throw std::runtime_error( tr("Failed to open %1").arg(filePath).toStdString() );
+                }
+                text << ifile.rdbuf();
+            } // the file is closed here, before the project is loaded
             boost::archive::xml_iarchive iArchive(text);
             loadFromArchive(iArchive, [&text]() {
                 // the next element, after white space, which the archive skips too (reading it from an archive
