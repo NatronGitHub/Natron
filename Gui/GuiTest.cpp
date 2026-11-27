@@ -916,7 +916,10 @@ py_getDisplayedPixel(PyObject* /*self*/,
     const int px = (int)(pos.x() * ratio);
     const int py = (int)(pos.y() * ratio);
     if ( !img.valid(px, py) ) {
-        PyErr_Format(PyExc_ValueError, "(%g, %g) is not visible in the viewer", x, y);
+        // PyErr_Format() has no floating-point conversions: format the message first
+        char msg[128];
+        std::snprintf(msg, sizeof(msg), "(%g, %g) is not visible in the viewer", x, y);
+        PyErr_SetString(PyExc_ValueError, msg);
 
         return 0;
     }
