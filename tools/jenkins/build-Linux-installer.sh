@@ -529,13 +529,12 @@ NATRON_PYTHON="${TMP_PORTABLE_DIR}/bin/natron-python"
 # Install pip
 if [ -x "${NATRON_PYTHON}" ]; then
     pushd "$PYDIR/../.."
-    $CURL --remote-name --insecure https://bootstrap.pypa.io/get-pip.py
-    "${NATRON_PYTHON}" get-pip.py
+    # pip and the Python packages that Natron ships, at the versions of common.sh (GET_PIP_COMMIT)
+    fetch_get_pip
+    "${NATRON_PYTHON}" get-pip.py "$GET_PIP_PIP" "${GET_PIP_SETUPTOOLS[@]}"
     rm get-pip.py
-    # Install qtpy
-    "${NATRON_PYTHON}" -m pip install qtpy
-    # Useful Python packages
-    "${NATRON_PYTHON}" -m pip install six psutil
+    # qtpy, and other useful Python packages
+    "${NATRON_PYTHON}" -m pip install "${BUNDLED_PYTHON_PACKAGES[@]}" "$BUNDLED_PYTHON_PSUTIL"
     # Run extra user provided pip install scripts
     if [ -f "${EXTRA_PYTHON_MODULES_SCRIPT:-}" ]; then
         "${NATRON_PYTHON}" "$EXTRA_PYTHON_MODULES_SCRIPT" || true

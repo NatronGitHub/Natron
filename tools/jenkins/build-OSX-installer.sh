@@ -1025,26 +1025,14 @@ if [ -x "${NATRON_PYTHON}" ]; then
     #"${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${package}/Contents/Frameworks/Python.framework" "${DYNLOAD}/"*.so
     echo "*** Installing pip"
     pushd "${PYDIR}/../.."
-    ${CURL} --remote-name --insecure "https://bootstrap.pypa.io/get-pip.py"
+    # pip and the Python packages that Natron ships, at the versions of common.sh (GET_PIP_COMMIT)
+    fetch_get_pip
     PYTHON_PATH="$SDK_HOME/lib/python${PYVER}"
     #"${CODESIGN}" "${CODE_SIGN_OPTS[@]}" get-pip.py
-    "${PY_EXE}" get-pip.py --target "${PYDIR}/site-packages"
+    "${PY_EXE}" get-pip.py "$GET_PIP_PIP" "${GET_PIP_SETUPTOOLS[@]}" --target "${PYDIR}/site-packages"
     rm get-pip.py
-    # Install qtpy
-    "${PY_EXE}" -m pip install qtpy --upgrade --target "${PYDIR}/site-packages"
-
-    # Useful Python packages
-    "${PY_EXE}" -m pip install six --upgrade --target "${PYDIR}/site-packages"
-    # No psutil wheel is available on 10.6, and I don't know how to build a universal wheel
-    case "${macosx}" in
-    9|10|11|12)
-        # 10.5-10.8
-        true
-        ;;
-    *)
-        "${PY_EXE}" -m pip install psutil --upgrade --target "${PYDIR}/site-packages"
-        ;;
-    esac
+    # qtpy, and other useful Python packages
+    "${PY_EXE}" -m pip install "${BUNDLED_PYTHON_PACKAGES[@]}" "$BUNDLED_PYTHON_PSUTIL" --upgrade --target "${PYDIR}/site-packages"
     # Run extra user provided pip install scripts
     if [ -f "${EXTRA_PYTHON_MODULES_SCRIPT:-}" ]; then
         "${PY_EXE}" "$EXTRA_PYTHON_MODULES_SCRIPT" || true
