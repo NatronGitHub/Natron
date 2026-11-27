@@ -34,7 +34,8 @@ other difference fails, unless the allowlist has it: each entry names the
 issue that tracks the loss (see ntp_python_roundtrip_allowlist.txt).
 
 A project that doesn't load, or loads with errors (a missing plug-in, for
-example), is skipped, with the reason.
+example), is skipped, with the reason. A Python project that doesn't load is
+the difference "/(PythonProjectLoad)".
 
 Without a project (or with --builtin): the built-in corpus, which needs no
 OpenFX plug-in: the project that run_project_python_test.py builds (as text
@@ -80,6 +81,8 @@ DATA_DIR = os.path.join(os.path.dirname(natronrunner.HERE), "data")
 DEFAULT_ALLOWLIST = os.path.join(natronrunner.HERE, "ntp_python_roundtrip_allowlist.txt")
 # The first or second line of a Python project (NATRON_PROJECT_PYTHON_MAGIC)
 PYTHON_MAGIC = b"# Natron Project"
+# The difference of a project whose Python project doesn't load (step 3)
+LOAD_FAILURE_PATH = "/(PythonProjectLoad)"
 # The exit status of SAVE when the project loaded with errors
 LOAD_ERRORS = 3
 
@@ -402,6 +405,7 @@ def check_project(project, label, next_to_project, renderer, env, script, work_d
     else:
         python_file = os.path.join(work_dir, "P.py")
     try:
+        differences = None
         for source, output, fmt in ((project, file_a, "text"), (project, python_file, "python"),
                                     (python_file, file_b, "text")):
             status, log = _run(renderer, env, script, source, output, fmt)
@@ -410,11 +414,15 @@ def check_project(project, label, next_to_project, renderer, env, script, work_d
                 if status == "load errors" and source == project:
                     lines.append("SKIP: %s loads with errors" % label)
                     return "skip", lines
-                lines.append("FAIL: %s: loading %s and saving it as %s: %s"
-                             % (label, os.path.basename(source), fmt, status))
-                return "fail", lines
+                if source != python_file:
+                    lines.append("FAIL: %s: loading %s and saving it as %s: %s"
+                                 % (label, os.path.basename(source), fmt, status))
+                    return "fail", lines
+                # the Python project doesn't load: a loss, which the allowlist may have
+                differences = [(LOAD_FAILURE_PATH, "the Python project didn't load: %s" % status)]
         try:
-            differences = compare(ET.parse(file_a).getroot(), ET.parse(file_b).getroot())
+            if differences is None:
+                differences = compare(ET.parse(file_a).getroot(), ET.parse(file_b).getroot())
         except ET.ParseError as e:
             lines.append("FAIL: %s: %s" % (label, e))
             return "fail", lines
@@ -430,7 +438,8 @@ def check_project(project, label, next_to_project, renderer, env, script, work_d
             keep_dir = os.path.join(keep, re.sub(r"[^\w.-]", "_", label))
             os.makedirs(keep_dir, exist_ok=True)
             for f in (file_a, file_b, python_file):
-                shutil.copy(f, keep_dir)
+                if os.path.exists(f):
+                    shutil.copy(f, keep_dir)
         lines.append("%s: %s" % ("FAIL" if failed else "PASS", label))
         return ("fail" if failed else "pass"), lines
     finally:
