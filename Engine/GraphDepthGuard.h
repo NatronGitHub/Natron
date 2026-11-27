@@ -43,13 +43,14 @@ enum GraphTraversalEnum
     eGraphTraversalRender = 0, // EffectInstance::renderRoI
     eGraphTraversalRegionOfDefinition, // EffectInstance::getRegionOfDefinition_public
     eGraphTraversalRequest, // EffectInstance::getInputsRoIsFunctor (computeRequestPass)
+    eGraphTraversalFrameRange, // EffectInstance::getFrameRange_public
     eGraphTraversalCount
 };
 
 /**
  * @brief Stops a recursive traversal of the node graph before it overflows the stack (#1440).
  *
- * The render, the region of definition and the request pass walk upstream recursively, once per
+ * The render, the region of definition, the request pass and the frame range walk upstream recursively, once per
  * node, using a few KB of stack per node, so a chain of a few thousand nodes overflowed the stack of
  * the thread and crashed, even with the 8 MB render-thread stacks of #1439.
  *

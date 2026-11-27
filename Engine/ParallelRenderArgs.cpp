@@ -737,7 +737,6 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
                                                    bool draftMode,
                                                    const RenderStatsPtr& stats,
                                                    const FrameOrderRenderPtr& frameOrderRender)
-    :  argsMap()
 {
     assert(treeRoot);
 
@@ -860,26 +859,6 @@ ParallelRenderArgsSetter::updateNodesRequest(const FrameRequestMap& request)
     }
 }
 
-ParallelRenderArgsSetter::ParallelRenderArgsSetter(const std::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr> >& args)
-    : argsMap(args)
-{
-    // Ensure this thread gets an OpenGL context for the render of the frame
-    OSGLContextPtr glContext;
-
-    try {
-        glContext = appPTR->getGPUContextPool()->attachGLContextToRender();
-        _openGLContext = glContext;
-    } catch (...) {
-    }
-
-    if (args) {
-        for (std::map<NodePtr, ParallelRenderArgsPtr>::iterator it = argsMap->begin(); it != argsMap->end(); ++it) {
-            it->second->openGLContext = glContext;
-            it->first->getEffectInstance()->setParallelRenderArgsTLS(it->second);
-        }
-    }
-}
-
 ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
 {
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -902,12 +881,6 @@ ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
            if (isGrp) {
              isGrp->invalidateParallelRenderArgs();
            }*/
-    }
-
-    if (argsMap) {
-        for (std::map<NodePtr, ParallelRenderArgsPtr>::iterator it = argsMap->begin(); it != argsMap->end(); ++it) {
-            it->first->getEffectInstance()->invalidateParallelRenderArgsTLS();
-        }
     }
 
     OSGLContextPtr glContext = _openGLContext.lock();

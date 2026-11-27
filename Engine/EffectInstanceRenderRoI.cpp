@@ -356,6 +356,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     OSGLContextPtr glContext;
     AbortableRenderInfoPtr abortInfo;
     ParallelRenderArgsPtr  frameArgs;
+    // the render args set below if there are none, removed when this returns (#1846)
+    std::unique_ptr<Implementation::ScopedFrameArgs> ownFrameArgs;
     if ( tls->frameArgs.empty() ) {
         qDebug() << QThread::currentThread() << "[BUG]:" << getScriptName_mt_safe().c_str() <<  "Thread-storage for the render of the frame was not set.";
 
@@ -370,7 +372,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         frameArgs->view = args.view;
         frameArgs->isSequentialRender = false;
         frameArgs->isRenderResponseToUserInteraction = true;
-        tls->frameArgs.push_back(frameArgs);
+        ownFrameArgs = std::make_unique<Implementation::ScopedFrameArgs>(tls, frameArgs);
     } else {
         //The hash must not have changed if we did a pre-pass.
         frameArgs = tls->frameArgs.back();

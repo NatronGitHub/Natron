@@ -303,7 +303,6 @@ typedef std::map<NodePtr, NodeFrameRequestPtr> FrameRequestMap;
 
 class ParallelRenderArgsSetter
 {
-    std::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr> > argsMap;
     NodesList nodes;
 
 protected:
@@ -332,8 +331,6 @@ public:
                              bool draftMode,
                              const RenderStatsPtr& stats,
                              const FrameOrderRenderPtr& frameOrderRender = FrameOrderRenderPtr());
-
-    ParallelRenderArgsSetter(const std::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr> >& args);
 
     void updateNodesRequest(const FrameRequestMap& request);
 

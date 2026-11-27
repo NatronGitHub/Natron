@@ -150,6 +150,7 @@ SOURCES += \
     ReadNodeOverlay_Test.cpp \
     ReadWriteDecoderChoice_Test.cpp \
     ReadWriteVersion_Test.cpp \
+    RenderSetup_Test.cpp \
     RenderThreadSafety_Test.cpp \
     RenderThreads_Test.cpp \
     RotoPaint_Test.cpp \

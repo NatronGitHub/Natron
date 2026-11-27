@@ -172,8 +172,9 @@ makes the whole UI feel stuck.
 Deep graphs and the stack
 -------------------------
 
-``renderRoI``, ``getRegionOfDefinition_public`` and the request pass
-(``getInputsRoIsFunctor``) recurse upstream, once per node, using a few KB of
+``renderRoI``, ``getRegionOfDefinition_public``, the request pass
+(``getInputsRoIsFunctor``) and ``getFrameRange_public`` (#1846) recurse
+upstream, once per node, using a few KB of
 stack per node. The threads that render have stacks of
 ``getRenderThreadStackSize()`` bytes (``ThreadPool.h``), enough for chains of a
 few thousand nodes. A ``GraphDepthGuard`` (``GraphDepthGuard.h``) at the start
