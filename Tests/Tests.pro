@@ -145,6 +145,7 @@ SOURCES += \
     PythonExpressionScope_Test.cpp \
     ReadNodeInputs_Test.cpp \
     ReadNodeOverlay_Test.cpp \
+    ReadWriteDecoderChoice_Test.cpp \
     ReadWriteVersion_Test.cpp \
     RenderThreadSafety_Test.cpp \
     RenderThreads_Test.cpp \
