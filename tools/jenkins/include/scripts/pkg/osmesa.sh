@@ -40,7 +40,7 @@ if build_step && { force_build || { [ "${REBUILD_OSMESA:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME/osmesa" || true
     rm -rf "$SDK_HOME/llvm" || true
 fi
-if build_step && { force_build || { [ ! -s "$SDK_HOME/osmesa/lib/pkgconfig/osmesa.pc" ] || [ "$(env PKG_CONFIG_PATH=$SDK_HOME/osmesa/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion osmesa)" != "$OSMESA_VERSION" ]; }; }; then
+if build_step && { force_build || { [ ! -s "$SDK_HOME/osmesa/lib/pkgconfig/osmesa.pc" ] || [ "$(env PKG_CONFIG_PATH=$SDK_HOME/osmesa/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion osmesa)" != "$OSMESA_VERSION" ] || [ "$("$SDK_HOME/llvm/bin/llvm-config" --version 2>/dev/null)" != "$OSMESA_LLVM_VERSION" ]; }; }; then
     start_build
     # (no files left from another Mesa version, e.g. Mesa 18's libGL and gl.pc)
     rm -rf "${SDK_HOME}/osmesa"
@@ -67,11 +67,17 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/osmesa/lib/pkgconfig/osmes
     if [ "$LLVM_BUILD" = 1 ]; then
        cp "$SRC_PATH/$OSMESA_LLVM_TAR" .
     fi
-    # meson and ninja are the SDK's (meson.sh, ninja.sh). Mesa would link libdrm if pkg-config found
-    # it, but the SDK's pkg-config only searches the SDK, which has no libdrm.
-    env BUILD_OSDEMO=0 CFLAGS="-fPIC ${GCC14_CFLAGS:-}" CXXFLAGS="-fPIC" OSMESA_DRIVER=3 OSMESA_PREFIX="${SDK_HOME}/osmesa" OSMESA_VERSION="$OSMESA_VERSION" LLVM_PREFIX="${SDK_HOME}/llvm" LLVM_VERSION="$OSMESA_LLVM_VERSION" MKJOBS="${MKJOBS}" LLVM_BUILD="$LLVM_BUILD" PYTHON="${SDK_HOME}/bin/python${PY3_VERSION_SHORT}" ../osmesa-install.sh
+    # meson and ninja are the SDK's (meson.sh, ninja.sh). -O3: osmesa-install's default, which CFLAGS
+    # would otherwise replace (for GLU; Mesa and LLVM use their release build types).
+    env BUILD_OSDEMO=0 CFLAGS="-O3 -fPIC ${GCC14_CFLAGS:-}" CXXFLAGS="-O3 -fPIC" OSMESA_DRIVER=3 OSMESA_PREFIX="${SDK_HOME}/osmesa" OSMESA_VERSION="$OSMESA_VERSION" LLVM_PREFIX="${SDK_HOME}/llvm" LLVM_VERSION="$OSMESA_LLVM_VERSION" MKJOBS="${MKJOBS}" LLVM_BUILD="$LLVM_BUILD" PYTHON="${SDK_HOME}/bin/python${PY3_VERSION_SHORT}" ../osmesa-install.sh
     popd
     popd
     rm -rf osmesa-install
+    # Mesa links libdrm and lm-sensors when it finds them (pkg-config, system library directories):
+    # the static library would then need system libraries that the bundle doesn't have.
+    if nm -u "$SDK_HOME/osmesa/lib/libMangledOSMesa32.a" | grep -qE ' U (drm|sensors_)'; then
+        echo "Error: $SDK_HOME/osmesa/lib/libMangledOSMesa32.a uses libdrm or lm-sensors"
+        exit 1
+    fi
     end_build
 fi
