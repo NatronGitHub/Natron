@@ -27,28 +27,115 @@ The **user site-packages directory is disabled** (Natron sets ``PYTHONNOUSERSITE
 installed with ``pip install --user`` for a system Python are not visible in Natron, because they
 could conflict with the bundled packages.
 
+Bundled packages
+----------------
+
+Besides the Python standard library and the PySide module, the Natron binaries bundle these
+third-party packages in the ``site-packages`` directory:
+
+- `pip <https://pip.pypa.io>`_, to install other packages (see below);
+- `qtpy <https://github.com/spyder-ide/qtpy>`_, see `Qt bindings`_;
+- `six <https://six.readthedocs.io>`_, Python 2 and 3 compatibility utilities;
+- `psutil <https://github.com/giampaolo/psutil>`_, on Linux and macOS only.
+
+The ``future`` package (python-future), which earlier versions bundled for scripts written for
+Python 2, is no longer bundled since Natron 2.6. A script that needs it can install it like any
+other package: ``natron-python -m pip install future``.
+
 natron-python
 -------------
 
-``natron-python`` (``natron-python.exe`` on Windows) is installed next to the Natron executable.
+``natron-python`` is installed next to the Natron executable:
+
+- Linux: ``<install>/bin/natron-python``, where ``<install>`` is the directory that contains the
+  ``Natron`` launch script;
+- macOS: ``Natron.app/Contents/MacOS/natron-python``;
+- Windows: ``<install>\bin\natron-python.exe``, for example
+  ``C:\Program Files\Natron\bin\natron-python.exe``.
+
 It is a plain Python interpreter that uses the same Python and the same paths as Natron, so you
 can use it to test whether a module can be imported, or to run pip::
 
     natron-python -c "import numpy; print(numpy.__version__)"
     natron-python -m pip install numpy
 
-``natron-python -m pip install`` installs into the ``site-packages`` directory of the Natron
-installation, so you need write access to it. On a shared or read-only installation, install the
-modules into another directory and add it to ``PYTHONPATH``, or to a plug-in search path::
-
-    natron-python -m pip install --target /studio/natron-python-modules numpy
-
-On macOS, installing into ``Natron.app`` modifies the signed application bundle, so prefer
-``--target`` there too (not tested).
-
 The Natron modules, ``NatronEngine`` and ``NatronGui``, are built into the Natron executables: they
 can't be imported in natron-python. To test code that uses them without the user interface,
 use the interpreter mode, ``NatronRenderer -t`` (see :ref:`debuggingPython`).
+
+Installing extra packages from the command line
+-----------------------------------------------
+
+Run pip with natron-python, giving its full path if its directory isn't on ``PATH``. Without
+other options, ``natron-python -m pip install`` installs into the ``site-packages`` directory of
+the Natron installation, so you need write access to it: on Windows, an installation in
+``C:\Program Files`` needs an administrator prompt. On a shared or read-only installation,
+install the packages into another directory with ``--target``, and add that directory to
+``PYTHONPATH``::
+
+    # Linux, Natron extracted to /opt/Natron
+    /opt/Natron/bin/natron-python -m pip install --target ~/natron-python-modules numpy
+    export PYTHONPATH=~/natron-python-modules
+
+    # macOS
+    /Applications/Natron.app/Contents/MacOS/natron-python -m pip install --target ~/natron-python-modules numpy
+    export PYTHONPATH=~/natron-python-modules
+
+    rem Windows (cmd.exe)
+    "C:\Program Files\Natron\bin\natron-python.exe" -m pip install --target %USERPROFILE%\natron-python-modules numpy
+    set PYTHONPATH=%USERPROFILE%\natron-python-modules
+
+On macOS, installing into ``Natron.app`` modifies the signed application bundle, so prefer
+``--target`` there.
+
+Don't use a plug-in search path as the ``--target`` directory: Natron adds every sub-directory
+of the plug-in search paths to ``sys.path``, so the sub-directories of the installed packages
+could hide other modules.
+
+Packages with compiled code must have a wheel (or be buildable) for Natron's Python version and
+platform; pure-Python packages work everywhere.
+
+Tested: the macOS recipe with a pure-Python package and the natron-python of a Qt 5 build; the
+Linux and Windows recipes are not tested.
+
+Installing extra packages from the Script Editor
+------------------------------------------------
+
+In Natron, ``sys.executable`` is the Natron executable itself (``Natron`` or ``NatronRenderer``),
+not a Python interpreter: ``sys.executable -m pip`` would start another Natron. Run the
+natron-python that is next to the Natron executable instead, then add the target directory to
+``sys.path`` and import the package::
+
+    import importlib
+    import os
+    import subprocess
+    import sys
+
+    from qtpy import QtCore
+
+    # In Natron, sys.executable is Natron itself, not a Python: use the natron-python next to it.
+    natron_dir = QtCore.QCoreApplication.applicationDirPath()
+    natron_python = os.path.join(natron_dir, "natron-python.exe" if sys.platform == "win32" else "natron-python")
+    target = os.path.join(os.path.expanduser("~"), "natron-python-modules")
+
+    result = subprocess.run([natron_python, "-m", "pip", "install", "--target", target, "tabulate"],
+                            capture_output=True, text=True)
+    print(result.stdout, result.stderr)
+    result.check_returncode()
+
+    if target not in sys.path:
+        sys.path.append(target)
+    importlib.invalidate_caches()
+    import tabulate
+    print(tabulate.tabulate([["a", 1], ["b", 2]]))
+
+Natron doesn't respond while pip runs. ``importlib.invalidate_caches()`` makes Python see the
+files that pip has just written. The ``sys.path`` change lasts until Natron quits: to use the
+packages in the next sessions, add the target directory to ``PYTHONPATH`` (see above), or append
+it to ``sys.path`` in ``init.py`` (see :ref:`startupScripts`).
+
+Tested: with ``NatronRenderer -t`` and a pure-Python package, on a macOS Qt 5 build; not tested in
+the Script Editor of the Natron user interface, nor on Linux or Windows.
 
 Qt bindings
 -----------
