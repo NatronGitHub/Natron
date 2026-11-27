@@ -132,8 +132,8 @@ def build_writers(app, out_dir, width, height):
         return writers
     # every expression reads this one (odditica's "clock" NoOp node in #248)
     clock.createDoubleParam("t", "t").setExpression("(frame % 48) / 48.", False, 0)
-    checker = run_gain(app, "RunGain", reformat(app, "CheckerReformat",
-                                                make(app, "net.sf.openfx.CheckerBoardPlugin", "Checker"), width, height))
+    checker = make(app, "net.sf.openfx.CheckerBoardPlugin", "Checker")
+    checker = run_gain(app, "RunGain", reformat(app, "CheckerReformat", checker, width, height))
     noise = make(app, "net.sf.openfx.Noise", "Noise", seed=("expr", "frame"))
     if noise is not None:
         noise = reformat(app, "NoiseReformat", noise, width, height)
@@ -154,10 +154,10 @@ def build_writers(app, out_dir, width, height):
                 if param is not None:
                     try:
                         param.set("loop")
-                    except Exception:  # pylint: disable=broad-except
-                        param.set(1)  # Natron without choice options by name: "Loop" is the second option
-            merge = make(app, "net.sf.openfx.MergePlugin", "MergeRead",
-                         [merge, run_gain(app, "RunGainRead", reformat(app, "ReadReformat", read, width, height))]) or merge
+                    except (TypeError, ValueError):
+                        param.set(1)  # a Natron without choice options by name: "Loop" is the second option
+            read = run_gain(app, "RunGainRead", reformat(app, "ReadReformat", read, width, height))
+            merge = make(app, "net.sf.openfx.MergePlugin", "MergeRead", [merge, read]) or merge
     blur = make(app, "net.sf.cimg.CImgBlur", "Blur", [merge], size=(3., 3.)) or merge
     cached = make(app, "fr.inria.built-in.DiskCache", "DiskCache", [blur]) or blur
     color = make(app, "net.sf.openfx.ColorCorrectPlugin", "ColorCorrect", [merge],
@@ -174,11 +174,13 @@ def build_sequential(app, out_dir, width, height):
     writers = []
     if "net.sf.openfx.CheckerBoardPlugin" not in IDS:
         return writers
-    checker = run_gain(app, "RunGain", reformat(app, "CheckerReformat",
-                                                make(app, "net.sf.openfx.CheckerBoardPlugin", "Checker"), width, height))
+    checker = make(app, "net.sf.openfx.CheckerBoardPlugin", "Checker")
+    checker = run_gain(app, "RunGain", reformat(app, "CheckerReformat", checker, width, height))
     sequential = make(app, "net.natron.test.Sequential", "Sequential", [checker])
     if sequential is not None:
-        grade = make(app, "net.sf.openfx.GradePlugin", "Grade", [sequential], multiply=("expr", "1. + (frame % 7) / 7."))
+        # never 1: an identity Grade is not rendered, so it would have no cache miss (the probe of the test)
+        grade = make(app, "net.sf.openfx.GradePlugin", "Grade", [sequential],
+                     multiply=("expr", "1.1 + (frame % 7) / 7."))
         make_write(app, out_dir, "WriteSequential", grade or sequential, "seq_####.png", writers)
     if "fr.inria.openfx.WriteFFmpeg" in IDS:
         transform = make(app, "net.sf.openfx.TransformPlugin", "Transform", [checker],

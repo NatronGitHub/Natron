@@ -13,7 +13,9 @@ name: Render soak
 #   the natron_testing pre-release (RB-2.6, replaced by the weekly linux_packages.yml runs), on Windows the portable
 #   tree of the last successful build_installer.yml run on RB-2.6; package_run_id picks a run of linux_packages.yml
 #   (Linux) or build_installer.yml (Windows) instead. To soak an older commit with a package, dispatch those
-#   workflows on a branch at that commit, then pass their run ids.
+#   workflows on a branch at that commit, then pass their run ids. The packages' binaries are stripped: a stall found
+#   on a package has backtraces without symbols; reproduce it with natron_build=source for usable ones. They have no
+#   test plug-ins either: the sequential graph is then WriteFFmpeg alone (no net.natron.test.Sequential).
 # - source: builds natron_ref (default: the ref of this run) from source, RelWithDebInfo, with the openfx-io and
 #   openfx-misc natron_testing plug-ins (BayMax needs no others) and the test plug-ins.
 # The soak scripts always come from the ref the workflow runs on.
@@ -62,7 +64,6 @@ env:
   SOAK_DURATION: ${{ inputs.duration || '150' }}
   SOAK_STALL_TIMEOUT: ${{ inputs.stall_timeout || '180' }}
   SOAK_CONFIGS: ${{ inputs.configs }}
-  GH_TOKEN: ${{ github.token }}
 
 jobs:
   linux:
@@ -112,6 +113,8 @@ jobs:
 
       - name: Get Natron (package)
         if: env.NATRON_BUILD == 'package'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           mkdir dist
           if [ -n "$PACKAGE_RUN_ID" ]; then
@@ -251,17 +254,21 @@ jobs:
       - name: Get Natron (package)
         if: env.NATRON_BUILD == 'package'
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           run_id="$PACKAGE_RUN_ID"
           if [ -z "$run_id" ]; then
+            # the last run that succeeded as a whole (its Natron-Tests job too): its artifacts may have expired
+            # (14 days for the weekly runs); then give package_run_id
             run_id=$(gh run list -R "$GITHUB_REPOSITORY" -w build_installer.yml -b RB-2.6 -s success -L 1 --json databaseId --jq '.[0].databaseId')
           fi
-          [ -n "$run_id" ] || { echo "::error::no successful build_installer.yml run on RB-2.6"; exit 1; }
+          [ -n "$run_id" ] || { echo "::error::no successful build_installer.yml run on RB-2.6: give package_run_id"; exit 1; }
           echo "build_installer.yml run $run_id"
           # the unzipped portable tree (not the -prerelease zip or the -tests artifacts)
           gh run download "$run_id" -R "$GITHUB_REPOSITORY" -p 'Natron-*-Windows-x86_64' -D dist
           exe=$(find "$PWD/dist" -name NatronRenderer.exe -path '*/bin/*' | head -1)
-          [ -n "$exe" ] || { echo "::error::no bin/NatronRenderer.exe in the artifact"; exit 1; }
+          [ -n "$exe" ] || { echo "::error::no bin/NatronRenderer.exe in the artifacts of run $run_id (expired? give package_run_id)"; exit 1; }
           bin=$(dirname "$exe")
           {
             echo "RENDERER=$(cygpath -m "$exe")"
@@ -308,15 +315,18 @@ jobs:
           [ -n "$SOAK_CONFIGS" ] && args+=(--configs "$SOAK_CONFIGS")
           [ -n "$IDIFF" ] && args+=(--idiff "$IDIFF")
           [ -n "$PYPLUGS" ] && args+=(--pyplug-path "$PYPLUGS")
+          python=${MINGW_PREFIX}/bin/python
+          export SOAK_GDB=$(cygpath -w "${MINGW_PREFIX}/bin/gdb.exe")
           if [ -n "$BUNDLE_BIN" ]; then
-            # the package: its own Python and DLLs (as installed), not MSYS2's
-            export PATH="$BUNDLE_BIN:$PATH"
+            # the package: only its own DLLs and Python (as installed) and Windows on PATH, not MSYS2's, so that a
+            # DLL missing from the package is not found in /ucrt64/bin
+            export PATH="$BUNDLE_BIN:$(cygpath -u -S):$(cygpath -u -W):/usr/bin"
           else
             # see ci.yml for PYTHONLEGACYWINDOWSDLLLOADING (#1147)
             export PYTHONLEGACYWINDOWSDLLLOADING=1 PYTHONHOME=${MINGW_PREFIX}
           fi
           OFX_PLUGIN_PATH="$OFX_DIRS" OCIO=$(cygpath -w "$PWD/OpenColorIO-Configs/blender/config.ocio") \
-            python soak/Tests/gui/run_render_soak_test.py "$RENDERER" "${args[@]}"
+            "$python" soak/Tests/gui/run_render_soak_test.py "$RENDERER" "${args[@]}"
 
       - name: Upload the soak logs
         if: always()

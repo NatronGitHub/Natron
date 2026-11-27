@@ -32,7 +32,7 @@ url="https://downloads.sourceforge.net/project/natron/Examples/$zip"
 mirrors="phoenixnap.dl.sourceforge.net cfhcable.dl.sourceforge.net master.dl.sourceforge.net netix.dl.sourceforge.net"
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
-location=$(curl -sI --max-time 60 "$url" | awk 'tolower($1)=="location:"{print $2}' | tr -d '\r' | tail -1)
+location=$( (curl -sI --max-time 60 "$url" || true) | awk 'tolower($1)=="location:"{print $2}' | tr -d '\r' | tail -1)
 [ -n "$location" ] || location="$url"
 ok=0
 for host in __auto__ $mirrors; do
