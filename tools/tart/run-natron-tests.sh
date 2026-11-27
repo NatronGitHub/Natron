@@ -3,7 +3,7 @@
 # script runs on, and collect the results as in the Natron release assets. The machine should be a
 # bare macOS: no MacPorts, Homebrew or Natron SDK on the PATH or in /opt/local, so that a missing
 # or too-new bundled library shows up. Used inside the test VM by natron-test.sh, and on GitHub's
-# runners by .github/workflows/macos_x86_64.yml.
+# runners by .github/workflows/macos_dmg_tests.yml.
 #
 #   run-natron-tests.sh NATRON.app|NATRON.dmg NATRON_TESTS_DIR OUTDIR NAME
 #

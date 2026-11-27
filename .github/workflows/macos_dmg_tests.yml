@@ -83,8 +83,15 @@ jobs:
           for z in Natron_2.3.12_Spaceship.zip Natron_2.3.12_BayMax.zip; do
             curl -fsSL --retry 5 -o "Natron-Tests/$z" "https://downloads.sourceforge.net/project/natron/Examples/$z" || rm -f "Natron-Tests/$z"
           done
-          # a bare macOS, as far as possible: no Homebrew (/usr/local, /opt/homebrew), no SDK, no MacPorts
+          # a bare macOS, as far as possible: no Homebrew (/usr/local; /opt/homebrew on arm64), no SDK,
+          # no MacPorts, and no Python.framework in /Library/Frameworks (which dyld searches by
+          # default, so it could hide a framework missing from Natron.app). /opt/homebrew is moved
+          # here, not in macos_x86_64_sdk.sh, which is part of the SDK key.
           .github/workflows/macos_x86_64_sdk.sh hide-homebrew
+          hidden=$HOME/hidden-from-tests; mkdir -p "$hidden"
+          for d in /opt/homebrew /Library/Frameworks/Python.framework; do
+            [ ! -e "$d" ] || sudo mv "$d" "$hidden/$(echo "${d#/}" | tr / _)"
+          done
           [ ! -e /opt/local ] || { echo "::error::/opt/local exists"; exit 1; }
           tools/tart/run-natron-tests.sh "$DMG" Natron-Tests "$RUNNER_TEMP/results" "$DMG_NAME"
 
