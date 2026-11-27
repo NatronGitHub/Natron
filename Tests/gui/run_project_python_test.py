@@ -26,8 +26,8 @@ Usage: run_project_python_test.py /path/to/NatronRenderer [--debugger]
    added format, a project path, an afterProjectLoad callback), a Dot, a
    Backdrop, a Group with an Input, an Output and a Dot, user parameters with
    keyframes (one linear, one with its own tangents) and an expression, a
-   parametric curve, connections, and a Read of a small image if
-   the openfx-io plug-ins are found (OFX_PLUGIN_PATH). (NatronRenderer keeps the
+   parametric curve, a large whole-number value, connections, and a Read of a
+   small image if the openfx-io plug-ins are found (OFX_PLUGIN_PATH). (NatronRenderer keeps the
    node positions, sizes and colours that the script sets.)
    It saves it with app.saveProjectAsPython() to first.py, and writes the
    state of the project (every node, parameter and project parameter) to
@@ -206,6 +206,11 @@ try:
     twice = grp.createDoubleParam("twice", "Twice")
     page.addParam(twice)
     twice.setExpression("thisNode.amount.get() * 2", False)
+    # a whole number outside the range of int, which the exporter must write
+    # as a float (Python reads an int, which Windows couldn't load, #2029)
+    big = grp.createDoubleParam("big", "Big")
+    page.addParam(big)
+    big.setValue(19565217391.0)
     grp.refreshUserParamsGUI()
     inp = a.createNode("fr.inria.built-in.Input", -1, grp)
     inp.setScriptName("In")
