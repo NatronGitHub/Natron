@@ -1822,10 +1822,9 @@ escapeString(const std::string& str)
 #define WRITE_STRING(str) ts << str << "\n"
 //#define NUM(n) QString::number(n)
 #define NUM_INT(n) QString::number(n, 10)
-#define NUM_COLOR(n) QString::number(n, 'g', 4)
-#define NUM_PIXEL(n) QString::number(n, 'f', 0)
 #define NUM_VALUE(n) doubleToPython(n)
 #define NUM_TIME(n) doubleToPython(n)
+#define NUM_COLOR(n) floatToPython( static_cast<float>(n) )
 
 /* *INDENT-ON* */
 
@@ -1843,6 +1842,21 @@ doubleToPython(double value)
     }
 
     return QString::number(value, 'g', std::numeric_limits<double>::max_digits10);
+}
+
+// The shortest text that Python reads as a value that becomes value again as a float: node colours are floats
+// (NodeGuiSerialization, Node::setColor() without a GUI), so 0.8f is "0.8", not "0.800000011920929" (#2008).
+static QString
+floatToPython(float value)
+{
+    for (int precision = std::numeric_limits<float>::digits10; precision < std::numeric_limits<float>::max_digits10; ++precision) {
+        const QString text = QString::number(value, 'g', precision);
+        if (static_cast<float>( text.toDouble() ) == value) {
+            return text;
+        }
+    }
+
+    return QString::number(value, 'g', std::numeric_limits<float>::max_digits10);
 }
 
 // The Python name of an interpolation, e.g. "NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeSmooth"
@@ -1989,7 +2003,7 @@ exportKnobValues(int indentLevel,
             double r, g, b;
             isParametric->getCurveColor(i, &r, &g, &b);
             WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setCurveColor(") + NUM_INT(i) + QString::fromUtf8(", ") +
-                                                    NUM_COLOR(r) + QString::fromUtf8(", ") + NUM_COLOR(g) + QString::fromUtf8(", ") + NUM_COLOR(b) + QString::fromUtf8(")") );
+                                                    NUM_VALUE(r) + QString::fromUtf8(", ") + NUM_VALUE(g) + QString::fromUtf8(", ") + NUM_VALUE(b) + QString::fromUtf8(")") );
             if (curve) {
                 KeyFrameSet keys = curve->getKeyFrames_mt_safe();
                 if ( !keys.empty() ) {
@@ -3108,8 +3122,8 @@ exportGroupInternal(int indentLevel,
         bool hasColor = groupNode->getColor(&r, &g, &b);
         if (hasColor) {
             // TODO: we could check if the color was actually changed from the default (NodeGui::getColorFromGrouping())
-            
-            // a precision of 3 digits is enough for the node color
+
+            // as the .ntp keeps it: a float (#2008)
             WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setColor(") + NUM_COLOR(r) + QString::fromUtf8(", ") + NUM_COLOR(g) + QString::fromUtf8(", ") + NUM_COLOR(b) +  QString::fromUtf8(")") );
         }
         exportAllNodeKnobs(indentLevel, groupNode, ts);
@@ -3165,7 +3179,7 @@ exportGroupInternal(int indentLevel,
             if ( (*it)->getColor(&r, &g, &b) ) {
                 double x, y;
                 (*it)->getPosition(&x, &y);
-                WRITE_INDENT(indentLevel + 1); WRITE_STRING( viewerName + QString::fromUtf8(".setPosition(") + NUM_PIXEL(x) + QString::fromUtf8(", ") + NUM_PIXEL(y) + QString::fromUtf8(")") );
+                WRITE_INDENT(indentLevel + 1); WRITE_STRING( viewerName + QString::fromUtf8(".setPosition(") + NUM_VALUE(x) + QString::fromUtf8(", ") + NUM_VALUE(y) + QString::fromUtf8(")") );
             }
             WRITE_STATIC_LINE("");
             continue;
@@ -3216,16 +3230,16 @@ exportGroupInternal(int indentLevel,
             (*it)->getPosition(&x, &y);
             double w, h;
             (*it)->getSize(&w, &h);
-            // a precision of 1 pixel is enough for the position on the nodegraph
-            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setPosition(") + NUM_PIXEL(x) + QString::fromUtf8(", ") + NUM_PIXEL(y) + QString::fromUtf8(")") );
+            // exactly, as the .ntp keeps them (#2008)
+            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setPosition(") + NUM_VALUE(x) + QString::fromUtf8(", ") + NUM_VALUE(y) + QString::fromUtf8(")") );
             // without a GUI, a node that was only given a position has no size
             if ( (w > 0) && (h > 0) ) {
-                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setSize(") + NUM_PIXEL(w) + QString::fromUtf8(", ") + NUM_PIXEL(h) + QString::fromUtf8(")") );
+                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setSize(") + NUM_VALUE(w) + QString::fromUtf8(", ") + NUM_VALUE(h) + QString::fromUtf8(")") );
             }
         }
         double r, g, b;
         if ( (*it)->getColor(&r, &g, &b) ) {
-            // a precision of 3 digits is enough for the node color
+            // as the .ntp keeps it: a float (#2008)
             WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setColor(") + NUM_COLOR(r) + QString::fromUtf8(", ") + NUM_COLOR(g) + QString::fromUtf8(", ") + NUM_COLOR(b) +  QString::fromUtf8(")") );
         }
 
