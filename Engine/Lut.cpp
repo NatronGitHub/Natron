@@ -51,62 +51,21 @@
 NATRON_NAMESPACE_ENTER
 
 namespace Color {
-// compile-time endianness checking found on:
-// http://stackoverflow.com/questions/2100331/c-macro-definition-to-determine-big-endian-or-little-endian-machine
-// if(O32_HOST_ORDER == O32_BIG_ENDIAN) will always be optimized by gcc -O2
-enum
-{
-    O32_LITTLE_ENDIAN = 0x03020100ul,
-    O32_BIG_ENDIAN = 0x00010203ul,
-    O32_PDP_ENDIAN = 0x01000302ul
-};
-
-static const union
-{
-    uint8_t bytes[4];
-    uint32_t value;
-}
-
-o32_host_order = {
-    { 0, 1, 2, 3 }
-};
-#define O32_HOST_ORDER (o32_host_order.value)
+// The 16 most significant bits of the IEEE 754 representation of f (sign, exponent and 7 bits of mantissa).
+// std::memcpy instead of a union: reading the inactive member of a union is undefined behaviour in C++.
 static unsigned short
 hipart(const float f)
 {
-    union
-    {
-        float f;
-        unsigned short us[2];
-    }
+    std::uint32_t bits;
 
-    tmp;
+    std::memcpy( &bits, &f, sizeof(bits) );
 
-    tmp.us[0] = tmp.us[1] = 0;
-    tmp.f = f;
-
-    if (O32_HOST_ORDER == O32_BIG_ENDIAN) {
-        return tmp.us[0];
-    } else if (O32_HOST_ORDER == O32_LITTLE_ENDIAN) {
-        return tmp.us[1];
-    } else {
-        assert( (O32_HOST_ORDER == O32_LITTLE_ENDIAN) || (O32_HOST_ORDER == O32_BIG_ENDIAN) );
-
-        return 0;
-    }
+    return static_cast<unsigned short>(bits >> 16);
 }
 
 static float
 index_to_float(const unsigned short i)
 {
-    union
-    {
-        float f;
-        unsigned short us[2];
-    }
-
-    tmp;
-
     /* positive and negative zeros, and all gradual underflow, turn into zero: */
     if ( ( i < 0x80) || ( ( i >= 0x8000) && ( i < 0x8080) ) ) {
         return 0;
@@ -118,17 +77,12 @@ index_to_float(const unsigned short i)
     if (i >= 0xff80) {
         return -std::numeric_limits<float>::max();
     }
-    if (O32_HOST_ORDER == O32_BIG_ENDIAN) {
-        tmp.us[0] = i;
-        tmp.us[1] = 0x8000;
-    } else if (O32_HOST_ORDER == O32_LITTLE_ENDIAN) {
-        tmp.us[0] = 0x8000;
-        tmp.us[1] = i;
-    } else {
-        assert( (O32_HOST_ORDER == O32_LITTLE_ENDIAN) || (O32_HOST_ORDER == O32_BIG_ENDIAN) );
-    }
+    // i gives the 16 most significant bits, and 0x8000 is the middle of the range of floats with these bits.
+    const std::uint32_t bits = (static_cast<std::uint32_t>(i) << 16) | 0x8000U;
+    float f;
+    std::memcpy( &f, &bits, sizeof(f) );
 
-    return tmp.f;
+    return f;
 }
 
 ///initialize the singleton
