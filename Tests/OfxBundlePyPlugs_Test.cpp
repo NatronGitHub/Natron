@@ -20,7 +20,8 @@
 // other PyPlug search paths, so that those override them. The test bundle (NatronTestPlugin.ofx.bundle) has
 // Tests/data/ofx-bundle-pyplugs/NatronTestBundlePyPlug.py and its icon there. The TestsOfxBundlePyPlugOverride test
 // runs these tests again with NATRON_PLUGIN_PATH=Tests/data/ofx-bundle-pyplugs-override, which has a PyPlug with the
-// same ID and version; TestsOfxCache runs them with the plug-ins known from the OFX plug-in cache, not scanned.
+// same ID and version; TestsOfxCache runs them with the plug-ins known from the OFX plug-in cache, not scanned. A
+// project that saved another path for the bundle's PyPlug finds it in the bundle (ProjectFindsMovedPyPlugInBundle).
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -38,6 +39,7 @@
 
 #include <QtCore/QByteArray>
 #include <QtCore/QDir>
+#include <QtCore/QFile>
 #include <QtCore/QFileInfo>
 #include <QtCore/QString>
 #include <QtCore/QStringList>
@@ -46,10 +48,12 @@
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/CreateNodeArgs.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/OfxHost.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
+#include "Engine/Settings.h"
 
 #include "OfxTestPlugin.h"
 
@@ -100,6 +104,82 @@ makeDir(const QString& path)
 {
     return QDir().mkpath(path);
 }
+
+QByteArray
+readFile(const QString& path)
+{
+    QFile file(path);
+
+    if ( !file.open(QIODevice::ReadOnly) ) {
+        return QByteArray();
+    }
+
+    return file.readAll();
+}
+
+bool
+writeFile(const QString& path,
+          const QByteArray& contents)
+{
+    QFile file(path);
+
+    return file.open(QIODevice::WriteOnly | QIODevice::Truncate) && (file.write(contents) == contents.size());
+}
+
+// The first non-empty <PythonModule> of an XML project (the nodes that are not PyPlugs have an empty one), or a null
+// QByteArray
+QByteArray
+savedPythonModule(const QByteArray& contents)
+{
+    const QByteArray open("<PythonModule>");
+    const QByteArray close("</PythonModule>");
+
+    for (auto begin = contents.indexOf(open); begin >= 0; begin = contents.indexOf(open, begin + 1)) {
+        const auto end = contents.indexOf(close, begin);
+        if (end < 0) {
+            break;
+        }
+        const QByteArray module = contents.mid( begin + open.size(), end - begin - open.size() );
+        if ( !module.isEmpty() ) {
+            return module;
+        }
+    }
+
+    return QByteArray();
+}
+
+// Sets the preference "Load PyPlugs in projects from .py if possible" for its lifetime
+class ScopedLoadFromPyFile
+{
+public:
+    explicit ScopedLoadFromPyFile(bool value)
+        : _knob( std::dynamic_pointer_cast<KnobBool>( appPTR->getCurrentSettings()->getKnobByName("loadFromPyFile") ) )
+        , _old( _knob ? _knob->getValue() : false )
+    {
+        if (_knob) {
+            _knob->setValue(value);
+        }
+    }
+
+    ~ScopedLoadFromPyFile()
+    {
+        if (_knob) {
+            _knob->setValue(_old);
+        }
+    }
+
+    bool isValid() const
+    {
+        return bool(_knob);
+    }
+
+    ScopedLoadFromPyFile(const ScopedLoadFromPyFile&) = delete;
+    ScopedLoadFromPyFile& operator=(const ScopedLoadFromPyFile&) = delete;
+
+private:
+    const KnobBoolPtr _knob;
+    const bool _old;
+};
 
 // Sets NATRON_PLUGIN_PATH for its lifetime
 class ScopedNatronPluginPath
@@ -264,5 +344,85 @@ TEST(OfxBundlePyPlugs, NoDuplicateSearchPath)
     ASSERT_GE(globalIndex, 0) << searchPathStr;
     ASSERT_LT(globalIndex + 1, searchPath.size()) << searchPathStr;
     EXPECT_EQ( bundleDir, QDir::cleanPath(searchPath[globalIndex + 1]) ) << searchPathStr;
+#endif // ifndef NATRON_TESTS_OFX_PLUGIN_DIR
+}
+
+// A project saved when the PyPlug was elsewhere (e.g. PIKColor in Natron's Plugins/PyPlugs, before it came with
+// openfx-misc's Misc.ofx.bundle) finds it by its file name in the PyPlug search path, which has the PyPlugs directories
+// of the OFX bundles, when "Load PyPlugs in projects from .py if possible" is on: the node is created from the
+// registered PyPlug of that ID (the bundle's, or the overriding one under TestsOfxBundlePyPlugOverride), the version
+// change is offered (the background app answers yes) and the project is saved with it. When the preference is off,
+// the node is loaded from the project and the file is not changed.
+TEST(OfxBundlePyPlugs, ProjectFindsMovedPyPlugInBundle)
+{
+#ifndef NATRON_TESTS_OFX_PLUGIN_DIR
+    NatronTest::skip("no test plug-in bundle");
+#else
+    if ( !NatronTestPlugin::isAvailable(kNatronTestPluginParams) ) {
+        NatronTestPlugin::reportMissing(kNatronTestPluginParams);
+
+        return;
+    }
+    const PluginsMap& plugins = appPTR->getPluginsList();
+    PluginsMap::const_iterator found = plugins.find(kBundlePyPlugID);
+    ASSERT_TRUE( found != plugins.end() );
+    ASSERT_EQ( 1U, found->second.size() );
+    const Plugin* plugin = *found->second.begin();
+    ASSERT_TRUE(plugin);
+    const QString registeredModuleFile = canonical( plugin->getPythonModule() + QString::fromUtf8(".py") );
+
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    // where the PyPlug was when the project was saved: it doesn't exist
+    const QByteArray oldModule = ( dir + QString::fromUtf8("old/Plugins/PyPlugs/NatronTestBundlePyPlug.py") ).toUtf8();
+    const QByteArray version0("<PythonModuleVersion>0</PythonModuleVersion>");
+    const QByteArray version1("<PythonModuleVersion>1</PythonModuleVersion>");
+
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ASSERT_TRUE( bool(app) );
+    ProjectPtr project = app->getProject();
+    for (int loadFromPy = 0; loadFromPy < 2; ++loadFromPy) {
+        const ScopedLoadFromPyFile pref( loadFromPy != 0 );
+        ASSERT_TRUE( pref.isValid() );
+        const QString name = QString::fromUtf8("MovedBundlePyPlug%1.ntp").arg(loadFromPy);
+
+        // a project with the PyPlug, saved as text to edit it: version 0, at oldModule
+        project->resetProject();
+        {
+            CreateNodeArgs args( kBundlePyPlugID, project );
+            args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+            args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+            ASSERT_TRUE( bool( app->createNode(args) ) );
+        }
+        QString savedPath;
+        ASSERT_TRUE( project->saveProject( dir, name, &savedPath, eProjectFileFormatText ) );
+        project->resetProject();
+        QByteArray contents = readFile(dir + name);
+        ASSERT_EQ( 1, contents.count(version1) ) << contents.constData();
+        const QByteArray savedModule = savedPythonModule(contents);
+        ASSERT_FALSE( savedModule.isEmpty() ) << contents.constData();
+        ASSERT_EQ( 1, contents.count("<PythonModule>" + savedModule + "</PythonModule>") );
+        contents.replace("<PythonModule>" + savedModule + "</PythonModule>", "<PythonModule>" + oldModule + "</PythonModule>");
+        contents.replace(version1, version0);
+        ASSERT_TRUE( writeFile(dir + name, contents) );
+
+        testing::internal::CaptureStdout();
+        const bool loaded = project->loadProject(dir, name);
+        const std::string output = testing::internal::GetCapturedStdout();
+        ASSERT_TRUE(loaded) << output;
+        const QByteArray reloaded = readFile(dir + name);
+        if (loadFromPy) {
+            // updated to the PyPlug found in the search path, and saved
+            EXPECT_EQ( 1, reloaded.count(version1) ) << output;
+            const QString module = QString::fromUtf8( savedPythonModule(reloaded) );
+            EXPECT_EQ( registeredModuleFile, canonical( module.endsWith( QString::fromUtf8(".py") ) ? module : module + QString::fromUtf8(".py") ) )
+                << module.toStdString();
+        } else {
+            // loaded from the project, which is unchanged
+            EXPECT_EQ(contents, reloaded) << output;
+        }
+        project->resetProject();
+    }
 #endif // ifndef NATRON_TESTS_OFX_PLUGIN_DIR
 }
