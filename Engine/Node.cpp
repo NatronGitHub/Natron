@@ -6836,6 +6836,40 @@ Node::getAttachedRotoItem() const
     return _imp->paintStroke.lock();
 }
 
+// In background mode, the variables of the nodes of the first project are attributes of "app" (see
+// AppInstance::getAppIDString()), which a script may rebind to another App object than app1 (#1525). app1.<node>
+// was then not defined, and an expression that uses it, as the GUI writes them, failed and read 0 (#1251). This
+// makes app1.<nodeName> what app.<nodeName> is, or deletes it if app has no such attribute. Only the variables of
+// the top-level nodes: those of the nodes inside a Group are attributes of the Group, the same object for both.
+static void
+mirrorNodeVariableOnApp1(const AppInstancePtr& app,
+                         const std::string& nodeName)
+{
+    if ( !app || (app->getAppIDString() != "app") || (nodeName.find('.') != std::string::npos) ) {
+        return;
+    }
+    {
+        // Usually "app" is app1: nothing to do, without running a script for each node (#1565)
+        PythonGILLocker pgl;
+        PyObject* globals = PyModule_GetDict( appPTR->getMainModule() ); // borrowed
+        PyObject* appObj = globals ? PyDict_GetItemString(globals, "app") : 0; // borrowed
+        PyObject* app1Obj = globals ? PyDict_GetItemString(globals, "app1") : 0; // borrowed
+        if ( !appObj || !app1Obj || (appObj == app1Obj) ) {
+            return;
+        }
+    }
+    const std::string script =
+        "if \"app1\" in globals() and app is not app1:\n"
+        "    if hasattr(app, \"" + nodeName + "\"):\n"
+        "        app1." + nodeName + " = app." + nodeName + "\n"
+        "    elif hasattr(app1, \"" + nodeName + "\"):\n"
+        "        del app1." + nodeName + "\n";
+    std::string err;
+    if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0) ) {
+        qDebug() << err.c_str();
+    }
+}
+
 void
 Node::declareNodeVariableToPython(const std::string& nodeName)
 {
@@ -6878,6 +6912,7 @@ Node::declareNodeVariableToPython(const std::string& nodeName)
             qDebug() << err.c_str();
         }
     }
+    mirrorNodeVariableOnApp1(getApp(), nodeName);
 }
 
 void
@@ -6901,6 +6936,8 @@ Node::setNodeVariableToPython(const std::string& oldName,
     if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0) ) {
         qDebug() << err.c_str();
     }
+    mirrorNodeVariableOnApp1(getApp(), oldName);
+    mirrorNodeVariableOnApp1(getApp(), newName);
 }
 
 void
@@ -6943,6 +6980,7 @@ Node::deleteNodeVariableToPython(const std::string& nodeName)
             qDebug() << err.c_str();
         }
     }
+    mirrorNodeVariableOnApp1(app, nodeName);
 }
 
 void
