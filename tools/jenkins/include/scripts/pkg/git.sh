@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Install git (requires curl and pcre)
+# Install git (requires curl)
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/git.html
 GIT_VERSION=2.56.1
 GIT_TAR="git-${GIT_VERSION}.tar.xz"

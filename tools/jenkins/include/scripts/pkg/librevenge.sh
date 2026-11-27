@@ -14,7 +14,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/librevenge-0
     start_build
     untar "$SRC_PATH/$REVENGE_TAR"
     pushd "librevenge-${REVENGE_VERSION}"
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --disable-werror --prefix="$SDK_HOME" --disable-docs --enable-shared
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --disable-werror --prefix="$SDK_HOME" --disable-docs --disable-tests --enable-shared # --disable-tests: no cppunit
     make -j${MKJOBS}
     make install
     popd

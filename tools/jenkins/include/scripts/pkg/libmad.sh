@@ -1,39 +1,27 @@
 #!/bin/bash
 # install libmad (for sox)
-# see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/libmad.html
-LIBMAD_VERSION=0.15.1b
+# The original libmad (0.15.1b, 2004) is no longer maintained: this is the Tenacity team's
+# continuation (CMake, same API and soname libmad.so.0), as in MacPorts.
+# see https://codeberg.org/tenacityteam/libmad/tags
+LIBMAD_VERSION=0.16.5
 LIBMAD_TAR="libmad-${LIBMAD_VERSION}.tar.gz"
-LIBMAD_SHA256=bbfac3ed6bfbc2823d3775ebb931087371e142bb0e9bb1bee51a76a6e0078690
-LIBMAD_SITE="https://downloads.sourceforge.net/mad"
+# the Codeberg source archive of the tag, also on MacPorts' distfiles mirror (the same file)
+LIBMAD_SHA256=e32320a010e3cc00bfa66e0cde523a969313cddfd81e07ec4e3ef06d10ad3fe0
 if download_step; then
-    download "$LIBMAD_SITE" "$LIBMAD_TAR" "$LIBMAD_SHA256"
+    download_urls "$LIBMAD_TAR" "$LIBMAD_SHA256" \
+        "https://codeberg.org/tenacityteam/libmad/archive/${LIBMAD_VERSION}.tar.gz" \
+        "https://distfiles.macports.org/libmad/${LIBMAD_VERSION}.tar.gz"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/mad.pc" ] || [ "$(pkg-config --modversion mad)" != "$LIBMAD_VERSION" ]; }; }; then
     start_build
     untar "$SRC_PATH/$LIBMAD_TAR"
-    pushd "libmad-${LIBMAD_VERSION}"
-    # patch from http://www.linuxfromscratch.org/patches/blfs/svn/libmad-0.15.1b-fixes-1.patch
-    patch -Np1 -i "$INC_PATH/patches/libmad/libmad-0.15.1b-fixes-1.patch"
-    sed "s@AM_CONFIG_HEADER@AC_CONFIG_HEADERS@g" -i configure.ac
-    touch NEWS AUTHORS ChangeLog
-    autoreconf -fi
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --enable-shared --disable-static
-    make -j${MKJOBS}
-    make install
-    cat > "${SDK_HOME}/lib/pkgconfig/mad.pc" << EOF
-prefix=${SDK_HOME}
-exec_prefix=\${prefix}
-libdir=\${exec_prefix}/lib
-includedir=\${prefix}/include
-
-Name: mad
-Description: MPEG audio decoder
-Requires:
-Version: ${LIBMAD_VERSION}
-Libs: -L\${libdir} -lmad
-Cflags: -I\${includedir}
-EOF
+    pushd libmad # the archive's top directory has no version
+    # CMAKE_INSTALL_LIBDIR: GNUInstallDirs would pick lib64 on Rocky Linux
+    cmake -S . -B build -DCMAKE_C_FLAGS="$BF" -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE" -DBUILD_SHARED_LIBS=ON -DEXAMPLE=OFF
+    cmake --build build -j${MKJOBS}
+    # (it also installs libmad.a, which its CMake config refers to; sox links libmad.so)
+    cmake --install build
     popd
-    rm -rf "libmad-${LIBMAD_VERSION}"
+    rm -rf libmad
     end_build
 fi
