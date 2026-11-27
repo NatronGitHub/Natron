@@ -2221,7 +2221,6 @@ public:
                                double time,
                                unsigned int mipmapLevel);
     static void renderBezier(cairo_t* cr, const Bezier* bezier, double opacity, double time, double startTime, double endTime, double mbFrameStep, unsigned int mipmapLevel);
-    static void renderFeather(const Bezier * bezier, double time, unsigned int mipmapLevel, double shapeColor[3], double opacity, double featherDist, double fallOff, cairo_pattern_t * mesh);
     static void renderFeather_cairo(const std::list<RotoFeatherVertex>& vertices, double shapeColor[3],  double fallOff, cairo_pattern_t * mesh);
     static void renderInternalShape_cairo(const std::list<RotoTriangles>& triangles,
                                           const std::list<RotoTriangleFans>& fans,

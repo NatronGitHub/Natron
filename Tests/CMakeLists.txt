@@ -119,6 +119,7 @@ set(Tests_SOURCES
     RenderThreadSafety_Test.cpp
     RenderThreads_Test.cpp
     RotoPaint_Test.cpp
+    RotoRender_Test.cpp
     SequentialRender_Test.cpp
     Settings_Test.cpp
     ShuffleAutoConnect_Test.cpp
