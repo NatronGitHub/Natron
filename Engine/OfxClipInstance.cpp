@@ -29,6 +29,7 @@
 #include <limits>
 #include <bitset>
 #include <cassert>
+#include <new> // std::bad_alloc
 #include <stdexcept>
 #include <sstream> // stringstream
 
@@ -732,8 +733,16 @@ OfxClipInstance::loadTexture(OfxTime time,
     }
 
     OFX::Host::ImageEffect::Texture* texture = 0;
-    if ( !getImagePlaneInternal(time, ViewSpec::current(), optionalBounds, 0 /*plane*/, format ? &depth : 0, 0 /*image*/, &texture) ) {
-        return 0;
+    try {
+        if ( !getImagePlaneInternal(time, ViewSpec::current(), optionalBounds, 0 /*plane*/, format ? &depth : 0, 0 /*image*/, &texture) ) {
+            return 0;
+        }
+    } catch (const std::bad_alloc&) {
+        // The input could not be loaded into a texture (EffectInstance::convertRAMImageToOpenGLTexture()) or
+        // rendered: clipLoadTexture returns kOfxStatErrMemory, and the frame is rendered again without OpenGL,
+        // even if the plug-in goes on without this input (#1945).
+        getEffectHolder()->setThreadLocalOpenGLInputTextureFailed();
+        throw;
     }
 
     return texture;

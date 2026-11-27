@@ -619,6 +619,8 @@ public:
      * @brief Converts the given RAM-stored image to an OpenGL texture.
      * THe resulting texture will not be cached and will destroyed when the shared pointer is released.
      * The OpenGL context should have been made current prior to calling this function.
+     * Throws std::bad_alloc if the texture can't be created (larger than GL_MAX_TEXTURE_SIZE, or out of memory):
+     * the OpenGL render that needs it is then done again on the CPU, if the plug-in can (#1945).
      **/
     ImagePtr convertRAMImageToOpenGLTexture(const ImagePtr& image);
 
@@ -892,6 +894,13 @@ public:
     bool getThreadLocalRegionsOfInterests(RoIMap & roiMap) const;
 
     OSGLContextPtr getThreadLocalOpenGLContext() const;
+
+    /**
+     * @brief Called on the thread of an OpenGL render action when an input could not be loaded into an OpenGL
+     * texture (clipLoadTexture failed with kOfxStatErrMemory): the frame is then rendered again without OpenGL,
+     * whatever the action returns (#1945).
+     **/
+    void setThreadLocalOpenGLInputTextureFailed();
 
     void getThreadLocalInputImages(InputImagesMap* images) const;
 
@@ -1956,6 +1965,8 @@ public:
         double firstFrame, lastFrame;
         InputMatrixMapPtr transformRedirections;
         bool isDoingOpenGLRender;
+        // an input could not be loaded into an OpenGL texture during the OpenGL render action (#1945)
+        bool openGLInputTextureFailed;
 
         RenderArgs();
 

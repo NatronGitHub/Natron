@@ -35,6 +35,7 @@
 #include <bitset>
 #include <cassert>
 #include <limits>
+#include <new> // std::bad_alloc
 #include <stdexcept>
 #include <sstream> // stringstream
 
@@ -712,6 +713,16 @@ EffectInstance::getThreadLocalOpenGLContext() const
     }
 
     return tls->frameArgs.back()->openGLContext.lock();
+}
+
+void
+EffectInstance::setThreadLocalOpenGLInputTextureFailed()
+{
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
+
+    if ( tls && tls->currentRenderArgs.validArgs && tls->currentRenderArgs.isDoingOpenGLRender ) {
+        tls->currentRenderArgs.openGLInputTextureFailed = true;
+    }
 }
 
 ImagePtr
@@ -1561,22 +1572,13 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
         throw std::runtime_error("No OpenGL context attached");
     }
 
-    GLuint pboID = context->getPBOId();
-    assert(pboID != 0);
-    glEnable(GL_TEXTURE_2D);
-    // bind PBO to update texture source
-    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pboID);
-
-    std::size_t dataSize = bounds.area() * 4 * info.dataTypeSize;
-
-    // Note that glMapBufferARB() causes sync issue.
-    // If GPU is working with this buffer, glMapBufferARB() will wait(stall)
-    // until GPU to finish its job. To avoid waiting (idle), you can call
-    // first glBufferDataARB() with NULL pointer before glMapBufferARB().
-    // If you do that, the previous data in PBO will be discarded and
-    // glMapBufferARB() returns a new allocated pointer immediately
-    // even if GPU is still working with the previous data.
-    glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, 0, GL_DYNAMIC_DRAW_ARB);
+    // The texture can't be created (#1945): the caller renders without OpenGL, as when the plug-in runs out of
+    // GPU memory (std::bad_alloc, which clipLoadTexture returns as kOfxStatErrMemory).
+    GLint maxTextureSize = 0;
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
+    if ( (bounds.width() > maxTextureSize) || (bounds.height() > maxTextureSize) ) {
+        throw std::bad_alloc();
+    }
 
     bool useTmpImage = image->getComponentsCount() != 4;
     ImagePtr tmpImg;
@@ -1598,19 +1600,40 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
     const unsigned char* srcdata = racc.pixelAt(bounds.x1, bounds.y1);
     assert(srcdata);
 
+    GLuint pboID = context->getPBOId();
+    assert(pboID != 0);
+    glEnable(GL_TEXTURE_2D);
+    // bind PBO to update texture source
+    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pboID);
+
+    std::size_t dataSize = bounds.area() * 4 * info.dataTypeSize;
+
+    // Note that glMapBufferARB() causes sync issue.
+    // If GPU is working with this buffer, glMapBufferARB() will wait(stall)
+    // until GPU to finish its job. To avoid waiting (idle), you can call
+    // first glBufferDataARB() with NULL pointer before glMapBufferARB().
+    // If you do that, the previous data in PBO will be discarded and
+    // glMapBufferARB() returns a new allocated pointer immediately
+    // even if GPU is still working with the previous data.
+    glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, 0, GL_DYNAMIC_DRAW_ARB);
+
     GLvoid* gpuData = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-    if (gpuData) {
-            // update data directly on the mapped buffer
-        memcpy(gpuData, srcdata, dataSize);
-        GLboolean result = glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
-        assert(result == GL_TRUE);
-        Q_UNUSED(result);
+    if (!gpuData) {
+        // the buffer could not be allocated: the texture would hold garbage
+        glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+        throw std::bad_alloc();
     }
+    // update data directly on the mapped buffer
+    memcpy(gpuData, srcdata, dataSize);
+    GLboolean result = glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
+    assert(result == GL_TRUE);
+    Q_UNUSED(result);
     glCheckError();
 
     // The creation of the image will use glTexImage2D and will get filled with the PBO
     ImagePtr gpuImage;
     getOrCreateFromCacheInternal(image->getKey(), params, false /*useCache*/, &gpuImage);
+    const bool outOfMemory = glGetError() == GL_OUT_OF_MEMORY;
 
     // it is good idea to release PBOs with ID 0 after use.
     // Once bound with 0, all pixel operations are back to normal ways.
@@ -1618,6 +1641,10 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
     //glBindTexture(GL_TEXTURE_2D, 0); // useless, we didn't bind anything
     glCheckError();
 
+    if (outOfMemory || !gpuImage) {
+        // glTexImage2D failed: the texture is unusable (gpuImage, if any, deletes it)
+        throw std::bad_alloc();
+    }
 
     return gpuImage;
 } // convertRAMImageToOpenGLTexture
@@ -2699,6 +2726,13 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
                     // An image the plug-in fetched could not be rendered because the graph is too
                     // deep: the result is wrong, don't mark it as rendered in the cache.
                     st = eStatusFailed;
+                } else if ( planes.useOpenGL && tls->currentRenderArgs.openGLInputTextureFailed ) {
+                    // An input could not be loaded into a texture (#1945). The plug-in should have returned
+                    // kOfxStatErrMemory ("The plug-in should abort the GL render and return kOfxStatErrMemory,
+                    // after which the host can decide to retry the operation with CPU based processing",
+                    // ofxGPURender.h, clipLoadTexture), but it may have rendered without that input (e.g. a
+                    // black frame): render the frame again without OpenGL, whatever it returned.
+                    st = eStatusOutOfMemory;
                 }
             }
         }

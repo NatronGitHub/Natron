@@ -67,6 +67,18 @@
 // - net.natron.test.GPURenderFailed: supports OpenGL render, returns kOfxStatGPURenderFailed from the
 //   OpenGL render, and renders on the CPU otherwise. net.natron.test.GPUOnlyRenderFailed does the same,
 //   but sets kOfxImageEffectPropCPURenderSupported to "false".
+// - net.natron.test.GLErrMemory and net.natron.test.GLOnlyErrMemory (#1945): the same, but return
+//   kOfxStatErrMemory from the OpenGL render.
+// - net.natron.test.GLTextureFailed and net.natron.test.GLOnlyTextureFailed (#1945): the same, with a region
+//   of definition of (0, 0, 8, 8), but they ask for the region (0, 0, kWideWidth, 1) of Source, more than
+//   any GL_MAX_TEXTURE_SIZE, so that an input that large can't be loaded into a texture; their OpenGL render
+//   loads the Source texture, ignores a failure, writes nothing and returns kOfxStatOK (a black frame).
+//   net.natron.test.GLTextureFailedInRender asks for an empty region of Source and loads that large region in
+//   the OpenGL render (with the bounds argument of clipLoadTexture), which Natron renders then. They count the
+//   clipLoadTexture calls that returned kOfxStatOK and kOfxStatErrMemory ("<id>.textureOK",
+//   "<id>.textureErrMemory").
+//   The CPU renders of these plug-ins fill the output with 1.
+// - net.natron.test.Generator: its "wide" parameter sets its region of definition to (0, 0, kWideWidth, 1).
 // - net.natron.test.Question: the "ask", "askFromThread" and "askHost" push buttons post a kOfxMessageQuestion
 //   from kOfxActionInstanceChanged, on the calling thread, on a thread of the plug-in, or on the host (a NULL
 //   handle), and count the replies.
@@ -124,9 +136,17 @@
 #define kTimeBlurPluginIdentifier "net.natron.test.TimeBlur"
 #define kGPURenderFailedPluginIdentifier "net.natron.test.GPURenderFailed"
 #define kGPUOnlyRenderFailedPluginIdentifier "net.natron.test.GPUOnlyRenderFailed"
+#define kGLErrMemoryPluginIdentifier "net.natron.test.GLErrMemory"
+#define kGLOnlyErrMemoryPluginIdentifier "net.natron.test.GLOnlyErrMemory"
+#define kGLTextureFailedPluginIdentifier "net.natron.test.GLTextureFailed"
+#define kGLOnlyTextureFailedPluginIdentifier "net.natron.test.GLOnlyTextureFailed"
+#define kGLTextureFailedInRenderPluginIdentifier "net.natron.test.GLTextureFailedInRender"
 #define kQuestionPluginIdentifier "net.natron.test.Question"
 
 namespace {
+// wider than the GL_MAX_TEXTURE_SIZE of any OpenGL implementation (at most 32768 today)
+const int kWideWidth = 1 << 17;
+
 OfxHost* gHost = 0;
 const OfxPropertySuiteV1* gPropSuite = 0;
 const OfxImageEffectSuiteV1* gEffectSuite = 0;
@@ -1022,6 +1042,9 @@ generatorPluginMain(const char* action,
         if (gParamSuite->paramDefine(paramSet, kOfxParamTypeBoolean, "fail", &props) != kOfxStatOK) {
             return kOfxStatFailed;
         }
+        if (gParamSuite->paramDefine(paramSet, kOfxParamTypeBoolean, "wide", &props) != kOfxStatOK) {
+            return kOfxStatFailed;
+        }
 
         return kOfxStatOK;
     }
@@ -1034,6 +1057,19 @@ generatorPluginMain(const char* action,
         }
         if (fail) {
             return kOfxStatFailed;
+        }
+    }
+    if (std::strcmp(action, kOfxImageEffectActionGetRegionOfDefinition) == 0) {
+        int wide = 0;
+        OfxParamHandle param = getParam(effect, "wide");
+        if (param) {
+            gParamSuite->paramGetValue(param, &wide);
+        }
+        if (wide) {
+            const OfxRectD rod = { 0., 0., (double)kWideWidth, 1. };
+            gPropSuite->propSetDoubleN(outArgs, kOfxImageEffectPropRegionOfDefinition, 4, &rod.x1);
+
+            return kOfxStatOK;
         }
     }
     if (std::strcmp(action, kOfxImageEffectActionGetClipPreferences) == 0) {
@@ -1447,15 +1483,28 @@ timeBlurPluginMain(const char* action,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// net.natron.test.GPURenderFailed
+// net.natron.test.GPURenderFailed and the other OpenGL render failures
+
+enum GLFailureEnum
+{
+    eGLFailureGPURenderFailed, // the OpenGL render returns kOfxStatGPURenderFailed
+    eGLFailureErrMemory, // the OpenGL render returns kOfxStatErrMemory
+    eGLFailureTexture, // the Source texture (asked for in getRegionsOfInterest) is too large
+    eGLFailureTextureInRender, // the Source texture (asked for in the OpenGL render) is too large
+};
 
 OfxStatus
 gpuRenderFailedMain(const char* action,
                     OfxImageEffectHandle effect,
                     OfxPropertySetHandle inArgs,
+                    OfxPropertySetHandle outArgs,
                     const std::string& id,
-                    bool cpuRenderSupported)
+                    bool cpuRenderSupported,
+                    GLFailureEnum failure)
 {
+    const bool textureFailure = (failure == eGLFailureTexture) || (failure == eGLFailureTextureInRender);
+    const OfxRectD wideRegion = { 0., 0., (double)kWideWidth, 1. };
+
     if (std::strcmp(action, kOfxActionDescribe) == 0) {
         OfxStatus stat = describe(effect, (id + "Test").c_str(), kOfxImageEffectRenderFullySafe, false);
         if (stat != kOfxStatOK) {
@@ -1471,14 +1520,59 @@ gpuRenderFailedMain(const char* action,
     if (std::strcmp(action, kOfxImageEffectActionDescribeInContext) == 0) {
         return defineClips(effect);
     }
+    if ( textureFailure && (std::strcmp(action, kOfxImageEffectActionGetRegionOfDefinition) == 0) ) {
+        // small enough for an output texture
+        const OfxRectD rod = { 0., 0., 8., 8. };
+        gPropSuite->propSetDoubleN(outArgs, kOfxImageEffectPropRegionOfDefinition, 4, &rod.x1);
+
+        return kOfxStatOK;
+    }
+    if ( textureFailure && (std::strcmp(action, kOfxImageEffectActionGetRegionsOfInterest) == 0) ) {
+        // GLTextureFailedInRender: nothing, so that Natron renders the input in the render action (it would give
+        // the input image it rendered before, whatever the bounds)
+        const OfxRectD empty = { 0., 0., 0., 0. };
+        gPropSuite->propSetDoubleN(outArgs, "OfxImageClipPropRoI_" kOfxImageEffectSimpleSourceClipName, 4,
+                                   failure == eGLFailureTexture ? &wideRegion.x1 : &empty.x1);
+
+        return kOfxStatOK;
+    }
     if (std::strcmp(action, kOfxImageEffectActionRender) == 0) {
         int openGLEnabled = 0;
         if ( (gPropSuite->propGetInt(inArgs, kOfxImageEffectPropOpenGLEnabled, 0, &openGLEnabled) == kOfxStatOK) &&
              openGLEnabled ) {
             incrementCounter(id + ".glRenders");
+            switch (failure) {
+            case eGLFailureGPURenderFailed:
+                // "the host should retry the render with OpenGL rendering disabled" (ofxGPURender.h)
+                return kOfxStatGPURenderFailed;
+            case eGLFailureErrMemory:
+                // "The plug-in should abort the GL render and return kOfxStatErrMemory, after which the host can
+                // decide to retry the operation with CPU based processing" (ofxGPURender.h, clipLoadTexture)
+                return kOfxStatErrMemory;
+            case eGLFailureTexture:
+            case eGLFailureTextureInRender: {
+                const OfxImageEffectOpenGLRenderSuiteV1* glSuite =
+                    (const OfxImageEffectOpenGLRenderSuiteV1*)gHost->fetchSuite(gHost->host, kOfxOpenGLRenderSuite, 1);
+                OfxImageClipHandle source = getClip(effect, kOfxImageEffectSimpleSourceClipName);
+                OfxTime time = 0.;
+                gPropSuite->propGetDouble(inArgs, kOfxPropTime, 0, &time);
+                OfxPropertySetHandle texture = 0;
+                const OfxStatus stat = (glSuite && source) ?
+                                       glSuite->clipLoadTexture(source, time, 0,
+                                                                failure == eGLFailureTextureInRender ? &wideRegion : 0,
+                                                                &texture) :
+                                       kOfxStatFailed;
+                if (stat == kOfxStatOK) {
+                    incrementCounter(id + ".textureOK");
+                    glSuite->clipFreeTexture(texture);
+                } else if (stat == kOfxStatErrMemory) {
+                    incrementCounter(id + ".textureErrMemory");
+                }
 
-            // "the host should retry the render with OpenGL rendering disabled" (ofxGPURender.h)
-            return kOfxStatGPURenderFailed;
+                // a plug-in that goes on without its input: a black frame
+                return kOfxStatOK;
+            }
+            }
         }
         incrementCounter(id + ".cpuRenders");
 
@@ -1488,22 +1582,34 @@ gpuRenderFailedMain(const char* action,
     return commonAction(action, effect, id);
 }
 
-OfxStatus
-gpuRenderFailedPluginMain(const char* action,
-                          const void* handle,
-                          OfxPropertySetHandle inArgs,
-                          OfxPropertySetHandle /*outArgs*/)
+struct GPUFailurePlugin
 {
-    return gpuRenderFailedMain(action, (OfxImageEffectHandle)handle, inArgs, "GPURenderFailed", true);
-}
+    const char* id; // the prefix of its counters
+    bool cpuRenderSupported;
+    GLFailureEnum failure;
+};
 
+const GPUFailurePlugin kGPUFailurePlugins[] = {
+    { "GPURenderFailed", true, eGLFailureGPURenderFailed },
+    { "GPUOnlyRenderFailed", false, eGLFailureGPURenderFailed },
+    { "GLErrMemory", true, eGLFailureErrMemory },
+    { "GLOnlyErrMemory", false, eGLFailureErrMemory },
+    { "GLTextureFailed", true, eGLFailureTexture },
+    { "GLOnlyTextureFailed", false, eGLFailureTexture },
+    { "GLTextureFailedInRender", true, eGLFailureTextureInRender },
+};
+
+// the main entry of kGPUFailurePlugins[index]
+template <int index>
 OfxStatus
-gpuOnlyRenderFailedPluginMain(const char* action,
-                              const void* handle,
-                              OfxPropertySetHandle inArgs,
-                              OfxPropertySetHandle /*outArgs*/)
+gpuFailurePluginMain(const char* action,
+                     const void* handle,
+                     OfxPropertySetHandle inArgs,
+                     OfxPropertySetHandle outArgs)
 {
-    return gpuRenderFailedMain(action, (OfxImageEffectHandle)handle, inArgs, "GPUOnlyRenderFailed", false);
+    const GPUFailurePlugin& plugin = kGPUFailurePlugins[index];
+
+    return gpuRenderFailedMain(action, (OfxImageEffectHandle)handle, inArgs, outArgs, plugin.id, plugin.cpuRenderSupported, plugin.failure);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1582,8 +1688,13 @@ OfxPlugin gPlugins[] = {
     { kOfxImageEffectPluginApi, 1, kSequentialPluginIdentifier, 1, 0, setHost, sequentialPluginMain },
     { kOfxImageEffectPluginApi, 1, kSequentialStatusPluginIdentifier, 1, 0, setHost, sequentialStatusPluginMain },
     { kOfxImageEffectPluginApi, 1, kTimeBlurPluginIdentifier, 1, 0, setHost, timeBlurPluginMain },
-    { kOfxImageEffectPluginApi, 1, kGPURenderFailedPluginIdentifier, 1, 0, setHost, gpuRenderFailedPluginMain },
-    { kOfxImageEffectPluginApi, 1, kGPUOnlyRenderFailedPluginIdentifier, 1, 0, setHost, gpuOnlyRenderFailedPluginMain },
+    { kOfxImageEffectPluginApi, 1, kGPURenderFailedPluginIdentifier, 1, 0, setHost, gpuFailurePluginMain<0> },
+    { kOfxImageEffectPluginApi, 1, kGPUOnlyRenderFailedPluginIdentifier, 1, 0, setHost, gpuFailurePluginMain<1> },
+    { kOfxImageEffectPluginApi, 1, kGLErrMemoryPluginIdentifier, 1, 0, setHost, gpuFailurePluginMain<2> },
+    { kOfxImageEffectPluginApi, 1, kGLOnlyErrMemoryPluginIdentifier, 1, 0, setHost, gpuFailurePluginMain<3> },
+    { kOfxImageEffectPluginApi, 1, kGLTextureFailedPluginIdentifier, 1, 0, setHost, gpuFailurePluginMain<4> },
+    { kOfxImageEffectPluginApi, 1, kGLOnlyTextureFailedPluginIdentifier, 1, 0, setHost, gpuFailurePluginMain<5> },
+    { kOfxImageEffectPluginApi, 1, kGLTextureFailedInRenderPluginIdentifier, 1, 0, setHost, gpuFailurePluginMain<6> },
     { kOfxImageEffectPluginApi, 1, kQuestionPluginIdentifier, 1, 0, setHost, questionPluginMain },
 };
 } // anonymous namespace
