@@ -16,8 +16,8 @@ processors. They run on any 64-bit Linux distribution that has:
 * the C++ and OpenMP runtime libraries of GCC 11 or later (``libstdc++``,
   ``libgcc_s`` and ``libgomp``), which almost every distribution installs by
   default;
-* the X11 client libraries (libX11, libxcb, libxkbcommon), at least as recent
-  as those of Rocky Linux 9. Natron is an X11 application: on a Wayland desktop
+* the X11 client libraries (libX11, libxcb), at least as recent as those of
+  Rocky Linux 9. Natron is an X11 application: on a Wayland desktop
   it runs through XWayland;
 * an OpenGL driver (``libGL``): see :ref:`system-requirements`.
 

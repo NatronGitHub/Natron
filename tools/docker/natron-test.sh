@@ -78,12 +78,12 @@ done
 # Container only, as root: installs the runtime packages and creates the user that runs RUN.
 # shellcheck disable=SC2016
 SETUP='set -euo pipefail
-# the system libraries that are never bundled (see SYSTEM_LIBS_RE in build-Linux-installer.sh),
+# the system libraries that are never bundled (see SYSTEM_LIBS_RE in build-Linux-installer.sh;
+# not the xcb-util and xkbcommon libraries, which are bundled, #2024),
 # fontconfig and a font (every desktop has them), and the tools that runTests.sh uses
 dnf -y -q install libgomp libglvnd-glx libglvnd-egl libglvnd-opengl \
     libX11 libX11-xcb libXext libXrender libXi libXfixes libXrandr libXcursor libXinerama \
-    libXcomposite libXdamage libXtst libSM libICE libxcb xcb-util-wm xcb-util-image \
-    xcb-util-keysyms xcb-util-renderutil libxkbcommon libxkbcommon-x11 alsa-lib \
+    libXcomposite libXdamage libXtst libSM libICE libxcb alsa-lib \
     fontconfig dejavu-sans-fonts \
     findutils diffutils procps-ng xz unzip zip shadow-utils util-linux > /dev/null
 dnf clean all > /dev/null
