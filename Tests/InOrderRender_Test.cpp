@@ -34,8 +34,8 @@
 
 #include "Global/Macros.h"
 
-#include <iostream>
-#include <string>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -51,6 +51,31 @@ NATRON_NAMESPACE_USING
 namespace {
 const int kFirstFrame = 1;
 const int kLastFrame = 12;
+
+// Destroys nodes at the end of a scope (R.1)
+class NodesGuard
+{
+public:
+    explicit NodesGuard(std::vector<NodePtr> nodes)
+        : _nodes( std::move(nodes) )
+    {
+    }
+
+    ~NodesGuard()
+    {
+        for (const NodePtr& node : _nodes) {
+            if (node) {
+                node->destroyNode(true, false);
+            }
+        }
+    }
+
+    NodesGuard(const NodesGuard&) = delete;
+    NodesGuard& operator=(const NodesGuard&) = delete;
+
+private:
+    std::vector<NodePtr> _nodes;
+};
 }
 
 TEST(InOrderRender, PreviousFrameCanRenderIntoAHeldSourceImage)
@@ -66,6 +91,8 @@ TEST(InOrderRender, PreviousFrameCanRenderIntoAHeldSourceImage)
     NodePtr generator = NatronTestPlugin::createNode(kNatronTestPluginGenerator);
     NodePtr source = NatronTestPlugin::createNode(kNatronTestPluginSequentialStatus);
     NodePtr node = NatronTestPlugin::createNode(kNatronTestPluginInOrder);
+    // destroys the nodes at the end of the test, also when an ASSERT returns early
+    const NodesGuard guard{ {node, source, generator} };
     ASSERT_TRUE(generator && source && node);
     ProjectPtr project = node->getApp()->getProject();
     project->connectNodes(0, generator, source);
@@ -77,11 +104,9 @@ TEST(InOrderRender, PreviousFrameCanRenderIntoAHeldSourceImage)
     forceCaching->setValue(true);
     EXPECT_EQ( eSequentialPreferenceOnlySequential, node->getEffectInstance()->getSequentialPreference() );
 
-    for (int frame = kFirstFrame; frame <= kLastFrame; ++frame) {
-        NatronTestPlugin::setCounter("InOrder.done." + std::to_string(frame), 0);
-    }
     const int rendersBefore = NatronTestPlugin::counter("InOrder.renders");
     NatronTestPlugin::setCounter("InOrder.timeouts", 0);
+    NatronTestPlugin::setCounter("InOrder.contended", 0);
     NatronTestPlugin::setCounter("InOrder.maxActive", 0);
 
     NatronTestPlugin::renderSequence(node, kFirstFrame, kLastFrame);
@@ -89,11 +114,9 @@ TEST(InOrderRender, PreviousFrameCanRenderIntoAHeldSourceImage)
     EXPECT_EQ( kLastFrame - kFirstFrame + 1, NatronTestPlugin::counter("InOrder.renders") - rendersBefore );
     EXPECT_EQ( 0, NatronTestPlugin::counter("InOrder.timeouts") ) << "a frame waited for the previous one, which waited for "
                                                                       "the lock of an image that the first one held";
-    if (NatronTestPlugin::counter("InOrder.maxActive") < 2) {
-        std::cout << "InOrderRender: the frames were not rendered in parallel (one render thread?): nothing was checked" << std::endl;
+    // A pass checks something only if a frame held its source image while it waited for the previous one
+    if ( (NatronTestPlugin::counter("InOrder.maxActive") < 2) || (NatronTestPlugin::counter("InOrder.contended") == 0) ) {
+        GTEST_SKIP() << "the frames were not rendered in parallel, or no frame waited for the previous one: the case "
+                        "was not built (one render thread?)";
     }
-
-    node->destroyNode(true, false);
-    source->destroyNode(true, false);
-    generator->destroyNode(true, false);
 }

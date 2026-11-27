@@ -21,18 +21,21 @@
 // in parallel: the render of frame t waits in the render action until frame t-1 is done.
 // - At an even frame t, it asks for the left half of the render window of Source (getRegionsOfInterest); in render,
 //   it fetches the left half of Source at t-1 (which the host renders then, from getImage), keeps that image, and
-//   waits until frame t-1 is done, for at most 5 s ("InOrder.timeouts" counts the waits that timed out).
+//   waits until frame t-1 is done, for at most 5 s ("InOrder.timeouts" counts the waits that timed out; the bound
+//   keeps a regression from hanging the test). "InOrder.contended" counts the waits that began before frame t-1 was
+//   done: the case the test builds.
 // - At an odd frame t, getRegionsOfInterest waits 300 ms, then asks for the whole render window of Source: the host
 //   renders Source at t before the render action, into the cached image that frame t+1 may hold, which it must grow.
 //   In render, it fetches that region.
-// Frames are marked done in the counters "InOrder.done.<t>". "InOrder.renders" counts the renders, and
+// "InOrder.renders" counts the renders, and
 // "InOrder.maxActive" is the largest number of renders that ran at the same time. The output is not written.
 
 #include <chrono>
 #include <climits>
+#include <condition_variable>
 #include <cstring>
 #include <mutex>
-#include <string>
+#include <set>
 #include <thread>
 
 #include <ofxCore.h>
@@ -51,6 +54,34 @@ const int kOddFrameDelayMs = 300;
 
 std::mutex gActiveMutex;
 int gActive = 0; // protected by gActiveMutex
+
+std::mutex gDoneMutex;
+std::condition_variable gDoneCond; // signalled when a frame is added to gDone
+std::set<int> gDone; // the frames done, protected by gDoneMutex; cleared when an instance is created
+
+void
+setDone(int frame)
+{
+    {
+        std::lock_guard<std::mutex> l(gDoneMutex);
+        gDone.insert(frame);
+    }
+    gDoneCond.notify_all();
+}
+
+// waits until frame is done, for at most kWaitMs
+void
+waitForFrame(int frame)
+{
+    std::unique_lock<std::mutex> l(gDoneMutex);
+    if ( gDone.count(frame) ) {
+        return;
+    }
+    natronTestIncrementCounter("InOrder.contended");
+    if ( !gDoneCond.wait_for( l, std::chrono::milliseconds(kWaitMs), [frame] { return gDone.count(frame) != 0; } ) ) {
+        natronTestIncrementCounter("InOrder.timeouts");
+    }
+}
 
 // counts the renders running at the same time, for its lifetime
 class ActiveRender
@@ -75,12 +106,6 @@ public:
     ActiveRender& operator=(const ActiveRender&) = delete;
 };
 
-std::string
-doneCounter(int frame)
-{
-    return "InOrder.done." + std::to_string(frame);
-}
-
 // fetches region of Source at time, and releases it at once (odd frames) or once waitFrame is done (even frames)
 OfxStatus
 fetchSource(OfxImageEffectHandle effect,
@@ -100,14 +125,7 @@ fetchSource(OfxImageEffectHandle effect,
         return stat;
     }
     if (waitFrame != INT_MIN) {
-        const std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now() + std::chrono::milliseconds(kWaitMs);
-        while ( !natronTestGetCounter( doneCounter(waitFrame) ) ) {
-            if (std::chrono::steady_clock::now() > end) {
-                natronTestIncrementCounter("InOrder.timeouts");
-                break;
-            }
-            std::this_thread::sleep_for( std::chrono::milliseconds(1) );
-        }
+        waitForFrame(waitFrame);
     }
 
     return gEffectSuite->clipReleaseImage(image);
@@ -124,8 +142,9 @@ render(OfxImageEffectHandle effect,
     gPropSuite->propGetIntN(inArgs, kOfxImageEffectPropRenderWindow, 4, window);
     natronTestIncrementCounter("InOrder.renders");
     const ActiveRender active;
-    const int frame = (int)time;
-    OfxRectD region = { (double)window[0], (double)window[1], (double)window[2], (double)window[3] };
+    const int frame = static_cast<int>(time);
+    OfxRectD region = { static_cast<double>(window[0]), static_cast<double>(window[1]), static_cast<double>(window[2]),
+                        static_cast<double>(window[3]) };
     OfxStatus stat;
     if (frame % 2 == 0) {
         // the region of Source that getRegionsOfInterest asked for, at the previous frame
@@ -134,7 +153,7 @@ render(OfxImageEffectHandle effect,
     } else {
         stat = fetchSource(effect, time, region, INT_MIN);
     }
-    natronTestSetCounter(doneCounter(frame), 1);
+    setDone(frame);
 
     return stat;
 }
@@ -160,16 +179,23 @@ inOrderMain(const char* action,
             OfxPropertySetHandle inArgs,
             OfxPropertySetHandle outArgs)
 {
-    OfxImageEffectHandle effect = (OfxImageEffectHandle)handle;
+    OfxImageEffectHandle effect = static_cast<OfxImageEffectHandle>( const_cast<void*>(handle) );
 
     if (std::strcmp(action, kOfxActionLoad) == 0) {
         if (!gHost) {
             return kOfxStatErrMissingHostFeature;
         }
-        gPropSuite = (const OfxPropertySuiteV1*)gHost->fetchSuite(gHost->host, kOfxPropertySuite, 1);
-        gEffectSuite = (const OfxImageEffectSuiteV1*)gHost->fetchSuite(gHost->host, kOfxImageEffectSuite, 1);
+        gPropSuite = static_cast<const OfxPropertySuiteV1*>( gHost->fetchSuite(gHost->host, kOfxPropertySuite, 1) );
+        gEffectSuite = static_cast<const OfxImageEffectSuiteV1*>( gHost->fetchSuite(gHost->host, kOfxImageEffectSuite, 1) );
 
         return (gPropSuite && gEffectSuite) ? kOfxStatOK : kOfxStatErrMissingHostFeature;
+    }
+    if (std::strcmp(action, kOfxActionCreateInstance) == 0) {
+        // a new test: no frame is done
+        std::lock_guard<std::mutex> l(gDoneMutex);
+        gDone.clear();
+
+        return kOfxStatReplyDefault;
     }
     if (std::strcmp(action, kOfxActionDescribe) == 0) {
         OfxPropertySetHandle props;
@@ -208,7 +234,7 @@ inOrderMain(const char* action,
         double roi[4] = {0., 0., 0., 0.};
         gPropSuite->propGetDouble(inArgs, kOfxPropTime, 0, &time);
         gPropSuite->propGetDoubleN(inArgs, kOfxImageEffectPropRegionOfInterest, 4, roi);
-        if ( (int)time % 2 == 0 ) {
+        if (static_cast<int>(time) % 2 == 0) {
             roi[2] = (roi[0] + roi[2]) / 2;
         } else {
             // let frame t+1 fetch the left half of Source at t first

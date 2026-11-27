@@ -352,7 +352,8 @@ public:
         // a source image: the plug-in reads internalImage, locked for reading while this object lives
         eAccessRead,
         // a source image: the plug-in reads a copy of internalImage, which is not locked once this object is
-        // constructed (GL textures are always locked, as with eAccessRead)
+        // constructed (GL textures are always locked, as with eAccessRead), so that a plug-in that waits in its render
+        // action for other frames doesn't hold a lock that those frames may need (#248)
         eAccessReadCopy,
     };
 
