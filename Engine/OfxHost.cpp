@@ -1984,7 +1984,16 @@ OfxHost::mutexLock(const OfxMutexHandle mutex)
     }
     // suite functions should not throw
     try {
-        m->mutex.lock();
+        // Lock order: a suite mutex before the Python GIL. This thread may hold the GIL (an action called from
+        // Python, e.g. kOfxActionInstanceChanged after a param.set() in a script), and the thread that holds the
+        // mutex may need the GIL before it unlocks it (a Python expression read in a render): never wait for the
+        // mutex with the GIL held (#1862). The GIL is taken again once the mutex is locked. The OFX API locks and
+        // unlocks in separate calls, so no RAII lock is possible here (CP.20,
+        // https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#rconc-raii).
+        if ( !m->mutex.tryLock() ) {
+            PythonGILUnlocker gilUnlocker; // if this thread holds the GIL
+            m->mutex.lock();
+        }
 
         return kOfxStatOK;
     } catch (std::bad_alloc&) {

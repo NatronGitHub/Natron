@@ -16,18 +16,23 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-// The plug-ins of Tests/OfxInstanceChangedGIL_Test.cpp (#1653): a kOfxActionInstanceChanged run by a
-// Python script holds the Python GIL, and must not wait for threads that need it. Counters ("GILWait.*"):
+// The plug-ins of Tests/OfxInstanceChangedGIL_Test.cpp (#1653, #1862): an action run by a Python script
+// holds the Python GIL, and must not wait for threads that need it. Counters ("GILWait.*"):
 // - net.natron.test.GILWaitSource: a generator (kOfxImageEffectRenderInstanceSafe, so that its renders
 //   take its render lock) that reads its "value" parameter in render ("sourceRender"). If "holdRender" is
 //   set when a render starts, that render clears it, sets "inRender" and waits (at most 20 s) for "go"
-//   before it reads "value".
+//   before it reads "value". If "holdMutex" is set too, that render also clears it, and holds the mutex
+//   of the multi-thread suite shared by both plug-ins from before it sets "inRender" until it has read
+//   "value". Its "prefs" parameter is a clip preferences slave parameter: setting it refreshes the clip
+//   preferences of the instance (kOfxImageEffectPropClipPreferencesSlaveParam), and the host then runs
+//   kOfxImageEffectActionGetClipPreferences ("clipPreferences").
 // - net.natron.test.GILWaitAnalysis: a filter whose push buttons do, in kOfxActionInstanceChanged:
 //   - "fetch": fetch Source at the time of the action, as an analysis does ("fetched", "fetchFailed");
 //   - "threads": read its own "value" parameter at the times 100 + threadIndex in 2 threads of the
 //     multi-thread suite ("threadReads", "threadReadsFailed"; "threadReadsOnOtherThread" counts the reads on
 //     another thread than the one that called multiThread, which may run them itself), and record
-//     multiThreadNumCPUs ("numCPUs").
+//     multiThreadNumCPUs ("numCPUs");
+//   - "mutex": lock and unlock the shared mutex of the multi-thread suite ("mutexLocked", "mutexLockFailed").
 
 #include <chrono>
 #include <cstring>
@@ -47,6 +52,10 @@ const OfxPropertySuiteV1* gPropSuite = 0;
 const OfxImageEffectSuiteV1* gEffectSuite = 0;
 const OfxParameterSuiteV1* gParamSuite = 0;
 const OfxMultiThreadSuiteV1* gThreadSuite = 0;
+// the mutex of the multi-thread suite shared by both plug-ins, created by the first load action, destroyed
+// by the last unload action (the host calls them on the main thread)
+OfxMutexHandle gMutex = 0;
+int gLoadCount = 0;
 
 OfxStatus
 onLoad()
@@ -58,8 +67,28 @@ onLoad()
     gEffectSuite = (const OfxImageEffectSuiteV1*)gHost->fetchSuite(gHost->host, kOfxImageEffectSuite, 1);
     gParamSuite = (const OfxParameterSuiteV1*)gHost->fetchSuite(gHost->host, kOfxParameterSuite, 1);
     gThreadSuite = (const OfxMultiThreadSuiteV1*)gHost->fetchSuite(gHost->host, kOfxMultiThreadSuite, 1);
+    if (!gPropSuite || !gEffectSuite || !gParamSuite || !gThreadSuite) {
+        return kOfxStatErrMissingHostFeature;
+    }
+    if ( !gMutex && (gThreadSuite->mutexCreate(&gMutex, 0) != kOfxStatOK) ) {
+        gMutex = 0;
 
-    return (gPropSuite && gEffectSuite && gParamSuite && gThreadSuite) ? kOfxStatOK : kOfxStatErrMissingHostFeature;
+        return kOfxStatFailed;
+    }
+    ++gLoadCount;
+
+    return kOfxStatOK;
+}
+
+OfxStatus
+onUnload()
+{
+    if ( (--gLoadCount == 0) && gMutex ) {
+        gThreadSuite->mutexDestroy(gMutex);
+        gMutex = 0;
+    }
+
+    return kOfxStatOK;
 }
 
 OfxStatus
@@ -147,6 +176,9 @@ commonAction(const char* action)
     if (std::strcmp(action, kOfxActionLoad) == 0) {
         return onLoad();
     }
+    if (std::strcmp(action, kOfxActionUnload) == 0) {
+        return onUnload();
+    }
     if (std::strcmp(action, kOfxImageEffectActionRender) == 0) {
         // the tests don't look at the images
         return kOfxStatOK;
@@ -171,12 +203,26 @@ sourcePluginMain(const char* action,
     }
     if (std::strcmp(action, kOfxImageEffectActionDescribeInContext) == 0) {
         OfxStatus stat = defineClip(effect, kOfxImageEffectOutputClipName);
+        if (stat == kOfxStatOK) {
+            stat = defineParam(effect, kOfxParamTypeDouble, "value");
+        }
+        if (stat == kOfxStatOK) {
+            stat = defineParam(effect, kOfxParamTypeDouble, "prefs");
+        }
+        OfxPropertySetHandle props;
+        if ( (stat == kOfxStatOK) && (gEffectSuite->getPropertySet(effect, &props) == kOfxStatOK) ) {
+            gPropSuite->propSetString(props, kOfxImageEffectPropClipPreferencesSlaveParam, 0, "prefs");
+        }
 
-        return (stat == kOfxStatOK) ? defineParam(effect, kOfxParamTypeDouble, "value") : stat;
+        return stat;
     }
     if (std::strcmp(action, kOfxImageEffectActionRender) == 0) {
-        // only one render holds: the counter is tested and cleared in one step
+        // only one render holds: the counters are tested and cleared in one step
+        bool mutexLocked = false;
         if (natronTestExchangeCounter("GILWait.holdRender", 0) != 0) {
+            if (natronTestExchangeCounter("GILWait.holdMutex", 0) != 0) {
+                mutexLocked = (gThreadSuite->mutexLock(gMutex) == kOfxStatOK);
+            }
             natronTestIncrementCounter("GILWait.inRender");
             for (int i = 0; i < 2000 && natronTestGetCounter("GILWait.go") == 0; ++i) {
                 std::this_thread::sleep_for( std::chrono::milliseconds(10) );
@@ -185,9 +231,18 @@ sourcePluginMain(const char* action,
         OfxTime time = 0.;
         gPropSuite->propGetDouble(inArgs, kOfxPropTime, 0, &time);
         readValue(effect, time);
+        if (mutexLocked) {
+            gThreadSuite->mutexUnLock(gMutex);
+        }
         natronTestIncrementCounter("GILWait.sourceRender");
 
         return kOfxStatOK;
+    }
+    if (std::strcmp(action, kOfxImageEffectActionGetClipPreferences) == 0) {
+        // the host runs it after it has set the clip preferences
+        natronTestIncrementCounter("GILWait.clipPreferences");
+
+        return kOfxStatReplyDefault;
     }
 
     return commonAction(action);
@@ -236,7 +291,8 @@ analysisPluginMain(const char* action,
         }
         if ( (defineParam(effect, kOfxParamTypeDouble, "value") != kOfxStatOK) ||
              (defineParam(effect, kOfxParamTypePushButton, "fetch") != kOfxStatOK) ||
-             (defineParam(effect, kOfxParamTypePushButton, "threads") != kOfxStatOK) ) {
+             (defineParam(effect, kOfxParamTypePushButton, "threads") != kOfxStatOK) ||
+             (defineParam(effect, kOfxParamTypePushButton, "mutex") != kOfxStatOK) ) {
             return kOfxStatFailed;
         }
 
@@ -263,6 +319,13 @@ analysisPluginMain(const char* action,
             natronTestSetCounter("GILWait.numCPUs", (int)nCPUs);
             ThreadArgs args = { effect, std::this_thread::get_id() };
             gThreadSuite->multiThread(readValueThread, 2, &args);
+        } else if ( name && (std::strcmp(name, "mutex") == 0) ) {
+            if (gThreadSuite->mutexLock(gMutex) == kOfxStatOK) {
+                natronTestIncrementCounter("GILWait.mutexLocked");
+                gThreadSuite->mutexUnLock(gMutex);
+            } else {
+                natronTestIncrementCounter("GILWait.mutexLockFailed");
+            }
         }
 
         return kOfxStatOK;
