@@ -102,7 +102,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/PreferencesPanel.h"
 #include "Gui/ProjectGui.h"
-#include "Gui/ProjectGuiSerialization.h"
+#include "Engine/ProjectGuiSerialization.h"
 #include "Gui/PropertiesBinWrapper.h"
 #include "Gui/ProgressPanel.h"
 #include "Gui/PythonPanels.h"

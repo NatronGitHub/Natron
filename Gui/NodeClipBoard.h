@@ -33,7 +33,7 @@
 #include "Gui/GuiFwd.h"
 
 #include "Engine/NodeSerialization.h"
-#include "Gui/NodeGuiSerialization.h"
+#include "Engine/NodeGuiSerialization.h"
 
 NATRON_NAMESPACE_ENTER
 

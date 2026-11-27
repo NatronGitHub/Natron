@@ -7,7 +7,7 @@ LCMS_VERSION=2.20
 LCMS_VERSION_SHORT=${LCMS_VERSION} # for 2.14
 LCMS_TAR="lcms2-${LCMS_VERSION}.tar.gz"
 LCMS_SHA256=18ff5504fa9cc8a2b1f3591180d90ead16c8a2ea78e530523b46eab70e1ca6b9
-LCMS_SITE="https://sourceforge.net/projects/lcms/files/lcms/${LCMS_VERSION_SHORT}"
+LCMS_SITE="https://github.com/mm2/Little-CMS/releases/download/lcms${LCMS_VERSION_SHORT}"
 if download_step; then
     download "$LCMS_SITE" "$LCMS_TAR" "$LCMS_SHA256"
 fi

@@ -29,6 +29,7 @@
 #include "Global/Macros.h"
 
 #include <list>
+#include <vector>
 
 #include "Engine/MergingEnum.h"
 #include "Engine/PyParameter.h"
@@ -172,6 +173,34 @@ private:
     BezierPtr _bezier;
 };
 
+// A paint stroke of a RotoPaint node: one or more continuous lines (the "strokes" of the item), each made of
+// points (x, y, pressure, timestamp), with the parameters of the stroke (brush size, color...).
+class StrokeItem
+    : public ItemBase
+{
+public:
+
+    StrokeItem(const RotoItemPtr& item);
+
+    virtual ~StrokeItem();
+
+    Natron::RotoStrokeType getBrushType() const;
+
+    int getNumStrokes() const;
+
+    // The points (x, y, pressure, timestamp) of the line at index: none if there is no such line
+    void getPoints(int index, std::list<std::vector<double> >* points) const;
+
+    // Adds a line made of points (x, y, pressure, timestamp), interpolated as a painted line (Catmull-Rom).
+    // The timestamps are in seconds from the first point. False, and nothing added, if points is empty or its
+    // timestamps don't increase. Resets the center of the stroke (RotoStrokeItem::setStrokeFinished()).
+    bool addStroke(const std::list<std::vector<double> >& points);
+
+private:
+
+    RotoStrokeItemPtr _stroke;
+};
+
 class Roto
 {
 public:
@@ -187,6 +216,8 @@ public:
     BezierCurve* createBezier(double x, double y, double time);
     BezierCurve* createEllipse(double x, double y, double diameter, bool fromCenter, double time);
     BezierCurve* createRectangle(double x, double y, double size, double time);
+    // A paint stroke with no line yet (see StrokeItem::addStroke()), at the top of the selected layer (a RotoPaint node)
+    StrokeItem* createStroke(Natron::RotoStrokeType type);
 
 private:
 

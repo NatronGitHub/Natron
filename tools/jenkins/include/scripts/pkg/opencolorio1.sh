@@ -8,8 +8,9 @@ OCIO1_BUILD_GIT=0 # set to 1 to build the git version instead of the release
 # non-GIT version:
 OCIO1_VERSION=1.1.1
 OCIO1_TAR="OpenColorIO-${OCIO1_VERSION}.tar.gz"
+OCIO1_SHA256=c9b5b9def907e1dafb29e37336b702fff22cc6306d445a13b1621b8a754c14c8
 if download_step; then
-    download_github imageworks OpenColorIO "$OCIO1_VERSION" v "$OCIO1_TAR"
+    download_github imageworks OpenColorIO "$OCIO1_VERSION" v "$OCIO1_TAR" "$OCIO1_SHA256"
 fi
 # if [ "$OCIO1_BUILD_GIT" = 1 ]; then
 #     ## GIT version:

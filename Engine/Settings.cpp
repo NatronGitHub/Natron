@@ -63,7 +63,6 @@
 
 #include <SequenceParsing.h> // for removePath
 
-#include <ofxImageEffect.h> // ofxSonyVegas.h builds on it
 #include <ofxSonyVegas.h> // kOfxVegasProHostName, kOfxSonyVegasHostName
 
 #ifdef WINDOWS

@@ -314,6 +314,12 @@ TEST_F(OfxStrChoiceParamTest, DisplayOrder)
     SKIP_IF_NO_PLUGIN();
     const int expected[] = { 0, 2, 1, 3 };
     EXPECT_EQ( std::vector<int>(expected, expected + 4), _knob->getDisplayOrder_mt_safe() );
+    // without an order, OFX 1.5.1's default 0..n-1 is the natural order: no explicit display order (#1898)
+    KnobChoicePtr noOrder = std::dynamic_pointer_cast<KnobChoice>( _node->getKnobByName("strNoDefault") );
+    ASSERT_TRUE( bool(noOrder) );
+    const int natural[] = { 0, 1 };
+    EXPECT_EQ( std::vector<int>(natural, natural + 2), noOrder->getDisplayOrder_mt_safe() );
+    EXPECT_TRUE( noOrder->getExplicitDisplayOrder_mt_safe().empty() );
 }
 
 // A user change (the menu) gives the plug-in the enum in kOfxActionInstanceChanged.
@@ -427,6 +433,9 @@ TEST_F(OfxStrChoiceParamTest, InstanceRemovesSelectedEnum)
     EXPECT_EQ( std::string("blue"), enumOf(_str) );
     EXPECT_EQ( 0, _knob->getValue() );
     EXPECT_EQ( 0, _knob->getDefaultValue(0) );
+    // the order is cut to the options (0, 20, 10): Blue, Green, Red
+    const int shrunk[] = { 0, 2, 1 };
+    EXPECT_EQ( std::vector<int>(shrunk, shrunk + 3), _knob->getDisplayOrder_mt_safe() );
     // the menu shows that alpha is missing; it is selected again if the plug-in adds it back
     EXPECT_FALSE( _knob->isActiveEntryPresentInEntries() );
     const char* const backOptions[] = { "Blue", "Red", "Green", "Alpha" };
@@ -458,6 +467,8 @@ TEST_F(OfxStrChoiceParamTest, InstanceOptionsRebuiltOneByOne)
     EXPECT_EQ( std::string("green"), enumOf(_str) );
     EXPECT_EQ( 2, _knob->getDefaultValue(0) );
     EXPECT_TRUE( _knob->isActiveEntryPresentInEntries() );
+    // the reset of the options reset the order too: each appended option got its index (the natural order)
+    EXPECT_TRUE( _knob->getExplicitDisplayOrder_mt_safe().empty() );
 }
 
 // The plug-in changes the options and enums of an instance (here, sorted by name): the value stays the same enum.

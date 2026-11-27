@@ -3,9 +3,10 @@
 # see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/libmad.html
 LIBMAD_VERSION=0.15.1b
 LIBMAD_TAR="libmad-${LIBMAD_VERSION}.tar.gz"
+LIBMAD_SHA256=bbfac3ed6bfbc2823d3775ebb931087371e142bb0e9bb1bee51a76a6e0078690
 LIBMAD_SITE="https://downloads.sourceforge.net/mad"
 if download_step; then
-    download "$LIBMAD_SITE" "$LIBMAD_TAR"
+    download "$LIBMAD_SITE" "$LIBMAD_TAR" "$LIBMAD_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/mad.pc" ] || [ "$(pkg-config --modversion mad)" != "$LIBMAD_VERSION" ]; }; }; then
     start_build

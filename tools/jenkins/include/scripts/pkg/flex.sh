@@ -4,9 +4,10 @@
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/flex.html
 FLEX_VERSION=2.6.4
 FLEX_TAR="flex-${FLEX_VERSION}.tar.gz"
+FLEX_SHA256=e87aae032bf07c26f85ac0ed3250998c37621d95f8bd748b31f15b33c45ee995
 FLEX_SITE="https://github.com/westes/flex/releases/download/v${FLEX_VERSION}"
 if download_step; then
-    download "$FLEX_SITE" "$FLEX_TAR"
+    download "$FLEX_SITE" "$FLEX_TAR" "$FLEX_SHA256"
     #download_github westes flex "${FLEX_VERSION}" v "${FLEX_TAR}"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/flex" ]; }; }; then

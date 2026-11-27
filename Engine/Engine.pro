@@ -124,6 +124,7 @@ SOURCES += \
     MemoryInfo.cpp \
     NoOpBase.cpp \
     Node.cpp \
+    NodeBackdropSerialization.cpp \
     NodeDocumentation.cpp \
     NodeGroup.cpp \
     NodeGroupSerialization.cpp \
@@ -297,8 +298,10 @@ HEADERS += \
     Node.h \
     NodeGraphI.h \
     NodeGroup.h \
+    NodeBackdropSerialization.h \
     NodeGroupSerialization.h \
     NodeGuiI.h \
+    NodeGuiSerialization.h \
     NodeMetadata.h \
     NodePrivate.h \
     NodeSerialization.h \
@@ -331,6 +334,7 @@ HEADERS += \
     PrecompNode.h \
     ProcessHandler.h \
     Project.h \
+    ProjectGuiSerialization.h \
     ProjectPrivate.h \
     ProjectSerialization.h \
     PyAppInstance.h \
@@ -482,6 +486,7 @@ ENGINE_GENERATED_SOURCES = \
     stringnodecreationproperty_wrapper \
     stringparam_wrapper \
     stringparambase_wrapper \
+    strokeitem_wrapper \
     track_wrapper \
     tracker_wrapper \
     undogroup_wrapper \

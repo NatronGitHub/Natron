@@ -53,6 +53,8 @@
 #include "Engine/Node.h"
 #include "Engine/NodeGraphI.h"
 #include "Engine/NodeGuiI.h"
+#include "Engine/NodeGuiSerialization.h"
+#include "Engine/NodeSerialization.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
@@ -60,8 +62,12 @@
 #include "Engine/ReadNode.h"
 #include "Engine/RotoContext.h"
 #include "Engine/RotoLayer.h"
+#include "Engine/RotoPoint.h"
+#include "Engine/RotoStrokeItem.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/TrackMarker.h"
+#include "Engine/TrackerContext.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/WriteNode.h"
@@ -78,6 +84,16 @@ struct NodeCollectionPrivate
     NodeGraphI* graph;
     mutable QMutex nodesMutex;
     NodesList nodes;
+    // see NodeCollection::addViewerWithoutGui(), protected by nodesMutex
+    struct ViewerWithoutGui
+    {
+        NodeSerializationPtr serialization;
+        // by input name: the input node, null if it wasn't found (its name is kept), set by connectViewersWithoutGui()
+        std::map<std::string, NodeWPtr> inputs;
+        bool connected = false;
+    };
+    std::list<ViewerWithoutGui> viewersWithoutGui;
+    std::map<std::string, NodeGuiSerializationPtr> viewersWithoutGuiData; // by script name
 
     NodeCollectionPrivate(const AppInstancePtr& app)
         : app(app)
@@ -456,9 +472,126 @@ NodeCollection::clearNodesInternal(bool blocking)
     {
         QMutexLocker l(&_imp->nodesMutex);
         _imp->nodes.clear();
+        _imp->viewersWithoutGui.clear();
+        _imp->viewersWithoutGuiData.clear();
     }
 
     nodesToDelete.clear();
+}
+
+void
+NodeCollection::addViewerWithoutGui(const NodeSerializationPtr& viewer)
+{
+    NodeCollectionPrivate::ViewerWithoutGui v;
+
+    v.serialization = viewer;
+    QMutexLocker l(&_imp->nodesMutex);
+    _imp->viewersWithoutGui.push_back(v);
+}
+
+void
+NodeCollection::connectViewersWithoutGui()
+{
+    {
+        // with a GUI, there are none
+        QMutexLocker l(&_imp->nodesMutex);
+        if ( _imp->viewersWithoutGui.empty() ) {
+            return;
+        }
+    }
+    // the names of the nodes are read without the nodesMutex (Node::setScriptName() reads the nodes of the group)
+    const NodesList nodes = getNodes();
+    std::map<std::string, NodePtr> nodesByName;
+
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        nodesByName[(*it)->getScriptName_mt_safe()] = *it;
+    }
+    QMutexLocker l(&_imp->nodesMutex);
+    for (std::list<NodeCollectionPrivate::ViewerWithoutGui>::iterator it = _imp->viewersWithoutGui.begin(); it != _imp->viewersWithoutGui.end(); ++it) {
+        if (it->connected) {
+            continue;
+        }
+        const std::map<std::string, std::string>& inputs = it->serialization->getInputs();
+        for (std::map<std::string, std::string>::const_iterator input = inputs.begin(); input != inputs.end(); ++input) {
+            std::map<std::string, NodePtr>::const_iterator found = nodesByName.find(input->second);
+            if ( found != nodesByName.end() ) {
+                it->inputs[input->first] = found->second;
+            }
+        }
+        it->connected = true;
+    }
+}
+
+std::list<NodeSerializationPtr>
+NodeCollection::getViewersWithoutGui() const
+{
+    std::list<NodeCollectionPrivate::ViewerWithoutGui> viewers;
+    {
+        QMutexLocker l(&_imp->nodesMutex);
+        viewers = _imp->viewersWithoutGui;
+    }
+    std::list<NodeSerializationPtr> ret;
+    for (std::list<NodeCollectionPrivate::ViewerWithoutGui>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        std::map<std::string, std::string> inputs;
+        const std::map<std::string, std::string>& savedInputs = it->serialization->getInputs();
+        for (std::map<std::string, std::string>::const_iterator input = savedInputs.begin(); input != savedInputs.end(); ++input) {
+            std::map<std::string, NodeWPtr>::const_iterator found = it->inputs.find(input->first);
+            if ( found == it->inputs.end() ) {
+                // not found when the project was loaded: as in the file
+                inputs.insert(*input);
+            } else if ( NodePtr node = found->second.lock() ) {
+                // renamed, or deleted
+                if ( node->isActivated() ) {
+                    inputs[input->first] = node->getScriptName_mt_safe();
+                }
+            }
+        }
+        NodeSerializationPtr copy = std::make_shared<NodeSerialization>(*it->serialization);
+        copy->setInputs(inputs);
+        ret.push_back(copy);
+    }
+
+    return ret;
+}
+
+bool
+NodeCollection::setViewerWithoutGuiData(const std::string& scriptName,
+                                        const NodeGuiSerialization& data)
+{
+    QMutexLocker l(&_imp->nodesMutex);
+
+    for (std::list<NodeCollectionPrivate::ViewerWithoutGui>::const_iterator it = _imp->viewersWithoutGui.begin(); it != _imp->viewersWithoutGui.end(); ++it) {
+        if ( it->serialization->getNodeScriptName() == scriptName ) {
+            _imp->viewersWithoutGuiData[scriptName] = std::make_shared<NodeGuiSerialization>(data);
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
+std::list<NodeGuiSerializationPtr>
+NodeCollection::getViewersWithoutGuiData() const
+{
+    // the prefix of the fully qualified names of the nodes of this collection
+    std::string prefix;
+    if ( const NodeGroup* isGroup = dynamic_cast<const NodeGroup*>(this) ) {
+        prefix = isGroup->getNode()->getFullyQualifiedName() + '.';
+    }
+    std::list<NodeGuiSerializationPtr> ret;
+    QMutexLocker l(&_imp->nodesMutex);
+    for (std::list<NodeCollectionPrivate::ViewerWithoutGui>::const_iterator it = _imp->viewersWithoutGui.begin(); it != _imp->viewersWithoutGui.end(); ++it) {
+        const std::string& scriptName = it->serialization->getNodeScriptName();
+        std::map<std::string, NodeGuiSerializationPtr>::const_iterator found = _imp->viewersWithoutGuiData.find(scriptName);
+        if ( found != _imp->viewersWithoutGuiData.end() ) {
+            NodeGuiSerializationPtr data = std::make_shared<NodeGuiSerialization>(*found->second);
+            data->setFullySpecifiedName(prefix + scriptName);
+            ret.push_back(data);
+        }
+    }
+
+    return ret;
 }
 
 void
@@ -1691,14 +1824,26 @@ escapeString(const std::string& str)
 #define NUM_INT(n) QString::number(n, 10)
 #define NUM_COLOR(n) QString::number(n, 'g', 4)
 #define NUM_PIXEL(n) QString::number(n, 'f', 0)
-// The precision should be set to digits10+1 (i.e. 16 for double)
-// see also:
-// - https://github.com/jbeder/yaml-cpp/issues/197
-// - https://stackoverflow.com/questions/4738768/printing-double-without-losing-precision
-#define NUM_VALUE(n) QString::number(n, 'g', std::numeric_limits<double>::digits10 + 1)
-#define NUM_TIME(n) QString::number(n, 'g', std::numeric_limits<double>::digits10 + 1)
+#define NUM_VALUE(n) doubleToPython(n)
+#define NUM_TIME(n) doubleToPython(n)
 
 /* *INDENT-ON* */
+
+// The shortest of value with 15, 16 or 17 significant digits that Python reads as value: 16 digits, which the
+// exporter wrote before, change some values in their last bit (e.g. 0.1 + 0.2), and 17 digits always give the
+// same value (std::numeric_limits<double>::max_digits10), as the .ntp files have it.
+static QString
+doubleToPython(double value)
+{
+    for (int precision = std::numeric_limits<double>::digits10; precision < std::numeric_limits<double>::max_digits10; ++precision) {
+        const QString text = QString::number(value, 'g', precision);
+        if (text.toDouble() == value) {
+            return text;
+        }
+    }
+
+    return QString::number(value, 'g', std::numeric_limits<double>::max_digits10);
+}
 
 // The Python name of an interpolation, e.g. "NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeSmooth"
 static QString
@@ -2458,6 +2603,104 @@ exportBezierPointAtTime(int indentLevel,
                                              NUM_VALUE(ry) + QString::fromUtf8(")") );
 }
 
+// All the parameters of a shape or a stroke (also its lifetime, its transform, its motion blur...), after its points.
+// Finishing it (setCurveFinished(), StrokeItem.addStroke()) set its center to its center: always write the center
+// that it has.
+static void
+exportDrawableItemKnobs(int indentLevel,
+                        const RotoDrawableItemPtr& item,
+                        const QString& itemName,
+                        QTextStream& ts)
+{
+    const std::list<KnobIPtr>& knobs = item->getKnobs();
+    const KnobDoublePtr center = item->getCenterKnob();
+    const QString getParam = itemName + QString::fromUtf8(".getParam(");
+
+    for (std::list<KnobIPtr>::const_iterator k = knobs.begin(); k != knobs.end(); ++k) {
+        if ( !(*k)->getIsPersistent() ) {
+            continue;
+        }
+        if ( (*k == center) && !center->isAnimated(0) && !center->isAnimated(1) ) {
+            for (int i = 0; i < 2; ++i) {
+                WRITE_INDENT(indentLevel); WRITE_STRING( getParam + ESC( center->getName() ) + QString::fromUtf8(").setValue(") + NUM_VALUE( center->getValue(i) ) +
+                                                         QString::fromUtf8(", ") + NUM_INT(i) + QString::fromUtf8(")") );
+            }
+            continue;
+        }
+        exportKnobValues(indentLevel, *k, getParam + ESC( (*k)->getName() ) + QString::fromUtf8(")"), true, ts);
+    }
+}
+
+// The Python name of a brush type, e.g. "NatronEngine.Natron.RotoStrokeType.eRotoStrokeTypeSolid"
+static QString
+strokeTypeToPython(RotoStrokeType type)
+{
+    const char* name = "eRotoStrokeTypeSolid";
+    switch (type) {
+    case eRotoStrokeTypeSolid:
+        break;
+    case eRotoStrokeTypeEraser:
+        name = "eRotoStrokeTypeEraser";
+        break;
+    case eRotoStrokeTypeClone:
+        name = "eRotoStrokeTypeClone";
+        break;
+    case eRotoStrokeTypeReveal:
+        name = "eRotoStrokeTypeReveal";
+        break;
+    case eRotoStrokeTypeBlur:
+        name = "eRotoStrokeTypeBlur";
+        break;
+    case eRotoStrokeTypeSharpen:
+        name = "eRotoStrokeTypeSharpen";
+        break;
+    case eRotoStrokeTypeSmear:
+        name = "eRotoStrokeTypeSmear";
+        break;
+    case eRotoStrokeTypeDodge:
+        name = "eRotoStrokeTypeDodge";
+        break;
+    case eRotoStrokeTypeBurn:
+        name = "eRotoStrokeTypeBurn";
+        break;
+    }
+
+    return QString::fromUtf8(NATRON_ENGINE_PYTHON_MODULE_NAME ".Natron.RotoStrokeType.") + QString::fromUtf8(name);
+}
+
+// A paint stroke: its lines (the points of each), then its parameters
+static void
+exportStroke(int indentLevel,
+             const RotoStrokeItemPtr& stroke,
+             const QString& parentLayerName,
+             QTextStream& ts)
+{
+    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("stroke = roto.createStroke(") + strokeTypeToPython( stroke->getBrushType() ) + QString::fromUtf8(")") );
+    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("stroke.setScriptName(") + ESC( stroke->getScriptName() ) + QString::fromUtf8(")") );
+    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("stroke.setLabel(") + ESC( stroke->getLabel() ) + QString::fromUtf8(")") );
+    QString visibleStr = stroke->isGloballyActivated() ? QString::fromUtf8("True") : QString::fromUtf8("False");
+    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("stroke.setVisible(") + visibleStr + QString::fromUtf8(")") );
+    WRITE_INDENT(indentLevel); WRITE_STRING( parentLayerName + QString::fromUtf8(".addItem(stroke)") );
+
+    // the points (x, y, pressure, timestamp) of each line
+    const std::vector<std::vector<RotoPoint> > lines = stroke->getStrokesPoints();
+    for (std::vector<std::vector<RotoPoint> >::const_iterator line = lines.begin(); line != lines.end(); ++line) {
+        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("stroke.addStroke([");
+        for (std::vector<RotoPoint>::const_iterator p = line->begin(); p != line->end(); ++p) {
+            WRITE_INDENT(indentLevel + 1); WRITE_STRING( QString::fromUtf8("(") + NUM_VALUE( p->pos().x ) + QString::fromUtf8(", ") + NUM_VALUE( p->pos().y ) +
+                                                         QString::fromUtf8(", ") + NUM_VALUE( p->pressure() ) + QString::fromUtf8(", ") +
+                                                         NUM_TIME( p->timestamp() ) + QString::fromUtf8("),") );
+        }
+        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("])");
+    }
+    exportDrawableItemKnobs(indentLevel, stroke, QString::fromUtf8("stroke"), ts);
+    // Last, as for the shapes (see exportRotoLayer())
+    if ( stroke->getLocked() ) {
+        WRITE_INDENT(indentLevel); WRITE_STRING("stroke.setLocked(True)");
+    }
+    WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del stroke");
+}
+
 static void
 exportRotoLayer(int indentLevel,
                 const std::list<RotoItemPtr>& items,
@@ -2469,8 +2712,11 @@ exportRotoLayer(int indentLevel,
     for (std::list<RotoItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
         RotoLayerPtr isLayer = std::dynamic_pointer_cast<RotoLayer>(*it);
         BezierPtr isBezier = std::dynamic_pointer_cast<Bezier>(*it);
+        RotoStrokeItemPtr isStroke = std::dynamic_pointer_cast<RotoStrokeItem>(*it);
 
-        if (isBezier) {
+        if (isStroke) {
+            exportStroke(indentLevel, isStroke, parentLayerName, ts);
+        } else if (isBezier) {
             double time;
             const std::list<BezierCPPtr>& cps = isBezier->getControlPoints();
             const std::list<BezierCPPtr>& fps = isBezier->getFeatherPoints();
@@ -2527,24 +2773,7 @@ exportRotoLayer(int indentLevel,
             if ( isBezier->isCurveFinished() ) {
                 WRITE_INDENT(indentLevel); WRITE_STRING("bezier.setCurveFinished(True)");
             }
-            // All the parameters of the shape (also its lifetime, its transform, its motion blur...), after its
-            // points. setCurveFinished() set its center to the center of the shape: always write the center
-            // that it has.
-            const std::list<KnobIPtr>& shapeKnobs = isBezier->getKnobs();
-            const KnobDoublePtr center = isBezier->getCenterKnob();
-            for (std::list<KnobIPtr>::const_iterator k = shapeKnobs.begin(); k != shapeKnobs.end(); ++k) {
-                if ( !(*k)->getIsPersistent() ) {
-                    continue;
-                }
-                if ( (*k == center) && !center->isAnimated(0) && !center->isAnimated(1) ) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("bezier.getParam(") + ESC( center->getName() ) + QString::fromUtf8(").setValue(") + NUM_VALUE( center->getValue(0) ) +
-                                                             QString::fromUtf8(", 0)") );
-                    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("bezier.getParam(") + ESC( center->getName() ) + QString::fromUtf8(").setValue(") + NUM_VALUE( center->getValue(1) ) +
-                                                             QString::fromUtf8(", 1)") );
-                    continue;
-                }
-                exportKnobValues(indentLevel, *k, QString::fromUtf8("bezier.getParam(") + ESC( (*k)->getName() ) + QString::fromUtf8(")"), true, ts);
-            }
+            exportDrawableItemKnobs(indentLevel, isBezier, QString::fromUtf8("bezier"), ts);
             // Last: locking (or unlocking) a shape stops the changes of its parameters (RotoContext::onItemLockedChanged())
             if ( isBezier->getLocked() ) {
                 WRITE_INDENT(indentLevel); WRITE_STRING("bezier.setLocked(True)");
@@ -2552,7 +2781,6 @@ exportRotoLayer(int indentLevel,
 
             WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del bezier");
         } else if (isLayer) {
-            // (the paint strokes of a RotoPaint node are not exported, see Project::exportToPython())
             QString name =  QString::fromUtf8( isLayer->getScriptName().c_str() );
             QString layerName = name + QString::fromUtf8("_layer");
             WRITE_INDENT(indentLevel); WRITE_STRING( layerName + QString::fromUtf8(" = roto.createLayer()") );
@@ -2664,6 +2892,37 @@ exportAllNodeKnobs(int indentLevel,
             WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("del ") + baseLayerToken);
             WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("del roto") );
         }
+    }
+
+    // The tracks, after the parameters of the node: with no track, they don't compute the transform
+    // (TrackerContext::solveTransformParams())
+    TrackerContextPtr tracker = node->getTrackerContext();
+    std::vector<TrackMarkerPtr> markers;
+    if (tracker) {
+        tracker->getAllMarkers(&markers);
+    }
+    if ( !markers.empty() ) {
+        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# For the tracker node, create all tracks");
+        WRITE_INDENT(indentLevel); WRITE_STRING("tracker = lastNode.getTrackerContext()");
+        for (std::vector<TrackMarkerPtr>::const_iterator it = markers.begin(); it != markers.end(); ++it) {
+            // a track uses pattern matching or not, whatever the node's parameter now says (TrackerContext::load())
+            const bool isPM = dynamic_cast<const TrackMarkerPM*>( it->get() ) != 0;
+            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("track = tracker.createTrack(") + QString::fromUtf8(isPM ? "True" : "False") + QString::fromUtf8(")") );
+            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("track.setScriptName(") + ESC( (*it)->getScriptName_mt_safe() ) + QString::fromUtf8(")") );
+            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("track.setLabel(") + ESC( (*it)->getLabel() ) + QString::fromUtf8(")") );
+            // all its parameters, as TrackMarker::save()
+            const KnobsVec trackKnobs = (*it)->getKnobs_mt_safe();
+            for (KnobsVec::const_iterator k = trackKnobs.begin(); k != trackKnobs.end(); ++k) {
+                exportKnobValues(indentLevel, *k, QString::fromUtf8("track.getParam(") + ESC( (*k)->getName() ) + QString::fromUtf8(")"), true, ts);
+            }
+            std::set<int> userKeyframes;
+            (*it)->getUserKeyframes(&userKeyframes);
+            for (std::set<int>::const_iterator key = userKeyframes.begin(); key != userKeyframes.end(); ++key) {
+                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("track.setUserKeyframe(") + NUM_INT(*key) + QString::fromUtf8(")") );
+            }
+            WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del track");
+        }
+        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del tracker");
     }
 } // exportAllNodeKnobs
 
@@ -2839,7 +3098,10 @@ exportGroupInternal(int indentLevel,
 
     QString groupName = upperLevelGroupName + QString::fromUtf8("group");
 
-    if (isGroup) {
+    // The group of a PyPlug (the top level, which the script doesn't create). A Group inside it, or in a project,
+    // had its parameters exported with the nodes of its parent group: exporting them again created its user
+    // parameters and the tracks of a Tracker (a NodeGroup) twice.
+    if ( isGroup && upperLevelGroupName.isEmpty() ) {
         WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Create the parameters of the group node the same way we did for all internal nodes");
         WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("lastNode = ") + groupName);
         double r, g, b;
@@ -2947,16 +3209,22 @@ exportGroupInternal(int indentLevel,
             WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setScriptName(") + ESC( (*it)->getScriptName_mt_safe() ) + QString::fromUtf8(")") );
         }
         WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setLabel(") + ESC( (*it)->getLabel_mt_safe() ) + QString::fromUtf8(")") );
-        double r, g, b;
-        // Without a GUI (NatronRenderer), a node has no position, size or colour: don't write zeros (black nodes)
-        if ( (*it)->getColor(&r, &g, &b) ) {
+        // Without a GUI (NatronRenderer), a node has a position, size or colour only if its project file or a
+        // script gave it one (see Node::getGuiDataWithoutGui()): don't write zeros (black nodes)
+        if ( (*it)->hasGuiData() ) {
             double x, y;
             (*it)->getPosition(&x, &y);
             double w, h;
             (*it)->getSize(&w, &h);
             // a precision of 1 pixel is enough for the position on the nodegraph
             WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setPosition(") + NUM_PIXEL(x) + QString::fromUtf8(", ") + NUM_PIXEL(y) + QString::fromUtf8(")") );
-            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setSize(") + NUM_PIXEL(w) + QString::fromUtf8(", ") + NUM_PIXEL(h) + QString::fromUtf8(")") );
+            // without a GUI, a node that was only given a position has no size
+            if ( (w > 0) && (h > 0) ) {
+                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setSize(") + NUM_PIXEL(w) + QString::fromUtf8(", ") + NUM_PIXEL(h) + QString::fromUtf8(")") );
+            }
+        }
+        double r, g, b;
+        if ( (*it)->getColor(&r, &g, &b) ) {
             // a precision of 3 digits is enough for the node color
             WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setColor(") + NUM_COLOR(r) + QString::fromUtf8(", ") + NUM_COLOR(g) + QString::fromUtf8(", ") + NUM_COLOR(b) +  QString::fromUtf8(")") );
         }

@@ -57,6 +57,9 @@ NodeCollectionSerialization::initialize(const NodeCollection& group)
             _serializedNodes.push_back(state);
         }
     }
+    // the Viewers of the project file, in background mode (see restoreFromSerialization())
+    const std::list<NodeSerializationPtr> viewers = group.getViewersWithoutGui();
+    _serializedNodes.insert( _serializedNodes.end(), viewers.begin(), viewers.end() );
 }
 
 static QString lookForFileRecursively(const QString& dirPath, const QString& filenameUnPathed)
@@ -111,7 +114,8 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
         std::string pluginID = (*it)->getPluginID();
 
         if ( appPTR->isBackground() && ( (pluginID == PLUGINID_NATRON_VIEWER) || (pluginID == "Viewer") ) ) {
-            //if the node is a viewer, don't try to load it in background mode
+            // there are no Viewers in background mode: keep it, to save it with the project
+            group->addViewerWithoutGui(*it);
             continue;
         }
 
@@ -420,6 +424,9 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
             }
         }
     } // for (std::list<NodeSerializationPtr>::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
+
+    // the Viewers kept in background mode follow their inputs from now on
+    group->connectViewersWithoutGui();
 
     ///Now that the graph is setup, restore expressions
     {

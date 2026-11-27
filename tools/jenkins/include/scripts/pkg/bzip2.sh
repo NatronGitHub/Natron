@@ -4,9 +4,10 @@
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/bzip2.html
 BZIP2_VERSION=1.0.8
 BZIP2_TAR="bzip2-${BZIP2_VERSION}.tar.gz"
+BZIP2_SHA256=ab5a03176ee106d3f0fa90e381da478ddae405918153cca248e682cd0c4a2269
 BZIP2_SITE="https://sourceware.org/pub/bzip2"
 if download_step; then
-    download "$BZIP2_SITE" "$BZIP2_TAR"
+    download "$BZIP2_SITE" "$BZIP2_TAR" "$BZIP2_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libbz2.so.1" ]; }; }; then
     start_build

@@ -56,6 +56,7 @@ without importing anything.
     SeparatorParam
     StringParam
     StringParamBase
+    StrokeItem
     Track
     Tracker
     UserParamHolder

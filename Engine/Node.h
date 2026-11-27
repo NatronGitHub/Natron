@@ -642,7 +642,8 @@ public:
     bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view, int visitsCount) const;
 
     /**
-     * @brief If the session is a GUI session, then this function sets the position of the node on the nodegraph.
+     * @brief Sets the position of the node on the nodegraph. Without a NodeGui (an application without a GUI,
+     * NatronRenderer), the position, size and colour are kept by the node (see getGuiDataWithoutGui()).
      **/
     void setPosition(double x, double y);
     void getPosition(double *x, double *y) const;
@@ -651,10 +652,31 @@ public:
     void getSize(double* w, double* h) const;
 
     /**
-     * @brief Get the colour of the node as it appears on the nodegraph.
+     * @brief Get the colour of the node as it appears on the nodegraph. False if it has none: without a NodeGui,
+     * if neither its project file nor setColor() gave it one.
      **/
     bool getColor(double* r, double *g, double* b) const;
     void setColor(double r, double g, double b);
+
+    /**
+     * @brief The colour of a new node on the nodegraph, from its kind (reader, writer...) or the group of its plug-in, as
+     * set in the preferences.
+     **/
+    void getDefaultColor(double* r, double* g, double* b) const;
+
+    /**
+     * @brief Whether the node has GUI data: a NodeGui, or without one, the data of getGuiDataWithoutGui().
+     **/
+    bool hasGuiData() const;
+
+    /**
+     * @brief Without a NodeGui (an application without a GUI: NatronRenderer, natron-python), the GUI data that the
+     * project file (setGuiDataWithoutGui()) or setPosition(), setSize() and setColor() gave the node, so that saving
+     * the project keeps them (see Project::saveProjectInternal()). A copy, without children; null if there are none,
+     * or if the node has a NodeGui.
+     **/
+    NodeGuiSerializationPtr getGuiDataWithoutGui() const;
+    void setGuiDataWithoutGui(const NodeGuiSerialization& data);
 
 
     std::string getKnobChangedCallback() const;

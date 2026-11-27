@@ -51,9 +51,9 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Engine/RectD.h"
 
-#include "Gui/NodeGuiSerialization.h"
-#include "Gui/NodeBackdropSerialization.h"
-#include "Gui/GuiFwd.h"
+#include "Engine/NodeGuiSerialization.h"
+#include "Engine/NodeBackdropSerialization.h"
+#include "Engine/EngineFwd.h"
 
 
 #define PYTHON_PANEL_SERIALIZATION_VERSION 1
@@ -101,6 +101,18 @@ GCC_DIAG_ON(unused-parameter)
 #define kNatronProjectSettingsPanelSerializationName "Natron_Project_Settings_Panel"
 
 NATRON_NAMESPACE_ENTER
+
+NATRON_PYTHON_NAMESPACE_ENTER
+class PyPanel;
+NATRON_PYTHON_NAMESPACE_EXIT
+
+// The GUI data of a project file (its ProjectGui part). In Engine, so that the Engine can read and write them;
+// the initialize() functions, which read them from the GUI, are defined in Gui.
+class Gui;
+class ProjectGui;
+class Splitter;
+class TabWidget;
+
 struct ViewerData
 {
     double zoomLeft;
@@ -590,6 +602,10 @@ public:
     {
     }
 
+    // it owns its windows
+    GuiLayoutSerialization(const GuiLayoutSerialization&) = delete;
+    GuiLayoutSerialization& operator=(const GuiLayoutSerialization&) = delete;
+
     ~GuiLayoutSerialization()
     {
         for (std::list<ApplicationWindowSerialization*>::iterator it = _windows.begin(); it != _windows.end(); ++it) {
@@ -765,6 +781,12 @@ public:
     const std::list<NodeGuiSerialization > & getSerializedNodesGui() const
     {
         return _serializedNodes;
+    }
+
+    // Without a GUI, the nodes keep their data, which are set back before a save (see Project::saveProjectInternal())
+    void setSerializedNodesGui(const std::list<NodeGuiSerialization>& nodes)
+    {
+        _serializedNodes = nodes;
     }
 
     const GuiLayoutSerialization & getGuiLayout() const

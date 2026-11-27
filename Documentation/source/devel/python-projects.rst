@@ -66,6 +66,13 @@ From Python
     :meth:`App.saveProjectAsPython()<NatronEngine.App.saveProjectAsPython>` saves a copy.
     :meth:`App.loadProject()<NatronEngine.App.loadProject>` opens a Python project as a project.
 
+Converting projects
+    The ``natron_convert_project`` module converts projects to and from the Python format in
+    NatronRenderer (see :ref:`natron-convert-project`), e.g.
+    ``NatronRenderer -t -c "import natron_convert_project as c; c.convert_and_quit('in.ntp', 'in.py', 'python')"``.
+    It keeps the node positions, sizes and colours, but not the Viewers, which NatronRenderer doesn't
+    create (see the limitations below): it refuses to convert a project with Viewers unless asked to.
+
 The auto-saves of a Python project are binary, as for every project; a restored auto-save is saved
 as Python again.
 
@@ -145,11 +152,12 @@ Writing a project by hand:
 Limitations
 -----------
 
+- The expressions and links of the parameters of Roto shapes, paint strokes and tracks (those of the
+  node parameters are saved).
 - The GUI data: the window layout, the viewer settings and the node graph zoom
   (see :meth:`App.projectFileHasGuiData()<NatronEngine.App.projectFileHasGuiData>`). A project saved
-  by NatronRenderer has no node positions, as in a *.ntp* file.
-- The tracks of Tracker nodes and the paint strokes of RotoPaint nodes: a save in the Python format
-  warns about them.
+  by NatronRenderer keeps the positions, sizes and colours of the nodes that it loaded, but not its
+  Viewer nodes, which NatronRenderer doesn't create.
 - The nodes added or removed from Python inside a PyPlug instance that was never edited: the instance
   is saved as a reference to its PyPlug, which must be installed, with its parameters and the
   parameters of its nodes (editing a PyPlug instance converts it to a Group, which is saved with its

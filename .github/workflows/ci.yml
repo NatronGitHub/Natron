@@ -119,7 +119,7 @@ jobs:
             python3-dev shiboken6 libshiboken6-dev libpyside6-dev \
             python3-pyside6.qtcore python3-pyside6.qtgui python3-pyside6.qtwidgets python3-qtpy \
             libwayland-dev libwayland-client0 libwayland-egl1 \
-            extra-cmake-modules clang llvm ccache xvfb wget unzip \
+            extra-cmake-modules clang llvm ccache xvfb wget unzip libgtest-dev \
             libgl1-mesa-dri mesa-utils x11-utils
           # Fail here rather than in CMake if a package lacks what the Qt6 build needs.
           command -v shiboken6
@@ -283,7 +283,7 @@ jobs:
             ${MINGW_PACKAGE_PREFIX}-boost ${MINGW_PACKAGE_PREFIX}-cairo ${MINGW_PACKAGE_PREFIX}-fontconfig
             ${MINGW_PACKAGE_PREFIX}-expat ${MINGW_PACKAGE_PREFIX}-python
             ${MINGW_PACKAGE_PREFIX}-qt5-base ${MINGW_PACKAGE_PREFIX}-pyside2 ${MINGW_PACKAGE_PREFIX}-shiboken2
-            ${MINGW_PACKAGE_PREFIX}-python-qtpy
+            ${MINGW_PACKAGE_PREFIX}-python-qtpy ${MINGW_PACKAGE_PREFIX}-gtest
             # shiboken2 needs clang and llvm-tools, see tools/MINGW-packages/mingw-w64-natron-build-deps-qt5
             ${MINGW_PACKAGE_PREFIX}-clang ${MINGW_PACKAGE_PREFIX}-llvm-tools
           )
@@ -418,7 +418,7 @@ jobs:
       MACPORTS_VERSION: 2.12.7
       MACPORTS_CACHE_VERSION: 2
       MACPORTS_PORTS: >-
-        cmake pkgconfig zstd python311 py311-pyside2 py311-qtpy boost expat cairo
+        cmake pkgconfig zstd python311 py311-pyside2 py311-qtpy boost expat cairo gtest
       PYVER: '3.11'
       # not CONFIG: MSYS2's pacman scripts read $CONFIG as their configuration file
       CI_CONFIG: ${{ matrix.config }}
