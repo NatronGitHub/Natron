@@ -1,0 +1,185 @@
+name: Render soak
+
+# Long soak test of disk renders with NatronRenderer (#248: "Rendering silently stalls after X frames"), on
+# Linux and Windows: Tests/gui/run_render_soak_test.py renders thousands of frames per run, run after run, with
+# several Write nodes, a sequential plug-in and WriteFFmpeg, renders driven from the command line and from
+# Python, an abort and a restart, and threading settings from single-threaded to 8 parallel renders. When a
+# render makes no progress for stall_timeout seconds, it saves the backtraces of all threads (gdb) and fails.
+# The logs, backtraces and summary are in the "render soak" artifacts. ctest runs a short version
+# (RenderSoakTest) in every CI build.
+#
+# On demand only (it takes hours). natron_ref builds another commit of Natron, e.g. one before a fix, to check
+# that the soak catches the stall there; the soak scripts always come from the ref the workflow runs on.
+on:
+  workflow_dispatch:
+    inputs:
+      natron_ref:
+        description: 'Natron commit, branch or tag to build and soak (default: the ref of this run)'
+        default: ''
+      frames:
+        description: 'Frames per Write node and run'
+        default: '1200'
+      duration:
+        description: 'Minutes of soak per OS (runs are started until then)'
+        default: '150'
+      stall_timeout:
+        description: 'Seconds without progress that count as a stall'
+        default: '180'
+      configs:
+        description: 'Threading configurations (comma-separated, see CONFIGS in run_render_soak_test.py; default all)'
+        default: ''
+
+permissions:
+  contents: read
+
+env:
+  OCIO_CONFIG_VERSION: 2.5
+  NATRON_REF: ${{ inputs.natron_ref || github.sha }}
+  SOAK_FRAMES: ${{ inputs.frames || '1200' }}
+  SOAK_DURATION: ${{ inputs.duration || '150' }}
+  SOAK_STALL_TIMEOUT: ${{ inputs.stall_timeout || '180' }}
+  SOAK_CONFIGS: ${{ inputs.configs }}
+
+jobs:
+  linux:
+    name: Render soak ubuntu-24.04
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    defaults:
+      run:
+        shell: bash -leo pipefail {0}
+    steps:
+      - name: Checkout the Natron to soak
+        uses: actions/checkout@v4.1.1
+        with:
+          ref: ${{ env.NATRON_REF }}
+          submodules: recursive
+          path: natron
+      - name: Checkout the soak scripts
+        uses: actions/checkout@v4.1.1
+        with:
+          path: soak
+          sparse-checkout: Tests/gui
+
+      - name: Install Linux system packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev \
+            qt5-qmake qtbase5-dev qtdeclarative5-dev \
+            python3-dev libshiboken2-dev libpyside2-dev python3-pyside2.qtwidgets python3-qtpy \
+            libwayland-dev libwayland-client0 libwayland-egl1 \
+            extra-cmake-modules libgtest-dev gdb
+          # the watchdog attaches gdb to NatronRenderer, which is not its child
+          sudo sysctl -w kernel.yama.ptrace_scope=0
+
+      - name: Download OpenColorIO-Configs and the plug-ins
+        run: |
+          wget -q https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v${OCIO_CONFIG_VERSION}.tar.gz
+          tar xzf Natron-v${OCIO_CONFIG_VERSION}.tar.gz
+          mv OpenColorIO-Configs-Natron-v${OCIO_CONFIG_VERSION} OpenColorIO-Configs
+          mkdir Plugins && cd Plugins
+          wget -q https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-ubuntu_24-testing.zip
+          unzip -q openfx-io-build-ubuntu_24-testing.zip
+          wget -q https://github.com/NatronGitHub/openfx-misc/releases/download/natron_testing/openfx-misc-build-ubuntu_24-testing.zip
+          unzip -q openfx-misc-build-ubuntu_24-testing.zip
+
+      - name: Build NatronRenderer (RelWithDebInfo)
+        run: |
+          git -C natron log -1 --format='Soaking Natron %H (%ci) %s'
+          cmake -S natron -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          cmake --build build -j$(nproc) --target NatronRenderer
+          # the test plug-ins (net.natron.test.Sequential); an old commit may not have them
+          cmake --build build -j$(nproc) --target NatronTestPlugin || echo "::warning::no NatronTestPlugin target"
+
+      - name: Soak
+        run: |
+          configs=(); [ -n "$SOAK_CONFIGS" ] && configs=(--configs "$SOAK_CONFIGS")
+          OFX_PLUGIN_PATH=$PWD/Plugins OCIO=$PWD/OpenColorIO-Configs/blender/config.ocio \
+            python3 soak/Tests/gui/run_render_soak_test.py build/Renderer/NatronRenderer \
+              --frames "$SOAK_FRAMES" --duration $((SOAK_DURATION * 60)) --stall-timeout "$SOAK_STALL_TIMEOUT" \
+              "${configs[@]}" --ofx-path "$PWD/build/Tests/OfxPlugins" --out "$PWD/soak-out"
+
+      - name: Upload the soak logs
+        if: always()
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name: render soak ubuntu-24.04
+          path: |
+            soak-out/summary.json
+            soak-out/run*/log.txt
+            soak-out/run*/backtrace.txt
+          retention-days: 14
+
+  windows:
+    name: Render soak windows-latest UCRT64
+    runs-on: windows-latest
+    timeout-minutes: 360
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Checkout the Natron to soak
+        uses: actions/checkout@v4.1.1
+        with:
+          ref: ${{ env.NATRON_REF }}
+          submodules: recursive
+          path: natron
+      - name: Checkout the soak scripts
+        uses: actions/checkout@v4.1.1
+        with:
+          path: soak
+          sparse-checkout: Tests/gui
+
+      - name: Set up MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            git unzip
+            mingw-w64-ucrt-x86_64-cc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-pkgconf mingw-w64-ucrt-x86_64-wget mingw-w64-ucrt-x86_64-gdb
+            mingw-w64-ucrt-x86_64-boost mingw-w64-ucrt-x86_64-cairo mingw-w64-ucrt-x86_64-fontconfig
+            mingw-w64-ucrt-x86_64-expat mingw-w64-ucrt-x86_64-python
+            mingw-w64-ucrt-x86_64-qt5-base mingw-w64-ucrt-x86_64-pyside2 mingw-w64-ucrt-x86_64-shiboken2
+            mingw-w64-ucrt-x86_64-python-qtpy mingw-w64-ucrt-x86_64-gtest
+            mingw-w64-ucrt-x86_64-clang mingw-w64-ucrt-x86_64-llvm-tools
+
+      - name: Download OpenColorIO-Configs and the plug-ins
+        run: |
+          wget -q https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v${OCIO_CONFIG_VERSION}.tar.gz
+          tar xzf Natron-v${OCIO_CONFIG_VERSION}.tar.gz
+          mv OpenColorIO-Configs-Natron-v${OCIO_CONFIG_VERSION} OpenColorIO-Configs
+          mkdir ofx-plugins && cd ofx-plugins
+          wget -q https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-windows_ucrt64-testing.zip
+          unzip -q openfx-io-build-windows_ucrt64-testing.zip
+          wget -q https://github.com/NatronGitHub/openfx-misc/releases/download/natron_testing/openfx-misc-build-windows_ucrt64-testing.zip
+          unzip -q openfx-misc-build-windows_ucrt64-testing.zip
+
+      - name: Build NatronRenderer (RelWithDebInfo)
+        run: |
+          git -C natron log -1 --format='Soaking Natron %H (%ci) %s'
+          cmake -S natron -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          ninja -C build NatronRenderer
+          ninja -C build NatronTestPlugin || echo "::warning::no NatronTestPlugin target"
+
+      - name: Soak
+        run: |
+          configs=(); [ -n "$SOAK_CONFIGS" ] && configs=(--configs "$SOAK_CONFIGS")
+          # see ci.yml for PYTHONLEGACYWINDOWSDLLLOADING (#1147)
+          PYTHONLEGACYWINDOWSDLLLOADING=1 PYTHONHOME=${MINGW_PREFIX} \
+          OFX_PLUGIN_PATH=$(cygpath -w "$PWD/ofx-plugins") OCIO=$(cygpath -w "$PWD/OpenColorIO-Configs/blender/config.ocio") \
+            python soak/Tests/gui/run_render_soak_test.py build/Renderer/NatronRenderer.exe \
+              --frames "$SOAK_FRAMES" --duration $((SOAK_DURATION * 60)) --stall-timeout "$SOAK_STALL_TIMEOUT" \
+              "${configs[@]}" --ofx-path "$(cygpath -w "$PWD/build/Tests/OfxPlugins")" --out "$(cygpath -w "$PWD/soak-out")"
+
+      - name: Upload the soak logs
+        if: always()
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name: render soak windows-latest
+          path: |
+            soak-out/summary.json
+            soak-out/run*/log.txt
+            soak-out/run*/backtrace.txt
+          retention-days: 14

@@ -323,6 +323,14 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME RendererCLReadWriteTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_cl_read_write_test.py $<TARGET_FILE:NatronRenderer>)
     set_tests_properties(RendererCLReadWriteTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 660)
+    # short version of the render soak test (#248): four NatronRenderer runs (several Write nodes, a sequential
+    # plug-in, WriteFFmpeg, renders from Python, an abort and a restart) must not stall; longer soaks:
+    # .github/workflows/render_soak.yml
+    add_test(NAME RenderSoakTest
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_render_soak_test.py $<TARGET_FILE:NatronRenderer>
+                --frames 60 --stall-timeout 120 --configs default,1thread,parallel2,lowram
+                --ofx-path "${NATRON_TESTS_OFX_PLUGIN_DIR}")
+    set_tests_properties(RenderSoakTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 900)
     # --setting options for the caches and threads, which run before the caches exist (#1571)
     add_test(NAME RendererSettingsTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_settings_test.py $<TARGET_FILE:NatronRenderer>)
