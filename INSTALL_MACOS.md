@@ -236,7 +236,7 @@ env OSMESA_VERSION=25.0.7 LLVM_VERSION=19.1.7 LLVM_BUILD=1 PYTHON=/opt/local/bin
     MKJOBS=8 MACOSX_DEPLOYMENT_TARGET=14.0 ../osmesa-install.sh   # LLVM 19.1.7 into /opt/llvm, then Mesa 25.0.7 into /opt/osmesa; no sudo
 ```
 
-Use osmesa-install master: it has the LLVM and Mesa build fixes needed with recent macOS SDKs and Xcode versions (verified with Xcode 27.2). Set `OSMESA_VERSION` and `LLVM_VERSION`: without them, osmesa-install builds its own default, Mesa 18.3.6 with LLVM 6.0.1.
+Use osmesa-install master: it has the LLVM and Mesa build fixes needed with recent macOS SDKs and Xcode versions (verified with Xcode 27.2). Set `OSMESA_VERSION` and `LLVM_VERSION` anyway: they are osmesa-install's defaults today, but Natron's build shouldn't depend on them (osmesa-install commits before a450c88 defaulted to Mesa 18.3.6 with LLVM 6.0.1).
 
 **Upgrading from Mesa 18.3.6** (the default until 2026-11): delete the old installation first, so that no LLVM 6 or Mesa 18 files are left: `sudo rm -rf /opt/osmesa /opt/llvm`, then run the commands above. Python 2.7 was only needed for Mesa 18: if `port select --show python` still shows `python27`, run `sudo port select --set python python311` (install section 8), and `sudo port uninstall python27` if nothing else uses it. Keep `gsed`: the build scripts use it (section 6).
 
