@@ -3467,6 +3467,20 @@ setPolygonPath(cairo_t* cr,
     }
     cairo_close_path(cr);
 }
+// The contour of the opaque part of the shape: the shape, with its inward points moved to the feather
+std::vector<Point>
+opaqueContour(const SampledFeather& sampled)
+{
+    std::vector<Point> contour = sampled.shape;
+
+    for (std::size_t i = 0; i < contour.size(); ++i) {
+        if (sampled.inward[i]) {
+            contour[i] = sampled.feather[i];
+        }
+    }
+
+    return contour;
+}
 } // anonymous namespace
 
 void
@@ -3536,11 +3550,12 @@ RotoContextPrivate::renderBezier(cairo_t* cr,
 #else
         const SampledFeather feather = sampleFeather(*bezier, t, mipmapLevel, featherDist);
 
-        // The shape is opaque inside both the shape and its feather: where the feather is inward, the fill stops at
-        // the feather, and the feather patches fade it out from there to the shape (#157).
+        // Where the feather is inward, the fill stops at the feather, and the feather patches fade it out from there to
+        // the shape (#157): the fill is clipped to the shape whose inward points are moved to the feather (not to the
+        // whole feather polygon, which may leave out parts of the shape where the feather is outward).
         if (feather.hasInwardPoint) {
             cairo_save(cr);
-            setPolygonPath(cr, feather.feather);
+            setPolygonPath(cr, opaqueContour(feather));
             cairo_clip(cr);
         }
         // (with ROTO_USE_MESH_PATTERN_ONLY, compiled out, the fill goes into mesh, which the clip doesn't apply to)

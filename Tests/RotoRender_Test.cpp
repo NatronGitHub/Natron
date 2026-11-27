@@ -366,6 +366,8 @@ TEST_F(RotoRenderTest, BowTieOutwardFeather)
 
     const int y = 150;
     EXPECT_EQ(1., alpha.at(110, y));
+    // near the diagonal side, where the feather is inside the small lobe but outward
+    EXPECT_EQ(1., alpha.at(140, y));
     EXPECT_EQ(1., alpha.at(389, y));
     // a 20 px ramp is 2.5 times as steep as a 50 px one
     const double tolerance = 2.5 * kRampTolerance;
