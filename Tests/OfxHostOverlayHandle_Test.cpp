@@ -72,6 +72,16 @@ TEST(OfxHostOverlayHandle, SetForXYAbsoluteTypes)
     EXPECT_EQ( 1, NatronTestPlugin::counter("HostOverlayHandle.normalisedXYAbsolute.has") );
     EXPECT_EQ( 0, NatronTestPlugin::counter("HostOverlayHandle.xy.has") );
     EXPECT_EQ( 0, NatronTestPlugin::counter("HostOverlayHandle.plain.has") );
+    // the value follows the type when the plug-in changes it
+    EXPECT_EQ( 0, NatronTestPlugin::counter("HostOverlayHandle.changedToXY.has") );
+
+    // the parameter instances have the descriptors' values (overlays such as openfx-supportext's
+    // PositionInteract read them there)
+    EXPECT_EQ( 1, NatronTestPlugin::counter("HostOverlayHandle.xyAbsolute.instanceHas") );
+    EXPECT_EQ( 1, NatronTestPlugin::counter("HostOverlayHandle.normalisedXYAbsolute.instanceHas") );
+    EXPECT_EQ( 0, NatronTestPlugin::counter("HostOverlayHandle.xy.instanceHas") );
+    EXPECT_EQ( 0, NatronTestPlugin::counter("HostOverlayHandle.plain.instanceHas") );
+    EXPECT_EQ( 0, NatronTestPlugin::counter("HostOverlayHandle.changedToXY.instanceHas") );
 
     // the plug-in has an overlay interact: Natron draws its native handles where the plug-in asked for them
     // (kOfxParamPropUseHostOverlayHandle, set to the value read)
@@ -79,6 +89,7 @@ TEST(OfxHostOverlayHandle, SetForXYAbsoluteTypes)
     EXPECT_TRUE( hasNativeHandle(node, "normalisedXYAbsolute") );
     EXPECT_FALSE( hasNativeHandle(node, "xy") );
     EXPECT_FALSE( hasNativeHandle(node, "plain") );
+    EXPECT_FALSE( hasNativeHandle(node, "changedToXY") );
 
     node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
 }

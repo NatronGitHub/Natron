@@ -1735,7 +1735,7 @@ OfxImageEffectDescriptor::paramDefine(const char *paramType,
     if (std::strcmp(paramType, kOfxParamTypeDouble2D) == 0) {
         // the type is still HostSupport's default here (kOfxParamDoubleTypePlain)
         updateHasHostOverlayHandle(*ret);
-        _hostOverlayHandleHooks.push_back( std::unique_ptr<OFX::Host::Property::NotifyHook>( new HostOverlayHandleHook(*ret) ) );
+        _hostOverlayHandleHooks.push_back( std::make_unique<HostOverlayHandleHook>(*ret) );
         ret->getProperties().addNotifyHook( kOfxParamPropDoubleType, _hostOverlayHandleHooks.back().get() );
     }
 

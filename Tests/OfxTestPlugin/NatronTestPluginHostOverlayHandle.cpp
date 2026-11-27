@@ -22,8 +22,10 @@
 // not set). In kOfxImageEffectActionDescribeInContext, after setting the type, it reads
 // kOfxParamPropHasHostOverlayHandle on each descriptor and sets kOfxParamPropUseHostOverlayHandle to the
 // same value, as a plug-in that asks for the host's handles only where the host has them (the OFX 1.2
-// protocol, e.g. openfx-supportext's PositionInteract). Counters ("HostOverlayHandle.<param>.has"): the value
-// read, or -1 if reading it failed.
+// protocol, e.g. openfx-supportext's PositionInteract). A fifth one, "changedToXY", is set to
+// kOfxParamDoubleTypeXYAbsolute, then to kOfxParamDoubleTypeXY. Counters ("HostOverlayHandle.<param>.has"): the
+// value read, or -1 if reading it failed; "HostOverlayHandle.<param>.instanceHas": the value on the parameter
+// instance, read in kOfxActionCreateInstance (where PointsInteract-like overlays read it).
 
 #include <cstring>
 #include <string>
@@ -52,12 +54,15 @@ overlayMain(const char* /*action*/,
     return kOfxStatReplyDefault;
 }
 
-// Define a Double2D parameter of the given type (none: the default), then read HasHostOverlayHandle and set
-// UseHostOverlayHandle to it.
+const char* const kParamNames[] = { "xyAbsolute", "normalisedXYAbsolute", "xy", "plain", "changedToXY" };
+
+// Define a Double2D parameter of the given type (none: the default; with a second type, set the first one then
+// the second), then read HasHostOverlayHandle and set UseHostOverlayHandle to it.
 OfxStatus
 defineDouble2D(OfxParamSetHandle paramSet,
                const char* name,
-               const char* doubleType)
+               const char* doubleType,
+               const char* secondDoubleType = 0)
 {
     OfxPropertySetHandle props = 0;
     OfxStatus stat = gParamSuite->paramDefine(paramSet, kOfxParamTypeDouble2D, name, &props);
@@ -67,6 +72,9 @@ defineDouble2D(OfxParamSetHandle paramSet,
     }
     if (doubleType) {
         gPropSuite->propSetString(props, kOfxParamPropDoubleType, 0, doubleType);
+    }
+    if (secondDoubleType) {
+        gPropSuite->propSetString(props, kOfxParamPropDoubleType, 0, secondDoubleType);
     }
     int has = 0;
     if (gPropSuite->propGetInt(props, kOfxParamPropHasHostOverlayHandle, 0, &has) != kOfxStatOK) {
@@ -133,14 +141,16 @@ pluginMain(const char* action,
         {
             const char* name;
             const char* type;
+            const char* secondType;
         } params[] = {
-            { "xyAbsolute", kOfxParamDoubleTypeXYAbsolute },
-            { "normalisedXYAbsolute", kOfxParamDoubleTypeNormalisedXYAbsolute },
-            { "xy", kOfxParamDoubleTypeXY },
-            { "plain", 0 },
+            { kParamNames[0], kOfxParamDoubleTypeXYAbsolute, 0 },
+            { kParamNames[1], kOfxParamDoubleTypeNormalisedXYAbsolute, 0 },
+            { kParamNames[2], kOfxParamDoubleTypeXY, 0 },
+            { kParamNames[3], 0, 0 },
+            { kParamNames[4], kOfxParamDoubleTypeXYAbsolute, kOfxParamDoubleTypeXY },
         };
         for (const auto& param : params) {
-            stat = defineDouble2D(paramSet, param.name, param.type);
+            stat = defineDouble2D(paramSet, param.name, param.type, param.secondType);
             if (stat != kOfxStatOK) {
                 return stat;
             }
@@ -148,8 +158,24 @@ pluginMain(const char* action,
 
         return kOfxStatOK;
     }
-    if ( (std::strcmp(action, kOfxActionCreateInstance) == 0) || (std::strcmp(action, kOfxActionDestroyInstance) == 0) ||
-         (std::strcmp(action, kOfxImageEffectActionRender) == 0) ) {
+    if (std::strcmp(action, kOfxActionCreateInstance) == 0) {
+        OfxParamSetHandle paramSet = 0;
+        if (gEffectSuite->getParamSet(effect, &paramSet) == kOfxStatOK) {
+            for (const char* name : kParamNames) {
+                OfxParamHandle param = 0;
+                OfxPropertySetHandle props = 0;
+                int has = -1;
+                if ( (gParamSuite->paramGetHandle(paramSet, name, &param, &props) != kOfxStatOK) ||
+                     (gPropSuite->propGetInt(props, kOfxParamPropHasHostOverlayHandle, 0, &has) != kOfxStatOK) ) {
+                    has = -1;
+                }
+                natronTestSetCounter(std::string("HostOverlayHandle.") + name + ".instanceHas", has);
+            }
+        }
+
+        return kOfxStatOK;
+    }
+    if ( (std::strcmp(action, kOfxActionDestroyInstance) == 0) || (std::strcmp(action, kOfxImageEffectActionRender) == 0) ) {
         return kOfxStatOK;
     }
 
