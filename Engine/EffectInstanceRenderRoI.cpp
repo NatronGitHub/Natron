@@ -1501,6 +1501,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                     &it->imgs,
                                                     &it->inputRois);
             } catch (const OpenGLTextureAllocationError&) {
+                if (storage != eStorageModeGLTex) {
+                    // not an OpenGL render: rendering again without OpenGL would do the same
+                    throw;
+                }
                 // An input could not be loaded into an OpenGL texture (#1945)
                 inputTextureFailed = true;
             }
