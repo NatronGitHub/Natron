@@ -7,7 +7,10 @@ SOXR_TAR="soxr-${SOXR_VERSION}-Source.tar.xz"
 SOXR_SHA256=b111c15fdc8c029989330ff559184198c161100a59312f5dc19ddeb9b5a15889
 SOXR_SITE="https://sourceforge.net/projects/soxr/files"
 if download_step; then
-    download "$SOXR_SITE" "$SOXR_TAR" "$SOXR_SHA256"
+    # Debian's copy of the release tarball first (the same file), then SourceForge
+    download_urls "$SOXR_TAR" "$SOXR_SHA256" \
+        "https://deb.debian.org/debian/pool/main/libs/libsoxr/libsoxr_${SOXR_VERSION}.orig.tar.xz" \
+        "$SOXR_SITE/$SOXR_TAR"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/soxr.pc" ] || [ "$(pkg-config --modversion soxr)" != "$SOXR_VERSION" ]; }; }; then
     start_build

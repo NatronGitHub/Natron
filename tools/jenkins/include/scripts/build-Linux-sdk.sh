@@ -379,16 +379,17 @@ function fetch_checked() {
     return 1
 }
 
-# $1: master site, $2: package (file name), $3: expected sha256 of the file (optional, but every
-# package should have one). The file is fetched from the master site (the project's own release
-# site, never SourceForge when the project has another one), and from the Natron mirror
-# ($THIRD_PARTY_SRC_URL, on SourceForge) only if that fails: a SourceForge outage, or a file
-# removed from SourceForge, must not break the SDK build.
-function download() {
+# $1: package (the file name in $SRC_PATH), $2: expected sha256 of the file (optional, but every
+# package should have one), $3...: URLs of that same file, tried in order. List the project's own
+# release site first, unless it is SourceForge and another site (e.g. Debian's archive) has the
+# same file. The Natron mirror ($THIRD_PARTY_SRC_URL, on SourceForge) is tried last: a
+# SourceForge outage, or a file removed from SourceForge, must not break the SDK build.
+function download_urls() {
     if dobuild || [ "${DOWNLOAD:-}" = "1" ]; then
-        local master_site=$1
-        local package=$2
-        local sha256=${3:-}
+        local package=$1
+        local sha256=${2:-}
+        shift 2
+        local url
         if [ -s "$SRC_PATH/$package" ] && ! sha256_ok "$SRC_PATH/$package" "$sha256"; then
             echo "*** removing $SRC_PATH/$package (wrong checksum)"
             rm -f "$SRC_PATH/$package"
@@ -403,11 +404,14 @@ function download() {
                     echo "*** mirrordistsurls = ${mirrordistsurls[*]}"
                 fi
             fi
-            if ! fetch_checked "$master_site/$package" "$SRC_PATH/$package" "$sha256"; then
-                if fetch_checked "$THIRD_PARTY_SRC_URL/$package" "$SRC_PATH/$package" "$sha256"; then
-                    mirrordists+=("$package")
-                    mirrordistsurls+=("$master_site/$package")
+            for url in "$@"; do
+                if fetch_checked "$url" "$SRC_PATH/$package" "$sha256"; then
+                    break
                 fi
+            done
+            if [ ! -s "$SRC_PATH/$package" ] && fetch_checked "$THIRD_PARTY_SRC_URL/$package" "$SRC_PATH/$package" "$sha256"; then
+                mirrordists+=("$package")
+                mirrordistsurls+=("$1")
             fi
         fi
         if [ ! -s "$SRC_PATH/$package" ]; then
@@ -417,37 +421,20 @@ function download() {
     fi
 }
 
+# $1: master site, $2: package (file name), $3: expected sha256 of the file (optional, but every
+# package should have one). Downloads $1/$2 (see download_urls).
+function download() {
+    download_urls "$2" "${3:-}" "$1/$2"
+}
+
 # $1: GitHub user, $2: repository, $3: version, $4: tag prefix, $5: package (file name),
-# $6: expected sha256 of the file (optional, but every package should have one)
+# $6: expected sha256 of the file (optional, but every package should have one).
+# Downloads the GitHub source archive of the tag (see download_urls).
 function download_github() {
-    if dobuild || [ "${DOWNLOAD:-}" = "1" ]; then
-        # e.g.:
-        #download_github uclouvain openjpeg 2.3.0 v openjpeg-2.3.0.tar.gz <sha256>
-        #download_github OpenImageIO oiio 1.6.18 tags/Release- oiio-1.6.18.tar.gz <sha256>
-        local user=$1
-        local repo=$2
-        local version=$3
-        local tagprefix=$4
-        local package=$5
-        local sha256=${6:-}
-        local url="https://github.com/${user}/${repo}/archive/${tagprefix}${version}.tar.gz"
-        if [ -s "$SRC_PATH/$package" ] && ! sha256_ok "$SRC_PATH/$package" "$sha256"; then
-            echo "*** removing $SRC_PATH/$package (wrong checksum)"
-            rm -f "$SRC_PATH/$package"
-        fi
-        if [ ! -s "$SRC_PATH/$package" ]; then
-            if ! fetch_checked "$url" "$SRC_PATH/$package" "$sha256"; then
-                if fetch_checked "$THIRD_PARTY_SRC_URL/$package" "$SRC_PATH/$package" "$sha256"; then
-                    mirrordists+=("$package")
-                    mirrordistsurls+=("$url")
-                fi
-            fi
-        fi
-        if [ ! -s "$SRC_PATH/$package" ]; then
-            (>&2 echo "Error: unable to download $package")
-            exit 1
-        fi
-    fi
+    # e.g.:
+    #download_github uclouvain openjpeg 2.3.0 v openjpeg-2.3.0.tar.gz <sha256>
+    #download_github OpenImageIO oiio 1.6.18 tags/Release- oiio-1.6.18.tar.gz <sha256>
+    download_urls "$5" "${6:-}" "https://github.com/${1}/${2}/archive/${4}${3}.tar.gz"
 }
 
 # see https://stackoverflow.com/a/43136160/2607517
