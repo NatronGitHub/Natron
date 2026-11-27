@@ -436,7 +436,8 @@ jobs:
         with:
           # the unzipped portable tree, with Setup.exe (not the -tests or -unit_tests_failures artifacts)
           pattern: Natron-*-Windows-${{ matrix.arch }}
-          path: dist
+          # on C:, as the install, so that the step below can rename the tree
+          path: C:/nd
 
       - name: Keep LF line endings
         # the runner's Git for Windows has core.autocrlf=true, and Natron-Tests has no
@@ -457,10 +458,15 @@ jobs:
         id: natron_tests
         timeout-minutes: 150
         run: |
-          SETUP=$(find dist -mindepth 3 -maxdepth 3 -name Setup.exe)
+          SETUP=$(find /c/nd -mindepth 3 -maxdepth 3 -name Setup.exe)
           if [ "$(echo "${SETUP}" | grep -c .)" != 1 ]; then echo "::error::not exactly one Setup.exe in the artifact:"; echo "${SETUP}"; exit 1; fi
           NAME=$(basename "$(dirname "${SETUP}")")
           echo "NAME=${NAME}" >> $GITHUB_ENV
+          # Setup.exe reads its files with MAX_PATH (260) paths: the tree, nested twice under its
+          # long name (<artifact>/<name>/), at a short path (the longest files are ~110 characters)
+          if [ -e /c/ns ]; then echo "::error::C:\\ns already exists"; exit 1; fi
+          mv "$(dirname "${SETUP}")" /c/ns
+          SETUP=/c/ns/Setup.exe
           APP_W='C:\nt'
           APP=$(cygpath -u "${APP_W}")
           if [ -e "${APP}" ]; then echo "::error::${APP_W} already exists"; exit 1; fi
