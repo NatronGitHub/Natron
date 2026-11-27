@@ -402,7 +402,17 @@ public:
 
     bool isCreatingNodeTree() const;
 
+    /**
+     * @brief Called by CreatingNodeTreeFlag_RAII. When the outermost node tree creation ends, computes the hashes of the
+     * nodes given to computeHashAfterNodeTreeCreation() meanwhile.
+     **/
     void setIsCreatingNodeTree(bool b);
+
+    /**
+     * @brief The inputs of node changed: if a node tree is created, compute its hashes when the outermost tree creation
+     * ends (except on project load) and return true, otherwise return false (see Node::computeHashAfterInputChange()).
+     **/
+    bool computeHashAfterNodeTreeCreation(const NodePtr& node) WARN_UNUSED_RETURN;
 
     virtual void appendToScriptEditor(const std::string& str);
     // Same as appendToScriptEditor(), for plain text (e.g. Python output), which must not be taken for HTML

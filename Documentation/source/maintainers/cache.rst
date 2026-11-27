@@ -154,6 +154,15 @@ other branch, which is visited later, and the merge node is not recomputed
 when the second path reaches it. Any other order would give other hashes, so
 it must be kept.
 
+A change of the inputs of a node computes the hashes through
+``Node::computeHashAfterInputChange``. While a node tree is created
+(``CreatingNodeTreeFlag_RAII``: a paste, a clone, a PyPlug instance, a Python
+project), the nodes are connected one by one, and the hashes are computed once
+the outermost tree creation ends, in the order of the connections
+(``AppInstance::setIsCreatingNodeTree``, #1847). On project load, they are
+computed from the saved knobs ages when the input-related data are refreshed,
+upstream first (``Node::refreshAllInputRelatedData``).
+
 The knobs age is saved in the project file, together with a per-node cache
 ID, so that the disk caches still match after the project is reopened. After a
 load, the first change replaces the age with a random 64-bit value

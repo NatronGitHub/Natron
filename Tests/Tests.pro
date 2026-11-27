@@ -91,6 +91,7 @@ SOURCES += \
     NodeGroup_Test.cpp \
     NodePresets_Test.cpp \
     NodePreview_Test.cpp \
+    NodeTreeHash_Test.cpp \
     NoDialogs_Test.cpp \
     OfxBundlePyPlugs_Test.cpp \
     OfxBytesParam_Test.cpp \
