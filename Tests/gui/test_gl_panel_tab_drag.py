@@ -18,6 +18,7 @@ its image.
 A regression guard for the drag, float and dock path: Mesa llvmpipe under Xvfb may not reproduce the
 driver-specific GLX error of the report.
 """
+import importlib
 import os
 import tempfile
 
@@ -131,30 +132,62 @@ def drag_tab_to(label, global_pos, steps=20):
     wait_idle()
 
 
+def opengl_widget_class():
+    """QOpenGLWidget, or None if this PySide doesn't have it.
+
+    Qt 6 moved it to QtOpenGLWidgets, which CI's PySide6 packages don't install.
+    """
+    if hasattr(QtWidgets, "QOpenGLWidget"):  # PySide2
+        return QtWidgets.QOpenGLWidget
+    try:
+        return importlib.import_module("PySide6.QtOpenGLWidgets").QOpenGLWidget
+    except ImportError:
+        return None
+
+
+def framebuffer(gl, what):
+    """The framebuffer of gl (QOpenGLWidget::grabFramebuffer(), which renders it), or None without QOpenGLWidget.
+
+    A null framebuffer (an OpenGL failure) fails the test: GuiApp.saveScreenshot() would skip it.
+    """
+    cls = opengl_widget_class()
+    if cls is None:
+        return None
+    if not isinstance(gl, cls):
+        shiboken = importlib.import_module("shiboken6" if cls.__module__.startswith("PySide6") else "shiboken2")
+        gl = shiboken.wrapInstance(shiboken.getCppPointer(gl)[0], cls)
+    fb = gl.grabFramebuffer()
+    check(not fb.isNull() and fb.width() > 0, "no framebuffer for the %s" % what)
+    return fb
+
+
 def view_pixels(label, what):
-    """The OpenGL view of the tab label as drawn on screen, and its device pixel ratio.
+    """The OpenGL view of the tab label as drawn, and its device pixel ratio.
 
-    The view is returned as rows of (r, g, b) tuples, in device pixels.
-
-    GuiApp.saveScreenshot() draws each OpenGL widget from its framebuffer (QOpenGLWidget::grabFramebuffer()),
-    which renders it again. The test doesn't call grabFramebuffer() itself: Qt 6 moved QOpenGLWidget to
-    QtOpenGLWidgets, which CI's PySide6 packages don't install.
+    The view is returned as rows of (r, g, b) tuples, in device pixels: its framebuffer, or, without
+    QOpenGLWidget in PySide, the part of the panel's GuiApp.saveScreenshot() that it covers.
     """
     panel, gl = gl_view(label)
     check(panel.isVisible() and gl.isVisible(), "the %s is hidden after %s" % (label, what))
-    fd, path = tempfile.mkstemp(suffix=".png", prefix="natron-gl-panel-")
-    os.close(fd)
-    try:
-        check(app.saveScreenshot(path, PANELS[label][1]), "cannot take a screenshot of the %s after %s" % (label, what))
-        shot = QtGui.QImage(path)
-    finally:
-        os.remove(path)
-    check(not shot.isNull() and shot.width() > 0 and panel.width() > 0,
-          "empty screenshot of the %s after %s" % (label, what))
-    scale = shot.width() / panel.width()
-    pos = gl.mapTo(panel, QtCore.QPoint(0, 0))
-    img = shot.copy(round(pos.x() * scale), round(pos.y() * scale),
-                    round(gl.width() * scale), round(gl.height() * scale)).convertToFormat(QtGui.QImage.Format_RGB32)
+    img = framebuffer(gl, "%s after %s" % (label, what))
+    if img is not None:
+        scale = img.width() / gl.width()
+    else:
+        fd, path = tempfile.mkstemp(suffix=".png", prefix="natron-gl-panel-")
+        os.close(fd)
+        try:
+            check(app.saveScreenshot(path, PANELS[label][1]),
+                  "cannot take a screenshot of the %s after %s" % (label, what))
+            shot = QtGui.QImage(path)
+        finally:
+            os.remove(path)
+        check(not shot.isNull() and shot.width() > 0 and panel.width() > 0,
+              "empty screenshot of the %s after %s" % (label, what))
+        scale = shot.width() / panel.width()
+        pos = gl.mapTo(panel, QtCore.QPoint(0, 0))
+        img = shot.copy(round(pos.x() * scale), round(pos.y() * scale),
+                        round(gl.width() * scale), round(gl.height() * scale))
+    img = img.convertToFormat(QtGui.QImage.Format_RGB32)
     rows = []
     for y in range(img.height()):
         row = []
