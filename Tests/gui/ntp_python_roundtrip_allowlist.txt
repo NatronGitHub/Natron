@@ -10,9 +10,6 @@
 # every project).
 # Lines that start with "# " are comments.
 
-# Python projects that don't load: a large whole-number double is written as an int (on Windows)
-#2029 /(PythonProjectLoad) BayMax/*
-
 # The disk-cache keys of the nodes
 #2004 */CacheID
 #2004 */KnobsAge

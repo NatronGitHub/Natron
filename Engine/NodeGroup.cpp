@@ -31,6 +31,7 @@
 #include <limits>
 #include <algorithm> // min, max
 #include <cassert>
+#include <cmath> // fabs
 #include <stdexcept>
 #include <sstream> // stringstream
 #include <limits>
@@ -1831,17 +1832,26 @@ escapeString(const std::string& str)
 // The shortest of value with 15, 16 or 17 significant digits that Python reads as value: 16 digits, which the
 // exporter wrote before, change some values in their last bit (e.g. 0.1 + 0.2), and 17 digits always give the
 // same value (std::numeric_limits<double>::max_digits10), as the .ntp files have it.
+// A whole number is written as a float literal when it is outside the range of int: Python would read an int, which
+// shiboken can't convert where a 32-bit C long is involved (Windows, #2029).
 static QString
 doubleToPython(double value)
 {
+    QString text = QString::number(value, 'g', std::numeric_limits<double>::max_digits10);
     for (int precision = std::numeric_limits<double>::digits10; precision < std::numeric_limits<double>::max_digits10; ++precision) {
-        const QString text = QString::number(value, 'g', precision);
-        if (text.toDouble() == value) {
-            return text;
+        const QString shorter = QString::number(value, 'g', precision);
+        if (shorter.toDouble() == value) {
+            text = shorter;
+            break;
         }
     }
+    const bool isWholeNumber = !text.contains( QLatin1Char('.') ) && !text.contains( QLatin1Char('e') ) &&
+                               !text.contains( QLatin1Char('n') ); // not inf nor nan
+    if ( isWholeNumber && (std::fabs(value) > std::numeric_limits<int>::max()) ) {
+        text += QString::fromUtf8(".0");
+    }
 
-    return QString::number(value, 'g', std::numeric_limits<double>::max_digits10);
+    return text;
 }
 
 // The shortest text that Python reads as a value that becomes value again as a float: node colours are floats
