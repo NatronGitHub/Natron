@@ -326,6 +326,11 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME RendererCLReadWriteTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_cl_read_write_test.py $<TARGET_FILE:NatronRenderer>)
     set_tests_properties(RendererCLReadWriteTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 660)
+    # NatronRenderer with multithreading off (--setting noRenderThreads=-1): app.render() returns once the frames are
+    # written, a second render of the same Write node and a -w render of the saved project don't crash (#2019)
+    add_test(NAME RendererNoThreadsTest
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_nothreads_test.py $<TARGET_FILE:NatronRenderer>)
+    set_tests_properties(RendererNoThreadsTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 300)
     # short version of the render soak test (#248): four NatronRenderer runs (several Write nodes, a sequential
     # plug-in, WriteFFmpeg, renders from Python, an abort and a restart) must not stall; longer soaks:
     # .github/workflows/render_soak.yml
