@@ -717,9 +717,10 @@ Histogram::initializeGL()
 
     assert( QOpenGLContext::currentContext() == context() );
 
-    // QOpenGLWidget destroys its context and creates a new one when it moves to another top-level
-    // window, e.g. when the panel is dragged into a floating window (#536), and then calls
-    // initializeGL() again. The OpenGL objects of the old context must be released with it.
+    // With Qt::AA_ShareOpenGLContexts, QOpenGLWidget keeps its context when it moves to another
+    // top-level window (when the panel is dragged into a floating window, #536). If the
+    // context is replaced anyway, initializeGL() runs again in the new one: the OpenGL objects
+    // of the old context must be released with it.
     QObject::connect( context(), &QOpenGLContext::aboutToBeDestroyed, this, &Histogram::onContextAboutToBeDestroyed );
 
 #ifdef NATRON_HISTOGRAM_USING_OPENGL
