@@ -27,8 +27,9 @@
 //   RenderClone.blockRender is set, so that a test can keep a render going on the main instance;
 // - instanceDataAtCreate: the instances whose kOfxPropInstanceData was not NULL in
 //   kOfxActionCreateInstance (its default is NULL, ofxCore.h). Each instance then sets it to its own data;
-// - renderWithoutExtraPlanes: the renders whose instance (a render clone or the main instance) reported no
-//   extra planes (kNatronOfxExtraCreatedPlanes, ofxNatron.h: the project's planes and the node's user-created ones).
+// - renderWithExtraPlanes, renderWithoutExtraPlanes: the renders whose instance (a render clone or the main
+//   instance) reported extra planes (kNatronOfxExtraCreatedPlanes, ofxNatron.h: the project's default planes and
+//   the node's user-created ones) with a non-empty first value, and those that reported none.
 
 #include <chrono>
 #include <cstring>
@@ -151,7 +152,11 @@ render(OfxImageEffectHandle effect)
          (gPropSuite->propGetDimension(props, kNatronOfxExtraCreatedPlanes, &extraPlanes) != kOfxStatOK) ) {
         extraPlanes = -1;
     }
-    if (extraPlanes <= 0) {
+    const char* firstPlane = 0;
+    if ( (extraPlanes > 0) && (gPropSuite->propGetString(props, kNatronOfxExtraCreatedPlanes, 0, &firstPlane) == kOfxStatOK) &&
+         firstPlane && (firstPlane[0] != 0) ) {
+        natronTestIncrementCounter("RenderClone.renderWithExtraPlanes");
+    } else {
         natronTestIncrementCounter("RenderClone.renderWithoutExtraPlanes");
     }
     natronTestIncrementCounter("RenderClone.inRender");

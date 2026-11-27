@@ -120,7 +120,8 @@ OfxImageEffectInstance::OfxImageEffectInstance(const OfxImageEffectInstance& oth
     // kOfxActionCreateInstance would take the main instance's private data for its own.
     getProps().setPointerProperty(kOfxPropInstanceData, nullptr);
     // The copied property set has no get hooks (HostSupport's Property copy constructor doesn't copy them): without
-    // this one, the render clones, which run most renders, would report no user-created planes.
+    // this one, a render clone, which runs the renders that overlap one on the main instance, would report no extra
+    // planes (the project's default planes and the node's user-created ones).
     getProps().setGetHook(kNatronOfxExtraCreatedPlanes, (OFX::Host::Property::GetHook*)this);
 }
 

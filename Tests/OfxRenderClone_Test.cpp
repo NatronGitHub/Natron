@@ -81,6 +81,7 @@ TEST(OfxRenderClone, DestroyedBeforeMainInstance)
     const int created = NatronTestPlugin::counter("RenderClone.created");
     const int destroyedBeforeLater = NatronTestPlugin::counter("RenderClone.destroyedBeforeLater");
     const int instanceDataAtCreate = NatronTestPlugin::counter("RenderClone.instanceDataAtCreate");
+    const int renderWithExtraPlanes = NatronTestPlugin::counter("RenderClone.renderWithExtraPlanes");
     const int renderWithoutExtraPlanes = NatronTestPlugin::counter("RenderClone.renderWithoutExtraPlanes");
     ASSERT_EQ( 0, NatronTestPlugin::counter("RenderClone.live") );
 
@@ -111,6 +112,7 @@ TEST(OfxRenderClone, DestroyedBeforeMainInstance)
     // the clone started with no instance data, although the main instance had set its own
     EXPECT_EQ( instanceDataAtCreate, NatronTestPlugin::counter("RenderClone.instanceDataAtCreate") );
     // both renders, on the main instance and on the clone, saw the extra planes (the project has five by default)
+    EXPECT_EQ( renderWithExtraPlanes + 2, NatronTestPlugin::counter("RenderClone.renderWithExtraPlanes") );
     EXPECT_EQ( renderWithoutExtraPlanes, NatronTestPlugin::counter("RenderClone.renderWithoutExtraPlanes") );
 
     // as on quit (Project::reset(), Node::doDestroyNodeInternalEnd()), where the crash was seen; this also
