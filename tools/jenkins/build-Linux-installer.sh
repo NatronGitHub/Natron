@@ -614,6 +614,8 @@ function installPlugin() {
 
     # Copy plug-in bundle
     cp -a "${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle" "${TMP_PORTABLE_DIR}/Plugins/OFX/Natron/"
+    # without the caches of its PyPlugs, written by build-natron.sh's Tests run (#1923)
+    find "${TMP_PORTABLE_DIR}/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle" -type d -name __pycache__ -prune -exec rm -rf {} +
 
 }
 
@@ -648,13 +650,15 @@ fi
 rm -rf "$HOME/.cache/INRIA/Natron"* &> /dev/null || true
 # The tests need no display: use Qt's offscreen platform with or without valgrind.
 # Not on aarch64, where valgrind is too slow (see build-natron.sh).
+# No Python caches (PYTHONDONTWRITEBYTECODE): Tests loads the PyPlugs, and their __pycache__ would
+# be put in the archive with the tree (#1923).
 if command -v valgrind > /dev/null 2>&1 && [ "${ARCH:-$(uname -m)}" != aarch64 ]; then
     # without DeepGraphRender.VeryDeepChain, too slow under valgrind (see build-natron.sh)
-    env GTEST_FILTER=-DeepGraphRender.VeryDeepChain QT_QPA_PLATFORM=offscreen $TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/valgrind-python${PYV}.supp" "${TMP_PORTABLE_DIR}/bin/Tests"
+    env PYTHONDONTWRITEBYTECODE=1 GTEST_FILTER=-DeepGraphRender.VeryDeepChain QT_QPA_PLATFORM=offscreen $TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/valgrind-python${PYV}.supp" "${TMP_PORTABLE_DIR}/bin/Tests"
 else
     # without valgrind
     echo "Warning: valgrind not found, or aarch64: running the bundled unit tests without it"
-    env QT_QPA_PLATFORM=offscreen $TIMEOUT -s KILL 1800 "${TMP_PORTABLE_DIR}/bin/Tests"
+    env PYTHONDONTWRITEBYTECODE=1 QT_QPA_PLATFORM=offscreen $TIMEOUT -s KILL 1800 "${TMP_PORTABLE_DIR}/bin/Tests"
 fi
 rm "${TMP_PORTABLE_DIR}/bin/Tests"
 

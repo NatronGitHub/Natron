@@ -394,13 +394,14 @@ bash "$CWD"/gen-natron-doc.sh
 echo "Running Tests program..."
 # With only the bundle's bin/ and the Windows directories on PATH (not $SDK_HOME/bin), so that a
 # DLL missing from bin/ makes it fail to start. Starting must succeed; the test results do not
-# fail the build yet.
+# fail the build yet. No Python caches (PYTHONDONTWRITEBYTECODE): Tests.exe loads the PyPlugs, and
+# their __pycache__ would be zipped with the tree (#1923).
 BUNDLE_PATH="${TMP_PORTABLE_DIR}/bin:$(cygpath -u -S):$(cygpath -u -W)"
-if ! $TIMEOUT -s KILL 300 env PATH="$BUNDLE_PATH" "${TMP_PORTABLE_DIR}/bin/Tests.exe" --gtest_list_tests > /dev/null; then
+if ! $TIMEOUT -s KILL 300 env PYTHONDONTWRITEBYTECODE=1 PATH="$BUNDLE_PATH" "${TMP_PORTABLE_DIR}/bin/Tests.exe" --gtest_list_tests > /dev/null; then
     echo "Error: Tests.exe does not start with PATH=$BUNDLE_PATH: a DLL is probably missing from bin/ (genDllVersions.sh)"
     exit 1
 fi
-$TIMEOUT -s KILL 1800 env PATH="$BUNDLE_PATH" "${TMP_PORTABLE_DIR}/bin/Tests.exe" || true
+$TIMEOUT -s KILL 1800 env PYTHONDONTWRITEBYTECODE=1 PATH="$BUNDLE_PATH" "${TMP_PORTABLE_DIR}/bin/Tests.exe" || true
 # MSYS2's Google Test is a DLL, which genDllVersions.sh bundled for Tests.exe only: remove it too (it
 # stays listed in the <installer>-dlls.txt report, copied above)
 rm -f "${TMP_PORTABLE_DIR}/bin/Tests.exe" "${TMP_PORTABLE_DIR}"/bin/libgtest*.dll
