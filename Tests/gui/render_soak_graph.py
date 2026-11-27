@@ -26,6 +26,7 @@ command line) or with -t. The environment gives the parameters:
   "sequential" (the test plug-in net.natron.test.Sequential, which Natron renders in frame order on one
   thread, before a PNG Write, and a WriteFFmpeg, which needs its frames in order);
 - SOAK_SIZE: "WxH", the size of the rendered images;
+- SOAK_INPUT: the directory of the image sequence in_####.png that the Read node of the writers graph reads;
 - SOAK_SAVE: if set, save the project there and quit (no render);
 - SOAK_RENDER: if set, render from Python (app.render) instead of from the command line:
   "first-last", and SOAK_WRITERS (comma-separated, default all), SOAK_ABORT_FRAME (natron.quit(3) from the
@@ -54,8 +55,9 @@ CAN_QUIT = hasattr(natron, "quit")
 
 
 def quit_with(status):
+    """Exits NatronRenderer with status, if this Natron has natron.quit()."""
     if CAN_QUIT:
-        quit_with(status)
+        natron.quit(status)
 
 
 def say(message):
@@ -93,17 +95,23 @@ def make(app, plugin, name, inputs=(), **params):
     return node
 
 
+VIDEO_WRITERS = set()  # the names of the Write nodes that write a video (one file)
+
+
 def make_write(app, out_dir, name, source, pattern, writers):
+    """Creates a Write node to out_dir/pattern after source, and appends it to writers (if Write exists)."""
     node = make(app, "fr.inria.built-in.Write", name, [source])
     if node is None:
         return
     node.getParam("filename").set(os.path.join(out_dir, pattern))
     say("writer %s %s" % (name, pattern))
+    if "#" not in pattern:
+        VIDEO_WRITERS.add(name)
     writers.append(node)
 
 
 def reformat(app, name, source, width, height):
-    # rodlie's repro of #248 stalled at a Reformat node
+    """A Reformat of source to width x height (rodlie's repro of #248 stalled at a Reformat node), or source."""
     return make(app, "net.sf.openfx.Reformat", name, [source], reformatType=1, boxSize=(width, height),
                 boxFixed=True) or source
 
@@ -127,6 +135,21 @@ def build_writers(app, out_dir, width, height):
                      rotate=("expr", "360. * Clock.t.get()"), motionBlur=0.5) or grade
     hold = make(app, "net.sf.openfx.FrameHold", "Hold", [noise], firstFrame=1) if noise is not None else None
     merge = make(app, "net.sf.openfx.MergePlugin", "Merge", [hold or noise, transform]) or transform
+    input_dir = os.environ.get("SOAK_INPUT")
+    if input_dir:
+        # most reports of #248 read image sequences: a PNG sequence, shorter than the render, that loops
+        read = make(app, "fr.inria.built-in.Read", "Read")
+        if read is not None:
+            read.getParam("filename").set(os.path.join(input_dir, "in_####.png"))
+            for key in ("before", "after"):
+                param = read.getParam(key)
+                if param is not None:
+                    try:
+                        param.set("loop")
+                    except Exception:  # pylint: disable=broad-except
+                        param.set(1)  # Natron without choice options by name: "Loop" is the second option
+            merge = make(app, "net.sf.openfx.MergePlugin", "MergeRead",
+                         [merge, reformat(app, "ReadReformat", read, width, height)]) or merge
     blur = make(app, "net.sf.cimg.CImgBlur", "Blur", [merge], size=(3., 3.)) or merge
     cached = make(app, "fr.inria.built-in.DiskCache", "DiskCache", [blur]) or blur
     color = make(app, "net.sf.openfx.ColorCorrectPlugin", "ColorCorrect", [merge],
@@ -164,6 +187,13 @@ def render_from_python(app, writers, first, last, abort_frame):
     Returns the exit status: ABORT_STATUS if the render was aborted, else 0.
     """
     chunked = writers[0]
+    if chunked.getScriptName() in VIDEO_WRITERS:
+        # each render writes the whole video file again: render it at once
+        app.render(chunked, first, last)
+        writers = writers[1:]
+        if not writers:
+            return 0
+        chunked = writers[0]
     hang_frame = int(os.environ.get("SOAK_HANG_FRAME", "0"))
     if hang_frame:
         # a render that hangs at that frame, to check the watchdog of run_render_soak_test.py
@@ -239,4 +269,5 @@ def main():
         quit_with(status)
 
 
+# NatronRenderer runs this file as a script (with -t, or as a Python project), never imports it
 main()

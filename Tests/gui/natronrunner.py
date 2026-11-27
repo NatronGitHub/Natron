@@ -66,7 +66,7 @@ def natron_env(out_dir, **variables):
     return env
 
 
-def _descendants(pid):
+def descendants(pid):
     """The pids of all the descendants of pid (needs pgrep, else none)."""
     try:
         out = subprocess.check_output(["pgrep", "-P", str(pid)], stderr=subprocess.DEVNULL)
@@ -75,7 +75,7 @@ def _descendants(pid):
     ret = []
     for child in out.split():
         child = int(child)
-        ret += _descendants(child) + [child]
+        ret += descendants(child) + [child]
     return ret
 
 
@@ -110,7 +110,7 @@ def kill_tree(proc):
     pids = []
     if sys.platform != "win32":  # on Windows, terminate() kills proc at once: taskkill could not find its tree
         # before the wrapper exits: its children are then no longer its descendants
-        pids = _descendants(proc.pid)
+        pids = descendants(proc.pid)
         try:
             proc.terminate()
             proc.wait(timeout=10)
@@ -144,7 +144,7 @@ def run(cmd, env, timeout, stdin=None):
                 out = None
                 pids = []
                 if sys.platform != "win32":  # on Windows, terminate() kills proc at once: taskkill needs its tree
-                    pids = _descendants(proc.pid)
+                    pids = descendants(proc.pid)
                     # a wrapper such as natron-lldb.sh kills its inferior and prints its log: keep reading it
                     proc.terminate()
                     try:
@@ -156,7 +156,7 @@ def run(cmd, env, timeout, stdin=None):
                     out, _ = proc.communicate()
                 status = None
         except BaseException:  # e.g. KeyboardInterrupt, also during the kill: don't leave Natron running
-            _kill(proc, _descendants(proc.pid) if sys.platform != "win32" else [])
+            _kill(proc, descendants(proc.pid) if sys.platform != "win32" else [])
             proc.wait()
             raise
     return status, out.decode(errors="replace").replace("\r\n", "\n")

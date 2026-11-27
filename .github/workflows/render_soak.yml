@@ -20,7 +20,7 @@ on:
         description: 'Frames per Write node and run'
         default: '1200'
       duration:
-        description: 'Minutes of soak per OS (runs are started until then)'
+        description: 'Minutes of soak per OS (runs are started until then; at most 240, so that the build and the last run fit in the 360-minute job)'
         default: '150'
       stall_timeout:
         description: 'Seconds without progress that count as a stall'
@@ -49,6 +49,13 @@ jobs:
       run:
         shell: bash -leo pipefail {0}
     steps:
+      - name: Check the inputs
+        run: |
+          if [ "$SOAK_DURATION" -gt 240 ]; then
+            echo "::error::duration is $SOAK_DURATION minutes: at most 240, so that the build and the last run fit in the job"
+            exit 1
+          fi
+
       - name: Checkout the Natron to soak
         uses: actions/checkout@v4.1.1
         with:
@@ -118,6 +125,13 @@ jobs:
       run:
         shell: msys2 {0}
     steps:
+      - name: Check the inputs
+        run: |
+          if [ "$SOAK_DURATION" -gt 240 ]; then
+            echo "::error::duration is $SOAK_DURATION minutes: at most 240, so that the build and the last run fit in the job"
+            exit 1
+          fi
+
       - name: Checkout the Natron to soak
         uses: actions/checkout@v4.1.1
         with:
@@ -135,15 +149,29 @@ jobs:
         with:
           msystem: UCRT64
           update: true
-          install: >-
-            git unzip
-            mingw-w64-ucrt-x86_64-cc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja
-            mingw-w64-ucrt-x86_64-pkgconf mingw-w64-ucrt-x86_64-wget mingw-w64-ucrt-x86_64-gdb
-            mingw-w64-ucrt-x86_64-boost mingw-w64-ucrt-x86_64-cairo mingw-w64-ucrt-x86_64-fontconfig
-            mingw-w64-ucrt-x86_64-expat mingw-w64-ucrt-x86_64-python
-            mingw-w64-ucrt-x86_64-qt5-base mingw-w64-ucrt-x86_64-pyside2 mingw-w64-ucrt-x86_64-shiboken2
-            mingw-w64-ucrt-x86_64-python-qtpy mingw-w64-ucrt-x86_64-gtest
-            mingw-w64-ucrt-x86_64-clang mingw-w64-ucrt-x86_64-llvm-tools
+          install: git unzip
+
+      - name: Install Natron build dependencies
+        run: |
+          pkgs=(
+            ${MINGW_PACKAGE_PREFIX}-cc ${MINGW_PACKAGE_PREFIX}-cmake ${MINGW_PACKAGE_PREFIX}-ninja
+            ${MINGW_PACKAGE_PREFIX}-pkgconf ${MINGW_PACKAGE_PREFIX}-wget ${MINGW_PACKAGE_PREFIX}-gdb
+            ${MINGW_PACKAGE_PREFIX}-boost ${MINGW_PACKAGE_PREFIX}-cairo ${MINGW_PACKAGE_PREFIX}-fontconfig
+            ${MINGW_PACKAGE_PREFIX}-expat ${MINGW_PACKAGE_PREFIX}-python
+            ${MINGW_PACKAGE_PREFIX}-qt5-base ${MINGW_PACKAGE_PREFIX}-pyside2 ${MINGW_PACKAGE_PREFIX}-shiboken2
+            ${MINGW_PACKAGE_PREFIX}-python-qtpy ${MINGW_PACKAGE_PREFIX}-gtest
+            ${MINGW_PACKAGE_PREFIX}-clang ${MINGW_PACKAGE_PREFIX}-llvm-tools
+          )
+          # mirror.msys2.org sometimes stalls: retry, as in ci.yml
+          for i in 1 2 3 4 5; do
+            pacman -Syu --needed --noconfirm "${pkgs[@]}" && break
+            if [ $i = 5 ]; then
+              echo "::error::pacman failed to install the build dependencies"
+              exit 1
+            fi
+            echo "pacman failed (attempt $i), retrying in 30s..."
+            sleep 30
+          done
 
       - name: Download OpenColorIO-Configs and the plug-ins
         run: |
