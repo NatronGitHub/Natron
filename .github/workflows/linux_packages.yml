@@ -14,7 +14,8 @@ name: Linux packages
 #    the runtime libraries that a desktop has installed (natron-test.sh -H; #1964, #1965): newer
 #    glibc, libstdc++ and X11/GL libraries than Rocky Linux 9's. The runner image has much more
 #    than a desktop, so only the Rocky Linux 9 job (and checkBundle) catches a library missing
-#    from the archive.
+#    from the archive. The same job runs the JPEG XL round trip (Tests/gui/headless_jpegxl_roundtrip.py,
+#    #980) with the archive's NatronRenderer, where it must not skip.
 # Weekly (Sunday), on demand, and on pre-release tags (v2.6.0-rc1, -beta1, -alpha.1, ...), whose release gets the
 # archives and the test results; never on pull requests. The archives and the test results are
 # kept 14 days as workflow artifacts. On RB-2.6, the weekly and on-demand runs whose packages and
@@ -370,6 +371,16 @@ jobs:
         echo "$PRETTY_NAME, $(ldd --version | head -1), $(uname -m)"
     - name: Run Natron-Tests on the latest Ubuntu
       run: tools/docker/natron-test.sh -H -n Natron-Tests -o results dist/*.tar.xz
+    - name: JPEG XL round trip with the archive's NatronRenderer (#980)
+      # the archive's OpenImageIO has libjxl and its openfx-io is master: the test must run, not skip
+      if: ${{ !cancelled() }}
+      run: |
+        d=$(mktemp -d)
+        tar -xJf dist/*.tar.xz -C "$d"
+        P=$(echo "$d"/*-no-installer)
+        env -i HOME="$d" PATH=/usr/bin:/bin LANG=C.UTF-8 NATRON_DISK_CACHE_PATH="$d/cache" \
+            NATRON_TEST_REQUIRE_JPEGXL=1 OCIO="$P/Resources/OpenColorIO-Configs/blender/config.ocio" \
+            timeout -k 10 600 "$P/NatronRenderer" -t "$PWD/Tests/gui/headless_jpegxl_roundtrip.py" < /dev/null
     - uses: actions/upload-artifact@v4
       if: always()
       with:

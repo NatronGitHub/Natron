@@ -709,6 +709,9 @@ build poppler-data
 build yaml-cpp # (0.5.3 requires boost, 0.6+ requires C++11, used by OpenColorIO)
 build opencolorio # (uses yaml-cpp, expat, Imath)
 build webp # (for OIIO)
+build brotli # (for libjxl)
+build highway # (for libjxl)
+build libjxl # (JPEG XL, for OIIO)
 build openimageio
 build seexpr211 # (SeExpr 2.11, for openfx-io's SeExpr plug-ins)
 #build eigen

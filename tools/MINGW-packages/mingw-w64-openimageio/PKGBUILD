@@ -4,9 +4,9 @@ _realname=openimageio
 pkgbase=mingw-w64-natron_${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-natron_${_realname}"
 # The same version as Natron's macOS build (tools/MacPorts/graphics/openimageio).
-# Built against natron_libraw-gpl2 (in its private prefix) and without FFmpeg.
+# Built against natron_libraw-gpl2 (in its private prefix), with JPEG XL (#980) and without FFmpeg.
 pkgver=3.1.17.0
-pkgrel=1
+pkgrel=2
 pkgdesc="A library for reading and writing images, including classes, utilities, and applications (mingw-w64)"
 arch=('any')
 mingw_arch=('ucrt64' 'clangarm64')
@@ -24,6 +24,7 @@ depends=("${MINGW_PACKAGE_PREFIX}-boost"
          "${MINGW_PACKAGE_PREFIX}-giflib"
          "${MINGW_PACKAGE_PREFIX}-libheif"
          "${MINGW_PACKAGE_PREFIX}-libjpeg"
+         "${MINGW_PACKAGE_PREFIX}-libjxl"
          "${MINGW_PACKAGE_PREFIX}-libpng"
          "${MINGW_PACKAGE_PREFIX}-natron_libraw-gpl2>=0.22.3"
          "${MINGW_PACKAGE_PREFIX}-libtiff"
@@ -119,7 +120,8 @@ build() {
     -DUSE_PYTHON=OFF \
     -DUSE_PTEX=OFF \
     -DUSE_DICOM=OFF \
-    -DUSE_JXL=OFF \
+    -DUSE_JXL=ON \
+    -DOpenImageIO_REQUIRED_DEPS=JXL \
     -DUSE_OPENVDB=OFF \
     -DUSE_TBB=OFF \
     -DCMAKE_SHARED_LINKER_FLAGS=" -Wl,--export-all-symbols -Wl,--enable-auto-import " \
