@@ -38,7 +38,6 @@ CLANG_DIAG_ON(deprecated-register)
 #include "Engine/AppManager.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/OutputEffectInstance.h"
-#include "Engine/Settings.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -62,12 +61,12 @@ BlockingBackgroundRender::blockingRender(bool enableRenderStats,
     assert(_running == false);
     _running = true;
     _writer->renderFullSequence(true, enableRenderStats, this, first, last, frameStep);
-    if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
-        _running = false;
-    } else {
-        while (_running) {
-            _runningCond.wait(locker.mutex());
-        }
+    // Wait for notifyFinished(), also with multithreading off (the noRenderThreads=-1 setting): the sequence
+    // is rendered by the scheduler thread of the writer anyway, and the request queued by renderFullSequence()
+    // points to this object until OutputEffectInstance::notifyRenderFinished() has called notifyFinished()
+    // (#2019).
+    while (_running) {
+        _runningCond.wait( locker.mutex() );
     }
 }
 
