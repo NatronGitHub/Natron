@@ -8,7 +8,7 @@ name: Linux packages
 # 2. the package: tools/jenkins/launchBuildMain.sh in the SDK image (CMake builds of Natron and
 #    the plug-ins, the bundled unit tests, the portable archive, whose system libraries and
 #    symbol versions build-Linux-installer.sh checks against Rocky Linux 9.0, checkBundle);
-# 3. Natron-Tests (master) on the archive, in a clean rockylinux/rockylinux:9 container
+# 3. Natron-Tests (master, or the natron_tests_ref input) on the archive, in a clean rockylinux/rockylinux:9 container
 #    (tools/docker/natron-test.sh): <name>-tests.txt, <name>-unit_tests_failures.zip;
 # 4. Natron-Tests on the archive again, directly on the latest Ubuntu runner of each arch, with
 #    the runtime libraries that a desktop has installed (natron-test.sh -H; #1964, #1965): newer
@@ -24,6 +24,10 @@ name: Linux packages
 on:
   workflow_dispatch:
     inputs:
+      natron_tests_ref:
+        description: 'Natron-Tests branch, tag or commit to test with (default master), e.g. the branch of a Natron-Tests pull request'
+        required: false
+        default: master
       rebuild_sdk:
         description: 'Rebuild the SDK image from scratch (newest Rocky Linux 9 base image and packages, no layer cache), even if its definition did not change'
         type: boolean
@@ -302,7 +306,7 @@ jobs:
     - uses: actions/checkout@v4
       with:
         repository: NatronGitHub/Natron-Tests
-        ref: master
+        ref: ${{ inputs.natron_tests_ref || 'master' }}
         path: Natron-Tests
         persist-credentials: false
     - uses: actions/download-artifact@v4
@@ -345,7 +349,7 @@ jobs:
     - uses: actions/checkout@v4
       with:
         repository: NatronGitHub/Natron-Tests
-        ref: master
+        ref: ${{ inputs.natron_tests_ref || 'master' }}
         path: Natron-Tests
         persist-credentials: false
     - uses: actions/download-artifact@v4
@@ -420,8 +424,9 @@ jobs:
     # all or nothing, so that both archives match natron_testing-commit.txt: the result of a matrix
     # job is success only if every arch succeeded (package: built and checked, test and
     # test_latest: Natron-Tests passed on Rocky Linux 9 and on the latest Ubuntu, known failures
-    # excepted; the plug-ins' CI runs on recent Ubuntu runners)
-    if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/RB-2.6' && needs.package.result == 'success' && needs.test.result == 'success' && needs.test_latest.result == 'success' }}
+    # excepted; the plug-ins' CI runs on recent Ubuntu runners), with Natron-Tests master (not a
+    # natron_tests_ref under test)
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/RB-2.6' && (inputs.natron_tests_ref || 'master') == 'master' && needs.package.result == 'success' && needs.test.result == 'success' && needs.test_latest.result == 'success' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: write

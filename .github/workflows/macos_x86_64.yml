@@ -23,6 +23,10 @@ name: macOS x86_64 DMG
 on:
   workflow_dispatch:
     inputs:
+      natron_tests_ref:
+        description: 'Natron-Tests branch, tag or commit to test with (default master), e.g. the branch of a Natron-Tests pull request'
+        required: false
+        default: master
       sdk:
         description: 'SDK: reuse (same definition, < 30 days old; else update the newest), update (the newest), or scratch (rebuild it, about 8.5 hours)'
         type: choice
@@ -175,6 +179,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: NatronGitHub/Natron-Tests
+          ref: ${{ inputs.natron_tests_ref || 'master' }}
           path: Natron-Tests
 
       - name: Download the DMG
