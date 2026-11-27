@@ -229,13 +229,10 @@ TEST(NodePresets, TrackerLoadReplacesTracks)
 // A pattern-matching track (the Tracker's "usePatternMatching") creates an internal TrackerPM node, which is
 // obsolete (kOfxImageEffectPluginPropObsolete) and so not user-creatable: its creation was refused, and creating
 // or loading such a track threw (#1513).
+// The parameter exists only in DEBUG builds (NATRON_TRACKER_ENABLE_TRACKER_PM in Engine/TrackerContextPrivate.h);
+// the others make the track as Tracker.createTrack(True) does, which crashed them (#1949).
 TEST(NodePresets, TrackerLoadPatternMatchingTracks)
 {
-#ifndef DEBUG
-    // the parameter, and pattern-matching tracks, exist only in DEBUG builds (NATRON_TRACKER_ENABLE_TRACKER_PM in
-    // Engine/TrackerContextPrivate.h)
-    NatronTest::skip("pattern-matching tracks exist only in DEBUG builds");
-#else
     if ( !NatronTest::requirePlugins({ PLUGINID_OFX_TRANSFORM, PLUGINID_OFX_CORNERPIN, PLUGINID_OFX_TRACKERPM }, "openfx-misc") ) {
         return;
     }
@@ -246,12 +243,16 @@ TEST(NodePresets, TrackerLoadPatternMatchingTracks)
     ASSERT_TRUE( bool(node) );
     TrackerContextPtr context = node->getTrackerContext();
     ASSERT_TRUE( bool(context) );
+#ifdef DEBUG
     KnobBoolPtr usePM = std::dynamic_pointer_cast<KnobBool>( node->getKnobByName("usePatternMatching") );
     ASSERT_TRUE( bool(usePM) );
     usePM->setValue(true);
     ASSERT_TRUE( context->isTrackerPMEnabled() );
 
     TrackMarkerPtr track = context->createMarker();
+#else
+    TrackMarkerPtr track = context->createMarker(true);
+#endif
     ASSERT_TRUE( bool(track) );
     EXPECT_TRUE( dynamic_cast<TrackMarkerPM*>( track.get() ) != NULL );
     const std::list<std::string> names( 1, track->getScriptName_mt_safe() );
@@ -264,7 +265,6 @@ TEST(NodePresets, TrackerLoadPatternMatchingTracks)
     context->getAllMarkers(&markers);
     ASSERT_EQ( 1u, markers.size() );
     EXPECT_TRUE( dynamic_cast<TrackMarkerPM*>( markers[0].get() ) != NULL );
-#endif
 }
 
 // A PyPlug script makes a shape on a Roto node inside the PyPlug; the project saved the node with that
