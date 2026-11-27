@@ -351,7 +351,9 @@ def one_run(index, renderer, wrapper, work, graph, setup, driver, config, opts):
                 f.write(backtrace)
             summary["details"] = "no progress for %g s; backtraces in %s" % (opts["stall-timeout"], run_dir)
             break
-        if status not in statuses:
+        if status == 0 and ABORT_STATUS in statuses and "SOAK no natron.quit(): no abort" in watchdog.lines:
+            pass  # an older Natron, without natron.quit()
+        elif status not in statuses:
             summary["result"] = "FAIL"
             summary["details"] = "exit status %s, expected %s; log: %s" % (status, statuses, log)
             sys.stdout.write("\n".join(watchdog.lines[-40:]) + "\n")

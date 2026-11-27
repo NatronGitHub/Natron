@@ -49,6 +49,13 @@ SKIP = 77
 CHUNKS = [1, 2, 3, 50, 1, 7, 200, 2]
 
 IDS = set(natron.getPluginIDs())
+# natron.quit() is recent (2.6): without it (to soak an older Natron), no abort, and the exit status is 0
+CAN_QUIT = hasattr(natron, "quit")
+
+
+def quit_with(status):
+    if CAN_QUIT:
+        quit_with(status)
 
 
 def say(message):
@@ -184,7 +191,9 @@ def render_from_python(app, writers, first, last, abort_frame):
     if len(writers) > 1:
         alone = writers[-1]
         aborted = []
-        if abort_frame:
+        if abort_frame and not CAN_QUIT:
+            say("no natron.quit(): no abort")
+        elif abort_frame:
             def after_frame(frame, thisNode, app):  # pylint: disable=invalid-name,unused-argument
                 if frame >= abort_frame and not aborted:
                     say("aborting at frame %d" % frame)
@@ -212,12 +221,12 @@ def main():
     if not writers:
         say("SKIP: no Write node could be created for the %s graph (OFX_PLUGIN_PATH=%s)"
             % (graph, os.environ.get("OFX_PLUGIN_PATH", "")))
-        natron.quit(SKIP)
+        quit_with(SKIP)
         return
     if os.environ.get("SOAK_SAVE"):
         app.saveProjectAs(os.environ["SOAK_SAVE"])
         say("saved " + os.environ["SOAK_SAVE"])
-        natron.quit(0)
+        quit_with(0)
         return
     frames = os.environ.get("SOAK_RENDER")
     if frames:
@@ -227,7 +236,7 @@ def main():
         first, last = (int(v) for v in frames.split("-"))
         status = render_from_python(app, writers, first, last, int(os.environ.get("SOAK_ABORT_FRAME", "0")))
         say("done")
-        natron.quit(status)
+        quit_with(status)
 
 
 main()
