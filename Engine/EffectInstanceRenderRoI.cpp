@@ -32,6 +32,7 @@
 #include <limits>
 #include <fstream>
 #include <cassert>
+#include <new> // std::bad_alloc
 #include <stdexcept>
 #include <sstream> // stringstream
 
@@ -813,6 +814,23 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// End Compute RoI /////////////////////////////////////////////////////////////////////////
     const PluginOpenGLRenderSupport openGLSupport = frameArgs->currentOpenglSupport;
+    // OpenGL failed (kOfxStatGPURenderFailed, kOfxStatGPUOutOfMemory or kOfxStatErrMemory from the OpenGL render,
+    // or an input texture that could not be loaded): render again without OpenGL if the plug-in can render on the
+    // CPU (not "needed", and kOfxImageEffectPropCPURenderSupported isn't "false"), else fail with a message. This
+    // is the rule of openfx HostSupport's OpenGL::openGLFailed() and OpenGL::cpuRetryAllowed() (ofxhOpenGLRender.h).
+    const auto renderAgainWithoutOpenGL = [&]() -> RenderRoIRetCode {
+        if (openGLSupport != ePluginOpenGLRenderSupportYes) {
+            // The plug-in can only use GPU or doesn't support GPU
+            if ( !getNode()->hasPersistentMessage() ) {
+                setPersistentMessage( eMessageTypeError, tr("The OpenGL render failed or ran out of GPU memory, and this plug-in cannot render without OpenGL.").toStdString() );
+            }
+            throw std::runtime_error("Rendering Failed");
+        }
+        std::unique_ptr<RenderRoIArgs> newArgs( new RenderRoIArgs(args) );
+        newArgs->allowGPURendering = false;
+
+        return renderRoI(*newArgs, outputPlanes);
+    };
     StorageModeEnum storage = eStorageModeRAM;
     OSGLContextAttacherPtr glContextLocker;
 
@@ -1464,22 +1482,31 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         {
             const RectD canonicalRoI = it->rect.toCanonical(renderFullScaleThenDownscale ? 0 : args.mipmapLevel, par, rod);
 
-            inputCode = renderInputImagesForRoI(requestPassData,
-                                                useTransforms,
-                                                storage,
-                                                args.time,
-                                                args.view,
-                                                rod,
-                                                canonicalRoI,
-                                                tls->currentRenderArgs.transformRedirections,
-                                                args.mipmapLevel,
-                                                renderMappedScale,
-                                                renderScaleOneUpstreamIfRenderScaleSupportDisabled,
-                                                byPassCache,
-                                                *framesNeeded,
-                                                *neededComps,
-                                                &it->imgs,
-                                                &it->inputRois);
+            try {
+                inputCode = renderInputImagesForRoI(requestPassData,
+                                                    useTransforms,
+                                                    storage,
+                                                    args.time,
+                                                    args.view,
+                                                    rod,
+                                                    canonicalRoI,
+                                                    tls->currentRenderArgs.transformRedirections,
+                                                    args.mipmapLevel,
+                                                    renderMappedScale,
+                                                    renderScaleOneUpstreamIfRenderScaleSupportDisabled,
+                                                    byPassCache,
+                                                    *framesNeeded,
+                                                    *neededComps,
+                                                    &it->imgs,
+                                                    &it->inputRois);
+            } catch (const std::bad_alloc&) {
+                if (storage != eStorageModeGLTex) {
+                    throw;
+                }
+                // An input could not be loaded into an OpenGL texture (EffectInstance::convertRAMImageToOpenGLTexture())
+                // or rendered (#1945). Nothing was allocated or rendered for this node yet.
+                return renderAgainWithoutOpenGL();
+            }
         }
         if ( planesToRender->inputPremult.empty() ) {
             for (InputImagesMap::iterator it2 = it->imgs.begin(); it2 != it->imgs.end(); ++it2) {
@@ -1855,19 +1882,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         ///use the ret code instead.
         throw std::runtime_error("Rendering Failed");
     } else if (renderRetCode == eRenderRoIStatusRenderOutOfGPUMemory) {
-        /// The OpenGL render ran out of memory or failed (kOfxStatGPUOutOfMemory, kOfxStatGPURenderFailed):
-        /// recall renderRoI on this node, but don't use GPU this time if possible
-        if (openGLSupport != ePluginOpenGLRenderSupportYes) {
-            // The plug-in can only use GPU or doesn't support GPU
-            if ( !getNode()->hasPersistentMessage() ) {
-                setPersistentMessage( eMessageTypeError, tr("The OpenGL render failed or ran out of GPU memory, and this plug-in cannot render without OpenGL.").toStdString() );
-            }
-            throw std::runtime_error("Rendering Failed");
-        }
-        std::unique_ptr<RenderRoIArgs> newArgs( new RenderRoIArgs(args) );
-        newArgs->allowGPURendering = false;
-
-        return renderRoI(*newArgs, outputPlanes);
+        /// The OpenGL render ran out of memory or failed (kOfxStatGPUOutOfMemory, kOfxStatGPURenderFailed,
+        /// kOfxStatErrMemory, an input texture that could not be loaded): recall renderRoI on this node, but
+        /// don't use GPU this time if possible
+        return renderAgainWithoutOpenGL();
     }
 
 

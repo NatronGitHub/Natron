@@ -2631,11 +2631,14 @@ OfxEffectInstance::render(const RenderActionArgs& args)
                                            ofxPlanes );
     }
 
-    if ( args.useOpenGL && ( (stat == kOfxStatGPURenderFailed) || (stat == kOfxStatGPUOutOfMemory) ) ) {
+    if ( args.useOpenGL && ( (stat == kOfxStatGPURenderFailed) || (stat == kOfxStatGPUOutOfMemory) || (stat == kOfxStatErrMemory) ) ) {
         // ofxGPURender.h: "If a plug-in returns kOfxStatGLRenderFailed, the host should retry the render with
         // OpenGL rendering disabled. If a plug-in returns kOfxStatGLOutOfMemory, the host may choose to free
         // resources on the GPU and retry the OpenGL render, rather than immediately falling back to CPU
-        // rendering." eStatusOutOfMemory makes renderRoI() render again on the CPU, if the plug-in can.
+        // rendering." kOfxStatErrMemory is what a plug-in returns when clipLoadTexture runs out of OpenGL
+        // memory: "The plug-in should abort the GL render and return kOfxStatErrMemory, after which the host
+        // can decide to retry the operation with CPU based processing" (#1945). eStatusOutOfMemory makes
+        // renderRoI() render again on the CPU, if the plug-in can.
         return eStatusOutOfMemory;
     }
     if (stat != kOfxStatOK) {
