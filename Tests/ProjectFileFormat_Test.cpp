@@ -656,6 +656,26 @@ TEST(ProjectFileFormat, DamagedFiles)
     EXPECT_FALSE( loadAndCaptureOutput(project, dir, QString::fromUtf8("garbage.ntp"), &output) );
     EXPECT_NE( std::string::npos, output.find("it is neither a text (XML) nor a binary project") ) << output;
 
+#ifndef Q_OS_WIN
+    // a file that can't be opened (#1956): the load fails and says why (Windows has no unreadable files)
+    {
+        const QString unreadable = dir + QString::fromUtf8("unreadable.ntp");
+        writeFile(unreadable, binary);
+        ASSERT_TRUE( QFile::setPermissions(unreadable, QFileDevice::WriteOwner | QFileDevice::WriteUser) );
+        QFile probe(unreadable);
+        if ( probe.open(QIODevice::ReadOnly) ) {
+            probe.close();
+            NatronTest::skipPart("the unreadable file is readable (root?)");
+        } else {
+            EXPECT_FALSE( loadAndCaptureOutput(project, dir, QString::fromUtf8("unreadable.ntp"), &output) );
+            EXPECT_NE( std::string::npos, output.find("Failed to open") ) << output;
+        }
+        ASSERT_TRUE( QFile::setPermissions(unreadable, QFileDevice::ReadOwner | QFileDevice::WriteOwner) );
+    }
+#else
+    NatronTest::skipPart("unreadable project file: Windows has no unreadable files");
+#endif
+
     // What Natron 2.5 and earlier do when they open a binary project: their xml_iarchive fails on
     // the first byte. They report "Unrecognized or damaged project file: " followed by this message.
     {
