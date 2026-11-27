@@ -42,7 +42,6 @@ permissions:
   actions: read
 
 env:
-  NATRON_BUILD_WORKSPACE: 'D:/nbw'
   CI: 'True'
   # the Windows installer whose file list and DLLs the new one is compared with: the last one
   # built by these scripts (MINGW64, qmake)
@@ -66,7 +65,11 @@ jobs:
         # UCRT64 on tags (CLANGARM64 isn't released yet), else the environment(s) chosen. Only
         # include, so that no environment is added by accident. repo_suffix: the name of the
         # package repository artifact of build_pacman_repo.yml (UCRT64 keeps the original name).
-        include: ${{ fromJSON((inputs.msystem == 'both' && '[{"msystem":"UCRT64","runner":"windows-2022","repo_suffix":""},{"msystem":"CLANGARM64","runner":"windows-11-arm","repo_suffix":"-clangarm64"}]') || (inputs.msystem == 'CLANGARM64' && '[{"msystem":"CLANGARM64","runner":"windows-11-arm","repo_suffix":"-clangarm64"}]') || '[{"msystem":"UCRT64","runner":"windows-2022","repo_suffix":""}]') }}
+        # workspace: NATRON_BUILD_WORKSPACE, a short path (MAX_PATH) on the runner's largest disk:
+        # windows-2022 has a D: drive, windows-11-arm only C: (#1494).
+        include: ${{ fromJSON((inputs.msystem == 'both' && '[{"msystem":"UCRT64","runner":"windows-2022","repo_suffix":"","workspace":"D:/nbw"},{"msystem":"CLANGARM64","runner":"windows-11-arm","repo_suffix":"-clangarm64","workspace":"C:/nbw"}]') || (inputs.msystem == 'CLANGARM64' && '[{"msystem":"CLANGARM64","runner":"windows-11-arm","repo_suffix":"-clangarm64","workspace":"C:/nbw"}]') || '[{"msystem":"UCRT64","runner":"windows-2022","repo_suffix":"","workspace":"D:/nbw"}]') }}
+    env:
+      NATRON_BUILD_WORKSPACE: ${{ matrix.workspace }}
     defaults:
       run:
         shell: msys2 {0}
