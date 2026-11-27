@@ -20,6 +20,9 @@ on:
         type: boolean
         default: true
   push:
+    # TEMPORARY (validation branch only, never merged)
+    branches:
+    - validate-macos-arm64
     tags:
     - 'v*-alpha*'
     - 'v*-beta*'
@@ -52,9 +55,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          DMG_SOURCE: ${{ inputs.dmg }}
+          DMG_SOURCE: ${{ inputs.dmg || 'macos-dmg-tests/Natron-remove-breakpad-202611260916-24f53db-macOS14-arm64.dmg' }}
           ATTACH: ${{ inputs.attach }}
-          EVENT: ${{ github.event_name }}
+          EVENT: ${{ github.ref_type == 'tag' && 'push' || 'workflow_dispatch' }}
           TAG: ${{ github.ref_name }}
         run: |
           if [ "$EVENT" = push ]; then
