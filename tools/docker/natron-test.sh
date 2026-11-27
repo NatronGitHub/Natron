@@ -107,13 +107,15 @@ missing=$(find "$P" -type f \( -name "*.so*" -o -name "*.ofx" -o -perm -u+x \) |
 done)
 status=0
 [ -z "$missing" ] || { echo "Error: missing system libraries:"; echo "$missing"; status=1; }
-cmd="cd Natron-Tests && env -i HOME=$H USER=$U LOGNAME=$U SHELL=/bin/bash \
+# cmd is parsed again by su or bash: quote the paths (TMPDIR may contain spaces in host mode)
+qH=$(printf %q "$H"); qU=$(printf %q "$U"); qP=$(printf %q "$P")
+cmd="cd Natron-Tests && env -i HOME=$qH USER=$qU LOGNAME=$qU SHELL=/bin/bash \
     LANG=C.UTF-8 PATH=/usr/bin:/bin:/usr/sbin:/sbin \
     ${TEST:+TEST=\"$TEST\"} ${TESTCUSTOM:+TESTCUSTOM=\"$TESTCUSTOM\"} \
-    NATRON_DISK_CACHE_PATH=$H/NatronTmpCacheDir \
-    OCIO=$P/Resources/OpenColorIO-Configs/blender/config.ocio \
-    FFMPEG=$P/bin/ffmpeg COMPARE=$P/bin/idiff \
-    timeout -s KILL $TEST_TIMEOUT /bin/bash runTests.sh $P/NatronRenderer"
+    NATRON_DISK_CACHE_PATH=$qH/NatronTmpCacheDir \
+    OCIO=$qP/Resources/OpenColorIO-Configs/blender/config.ocio \
+    FFMPEG=$qP/bin/ffmpeg COMPARE=$qP/bin/idiff \
+    timeout -s KILL $TEST_TIMEOUT /bin/bash runTests.sh $qP/NatronRenderer"
 if [ -n "$RUNAS" ]; then
     su "$RUNAS" -c "$cmd"
 else
@@ -158,7 +160,9 @@ if [ "$HOST" = true ]; then
     mkdir "$WORK/in" "$WORK/home"
     ln -s "$ARCHIVE" "$WORK/in/archive.tar.xz"
     ln -s "$NATRON_TESTS_SRC" "$WORK/in/Natron-Tests"
-    env NAME="$NAME" TEST_TIMEOUT="$TEST_TIMEOUT" TEST="${TEST:-}" TESTCUSTOM="${TESTCUSTOM:-}" \
+    # env -i: neither the missing-library check nor the suite sees this shell's environment
+    # (e.g. a LD_LIBRARY_PATH that would hide a library missing from the archive)
+    env -i PATH=/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8 NAME="$NAME" TEST_TIMEOUT="$TEST_TIMEOUT" TEST="${TEST:-}" TESTCUSTOM="${TESTCUSTOM:-}" \
         IN="$WORK/in" OUTD="$WORK" H="$WORK/home" U="$(id -un)" RUNAS= \
         bash -c "$RUN" || status=$?
     echo "*** the test run exited with status $status"
