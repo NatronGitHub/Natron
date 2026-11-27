@@ -1,7 +1,7 @@
 name: macOS x86_64 DMG
 
 # The macOS x86_64 (Intel) DMG of Natron, built on GitHub's Intel runner (macos-15-intel), and
-# tested there with Natron-Tests. The arm64 DMG is built in a tart VM (tools/tart). Runs weekly
+# tested with Natron-Tests on the latest Intel runner (macos-26-intel). The arm64 DMG is built in a tart VM (tools/tart). Runs weekly
 # (Sunday), on demand, and on pre-release tags (v*-alpha*, -beta*, -rc*, -RC*), never on pull requests.
 #
 # 1. SDK (macos_x86_64_sdk.yml, up to 4 chained stages of less than 6 hours): the MacPorts SDK of
@@ -16,8 +16,9 @@ name: macOS x86_64 DMG
 # 2. dmg: Natron and the plug-ins built from source with tools/jenkins/launchBuildMain.sh (CMake,
 #    the compiler of compiler-common.sh), the DMG, and its minos check (tools/tart/check-minos.sh).
 #    Never skipped: MacPorts and the runner image are rolling.
-# 3. test: Natron-Tests on a fresh runner, against the DMG's Natron.app, with Homebrew moved away
-#    and no SDK (tools/tart/run-natron-tests.sh, as tools/tart/natron-test.sh).
+# 3. test: Natron-Tests on a fresh runner of the latest Intel macOS, against the DMG's Natron.app,
+#    with Homebrew moved away and no SDK (tools/tart/run-natron-tests.sh, as tools/tart/natron-test.sh).
+#    The build targets macOS 14.0, which GitHub no longer has (all macOS 14 images are retired).
 # 4. release (pre-release tags only): the DMG and the test results attached to the GitHub release.
 # Weekly and on-demand runs keep the DMG and test results as artifacts for 14 days.
 on:
@@ -167,7 +168,7 @@ jobs:
     # the SDK stages after the one that finished are skipped: without a status function, a job
     # whose (indirect) dependencies were skipped is skipped too
     if: ${{ !cancelled() && needs.dmg.result == 'success' }}
-    runs-on: macos-15-intel
+    runs-on: macos-26-intel
     timeout-minutes: 300
     steps:
       - uses: actions/checkout@v4
