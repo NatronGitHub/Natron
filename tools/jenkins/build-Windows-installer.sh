@@ -352,7 +352,7 @@ if [ -x "${NATRON_PYTHON}" ]; then
     "${NATRON_PYTHON}" -m pip install qtpy==2.4.3
 
     # Useful Python packages
-    "${NATRON_PYTHON}" -m pip install future==1.0.0 six==1.17.0 #psutil
+    "${NATRON_PYTHON}" -m pip install six==1.17.0 #psutil
     # Run extra user provided pip install scripts
     if [ -f "${EXTRA_PYTHON_MODULES_SCRIPT:-}" ]; then
         "${NATRON_PYTHON}" "$EXTRA_PYTHON_MODULES_SCRIPT" || true

@@ -1137,7 +1137,7 @@ if [ -x "${NATRON_PYTHON}" ]; then
     "${PY_EXE}" -m pip install qtpy --upgrade --target "${PYDIR}/site-packages"
 
     # Useful Python packages
-    "${PY_EXE}" -m pip install future six --upgrade --target "${PYDIR}/site-packages"
+    "${PY_EXE}" -m pip install six --upgrade --target "${PYDIR}/site-packages"
     # No psutil wheel is available on 10.6, and I don't know how to build a universal wheel
     case "${macosx}" in
     9|10|11|12)
