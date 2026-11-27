@@ -57,6 +57,22 @@ recordForUndoGroup(const std::shared_ptr<K>& knob)
     }
 }
 
+// A Param refers to its parameter (knob) weakly: the knob goes away with its node (Effect.destroy()), or with
+// UserParamHolder.removeParam(). Using such a Param raises RuntimeError, as Shiboken does for a deleted C++ object,
+// instead of returning 0, "" or False, or doing nothing (#1615). This sets the Python error and returns the null
+// knob: the caller then returns a dummy value, which the binding drops, since it checks PyErr_Occurred() after the
+// call (the code injected by typesystem_engine.xml must check it too).
+template <typename K>
+static std::shared_ptr<K>
+knobOrRaise(std::shared_ptr<K> knob)
+{
+    if (!knob) {
+        PyErr_SetString(PyExc_RuntimeError, "The parameter was deleted: its node was destroyed, or removeParam() removed it");
+    }
+
+    return knob;
+}
+
 Param::Param(const KnobIPtr& knob)
     : _knob(knob)
 {
@@ -69,7 +85,7 @@ Param::~Param()
 Param*
 Param::getParent() const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return 0;
@@ -86,7 +102,7 @@ Param::getParent() const
 int
 Param::getNumDimensions() const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return 0;
@@ -97,7 +113,7 @@ Param::getNumDimensions() const
 QString
 Param::getScriptName() const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return QString();
@@ -108,7 +124,7 @@ Param::getScriptName() const
 QString
 Param::getLabel() const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return QString();
@@ -119,7 +135,7 @@ Param::getLabel() const
 QString
 Param::getTypeName() const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return QString();
@@ -130,7 +146,7 @@ Param::getTypeName() const
 QString
 Param::getHelp() const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return QString();
@@ -141,7 +157,7 @@ Param::getHelp() const
 void
 Param::setHelp(const QString& help)
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if ( !knob || !knob->isUserKnob() ) {
         return;
@@ -152,7 +168,7 @@ Param::setHelp(const QString& help)
 bool
 Param::getIsVisible() const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return false;
@@ -163,7 +179,7 @@ Param::getIsVisible() const
 void
 Param::setVisible(bool visible)
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return;
@@ -174,7 +190,7 @@ Param::setVisible(bool visible)
 void
 Param::setVisibleByDefault(bool visible)
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return;
@@ -185,7 +201,7 @@ Param::setVisibleByDefault(bool visible)
 bool
 Param::getIsEnabled(int dimension) const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return false;
@@ -197,7 +213,7 @@ void
 Param::setEnabled(bool enabled,
                   int dimension)
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return;
@@ -208,7 +224,7 @@ Param::setEnabled(bool enabled,
 void
 Param::setEnabledByDefault(bool enabled)
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return;
@@ -219,7 +235,7 @@ Param::setEnabledByDefault(bool enabled)
 bool
 Param::getIsPersistent() const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return false;
@@ -230,7 +246,7 @@ Param::getIsPersistent() const
 void
 Param::setPersistent(bool persistent)
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if ( !knob || !knob->isUserKnob() ) {
         return;
@@ -241,7 +257,7 @@ Param::setPersistent(bool persistent)
 bool
 Param::getEvaluateOnChange() const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return false;
@@ -252,7 +268,7 @@ Param::getEvaluateOnChange() const
 void
 Param::setEvaluateOnChange(bool eval)
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if ( !knob || !knob->isUserKnob() ) {
         return;
@@ -263,7 +279,7 @@ Param::setEvaluateOnChange(bool eval)
 bool
 Param::getCanAnimate() const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return false;
@@ -274,7 +290,7 @@ Param::getCanAnimate() const
 bool
 Param::getIsAnimationEnabled() const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return false;
@@ -285,7 +301,7 @@ Param::getIsAnimationEnabled() const
 void
 Param::setAnimationEnabled(bool e)
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if ( !knob || !knob->isUserKnob() ) {
         return;
@@ -296,7 +312,7 @@ Param::setAnimationEnabled(bool e)
 bool
 Param::getAddNewLine()
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return false;
@@ -307,7 +323,7 @@ Param::getAddNewLine()
 void
 Param::setAddNewLine(bool a)
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if ( !knob || !knob->isUserKnob() ) {
         return;
@@ -339,10 +355,13 @@ bool
 Param::copy(Param* other,
             int dimension)
 {
-    KnobIPtr thisKnob = _knob.lock();
-    KnobIPtr otherKnob = other->_knob.lock();
+    if (!other) {
+        return false;
+    }
+    KnobIPtr thisKnob = knobOrRaise( _knob.lock() );
+    KnobIPtr otherKnob = knobOrRaise( other->_knob.lock() );
 
-    if ( !thisKnob->isTypeCompatible(otherKnob) ) {
+    if ( !thisKnob || !otherKnob || !thisKnob->isTypeCompatible(otherKnob) ) {
         return false;
     }
     recordForUndoGroup(thisKnob);
@@ -356,10 +375,13 @@ Param::slaveTo(Param* other,
                int thisDimension,
                int otherDimension)
 {
-    KnobIPtr thisKnob = _knob.lock();
-    KnobIPtr otherKnob = other->_knob.lock();
+    if (!other) {
+        return false;
+    }
+    KnobIPtr thisKnob = knobOrRaise( _knob.lock() );
+    KnobIPtr otherKnob = knobOrRaise( other->_knob.lock() );
 
-    if ( !KnobI::areTypesCompatibleForSlave( thisKnob.get(), otherKnob.get() ) ) {
+    if ( !thisKnob || !otherKnob || !KnobI::areTypesCompatibleForSlave( thisKnob.get(), otherKnob.get() ) ) {
         return false;
     }
     if ( (thisDimension < 0) || ( thisDimension >= thisKnob->getDimension() ) || (otherDimension < 0) || ( otherDimension >= otherKnob->getDimension() ) ) {
@@ -373,7 +395,7 @@ Param::slaveTo(Param* other,
 void
 Param::unslave(int dimension)
 {
-    KnobIPtr thisKnob = _knob.lock();
+    KnobIPtr thisKnob = knobOrRaise( _knob.lock() );
 
     if (!thisKnob) {
         return;
@@ -386,7 +408,7 @@ double
 Param::random(double min,
               double max) const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return 0;
@@ -400,7 +422,7 @@ Param::random(double min,
               double time,
               unsigned int seed) const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return 0;
@@ -412,7 +434,7 @@ int
 Param::randomInt(int min,
                  int max)
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return 0;
@@ -426,7 +448,7 @@ Param::randomInt(int min,
                  double time,
                  unsigned int seed) const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return 0;
@@ -438,7 +460,7 @@ double
 Param::curve(double time,
              int dimension) const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return 0.;
@@ -452,8 +474,8 @@ Param::setAsAlias(Param* other)
     if (!other) {
         return false;
     }
-    KnobIPtr otherKnob = other->_knob.lock();
-    KnobIPtr thisKnob = getInternalKnob();
+    KnobIPtr otherKnob = knobOrRaise( other->_knob.lock() );
+    KnobIPtr thisKnob = knobOrRaise( getInternalKnob() );
     if ( !otherKnob || !thisKnob || ( otherKnob->typeName() != thisKnob->typeName() ) ||
          ( otherKnob->getDimension() != thisKnob->getDimension() ) ) {
         return false;
@@ -468,7 +490,7 @@ Param::setAsAlias(Param* other)
 void
 Param::setIconFilePath(const QString& icon)
 {
-    KnobIPtr thisKnob = _knob.lock();
+    KnobIPtr thisKnob = knobOrRaise( _knob.lock() );
     if (!thisKnob) {
         return;
     }
@@ -487,7 +509,7 @@ AnimatedParam::~AnimatedParam()
 bool
 AnimatedParam::getIsAnimated(int dimension) const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return false;
@@ -498,7 +520,7 @@ AnimatedParam::getIsAnimated(int dimension) const
 int
 AnimatedParam::getNumKeys(int dimension) const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return 0;
@@ -510,7 +532,7 @@ int
 AnimatedParam::getKeyIndex(double time,
                            int dimension) const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return 0;
@@ -523,7 +545,7 @@ AnimatedParam::getKeyTime(int index,
                           int dimension,
                           double* time) const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         *time = 0.;
@@ -536,7 +558,7 @@ void
 AnimatedParam::deleteValueAtTime(double time,
                                  int dimension)
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return;
@@ -548,7 +570,7 @@ AnimatedParam::deleteValueAtTime(double time,
 void
 AnimatedParam::removeAnimation(int dimension)
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return;
@@ -561,7 +583,7 @@ double
 AnimatedParam::getDerivativeAtTime(double time,
                                    int dimension) const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if ( !knob || (dimension < 0) || ( dimension >= knob->getDimension() ) ) {
         return 0.; // as getValue(dimension): the std::invalid_argument of the knob can't go through Python
@@ -574,7 +596,7 @@ AnimatedParam::getIntegrateFromTimeToTime(double time1,
                                           double time2,
                                           int dimension) const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if ( !knob || (dimension < 0) || ( dimension >= knob->getDimension() ) ) {
         return 0.; // as getValue(dimension): the std::invalid_argument of the knob can't go through Python
@@ -585,7 +607,7 @@ AnimatedParam::getIntegrateFromTimeToTime(double time1,
 int
 AnimatedParam::getCurrentTime() const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return 0;
@@ -598,7 +620,7 @@ AnimatedParam::setInterpolationAtTime(double time,
                                       KeyframeTypeEnum interpolation,
                                       int dimension)
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return false;
@@ -613,7 +635,7 @@ KeyframeTypeEnum
 AnimatedParam::getInterpolationAtTime(double time,
                                       int dimension) const
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     if (!knob) {
         return eKeyframeTypeNone;
@@ -634,7 +656,7 @@ AnimatedParam::setDerivativesAtTime(double time,
                                     double right,
                                     int dimension)
 {
-    KnobIPtr knob = getInternalKnob();
+    KnobIPtr knob = knobOrRaise( getInternalKnob() );
 
     // False, not an exception, for a dimension that does not exist; int, bool and choice curves are constant
     if ( !knob || !dynamic_cast<KnobDoubleBase*>( knob.get() ) || (dimension < 0) || ( dimension >= knob->getDimension() ) ) {
@@ -653,9 +675,12 @@ Param::_addAsDependencyOf(int fromExprDimension,
     //from expr is in the dimension of expressionKnob
     //thisDimension is in the dimesnion of getValueCallerKnob
 
-    KnobIPtr expressionKnob = param->_knob.lock();
-    KnobIPtr getValueCallerKnob = _knob.lock();
+    KnobIPtr expressionKnob = knobOrRaise( param->_knob.lock() );
+    KnobIPtr getValueCallerKnob = knobOrRaise( _knob.lock() );
 
+    if (!expressionKnob || !getValueCallerKnob) {
+        return;
+    }
     if ( (fromExprDimension < 0) || ( fromExprDimension >= expressionKnob->getDimension() ) ) {
         return;
     }
@@ -674,7 +699,7 @@ AnimatedParam::setExpression(const QString& expr,
                              bool hasRetVariable,
                              int dimension)
 {
-    KnobIPtr thisKnob = _knob.lock();
+    KnobIPtr thisKnob = knobOrRaise( _knob.lock() );
     if (!thisKnob) {
         return false;
     }
@@ -734,7 +759,7 @@ QString
 AnimatedParam::getExpression(int dimension,
                              bool* hasRetVariable) const
 {
-    KnobIPtr thisKnob = _knob.lock();
+    KnobIPtr thisKnob = knobOrRaise( _knob.lock() );
     if (!thisKnob) {
         return QString();
     }
@@ -760,7 +785,7 @@ IntParam::~IntParam()
 int
 IntParam::get() const
 {
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = knobOrRaise( _intKnob.lock() );
     if (!knob) {
         return 0;
     }
@@ -772,7 +797,7 @@ Int2DTuple
 Int2DParam::get() const
 {
     Int2DTuple ret = {0, 0};
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = knobOrRaise( _intKnob.lock() );
     if (!knob) {
         return ret;
     }
@@ -786,7 +811,7 @@ Int2DParam::get() const
 Int3DTuple
 Int3DParam::get() const
 {
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = knobOrRaise( _intKnob.lock() );
     Int3DTuple ret = {0, 0, 0};
     if (!knob) {
         return ret;
@@ -802,7 +827,7 @@ Int3DParam::get() const
 int
 IntParam::get(double frame) const
 {
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = knobOrRaise( _intKnob.lock() );
     if (!knob) {
         return 0;
     }
@@ -814,7 +839,7 @@ Int2DTuple
 Int2DParam::get(double frame) const
 {
     Int2DTuple ret = {0, 0};
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = knobOrRaise( _intKnob.lock() );
     if (!knob) {
         return ret;
     }
@@ -829,7 +854,7 @@ Int3DTuple
 Int3DParam::get(double frame) const
 {
     Int3DTuple ret = {0, 0, 0};
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = knobOrRaise( _intKnob.lock() );
     if (!knob) {
         return ret;
     }
@@ -844,7 +869,7 @@ Int3DParam::get(double frame) const
 void
 IntParam::set(int x)
 {
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = knobOrRaise( _intKnob.lock() );
     if (!knob) {
         return;
     }
@@ -856,7 +881,7 @@ void
 Int2DParam::set(int x,
                 int y)
 {
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = knobOrRaise( _intKnob.lock() );
     if (!knob) {
         return;
     }
@@ -873,7 +898,7 @@ Int3DParam::set(int x,
                 int y,
                 int z)
 {
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = knobOrRaise( _intKnob.lock() );
     if (!knob) {
         return;
     }
@@ -892,7 +917,7 @@ void
 IntParam::set(int x,
               double frame)
 {
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = knobOrRaise( _intKnob.lock() );
     if (!knob) {
         return;
     }
@@ -905,7 +930,7 @@ Int2DParam::set(int x,
                 int y,
                 double frame)
 {
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = knobOrRaise( _intKnob.lock() );
     if (!knob) {
         return;
     }
@@ -919,7 +944,7 @@ Int3DParam::set(int x,
                 int z,
                 double frame)
 {
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = knobOrRaise( _intKnob.lock() );
     if (!knob) {
         return;
     }
@@ -930,7 +955,7 @@ Int3DParam::set(int x,
 int
 IntParam::getValue(int dimension) const
 {
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = knobOrRaise( _intKnob.lock() );
     if (!knob) {
         return 0;
     }
@@ -941,7 +966,7 @@ void
 IntParam::setValue(int value,
                    int dimension)
 {
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = knobOrRaise( _intKnob.lock() );
     if (!knob) {
         return;
     }
@@ -953,7 +978,7 @@ int
 IntParam::getValueAtTime(double time,
                          int dimension) const
 {
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = knobOrRaise( _intKnob.lock() );
     if (!knob) {
         return 0;
     }
@@ -965,7 +990,7 @@ IntParam::setValueAtTime(int value,
                          double time,
                          int dimension)
 {
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = knobOrRaise( _intKnob.lock() );
     if (!knob) {
         return;
     }
@@ -977,7 +1002,7 @@ void
 IntParam::setDefaultValue(int value,
                           int dimension)
 {
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = knobOrRaise( _intKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1001,13 +1026,13 @@ defaultValueOf(const std::shared_ptr<KNOB>& knob,
 int
 IntParam::getDefaultValue(int dimension) const
 {
-    return defaultValueOf<int>(_intKnob.lock(), dimension);
+    return defaultValueOf<int>(knobOrRaise( _intKnob.lock() ), dimension);
 }
 
 void
 IntParam::restoreDefaultValue(int dimension)
 {
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = knobOrRaise( _intKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1019,7 +1044,7 @@ void
 IntParam::setMinimum(int minimum,
                      int dimension)
 {
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = knobOrRaise( _intKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1029,7 +1054,7 @@ IntParam::setMinimum(int minimum,
 int
 IntParam::getMinimum(int dimension) const
 {
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = knobOrRaise( _intKnob.lock() );
     if (!knob) {
         return 0;
     }
@@ -1040,7 +1065,7 @@ void
 IntParam::setMaximum(int maximum,
                      int dimension)
 {
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = knobOrRaise( _intKnob.lock() );
     if ( !knob || !knob->isUserKnob() ) {
         return;
     }
@@ -1050,7 +1075,7 @@ IntParam::setMaximum(int maximum,
 int
 IntParam::getMaximum(int dimension) const
 {
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = knobOrRaise( _intKnob.lock() );
     if (!knob) {
         return 0;
     }
@@ -1061,7 +1086,7 @@ void
 IntParam::setDisplayMinimum(int minimum,
                             int dimension)
 {
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = knobOrRaise( _intKnob.lock() );
     if ( !knob || !knob->isUserKnob() ) {
         return;
     }
@@ -1071,7 +1096,7 @@ IntParam::setDisplayMinimum(int minimum,
 int
 IntParam::getDisplayMinimum(int dimension) const
 {
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = knobOrRaise( _intKnob.lock() );
     if (!knob) {
         return 0;
     }
@@ -1082,7 +1107,7 @@ void
 IntParam::setDisplayMaximum(int maximum,
                             int dimension)
 {
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = knobOrRaise( _intKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1092,7 +1117,7 @@ IntParam::setDisplayMaximum(int maximum,
 int
 IntParam::getDisplayMaximum(int dimension) const
 {
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = knobOrRaise( _intKnob.lock() );
     if (!knob) {
         return 0;
     }
@@ -1106,7 +1131,7 @@ IntParam::addAsDependencyOf(int fromExprDimension,
 {
     _addAsDependencyOf(fromExprDimension, param, thisDimension);
 
-    KnobIntPtr knob = _intKnob.lock();
+    KnobIntPtr knob = knobOrRaise( _intKnob.lock() );
     if (!knob) {
         return 0;
     }
@@ -1128,7 +1153,7 @@ DoubleParam::~DoubleParam()
 double
 DoubleParam::get() const
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = knobOrRaise( _doubleKnob.lock() );
     if (!knob) {
         return 0.;
     }
@@ -1138,7 +1163,7 @@ DoubleParam::get() const
 Double2DTuple
 Double2DParam::get() const
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = knobOrRaise( _doubleKnob.lock() );
     Double2DTuple ret = {0., 0.};
     if (!knob) {
         return ret;
@@ -1153,7 +1178,7 @@ Double2DParam::get() const
 Double3DTuple
 Double3DParam::get() const
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = knobOrRaise( _doubleKnob.lock() );
     Double3DTuple ret = {0., 0., 0.};
     if (!knob) {
         return ret;
@@ -1169,7 +1194,7 @@ Double3DParam::get() const
 double
 DoubleParam::get(double frame) const
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = knobOrRaise( _doubleKnob.lock() );
     if (!knob) {
         return 0.;
     }
@@ -1180,7 +1205,7 @@ Double2DTuple
 Double2DParam::get(double frame) const
 {
     Double2DTuple ret = {0., 0.};
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = knobOrRaise( _doubleKnob.lock() );
     if (!knob) {
         return ret;
     }
@@ -1194,7 +1219,7 @@ Double2DParam::get(double frame) const
 Double3DTuple
 Double3DParam::get(double frame) const
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = knobOrRaise( _doubleKnob.lock() );
     Double3DTuple ret = {0., 0., 0.};
     if (!knob) {
         return ret;
@@ -1210,7 +1235,7 @@ Double3DParam::get(double frame) const
 void
 DoubleParam::set(double x)
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = knobOrRaise( _doubleKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1222,7 +1247,7 @@ void
 Double2DParam::set(double x,
                    double y)
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = knobOrRaise( _doubleKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1236,7 +1261,7 @@ Double3DParam::set(double x,
                    double y,
                    double z)
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = knobOrRaise( _doubleKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1249,7 +1274,7 @@ void
 DoubleParam::set(double x,
                  double frame)
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = knobOrRaise( _doubleKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1262,7 +1287,7 @@ Double2DParam::set(double x,
                    double y,
                    double frame)
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = knobOrRaise( _doubleKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1274,7 +1299,7 @@ Double2DParam::set(double x,
 void
 Double2DParam::setUsePointInteract(bool use)
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = knobOrRaise( _doubleKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1285,7 +1310,7 @@ Double2DParam::setUsePointInteract(bool use)
 void
 Double2DParam::setCanAutoFoldDimensions(bool can)
 {
-    std::shared_ptr<KnobDouble> knob = _doubleKnob.lock();
+    std::shared_ptr<KnobDouble> knob = knobOrRaise( _doubleKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1299,7 +1324,7 @@ Double3DParam::set(double x,
                    double z,
                    double frame)
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = knobOrRaise( _doubleKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1311,7 +1336,7 @@ Double3DParam::set(double x,
 double
 DoubleParam::getValue(int dimension) const
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = knobOrRaise( _doubleKnob.lock() );
     if (!knob) {
         return 0.;
     }
@@ -1322,7 +1347,7 @@ void
 DoubleParam::setValue(double value,
                       int dimension)
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = knobOrRaise( _doubleKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1334,7 +1359,7 @@ double
 DoubleParam::getValueAtTime(double time,
                             int dimension) const
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = knobOrRaise( _doubleKnob.lock() );
     if (!knob) {
         return 0.;
     }
@@ -1346,7 +1371,7 @@ DoubleParam::setValueAtTime(double value,
                             double time,
                             int dimension)
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = knobOrRaise( _doubleKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1358,7 +1383,7 @@ void
 DoubleParam::setDefaultValue(double value,
                              int dimension)
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = knobOrRaise( _doubleKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1368,13 +1393,13 @@ DoubleParam::setDefaultValue(double value,
 double
 DoubleParam::getDefaultValue(int dimension) const
 {
-    return defaultValueOf<double>(_doubleKnob.lock(), dimension);
+    return defaultValueOf<double>(knobOrRaise( _doubleKnob.lock() ), dimension);
 }
 
 void
 DoubleParam::restoreDefaultValue(int dimension)
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = knobOrRaise( _doubleKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1386,7 +1411,7 @@ void
 DoubleParam::setMinimum(double minimum,
                         int dimension)
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = knobOrRaise( _doubleKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1396,7 +1421,7 @@ DoubleParam::setMinimum(double minimum,
 double
 DoubleParam::getMinimum(int dimension) const
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = knobOrRaise( _doubleKnob.lock() );
     if (!knob) {
         return 0.;
     }
@@ -1407,7 +1432,7 @@ void
 DoubleParam::setMaximum(double maximum,
                         int dimension)
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = knobOrRaise( _doubleKnob.lock() );
     if ( !knob || !knob->isUserKnob() ) {
         return;
     }
@@ -1417,7 +1442,7 @@ DoubleParam::setMaximum(double maximum,
 double
 DoubleParam::getMaximum(int dimension) const
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = knobOrRaise( _doubleKnob.lock() );
     if (!knob) {
         return 0.;
     }
@@ -1428,7 +1453,7 @@ void
 DoubleParam::setDisplayMinimum(double minimum,
                                int dimension)
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = knobOrRaise( _doubleKnob.lock() );
     if ( !knob || !knob->isUserKnob() ) {
         return;
     }
@@ -1438,7 +1463,7 @@ DoubleParam::setDisplayMinimum(double minimum,
 double
 DoubleParam::getDisplayMinimum(int dimension) const
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = knobOrRaise( _doubleKnob.lock() );
     if (!knob) {
         return 0.;
     }
@@ -1449,7 +1474,7 @@ void
 DoubleParam::setDisplayMaximum(double maximum,
                                int dimension)
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = knobOrRaise( _doubleKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1459,7 +1484,7 @@ DoubleParam::setDisplayMaximum(double maximum,
 double
 DoubleParam::getDisplayMaximum(int dimension) const
 {
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = knobOrRaise( _doubleKnob.lock() );
     if (!knob) {
         return 0.;
     }
@@ -1473,7 +1498,7 @@ DoubleParam::addAsDependencyOf(int fromExprDimension,
 {
     _addAsDependencyOf(fromExprDimension, param, thisDimension);
 
-    KnobDoublePtr knob = _doubleKnob.lock();
+    KnobDoublePtr knob = knobOrRaise( _doubleKnob.lock() );
     if (!knob) {
         return 0.;
     }
@@ -1496,7 +1521,7 @@ ColorTuple
 ColorParam::get() const
 {
     ColorTuple ret = {0., 0., 0., 0.};
-    KnobColorPtr knob = _colorKnob.lock();
+    KnobColorPtr knob = knobOrRaise( _colorKnob.lock() );
     if (!knob) {
         return ret;
     }
@@ -1512,7 +1537,7 @@ ColorTuple
 ColorParam::get(double frame) const
 {
     ColorTuple ret = {0., 0., 0., 0.};
-    KnobColorPtr knob = _colorKnob.lock();
+    KnobColorPtr knob = knobOrRaise( _colorKnob.lock() );
     if (!knob) {
         return ret;
     }
@@ -1530,7 +1555,7 @@ ColorParam::set(double r,
                 double b,
                 double a)
 {
-    KnobColorPtr knob = _colorKnob.lock();
+    KnobColorPtr knob = knobOrRaise( _colorKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1555,7 +1580,7 @@ ColorParam::set(double r,
                 double a,
                 double frame)
 {
-    KnobColorPtr knob = _colorKnob.lock();
+    KnobColorPtr knob = knobOrRaise( _colorKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1577,7 +1602,7 @@ ColorParam::set(double r,
 double
 ColorParam::getValue(int dimension) const
 {
-    KnobColorPtr knob = _colorKnob.lock();
+    KnobColorPtr knob = knobOrRaise( _colorKnob.lock() );
     if (!knob) {
         return 0.;
     }
@@ -1588,7 +1613,7 @@ void
 ColorParam::setValue(double value,
                      int dimension)
 {
-    KnobColorPtr knob = _colorKnob.lock();
+    KnobColorPtr knob = knobOrRaise( _colorKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1600,7 +1625,7 @@ double
 ColorParam::getValueAtTime(double time,
                            int dimension) const
 {
-    KnobColorPtr knob = _colorKnob.lock();
+    KnobColorPtr knob = knobOrRaise( _colorKnob.lock() );
     if (!knob) {
         return 0.;
     }
@@ -1612,7 +1637,7 @@ ColorParam::setValueAtTime(double value,
                            double time,
                            int dimension)
 {
-    KnobColorPtr knob = _colorKnob.lock();
+    KnobColorPtr knob = knobOrRaise( _colorKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1624,7 +1649,7 @@ void
 ColorParam::setDefaultValue(double value,
                             int dimension)
 {
-    KnobColorPtr knob = _colorKnob.lock();
+    KnobColorPtr knob = knobOrRaise( _colorKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1634,13 +1659,13 @@ ColorParam::setDefaultValue(double value,
 double
 ColorParam::getDefaultValue(int dimension) const
 {
-    return defaultValueOf<double>(_colorKnob.lock(), dimension);
+    return defaultValueOf<double>(knobOrRaise( _colorKnob.lock() ), dimension);
 }
 
 void
 ColorParam::restoreDefaultValue(int dimension)
 {
-    KnobColorPtr knob = _colorKnob.lock();
+    KnobColorPtr knob = knobOrRaise( _colorKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1652,7 +1677,7 @@ void
 ColorParam::setMinimum(double minimum,
                        int dimension)
 {
-    KnobColorPtr knob = _colorKnob.lock();
+    KnobColorPtr knob = knobOrRaise( _colorKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1662,7 +1687,7 @@ ColorParam::setMinimum(double minimum,
 double
 ColorParam::getMinimum(int dimension) const
 {
-    KnobColorPtr knob = _colorKnob.lock();
+    KnobColorPtr knob = knobOrRaise( _colorKnob.lock() );
     if (!knob) {
         return 0.;
     }
@@ -1673,7 +1698,7 @@ void
 ColorParam::setMaximum(double maximum,
                        int dimension)
 {
-    KnobColorPtr knob = _colorKnob.lock();
+    KnobColorPtr knob = knobOrRaise( _colorKnob.lock() );
     if ( !knob || !knob->isUserKnob() ) {
         return;
     }
@@ -1683,7 +1708,7 @@ ColorParam::setMaximum(double maximum,
 double
 ColorParam::getMaximum(int dimension) const
 {
-    KnobColorPtr knob = _colorKnob.lock();
+    KnobColorPtr knob = knobOrRaise( _colorKnob.lock() );
     if (!knob) {
         return 0.;
     }
@@ -1694,7 +1719,7 @@ void
 ColorParam::setDisplayMinimum(double minimum,
                               int dimension)
 {
-    KnobColorPtr knob = _colorKnob.lock();
+    KnobColorPtr knob = knobOrRaise( _colorKnob.lock() );
     if ( !knob || !knob->isUserKnob() ) {
         return;
     }
@@ -1704,7 +1729,7 @@ ColorParam::setDisplayMinimum(double minimum,
 double
 ColorParam::getDisplayMinimum(int dimension) const
 {
-    KnobColorPtr knob = _colorKnob.lock();
+    KnobColorPtr knob = knobOrRaise( _colorKnob.lock() );
     if (!knob) {
         return 0.;
     }
@@ -1715,7 +1740,7 @@ void
 ColorParam::setDisplayMaximum(double maximum,
                               int dimension)
 {
-    KnobColorPtr knob = _colorKnob.lock();
+    KnobColorPtr knob = knobOrRaise( _colorKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1725,7 +1750,7 @@ ColorParam::setDisplayMaximum(double maximum,
 double
 ColorParam::getDisplayMaximum(int dimension) const
 {
-    KnobColorPtr knob = _colorKnob.lock();
+    KnobColorPtr knob = knobOrRaise( _colorKnob.lock() );
     if (!knob) {
         return 0.;
     }
@@ -1739,7 +1764,7 @@ ColorParam::addAsDependencyOf(int fromExprDimension,
 {
     _addAsDependencyOf(fromExprDimension, param, thisDimension);
 
-    KnobColorPtr knob = _colorKnob.lock();
+    KnobColorPtr knob = knobOrRaise( _colorKnob.lock() );
     if (!knob) {
         return 0.;
     }
@@ -1760,7 +1785,7 @@ ChoiceParam::~ChoiceParam()
 int
 ChoiceParam::get() const
 {
-    KnobChoicePtr knob = _choiceKnob.lock();
+    KnobChoicePtr knob = knobOrRaise( _choiceKnob.lock() );
     if (!knob) {
         return 0;
     }
@@ -1770,7 +1795,7 @@ ChoiceParam::get() const
 int
 ChoiceParam::get(double frame) const
 {
-    KnobChoicePtr knob = _choiceKnob.lock();
+    KnobChoicePtr knob = knobOrRaise( _choiceKnob.lock() );
     if (!knob) {
         return 0;
     }
@@ -1780,7 +1805,7 @@ ChoiceParam::get(double frame) const
 void
 ChoiceParam::set(int x)
 {
-    KnobChoicePtr knob = _choiceKnob.lock();
+    KnobChoicePtr knob = knobOrRaise( _choiceKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1792,7 +1817,7 @@ void
 ChoiceParam::set(int x,
                  double frame)
 {
-    KnobChoicePtr knob = _choiceKnob.lock();
+    KnobChoicePtr knob = knobOrRaise( _choiceKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1803,7 +1828,7 @@ ChoiceParam::set(int x,
 void
 ChoiceParam::set(const QString& label)
 {
-    KnobChoicePtr knob = _choiceKnob.lock();
+    KnobChoicePtr knob = knobOrRaise( _choiceKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1835,7 +1860,7 @@ ChoiceParam::set(const QString& label)
 int
 ChoiceParam::getValue() const
 {
-    KnobChoicePtr knob = _choiceKnob.lock();
+    KnobChoicePtr knob = knobOrRaise( _choiceKnob.lock() );
     if (!knob) {
         return 0;
     }
@@ -1845,7 +1870,7 @@ ChoiceParam::getValue() const
 void
 ChoiceParam::setValue(int value)
 {
-    KnobChoicePtr knob = _choiceKnob.lock();
+    KnobChoicePtr knob = knobOrRaise( _choiceKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1862,7 +1887,7 @@ ChoiceParam::setValue(const QString& label)
 int
 ChoiceParam::getValueAtTime(double time) const
 {
-    KnobChoicePtr knob = _choiceKnob.lock();
+    KnobChoicePtr knob = knobOrRaise( _choiceKnob.lock() );
     if (!knob) {
         return 0;
     }
@@ -1873,7 +1898,7 @@ void
 ChoiceParam::setValueAtTime(int value,
                             double time)
 {
-    KnobChoicePtr knob = _choiceKnob.lock();
+    KnobChoicePtr knob = knobOrRaise( _choiceKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1884,7 +1909,7 @@ ChoiceParam::setValueAtTime(int value,
 void
 ChoiceParam::setDefaultValue(int value)
 {
-    KnobChoicePtr knob = _choiceKnob.lock();
+    KnobChoicePtr knob = knobOrRaise( _choiceKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1894,7 +1919,7 @@ ChoiceParam::setDefaultValue(int value)
 void
 ChoiceParam::setDefaultValue(const QString& value)
 {
-    KnobChoicePtr knob = _choiceKnob.lock();
+    KnobChoicePtr knob = knobOrRaise( _choiceKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1904,7 +1929,7 @@ ChoiceParam::setDefaultValue(const QString& value)
 int
 ChoiceParam::getDefaultValue() const
 {
-    KnobChoicePtr knob = _choiceKnob.lock();
+    KnobChoicePtr knob = knobOrRaise( _choiceKnob.lock() );
     if (!knob) {
         return 0;
     }
@@ -1914,7 +1939,7 @@ ChoiceParam::getDefaultValue() const
 void
 ChoiceParam::restoreDefaultValue()
 {
-    KnobChoicePtr knob = _choiceKnob.lock();
+    KnobChoicePtr knob = knobOrRaise( _choiceKnob.lock() );
     if (!knob) {
         return;
     }
@@ -1926,7 +1951,7 @@ void
 ChoiceParam::addOption(const QString& option,
                        const QString& help)
 {
-    KnobChoicePtr knob = _choiceKnob.lock();
+    KnobChoicePtr knob = knobOrRaise( _choiceKnob.lock() );
 
     if ( !knob || !knob->isUserKnob() ) {
         return;
@@ -1939,7 +1964,7 @@ ChoiceParam::addOption(const QString& option,
 void
 ChoiceParam::setOptions(const std::list<std::pair<QString, QString> >& options)
 {
-    KnobChoicePtr knob = _choiceKnob.lock();
+    KnobChoicePtr knob = knobOrRaise( _choiceKnob.lock() );
 
     if ( !knob || !knob->isUserKnob() ) {
         return;
@@ -1955,7 +1980,7 @@ ChoiceParam::setOptions(const std::list<std::pair<QString, QString> >& options)
 QString
 ChoiceParam::getOption(int index) const
 {
-    KnobChoicePtr knob = _choiceKnob.lock();
+    KnobChoicePtr knob = knobOrRaise( _choiceKnob.lock() );
     if (!knob) {
         return QString();
     }
@@ -1971,7 +1996,7 @@ ChoiceParam::getOption(int index) const
 int
 ChoiceParam::getNumOptions() const
 {
-    KnobChoicePtr knob = _choiceKnob.lock();
+    KnobChoicePtr knob = knobOrRaise( _choiceKnob.lock() );
     if (!knob) {
         return 0;
     }
@@ -1982,7 +2007,7 @@ QStringList
 ChoiceParam::getOptions() const
 {
     QStringList ret;
-    KnobChoicePtr knob = _choiceKnob.lock();
+    KnobChoicePtr knob = knobOrRaise( _choiceKnob.lock() );
     if (!knob) {
         return ret;
     }
@@ -2002,7 +2027,7 @@ ChoiceParam::addAsDependencyOf(int fromExprDimension,
 {
     _addAsDependencyOf(fromExprDimension, param, thisDimension);
 
-    KnobChoicePtr knob = _choiceKnob.lock();
+    KnobChoicePtr knob = knobOrRaise( _choiceKnob.lock() );
     if (!knob) {
         return 0;
     }
@@ -2025,7 +2050,7 @@ BooleanParam::~BooleanParam()
 bool
 BooleanParam::get() const
 {
-    KnobBoolPtr knob = _boolKnob.lock();
+    KnobBoolPtr knob = knobOrRaise( _boolKnob.lock() );
     if (!knob) {
         return false;
     }
@@ -2036,7 +2061,7 @@ BooleanParam::get() const
 bool
 BooleanParam::get(double frame) const
 {
-    KnobBoolPtr knob = _boolKnob.lock();
+    KnobBoolPtr knob = knobOrRaise( _boolKnob.lock() );
     if (!knob) {
         return false;
     }
@@ -2047,7 +2072,7 @@ BooleanParam::get(double frame) const
 void
 BooleanParam::set(bool x)
 {
-    KnobBoolPtr knob = _boolKnob.lock();
+    KnobBoolPtr knob = knobOrRaise( _boolKnob.lock() );
     if (!knob) {
         return;
     }
@@ -2060,7 +2085,7 @@ void
 BooleanParam::set(bool x,
                   double frame)
 {
-    KnobBoolPtr knob = _boolKnob.lock();
+    KnobBoolPtr knob = knobOrRaise( _boolKnob.lock() );
     if (!knob) {
         return;
     }
@@ -2072,7 +2097,7 @@ BooleanParam::set(bool x,
 bool
 BooleanParam::getValue() const
 {
-    KnobBoolPtr knob = _boolKnob.lock();
+    KnobBoolPtr knob = knobOrRaise( _boolKnob.lock() );
     if (!knob) {
         return false;
     }
@@ -2083,7 +2108,7 @@ BooleanParam::getValue() const
 void
 BooleanParam::setValue(bool value)
 {
-    KnobBoolPtr knob = _boolKnob.lock();
+    KnobBoolPtr knob = knobOrRaise( _boolKnob.lock() );
     if (!knob) {
         return;
     }
@@ -2095,7 +2120,7 @@ BooleanParam::setValue(bool value)
 bool
 BooleanParam::getValueAtTime(double time) const
 {
-    KnobBoolPtr knob = _boolKnob.lock();
+    KnobBoolPtr knob = knobOrRaise( _boolKnob.lock() );
     if (!knob) {
         return false;
     }
@@ -2107,7 +2132,7 @@ void
 BooleanParam::setValueAtTime(bool value,
                              double time)
 {
-    KnobBoolPtr knob = _boolKnob.lock();
+    KnobBoolPtr knob = knobOrRaise( _boolKnob.lock() );
     if (!knob) {
         return;
     }
@@ -2119,7 +2144,7 @@ BooleanParam::setValueAtTime(bool value,
 void
 BooleanParam::setDefaultValue(bool value)
 {
-    KnobBoolPtr knob = _boolKnob.lock();
+    KnobBoolPtr knob = knobOrRaise( _boolKnob.lock() );
     if (!knob) {
         return;
     }
@@ -2130,7 +2155,7 @@ BooleanParam::setDefaultValue(bool value)
 bool
 BooleanParam::getDefaultValue() const
 {
-    KnobBoolPtr knob = _boolKnob.lock();
+    KnobBoolPtr knob = knobOrRaise( _boolKnob.lock() );
     if (!knob) {
         return false;
     }
@@ -2141,7 +2166,7 @@ BooleanParam::getDefaultValue() const
 void
 BooleanParam::restoreDefaultValue()
 {
-    KnobBoolPtr knob = _boolKnob.lock();
+    KnobBoolPtr knob = knobOrRaise( _boolKnob.lock() );
     if (!knob) {
         return;
     }
@@ -2157,7 +2182,7 @@ BooleanParam::addAsDependencyOf(int fromExprDimension,
 {
     _addAsDependencyOf(fromExprDimension, param, thisDimension);
 
-    KnobBoolPtr knob = _boolKnob.lock();
+    KnobBoolPtr knob = knobOrRaise( _boolKnob.lock() );
     if (!knob) {
         return false;
     }
@@ -2181,7 +2206,7 @@ StringParamBase::~StringParamBase()
 QString
 StringParamBase::get() const
 {
-    KnobStringBasePtr knob = _stringKnob.lock();
+    KnobStringBasePtr knob = knobOrRaise( _stringKnob.lock() );
     if (!knob) {
         return QString();
     }
@@ -2192,7 +2217,7 @@ StringParamBase::get() const
 QString
 StringParamBase::get(double frame) const
 {
-    KnobStringBasePtr knob = _stringKnob.lock();
+    KnobStringBasePtr knob = knobOrRaise( _stringKnob.lock() );
     if (!knob) {
         return QString();
     }
@@ -2225,7 +2250,7 @@ checkProjectPathIsSet(const KnobStringBasePtr& knob,
 void
 StringParamBase::set(const QString& x)
 {
-    KnobStringBasePtr knob = _stringKnob.lock();
+    KnobStringBasePtr knob = knobOrRaise( _stringKnob.lock() );
     if (!knob) {
         return;
     }
@@ -2241,7 +2266,7 @@ void
 StringParamBase::set(const QString& x,
                      double frame)
 {
-    KnobStringBasePtr knob = _stringKnob.lock();
+    KnobStringBasePtr knob = knobOrRaise( _stringKnob.lock() );
     if (!knob) {
         return;
     }
@@ -2256,7 +2281,7 @@ StringParamBase::set(const QString& x,
 QString
 StringParamBase::getValue() const
 {
-    KnobStringBasePtr knob = _stringKnob.lock();
+    KnobStringBasePtr knob = knobOrRaise( _stringKnob.lock() );
     if (!knob) {
         return QString();
     }
@@ -2267,7 +2292,7 @@ StringParamBase::getValue() const
 void
 StringParamBase::setValue(const QString& value)
 {
-    KnobStringBasePtr knob = _stringKnob.lock();
+    KnobStringBasePtr knob = knobOrRaise( _stringKnob.lock() );
     if (!knob) {
         return;
     }
@@ -2282,7 +2307,7 @@ StringParamBase::setValue(const QString& value)
 QString
 StringParamBase::getValueAtTime(double time) const
 {
-    KnobStringBasePtr knob = _stringKnob.lock();
+    KnobStringBasePtr knob = knobOrRaise( _stringKnob.lock() );
     if (!knob) {
         return QString();
     }
@@ -2294,7 +2319,7 @@ void
 StringParamBase::setValueAtTime(const QString& value,
                                 double time)
 {
-    KnobStringBasePtr knob = _stringKnob.lock();
+    KnobStringBasePtr knob = knobOrRaise( _stringKnob.lock() );
     if (!knob) {
         return;
     }
@@ -2309,7 +2334,7 @@ StringParamBase::setValueAtTime(const QString& value,
 void
 StringParamBase::setDefaultValue(const QString& value)
 {
-    KnobStringBasePtr knob = _stringKnob.lock();
+    KnobStringBasePtr knob = knobOrRaise( _stringKnob.lock() );
     if (!knob) {
         return;
     }
@@ -2323,7 +2348,7 @@ StringParamBase::setDefaultValue(const QString& value)
 QString
 StringParamBase::getDefaultValue() const
 {
-    KnobStringBasePtr knob = _stringKnob.lock();
+    KnobStringBasePtr knob = knobOrRaise( _stringKnob.lock() );
     if (!knob) {
         return QString();
     }
@@ -2334,7 +2359,7 @@ StringParamBase::getDefaultValue() const
 void
 StringParamBase::restoreDefaultValue()
 {
-    KnobStringBasePtr knob = _stringKnob.lock();
+    KnobStringBasePtr knob = knobOrRaise( _stringKnob.lock() );
     if (!knob) {
         return;
     }
@@ -2350,7 +2375,7 @@ StringParamBase::addAsDependencyOf(int fromExprDimension,
 {
     _addAsDependencyOf(fromExprDimension, param, thisDimension);
 
-    KnobStringBasePtr knob = _stringKnob.lock();
+    KnobStringBasePtr knob = knobOrRaise( _stringKnob.lock() );
     if (!knob) {
         return QString();
     }
@@ -2373,7 +2398,7 @@ StringParam::~StringParam()
 void
 StringParam::setType(StringParam::TypeEnum type)
 {
-    KnobStringPtr knob = _sKnob.lock();
+    KnobStringPtr knob = knobOrRaise( _sKnob.lock() );
 
     if ( !knob || !knob->isUserKnob() ) {
         return;
@@ -2413,7 +2438,7 @@ FileParam::~FileParam()
 void
 FileParam::setSequenceEnabled(bool enabled)
 {
-    KnobFilePtr k = _sKnob.lock();
+    KnobFilePtr k = knobOrRaise( _sKnob.lock() );
 
     if ( !k || !k->isUserKnob() ) {
         return;
@@ -2426,7 +2451,7 @@ FileParam::setSequenceEnabled(bool enabled)
 void
 FileParam::openFile()
 {
-    KnobFilePtr k = _sKnob.lock();
+    KnobFilePtr k = knobOrRaise( _sKnob.lock() );
 
     if (k) {
         k->open_file();
@@ -2436,7 +2461,7 @@ FileParam::openFile()
 void
 FileParam::reloadFile()
 {
-    KnobFilePtr k = _sKnob.lock();
+    KnobFilePtr k = knobOrRaise( _sKnob.lock() );
 
     if (k) {
         k->reloadFile();
@@ -2458,7 +2483,7 @@ OutputFileParam::~OutputFileParam()
 void
 OutputFileParam::setSequenceEnabled(bool enabled)
 {
-    KnobOutputFilePtr knob = _sKnob.lock();
+    KnobOutputFilePtr knob = knobOrRaise( _sKnob.lock() );
 
     if ( !knob || !knob->isUserKnob() ) {
         return;
@@ -2473,7 +2498,7 @@ OutputFileParam::setSequenceEnabled(bool enabled)
 void
 OutputFileParam::openFile()
 {
-    KnobOutputFilePtr knob = _sKnob.lock();
+    KnobOutputFilePtr knob = knobOrRaise( _sKnob.lock() );
 
     if ( !knob || !knob->isUserKnob() ) {
         return;
@@ -2496,7 +2521,7 @@ PathParam::~PathParam()
 void
 PathParam::setAsMultiPathTable()
 {
-    KnobPathPtr knob = _sKnob.lock();
+    KnobPathPtr knob = knobOrRaise( _sKnob.lock() );
 
     if ( !knob || !knob->isUserKnob() ) {
         return;
@@ -2507,7 +2532,7 @@ PathParam::setAsMultiPathTable()
 void
 PathParam::setTable(const std::list<std::vector<std::string> >& table)
 {
-    KnobPathPtr k = _sKnob.lock();
+    KnobPathPtr k = knobOrRaise( _sKnob.lock() );
     if (!k) {
         return;
     }
@@ -2525,7 +2550,7 @@ PathParam::setTable(const std::list<std::vector<std::string> >& table)
 void
 PathParam::getTable(std::list<std::vector<std::string> >* table) const
 {
-    KnobPathPtr k = _sKnob.lock();
+    KnobPathPtr k = knobOrRaise( _sKnob.lock() );
     if (!k) {
         return;
     }
@@ -2555,7 +2580,7 @@ ButtonParam::~ButtonParam()
 void
 ButtonParam::trigger()
 {
-    KnobButtonPtr knob = _buttonKnob.lock();
+    KnobButtonPtr knob = knobOrRaise( _buttonKnob.lock() );
     if (!knob) {
         return;
     }
@@ -2589,7 +2614,7 @@ BytesParam::~BytesParam()
 std::string
 BytesParam::getValue() const
 {
-    KnobBytesPtr knob = _bytesKnob.lock();
+    KnobBytesPtr knob = knobOrRaise( _bytesKnob.lock() );
     if (!knob) {
         return std::string();
     }
@@ -2600,7 +2625,7 @@ BytesParam::getValue() const
 void
 BytesParam::setValue(const std::string& value)
 {
-    KnobBytesPtr knob = _bytesKnob.lock();
+    KnobBytesPtr knob = knobOrRaise( _bytesKnob.lock() );
     if ( !knob || ( value.size() > KnobBytes::maxLength() ) ) {
         return;
     }
@@ -2612,7 +2637,7 @@ BytesParam::setValue(const std::string& value)
 std::string
 BytesParam::getDefaultValue() const
 {
-    KnobBytesPtr knob = _bytesKnob.lock();
+    KnobBytesPtr knob = knobOrRaise( _bytesKnob.lock() );
     if (!knob) {
         return std::string();
     }
@@ -2623,7 +2648,7 @@ BytesParam::getDefaultValue() const
 void
 BytesParam::restoreDefaultValue()
 {
-    KnobBytesPtr knob = _bytesKnob.lock();
+    KnobBytesPtr knob = knobOrRaise( _bytesKnob.lock() );
     if (!knob) {
         return;
     }
@@ -2656,12 +2681,12 @@ GroupParam::addParam(const Param* param)
     if (!param) {
         return;
     }
-    KnobIPtr knob = param->getInternalKnob();
+    KnobIPtr knob = knobOrRaise( param->getInternalKnob() );
 
     if ( !knob || !knob->isUserKnob() ) {
         return;
     }
-    KnobGroupPtr group = _groupKnob.lock();
+    KnobGroupPtr group = knobOrRaise( _groupKnob.lock() );
     if (!group) {
         return;
     }
@@ -2671,7 +2696,7 @@ GroupParam::addParam(const Param* param)
 void
 GroupParam::setAsTab()
 {
-    KnobGroupPtr group = _groupKnob.lock();
+    KnobGroupPtr group = knobOrRaise( _groupKnob.lock() );
     if ( !group || !group->isUserKnob() ) {
         return;
     }
@@ -2681,7 +2706,7 @@ GroupParam::setAsTab()
 void
 GroupParam::setOpened(bool opened)
 {
-    KnobGroupPtr group = _groupKnob.lock();
+    KnobGroupPtr group = knobOrRaise( _groupKnob.lock() );
     if (!group) {
         return;
     }
@@ -2692,7 +2717,7 @@ GroupParam::setOpened(bool opened)
 bool
 GroupParam::getIsOpened() const
 {
-    KnobGroupPtr group = _groupKnob.lock();
+    KnobGroupPtr group = knobOrRaise( _groupKnob.lock() );
     if (!group) {
         return false;
     }
@@ -2717,12 +2742,12 @@ PageParam::addParam(const Param* param)
     if (!param) {
         return;
     }
-    KnobIPtr knob = param->getInternalKnob();
+    KnobIPtr knob = knobOrRaise( param->getInternalKnob() );
 
     if ( !knob || !knob->isUserKnob() ) {
         return;
     }
-    KnobPagePtr pageKnob = _pageKnob.lock();
+    KnobPagePtr pageKnob = knobOrRaise( _pageKnob.lock() );
 
     if ( !pageKnob ) {
         return;
@@ -2747,7 +2772,7 @@ ParametricParam::setCurveColor(int dimension,
                                double g,
                                double b)
 {
-    KnobParametricPtr param = _parametricKnob.lock();
+    KnobParametricPtr param = knobOrRaise( _parametricKnob.lock() );
     if (!param) {
         return;
     }
@@ -2758,7 +2783,7 @@ void
 ParametricParam::getCurveColor(int dimension,
                                ColorTuple& ret) const
 {
-    KnobParametricPtr param = _parametricKnob.lock();
+    KnobParametricPtr param = knobOrRaise( _parametricKnob.lock() );
     if (!param) {
         return;
     }
@@ -2772,7 +2797,7 @@ ParametricParam::addControlPoint(int dimension,
                                  double value,
                                  KeyframeTypeEnum interpolation)
 {
-    KnobParametricPtr param = _parametricKnob.lock();
+    KnobParametricPtr param = knobOrRaise( _parametricKnob.lock() );
     if (!param) {
         return eStatusFailed;
     }
@@ -2788,7 +2813,7 @@ ParametricParam::addControlPoint(int dimension,
                                  double rightDerivative,
                                  KeyframeTypeEnum interpolation)
 {
-    KnobParametricPtr param = _parametricKnob.lock();
+    KnobParametricPtr param = knobOrRaise( _parametricKnob.lock() );
     if (!param) {
         return eStatusFailed;
     }
@@ -2800,7 +2825,7 @@ double
 ParametricParam::getValue(int dimension,
                           double parametricPosition) const
 {
-    KnobParametricPtr param = _parametricKnob.lock();
+    KnobParametricPtr param = knobOrRaise( _parametricKnob.lock() );
     if (!param) {
         return 0.;
     }
@@ -2817,7 +2842,7 @@ ParametricParam::getValue(int dimension,
 int
 ParametricParam::getNControlPoints(int dimension) const
 {
-    KnobParametricPtr param = _parametricKnob.lock();
+    KnobParametricPtr param = knobOrRaise( _parametricKnob.lock() );
     if (!param) {
         return 0;
     }
@@ -2839,7 +2864,7 @@ ParametricParam::getNthControlPoint(int dimension,
                                     double *leftDerivative,
                                     double *rightDerivative) const
 {
-    KnobParametricPtr param = _parametricKnob.lock();
+    KnobParametricPtr param = knobOrRaise( _parametricKnob.lock() );
     if (!param) {
         return eStatusFailed;
     }
@@ -2854,7 +2879,7 @@ ParametricParam::setNthControlPoint(int dimension,
                                     double leftDerivative,
                                     double rightDerivative)
 {
-    KnobParametricPtr param = _parametricKnob.lock();
+    KnobParametricPtr param = knobOrRaise( _parametricKnob.lock() );
     if (!param) {
         return eStatusFailed;
     }
@@ -2867,7 +2892,7 @@ ParametricParam::setNthControlPointInterpolation(int dimension,
                                                  int nThCtl,
                                                  KeyframeTypeEnum interpolation)
 {
-    KnobParametricPtr param = _parametricKnob.lock();
+    KnobParametricPtr param = knobOrRaise( _parametricKnob.lock() );
     if (!param) {
         return eStatusFailed;
     }
@@ -2878,7 +2903,7 @@ StatusEnum
 ParametricParam::deleteControlPoint(int dimension,
                                     int nthCtl)
 {
-    KnobParametricPtr param = _parametricKnob.lock();
+    KnobParametricPtr param = knobOrRaise( _parametricKnob.lock() );
     if (!param) {
         return eStatusFailed;
     }
@@ -2889,7 +2914,7 @@ ParametricParam::deleteControlPoint(int dimension,
 StatusEnum
 ParametricParam::deleteAllControlPoints(int dimension)
 {
-    KnobParametricPtr param = _parametricKnob.lock();
+    KnobParametricPtr param = knobOrRaise( _parametricKnob.lock() );
     if (!param) {
         return eStatusFailed;
     }
@@ -2900,7 +2925,7 @@ ParametricParam::deleteAllControlPoints(int dimension)
 void
 ParametricParam::setDefaultCurvesFromCurrentCurves()
 {
-    KnobParametricPtr param = _parametricKnob.lock();
+    KnobParametricPtr param = knobOrRaise( _parametricKnob.lock() );
     if (!param) {
         return;
     }

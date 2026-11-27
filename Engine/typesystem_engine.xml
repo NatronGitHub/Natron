@@ -1245,6 +1245,9 @@
             <inject-code class="target" position="beginning">
                 double time;
                 %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1, %2,&amp;time);
+                if ( PyErr_Occurred() ) {
+                    return 0; // e.g. the parameter was deleted (#1615)
+                }
                 %PYARG_0 = PyTuple_New(2);
                 PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[bool](%0));
                 PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[double](time));
@@ -1261,6 +1264,9 @@
             <inject-code class="target" position="beginning">
                 bool hasRetVar;
                 %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1,&amp;hasRetVar);
+                if ( PyErr_Occurred() ) {
+                    return 0; // e.g. the parameter was deleted (#1615)
+                }
                 %PYARG_0 = PyTuple_New(2);
                 PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[%RETURN_TYPE](%0));
                 PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[bool](hasRetVar));
@@ -1469,6 +1475,9 @@
             </modify-argument>
             <inject-code class="target" position="beginning">
                 std::string value = %CPPSELF.%FUNCTION_NAME();
+                if ( PyErr_Occurred() ) {
+                    return 0; // e.g. the parameter was deleted (#1615)
+                }
                 %PYARG_0 = PyBytes_FromStringAndSize( value.data(), (Py_ssize_t)value.size() );
                 return %PYARG_0;
             </inject-code>
@@ -1479,6 +1488,9 @@
             </modify-argument>
             <inject-code class="target" position="beginning">
                 std::string value = %CPPSELF.%FUNCTION_NAME();
+                if ( PyErr_Occurred() ) {
+                    return 0; // e.g. the parameter was deleted (#1615)
+                }
                 %PYARG_0 = PyBytes_FromStringAndSize( value.data(), (Py_ssize_t)value.size() );
                 return %PYARG_0;
             </inject-code>
@@ -1502,6 +1514,9 @@
                 std::string value( (const char*)view.buf, (std::size_t)view.len );
                 PyBuffer_Release(&amp;view);
                 %CPPSELF.%FUNCTION_NAME(value);
+                if ( PyErr_Occurred() ) {
+                    return 0; // e.g. the parameter was deleted (#1615)
+                }
                 Py_RETURN_NONE;
             </inject-code>
         </modify-function>
@@ -1525,6 +1540,9 @@
             <inject-code class="target" position="beginning">
                 std::list&lt;std::vector&lt;std::string&gt; &gt; table;
                 %CPPSELF.%FUNCTION_NAME(&amp;table);
+                if ( PyErr_Occurred() ) {
+                    return 0; // e.g. the parameter was deleted (#1615)
+                }
 
                 std::size_t outListSize = table.size();
                 PyObject* outList = PyList_New((int) outListSize);
@@ -1621,6 +1639,9 @@
             <inject-code class="target" position="beginning">
                 double key,value,left,right;
                 %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1, %2,&amp;key,&amp;value, &amp;left, &amp;right);
+                if ( PyErr_Occurred() ) {
+                    return 0; // e.g. the parameter was deleted (#1615)
+                }
                 %PYARG_0 = PyTuple_New(5);
                 PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[Natron::StatusEnum](%0));
                 PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[double](key));
@@ -1640,6 +1661,9 @@
             <inject-code class="target" position="beginning">
                 ColorTuple t;
                 %CPPSELF.%FUNCTION_NAME(%1,t);
+                if ( PyErr_Occurred() ) {
+                    return 0; // e.g. the parameter was deleted (#1615)
+                }
                 %PYARG_0 = %CONVERTTOPYTHON[ColorTuple](t);
                 return %PYARG_0;
             </inject-code>
