@@ -42,8 +42,8 @@ third-party packages in the ``site-packages`` directory:
 
 The ``future`` package (python-future), which earlier versions bundled for scripts written for
 Python 2, is no longer bundled since Natron 2.6. A script that uses it fails with an error such as
-``ModuleNotFoundError: No module named 'past'`` (or ``'future'``, ``'builtins'``,
-``'libfuturize'``, ``'libpasteurize'``). Install it like any other package:
+``ModuleNotFoundError: No module named 'past'`` (or ``'future'``, ``'libfuturize'``,
+``'libpasteurize'``). Install it like any other package:
 ``natron-python -m pip install future``.
 
 natron-python
