@@ -393,24 +393,30 @@ step_overlay() {
 }
 
 # OSMesa and LLVM are static libraries linked into Natron: build them for $macos_target too
-# (osmesa-install.sh honours MACOSX_DEPLOYMENT_TARGET). Rebuilt if built for a newer macOS.
+# (osmesa-install.sh honours MACOSX_DEPLOYMENT_TARGET). Rebuilt if built for a newer macOS, or if
+# they are other versions (e.g. the Mesa 18.3.6 / LLVM 6.0.1 of the images made before 2026-11-27).
+# Mesa 25.0.7, the last Mesa with OSMesa, as on Linux (tools/jenkins/include/scripts/pkg/osmesa.sh)
+# and Windows (tools/MINGW-packages/mingw-w64-osmesa); see INSTALL_MACOS.md, install section 4.
+osmesa_version=25.0.7
+osmesa_llvm_version=19.1.7
 osmesa_ok() {
     [ -f /opt/osmesa/lib/libMangledOSMesa32.a ] && [ -x /opt/llvm/bin/llvm-config ] &&
+        grep -qx "Version: $osmesa_version" /opt/osmesa/lib/pkgconfig/osmesa.pc &&
+        [ "$(/opt/llvm/bin/llvm-config --version)" = "$osmesa_llvm_version" ] &&
         "$CHECK_MINOS" -N -t "$macos_target" /opt/osmesa/lib /opt/llvm/lib/libLLVMSupport.a > /dev/null
 }
 step_osmesa() {
     if osmesa_ok; then return; fi
     if [ -d /opt/osmesa/lib ] || [ -d /opt/llvm/lib ]; then
-        echo "OSMesa/LLVM missing or built for a macOS newer than $macos_target: rebuilding them"
+        echo "OSMesa/LLVM missing, not Mesa $osmesa_version / LLVM $osmesa_llvm_version, or built for a macOS newer than $macos_target: rebuilding them"
         sudo rm -rf /opt/osmesa /opt/llvm
     fi
     sudo mkdir -p /opt/osmesa /opt/llvm
     sudo chown "$(id -un):staff" /opt/osmesa /opt/llvm
-    $PORT install python27 cmake autoconf automake libtool pkgconfig gsed
-    sudo port select --set python python27
+    $PORT install cmake autoconf automake libtool pkgconfig xz meson ninja python$pyv py$pyv-mako py$pyv-yaml py$pyv-packaging
     mkdir -p "$OSMESA_SRC/build"
-    (cd "$OSMESA_SRC/build" && env LLVM_BUILD=1 MKJOBS="$JOBS" MACOSX_DEPLOYMENT_TARGET="$macos_target" ../osmesa-install.sh)
-    sudo port select --set python none
+    (cd "$OSMESA_SRC/build" && env OSMESA_VERSION="$osmesa_version" LLVM_VERSION="$osmesa_llvm_version" LLVM_BUILD=1 \
+        PYTHON="/opt/local/bin/python$pyver" MKJOBS="$JOBS" MACOSX_DEPLOYMENT_TARGET="$macos_target" ../osmesa-install.sh)
     osmesa_ok
 }
 
@@ -513,7 +519,7 @@ step_python_qt() {
 }
 
 # Idempotent fixes of installed files that a port upgrade may undo, and the port selections
-# (step_osmesa temporarily selects python27). Never marked done: re-run on every create/update.
+# (images made before 2026-11-27: step_osmesa selected python27). Never marked done: re-run on every create/update.
 step_fixups() {
     system_proxy off   # only step_clt turns it on, for softwareupdate
     [ -e /opt/local/include/minizip-ng ] || sudo ln -s . /opt/local/include/minizip-ng
