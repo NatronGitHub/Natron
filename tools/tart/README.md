@@ -89,6 +89,30 @@ Known failures are listed in Natron-Tests itself, in `known_failures/common.txt`
 - **Tests.** On a fresh runner of the latest Intel macOS (`macos-26-intel`), with Homebrew moved away and no `/opt/local`: `run-natron-tests.sh`, the script that `natron-test.sh` runs in its VM, with the same result files.
 - **Limits, compared with the arm64 tart builds.** The SDK and the DMG are built with Xcode 16.4's macOS 15.5 SDK (deployment target 14.0), not the Command Line Tools 15.3; the Xcode version and the `osmesa-install` commit (its moving HEAD) are not part of the SDK key. The tests run on macOS 26, not 14 (GitHub retired its macOS 14 images), and the runner keeps Xcode, so problems that only show on macOS 14 or without the Command Line Tools are not caught there. A tag run builds the tagged commit as a snapshot (`launchBuildMain.sh` without `RELEASE_TAG`: the plug-ins come from the branches that Natron selects, not from `Natron-x.y.z` tags, which don't exist for 2.6 pre-releases yet), as the Windows installer workflow does.
 
+## Test the arm64 DMG on GitHub's latest macOS
+
+`natron-test.sh` tests on macOS 14, the oldest supported macOS. `.github/workflows/macos_arm64.yml` runs the same tests (`run-natron-tests.sh`, through `macos_dmg_tests.yml`, which `macos_x86_64.yml` uses too) on a clean `macos-26` runner, the latest macOS arm64 that GitHub offers: it downloads the DMG, mounts it, copies `Natron.app` out of it as a user would, moves Homebrew (`/opt/homebrew` and `/usr/local`) and `/Library/Frameworks/Python.framework` away (there is no MacPorts), and runs the whole Natron-Tests suite with its known failures. This checks that the macOS 14 build runs on the newest macOS. The DMG is built here, not on GitHub, so it has to be uploaded first:
+
+- **Pre-release (`v*-alpha*`, `-beta*`, `-rc*`, `-RC*`).** Attach the DMG to the GitHub release of the tag, then run the tests on it:
+
+  ```sh
+  gh release upload v2.6.0-rc1 natron-builds/<vm>/natron_github_RB2/1/Natron-*-macOS14-arm64.dmg
+  gh workflow run macos_arm64.yml -f dmg=v2.6.0-rc1
+  ```
+
+  The release of a pre-release tag is created by the other release workflows (`attach_to_prerelease.sh`); if it doesn't exist yet, `gh release create v2.6.0-rc1 --verify-tag --prerelease` creates it. With `dmg=TAG`, the workflow takes the release's `*-arm64.dmg` asset (`dmg=TAG/ASSET` for another one), and when the tests pass on an arm64 DMG it attaches `<dmg name>-tests.txt`, `-tests-summary.txt` and `-unit_tests_failures.zip` to the release, as `macos_x86_64.yml` does for the x86_64 DMG (`-f attach=false` to only test). The push of a pre-release tag also starts the workflow, which runs the tests only if the DMG is already attached (a build takes longer than that, so this usually ends with a notice). An on-demand run uses the workflow and `run-natron-tests.sh` of the branch it runs on (RB-2.6 by default), and Natron-Tests master, not those of the tag.
+- **Any other build.** Upload it to a draft release, which only the repository's maintainers can see, and give the draft's tag and the asset name (the workflow's download job has `contents: write`, which it needs to see drafts); nothing is attached to a draft:
+
+  ```sh
+  gh release create macos-dmg-tests --draft --title "macOS DMGs to test (draft, never published)" --notes "" || true
+  gh release upload macos-dmg-tests --clobber Natron-….dmg
+  gh workflow run macos_arm64.yml -f dmg=macos-dmg-tests/Natron-….dmg
+  ```
+
+  The DMG can also be a workflow run artifact (`dmg=RUN_ID/ARTIFACT`) or the `https://` URL of a `.dmg` file.
+
+The results are kept as the artifact `Natron-macOS-arm64-tests` (14 days): `gh run download <run id> -n Natron-macOS-arm64-tests`. An x86_64 DMG given to `macos_arm64.yml` runs under Rosetta, as a smoke test of the workflow only; `run-natron-tests.sh` takes the known failures of the app's architecture (`KNOWN_FAILURES_ARCH`), not the runner's.
+
 ## Settings
 
 Environment variables (see `tart-common.sh`): `BASE_IMAGE` (default `NATRON_MACOS_BASE_IMAGE` in `tools/jenkins/macos-release.sh`, pinned by digest for reproducible release images; `BASE_IMAGE=ghcr.io/cirruslabs/macos-sonoma-base:latest` tries the newest one), `SDK_IMAGE`, `VM_CPU` (8), `VM_MEMORY` (16384 MB), `VM_DISK` (250 GB), `TART_KEY` (`~/.ssh/natron-tart_ed25519`), `OSMESA_INSTALL_SRC`, `NATRON_TESTS_SRC`, `TEST_TIMEOUT` (14400 s, natron-test.sh), `GUEST_PROXY_ALLOW` (`*:80 *:443`), and `RSYNC`. `MACPORTS_VERSION` and the Python version (`pyver`, 3.11) are at the top of `provision.sh`; the macOS target (14.0), the Command Line Tools version (15.3) and the base image are in `tools/jenkins/macos-release.sh`. On an SDK image made with an older Python, `natron-sdk.sh update` installs the new Python ports and switches `openimageio`'s python variant (`step_python_migrate`). Runtime files (address cache, VM logs) go to `$TMPDIR/natron-tart` (`TART_RUN`); SSH control sockets go to `/tmp/natron-tart-$UID` (`TART_SOCK`), because macOS's `$TMPDIR` path is too long for a Unix socket. Only one `natron-sdk.sh`, `natron-build.sh` or `natron-test.sh` runs at a time (lock in that directory).
