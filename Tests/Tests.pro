@@ -100,6 +100,7 @@ SOURCES += \
     OfxClipGetImage_Test.cpp \
     OfxCustomParamInterp_Test.cpp \
     OfxDrawSuite_Test.cpp \
+    OfxHostOverlayHandle_Test.cpp \
     OfxHostProperties_Test.cpp \
     OfxImageMemory_Test.cpp \
     OfxInstanceChanged_Test.cpp \
