@@ -7,7 +7,10 @@ GIFLIB_TAR="giflib-${GIFLIB_VERSION}.tar.gz"
 GIFLIB_SHA256=31da5562f44c5f15d63340a09a4fd62b48c45620cd302f77a6d9acf0077879bd
 GIFLIB_SITE="https://sourceforge.net/projects/giflib/files"
 if download_step; then
-    download "$GIFLIB_SITE" "$GIFLIB_TAR" "$GIFLIB_SHA256"
+    # Debian's copy of the release tarball first (the same file), then SourceForge
+    download_urls "$GIFLIB_TAR" "$GIFLIB_SHA256" \
+        "https://deb.debian.org/debian/pool/main/g/giflib/giflib_${GIFLIB_VERSION}.orig.tar.gz" \
+        "$GIFLIB_SITE/$GIFLIB_TAR"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libgif.so" ]; }; }; then
     start_build

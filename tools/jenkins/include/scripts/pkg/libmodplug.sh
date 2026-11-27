@@ -7,7 +7,10 @@ LIBMODPLUG_TAR="libmodplug-${LIBMODPLUG_VERSION}.tar.gz"
 LIBMODPLUG_SHA256=457ca5a6c179656d66c01505c0d95fafaead4329b9dbaa0f997d00a3508ad9de
 LIBMODPLUG_SITE="https://sourceforge.net/projects/modplug-xmms/files/libmodplug/${LIBMODPLUG_VERSION}"
 if download_step; then
-    download "$LIBMODPLUG_SITE" "$LIBMODPLUG_TAR" "$LIBMODPLUG_SHA256"
+    # Debian's copy of the release tarball first (the same file), then SourceForge
+    download_urls "$LIBMODPLUG_TAR" "$LIBMODPLUG_SHA256" \
+        "https://deb.debian.org/debian/pool/main/libm/libmodplug/libmodplug_${LIBMODPLUG_VERSION}.orig.tar.gz" \
+        "$LIBMODPLUG_SITE/$LIBMODPLUG_TAR"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libmodplug.so" ]; }; }; then
     start_build
