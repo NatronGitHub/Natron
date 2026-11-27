@@ -1271,34 +1271,41 @@ RenameNodeUndoRedoCommand::redo()
     node->setName(_newName);
 }
 
+// Adds node and the nodes of nodes upstream of it to tree, in the order of the former recursion
+//     void add(n) {
+//         if (n is marked || n is not in nodes) return;
+//         if (n has no input in nodes) { add n to tree.inputs; mark n; }
+//         else { add n to tree.inbetweenNodes; mark n; for (input : inputs of n, in order) add(input); }
+//     }
+// without its stack frame per node (#1950), as Project::extractTreesFromNodes() does on the Engine side (#1628)
 static void
 addTreeInputs(const std::list<NodeGuiPtr> & nodes,
               const NodeGuiPtr& node,
               ExtractedTree& tree,
-              std::list<NodeGuiPtr> & markedNodes)
+              std::set<const NodeGui*> & markedNodes)
 {
-    if ( std::find(markedNodes.begin(), markedNodes.end(), node) != markedNodes.end() ) {
-        return;
-    }
+    std::vector<NodeGuiPtr> toVisit(1, node); // the nodes to visit, last first
 
-    if ( std::find(nodes.begin(), nodes.end(), node) == nodes.end() ) {
-        return;
-    }
-
-    if ( !hasNodeInputsInList(nodes, node) ) {
-        ExtractedInput input;
-        input.node = node;
-        input.inputs = node->getNode()->getGuiInputs();
-        tree.inputs.push_back(input);
-        markedNodes.push_back(node);
-    } else {
-        tree.inbetweenNodes.push_back(node);
-        markedNodes.push_back(node);
-        const std::vector<Edge*>& inputs = node->getInputsArrows();
-        for (std::vector<Edge*>::const_iterator it2 = inputs.begin(); it2 != inputs.end(); ++it2) {
-            NodeGuiPtr input = (*it2)->getSource();
-            if (input) {
-                addTreeInputs(nodes, input, tree, markedNodes);
+    while ( !toVisit.empty() ) {
+        const NodeGuiPtr current = std::move( toVisit.back() );
+        toVisit.pop_back();
+        if ( markedNodes.count( current.get() ) || ( std::find(nodes.begin(), nodes.end(), current) == nodes.end() ) ) {
+            continue;
+        }
+        markedNodes.insert( current.get() );
+        if ( !hasNodeInputsInList(nodes, current) ) {
+            ExtractedInput input;
+            input.node = current;
+            input.inputs = current->getNode()->getGuiInputs();
+            tree.inputs.push_back(input);
+        } else {
+            tree.inbetweenNodes.push_back(current);
+            const std::vector<Edge*>& inputs = current->getInputsArrows();
+            for (std::vector<Edge*>::const_reverse_iterator it = inputs.rbegin(); it != inputs.rend(); ++it) {
+                NodeGuiPtr input = (*it)->getSource();
+                if (input) {
+                    toVisit.push_back( std::move(input) );
+                }
             }
         }
     }
@@ -1308,7 +1315,7 @@ static void
 extractTreesFromNodes(const std::list<NodeGuiPtr> & nodes,
                       std::list<ExtractedTree>& trees)
 {
-    std::list<NodeGuiPtr> markedNodes;
+    std::set<const NodeGui*> markedNodes;
 
     for (std::list<NodeGuiPtr> ::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         bool isOutput = !hasNodeOutputsInList(nodes, *it);
