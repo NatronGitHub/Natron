@@ -25,6 +25,7 @@
 
 #include "Lut.h"
 
+#include <cstdint>
 #include <cstring> // for std::memcpy
 #include <algorithm> // min, max
 #include <cassert>
