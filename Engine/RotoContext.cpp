@@ -3210,6 +3210,20 @@ signedDoubleArea(const std::vector<Point>& polygon)
     return area;
 }
 
+// Whether p is inside the closed polygon, with the nonzero winding rule (the fill rule of the shapes)
+bool
+isInsidePolygon(const Point& p,
+                const std::vector<Point>& polygon)
+{
+    int winding = 0;
+
+    for (std::size_t i = 0, n = polygon.size(); i < n; ++i) {
+        Bezier::point_line_intersection(polygon[i], polygon[(i + 1) % n], p, &winding);
+    }
+
+    return winding != 0;
+}
+
 // Empty if there is nothing to render, e.g. if the shape crosses the line at infinity of a perspective transform (see
 // Bezier::hasFiniteImageAtTime()), which may have changed since renderBezier() checked it.
 SampledFeather
@@ -3276,7 +3290,10 @@ sampleFeather(const Bezier& bezier,
         sampled.feather.push_back(p);
     }
 
-    // a feather point is inward if it is on the inner side of the shape, from the outward normal of the shape there
+    // A feather point is inward if it is on the inner side of the shape there (from the outward normal of the
+    // shape, for its orientation as a whole), and inside the shape. Both are needed: on a lobe of a self-intersecting
+    // shape that turns the other way, the normal points inward; and a long outward feather may end inside another
+    // part of the shape.
     const double orientation = signedDoubleArea(sampled.shape);
     sampled.inward.reserve(n);
     for (std::size_t i = 0; i < n; ++i) {
@@ -3286,7 +3303,7 @@ sampleFeather(const Bezier& bezier,
         const double normalX = next.y - prev.y;
         const double normalY = -(next.x - prev.x);
         const double offset = (sampled.feather[i].x - sampled.shape[i].x) * normalX + (sampled.feather[i].y - sampled.shape[i].y) * normalY;
-        const bool inward = orientation * offset < 0.;
+        const bool inward = (orientation * offset < 0.) && isInsidePolygon(sampled.feather[i], sampled.shape);
         sampled.inward.push_back(inward);
         sampled.hasInwardPoint = sampled.hasInwardPoint || inward;
     }
@@ -3439,9 +3456,9 @@ paintFeather(cairo_t* cr,
     cairo_surface_destroy(gray);
 } // paintFeather
 
-// Appends the closed polygon to the current path of cr
+// Replaces the current path of cr by the closed polygon
 void
-appendPolygon(cairo_t* cr,
+setPolygonPath(cairo_t* cr,
               const std::vector<Point>& polygon)
 {
     cairo_new_path(cr);
@@ -3484,6 +3501,7 @@ RotoContextPrivate::renderBezier(cairo_t* cr,
 
         cairo_new_path(cr);
 
+#if defined(ROTO_RENDER_TRIANGLES_ONLY) || defined(ROTO_USE_MESH_PATTERN_ONLY)
         ////Define the feather edge pattern
         cairo_pattern_t* mesh = cairo_pattern_create_mesh();
         if (cairo_pattern_status(mesh) != CAIRO_STATUS_SUCCESS) {
@@ -3491,6 +3509,10 @@ RotoContextPrivate::renderBezier(cairo_t* cr,
 
             return;
         }
+#else
+        // the feather is painted by paintFeather(), the fill by renderInternalShape()
+        cairo_pattern_t* const mesh = nullptr;
+#endif
 
         ///Adjust the feather distance so it takes the mipmap level into account
         if (mipmapLevel != 0) {
@@ -3502,6 +3524,7 @@ RotoContextPrivate::renderBezier(cairo_t* cr,
 
 
 #ifdef ROTO_RENDER_TRIANGLES_ONLY
+        // compiled out: this path has neither the inward feathers (#157) nor the overlapping feathers (#147) fixes
         std::list<RotoFeatherVertex> featherMesh;
         std::list<RotoTriangleFans> internalFans;
         std::list<RotoTriangles> internalTriangles;
@@ -3517,21 +3540,21 @@ RotoContextPrivate::renderBezier(cairo_t* cr,
         // the feather, and the feather patches fade it out from there to the shape (#157).
         if (feather.hasInwardPoint) {
             cairo_save(cr);
-            appendPolygon(cr, feather.feather);
+            setPolygonPath(cr, feather.feather);
             cairo_clip(cr);
         }
-        // strangely, the above-mentioned cairo bug doesn't affect this function
+        // (with ROTO_USE_MESH_PATTERN_ONLY, compiled out, the fill goes into mesh, which the clip doesn't apply to)
         BezierCPs cps = bezier->getControlPoints_mt_safe();
         renderInternalShape(t, mipmapLevel, shapeColor, opacity, transform, cr, mesh, cps);
         if (feather.hasInwardPoint) {
             cairo_restore(cr);
         }
         paintFeather(cr, feather, fallOff);
-
 #endif
-        
-        
+
+#if defined(ROTO_RENDER_TRIANGLES_ONLY) || defined(ROTO_USE_MESH_PATTERN_ONLY)
         RotoContextPrivate::applyAndDestroyMask(cr, mesh);
+#endif
     }
 } // RotoContextPrivate::renderBezier
 

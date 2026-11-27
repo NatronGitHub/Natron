@@ -22,7 +22,7 @@
 // - the Mask input, with and without Bg input (#367).
 //
 // With a feather fall-off of 1, the alpha of a feather of width w at the distance d from the opaque edge is
-// (1 - d / w)^2 (the feather patches interpolate 1 - d / w, and RotoContextPrivate::renderBezier() squares it).
+// (1 - d / w)^2 (the feather patches interpolate 1 - d / w, and paintFeather() in Engine/RotoContext.cpp squares it).
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -77,17 +77,30 @@ public:
     double at(int x,
               int y) const
     {
+        return channel(x, y, (int)_image->getComponentsCount() - 1);
+    }
+
+    // the first channel (red for RGBA), 0 outside the bounds
+    double firstChannelAt(int x,
+                          int y) const
+    {
+        return channel(x, y, 0);
+    }
+
+private:
+    double channel(int x,
+                   int y,
+                   int c) const
+    {
         if ( !_image || !_image->getBounds().contains(x, y) ) {
             return 0.;
         }
         Image::ReadAccess access = _image->getReadRights();
         const float* pixel = reinterpret_cast<const float*>( access.pixelAt(x, y) );
-        const int nComps = (int)_image->getComponentsCount();
 
-        return pixel[nComps - 1];
+        return pixel[c];
     }
 
-private:
     ImagePtr _image;
 };
 
@@ -278,6 +291,90 @@ TEST_F(RotoRenderTest, InwardFeatherRamp)
     EXPECT_NEAR( featherRamp(25., 50.), alpha.at(250, 375), kRampTolerance );
 }
 
+// #157: a feather pulled inward on one side of the square and outward on the other (25 px): each side fades as above.
+TEST_F(RotoRenderTest, MixedInwardOutwardFeather)
+{
+    if (!_havePlugins) {
+        return;
+    }
+    NodePtr roto = makeRoto();
+    ASSERT_TRUE( bool(roto) );
+    ASSERT_TRUE( bool( makePolygon(roto->getRotoContext(), kSquare, 0., { {125., 400.}, {425., 400.}, {425., 100.}, {125., 100.} }) ) );
+    const Alpha alpha( renderFrame(roto) );
+
+    const int y = 250;
+    // a 25 px ramp is twice as steep as a 50 px one
+    const double tolerance = 2. * kRampTolerance;
+    EXPECT_EQ(1., alpha.at(250, y));
+    EXPECT_EQ(0., alpha.at(95, y));
+    EXPECT_EQ(0., alpha.at(430, y));
+    for (int x = 100; x < 125; ++x) {
+        EXPECT_NEAR(featherRamp(125. - (x + 0.5), 25.), alpha.at(x, y), tolerance) << "x=" << x;
+    }
+    for (int x = 400; x < 425; ++x) {
+        EXPECT_NEAR(featherRamp( (x + 0.5) - 400., 25. ), alpha.at(x, y), tolerance) << "x=" << x;
+    }
+}
+
+// #157: with a feather fall-off other than 1, an inward feather is the mirror of the outward one.
+TEST_F(RotoRenderTest, InwardFeatherFallOffMirrorsOutward)
+{
+    if (!_havePlugins) {
+        return;
+    }
+    const double fallOff = 2.;
+    NodePtr outward = makeRoto();
+    ASSERT_TRUE( bool(outward) );
+    BezierPtr outwardShape = makePolygon(outward->getRotoContext(), kSquare, 0., { {50., 450.}, {450., 450.}, {450., 50.}, {50., 50.} });
+    ASSERT_TRUE( bool(outwardShape) );
+    outwardShape->getFeatherFallOffKnob()->setValueAtTime(kTime, fallOff, ViewSpec::all(), 0);
+    NodePtr inward = makeRoto();
+    ASSERT_TRUE( bool(inward) );
+    BezierPtr inwardShape = makePolygon(inward->getRotoContext(), kSquare, 0., { {150., 350.}, {350., 350.}, {350., 150.}, {150., 150.} });
+    ASSERT_TRUE( bool(inwardShape) );
+    inwardShape->getFeatherFallOffKnob()->setValueAtTime(kTime, fallOff, ViewSpec::all(), 0);
+    const Alpha outwardAlpha( renderFrame(outward) );
+    const Alpha inwardAlpha( renderFrame(inward) );
+
+    // at the same distance from the opaque edge (100 outward, 150 inward), the same alpha, up to one pixel (the
+    // mirror also mirrors where cairo samples the patches in a pixel)
+    const int y = 250;
+    for (int x = 100; x < 150; ++x) {
+        const double a = outwardAlpha.at(x - 51, y);
+        const double b = outwardAlpha.at(x - 49, y);
+        EXPECT_GE( inwardAlpha.at(x, y), std::min(a, b) - kRampTolerance ) << "x=" << x;
+        EXPECT_LE( inwardAlpha.at(x, y), std::max(a, b) + kRampTolerance ) << "x=" << x;
+    }
+    // and the fall-off changes the ramp
+    EXPECT_GT( std::abs( inwardAlpha.at(125, y) - featherRamp(25., 50.) ), 0.05 );
+}
+
+// #157: on a self-intersecting shape, a bow tie whose two lobes turn opposite ways, feather points pulled outward
+// are outward on both lobes: the two lobes render the same, mirrored.
+TEST_F(RotoRenderTest, BowTieOutwardFeather)
+{
+    if (!_havePlugins) {
+        return;
+    }
+    NodePtr roto = makeRoto();
+    ASSERT_TRUE( bool(roto) );
+    ASSERT_TRUE( bool( makePolygon(roto->getRotoContext(), { {100., 100.}, {300., 300.}, {300., 100.}, {100., 300.} }, 0.,
+                                   { {80., 80.}, {320., 320.}, {320., 80.}, {80., 320.} }) ) );
+    const Alpha alpha( renderFrame(roto) );
+
+    const int y = 150;
+    EXPECT_EQ(1., alpha.at(120, y));
+    EXPECT_EQ(1., alpha.at(279, y));
+    // up to half a pixel of a 20 px ramp (where cairo samples the patches); a reversed ramp would differ by up to 1
+    for (int x = 70; x < 150; ++x) {
+        EXPECT_NEAR(alpha.at(x, y), alpha.at(399 - x, y), 0.1) << "x=" << x;
+    }
+    // 20 px ramps outside the vertical sides
+    for (int x = 80; x < 100; ++x) {
+        EXPECT_NEAR(featherRamp(100. - (x + 0.5), 20.), alpha.at(x, y), 2. * kRampTolerance) << "x=" << x;
+    }
+}
+
 // #147: a U shape with a feather distance of 80 px; the feathers of the two sides of its 100 px wide gap overlap.
 // The alpha in the gap is the largest of the two feathers, a continuous and symmetric profile; one feather used to
 // cover the other, with a jump from 0 to 0.66 where it ended.
@@ -328,6 +425,13 @@ TEST_F(RotoRenderTest, MaskInput)
     NodePtr mask = makeRoto();
     ASSERT_TRUE( bool(mask) );
     ASSERT_TRUE( bool( makePolygon(mask->getRotoContext(), { {250., 550.}, {550., 550.}, {550., 250.}, {250., 250.} }, 0.) ) );
+    {
+        // the mask is in the alpha channel of its RGBA output, not in the red one (a Roto node draws only alpha by
+        // default): the Roto node must extract the selected mask channel (Color.A)
+        const Alpha maskAlpha( renderFrame(mask) );
+        ASSERT_EQ(1., maskAlpha.at(300, 300));
+        ASSERT_EQ(0., maskAlpha.firstChannelAt(300, 300));
+    }
 
     {
         const Alpha alpha( renderFrame(roto) );
@@ -341,7 +445,9 @@ TEST_F(RotoRenderTest, MaskInput)
         const Alpha alpha( renderFrame(roto) );
         EXPECT_EQ(1., alpha.at(300, 300)); // in the shape and in the mask
         EXPECT_EQ(0., alpha.at(150, 150)); // in the shape, not in the mask: Bg
+        EXPECT_EQ(0.5, alpha.firstChannelAt(150, 150));
         EXPECT_EQ(0., alpha.at(500, 500)); // in the mask, not in the shape: Bg
+        EXPECT_EQ(0.5, alpha.firstChannelAt(500, 500));
     }
 }
 
@@ -361,5 +467,6 @@ TEST_F(RotoRenderTest, MaskInputWithoutBg)
     ASSERT_TRUE( roto->isMaskEnabled(kMaskInput) );
     const Alpha alpha( renderFrame(roto) );
     EXPECT_EQ(1., alpha.at(300, 300)); // in the shape and in the mask
-    EXPECT_EQ(0., alpha.at(150, 150)); // in the shape, not in the mask
+    EXPECT_EQ(0., alpha.at(150, 150)); // in the shape, not in the mask: transparent black
+    EXPECT_EQ(0., alpha.firstChannelAt(150, 150));
 }
