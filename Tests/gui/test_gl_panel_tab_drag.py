@@ -34,11 +34,11 @@ TAB_BAR_NAME = "dragTabBar"  # given by this test to the tab bar of the dragged 
 LABEL_RGB = (255, 0, 255)  # the scale colour set by this test (labels, and the Dope Sheet's grid): no other magenta
 VIEWER_TEXT_RGB = (200, 200, 200)  # the colour of the viewer's text (ViewerGL::Implementation::textRenderingColor)
 
-# for each tab: the class of its OpenGL view, and its name for GuiApp.saveScreenshot()
-PANELS = {
-    CURVE_EDITOR: ("Natron::CurveWidget", "curveEditor"),
-    DOPE_SHEET: ("Natron::DopeSheetView", "dopeSheetEditor"),
-    VIEWER: ("Natron::ViewerGL", VIEWER),
+# for each tab: the class of its OpenGL view
+GL_CLASSES = {
+    CURVE_EDITOR: "Natron::CurveWidget",
+    DOPE_SHEET: "Natron::DopeSheetView",
+    VIEWER: "Natron::ViewerGL",
 }
 
 
@@ -79,18 +79,18 @@ def show_tab(label):
 
 
 def gl_view(label):
-    """The panel of the tab label (the widget in its pane) and the panel's OpenGL view."""
-    gl_class = PANELS[label][0]
+    """The OpenGL view of the tab label.
+
+    Found in QApplication.allWidgets(), not by walking up parentWidget(): on Linux CI (PySide2), calling
+    parentWidget() again on the view, after the wrapper of its first result was dropped, raised "Internal
+    C++ object already deleted".
+    """
+    gl_class = GL_CLASSES[label]
     gls = [w for w in QtWidgets.QApplication.allWidgets() if w.metaObject().className() == gl_class]
     if label == VIEWER:
         gls = [w for w in gls if w.objectName() == VIEWER]
     check(len(gls) == 1, "found %d %s widgets" % (len(gls), gl_class))
-    panel = gls[0]
-    while panel is not None and (panel.parentWidget() is None
-                                 or panel.parentWidget().metaObject().className() != "Natron::TabWidget"):
-        panel = panel.parentWidget()
-    check(panel is not None, "the %s is in no pane" % gl_class)
-    return panel, gls[0]
+    return gls[0]
 
 
 def tab_bar(label):
@@ -165,26 +165,28 @@ def view_pixels(label, what):
     """The OpenGL view of the tab label as drawn, and its device pixel ratio.
 
     The view is returned as rows of (r, g, b) tuples, in device pixels: its framebuffer, or, without
-    QOpenGLWidget in PySide, the part of the panel's GuiApp.saveScreenshot() that it covers.
+    QOpenGLWidget in PySide, the part of the GuiApp.saveScreenshot() of its pane that it covers.
     """
-    panel, gl = gl_view(label)
-    check(panel.isVisible() and gl.isVisible(), "the %s is hidden after %s" % (label, what))
+    gl = gl_view(label)
+    check(gl.isVisible(), "the %s is hidden after %s" % (label, what))
     img = framebuffer(gl, "%s after %s" % (label, what))
     if img is not None:
         scale = img.width() / gl.width()
     else:
+        pane_name = pane_of(label)[0]
+        pane = pane_widget(pane_name)
         fd, path = tempfile.mkstemp(suffix=".png", prefix="natron-gl-panel-")
         os.close(fd)
         try:
-            check(app.saveScreenshot(path, PANELS[label][1]),
+            check(app.saveScreenshot(path, pane_name),
                   "cannot take a screenshot of the %s after %s" % (label, what))
             shot = QtGui.QImage(path)
         finally:
             os.remove(path)
-        check(not shot.isNull() and shot.width() > 0 and panel.width() > 0,
+        check(not shot.isNull() and shot.width() > 0 and pane.width() > 0,
               "empty screenshot of the %s after %s" % (label, what))
-        scale = shot.width() / panel.width()
-        pos = gl.mapTo(panel, QtCore.QPoint(0, 0))
+        scale = shot.width() / pane.width()
+        pos = gl.mapToGlobal(QtCore.QPoint(0, 0)) - pane.mapToGlobal(QtCore.QPoint(0, 0))
         img = shot.copy(round(pos.x() * scale), round(pos.y() * scale),
                         round(gl.width() * scale), round(gl.height() * scale))
     img = img.convertToFormat(QtGui.QImage.Format_RGB32)
@@ -317,7 +319,7 @@ def float_and_dock(label, main, home):
     drop_pos = free_point(QtGui.QGuiApplication.primaryScreen().geometry(), main)
     check(drop_pos is not None, "no free point right of the main window, where the %s could float" % label)
     drag_tab_to(label, drop_pos)
-    floating = gl_view(label)[0].window()
+    floating = gl_view(label).window()
     check(floating is not main, "the %s tab dropped outside the main window did not float" % label)
     check(floating.metaObject().className() == "Natron::FloatingWidget",
           "the %s is in a %s, not in a floating window" % (label, floating.metaObject().className()))
@@ -327,7 +329,7 @@ def float_and_dock(label, main, home):
     # back into the main window: the floating window, now empty, closes
     pane = pane_widget(home)
     drag_tab_to(label, pane.mapToGlobal(pane.rect().center()))
-    check(gl_view(label)[0].window() is main, "the %s did not go back to the main window" % label)
+    check(gl_view(label).window() is main, "the %s did not go back to the main window" % label)
     check(wait_until(lambda: not floating_windows(), 10), "the empty floating window of the %s is still shown" % label)
     check_view_drawn(label, "the drag back into the main window")
 
@@ -370,7 +372,7 @@ for label in (CURVE_EDITOR, DOPE_SHEET, VIEWER):
 pane = pane_widget(viewer_pane)
 drag_tab_to(CURVE_EDITOR, pane.mapToGlobal(pane.rect().center()))
 check(pane_of(CURVE_EDITOR)[0] != workshop, "the %s tab is still in %s" % (CURVE_EDITOR, workshop))
-check(gl_view(CURVE_EDITOR)[0].window() is main, "the %s left the main window" % CURVE_EDITOR)
+check(gl_view(CURVE_EDITOR).window() is main, "the %s left the main window" % CURVE_EDITOR)
 check_view_drawn(CURVE_EDITOR, "the drag to the viewer's pane")
 
 # 2. each panel out of the main window, and back into the Node Graph's pane; the viewer last, because
