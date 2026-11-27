@@ -28,11 +28,6 @@ on:
   schedule:
   # Sunday, after linux_packages.yml (04:47) and build_installer.yml (06:17), which take a few hours
   - cron: '37 13 * * 0'
-  # TEMPORARY, to validate this workflow from its branch (GitHub dispatches only workflows that are
-  # on the default branch): remove before the pull request is ready
-  push:
-    branches:
-    - ntp-python-roundtrip
 
 permissions:
   contents: read
@@ -135,18 +130,21 @@ jobs:
 
     # The zips of the BayMax and Spaceship assets: SourceForge is slow (about 30 minutes for both)
     # and sometimes flaky. They never change (Natron 2.3.12 examples).
-    - uses: actions/cache@v4
+    - uses: actions/cache/restore@v4
+      id: assets_cache
       with:
         path: assets
-        key: natron-tests-assets-2.3.12
+        key: natron-tests-assets-2.3.12-both
         # one cache for Linux and Windows (the Windows download is the slowest)
         enableCrossOsArchive: true
 
     - name: Extract the BayMax and Spaceship assets
+      id: assets
       # as runTests.sh: the images that their projects read (a project whose images are missing still
       # loads). Extracted with Python's zipfile: Git for Windows may have no unzip.
       run: |
         mkdir -p assets
+        complete=true
         for p in Spaceship:Natron_2.3.12_Spaceship:Natron_project/Sources BayMax:Natron_2.3.12_BayMax:Robot; do
           IFS=: read -r dir name src <<< "$p"
           zip="assets/$name.zip"
@@ -158,9 +156,19 @@ jobs:
             echo "$dir: $(basename "$src") extracted"
           else
             rm -f "$zip"
+            complete=false
             echo "::warning::could not download or extract $name.zip: the $dir projects are checked without their images"
           fi
         done
+        echo "complete=${complete}" >> "${GITHUB_OUTPUT}"
+
+    # saved only with both zips, so that a failed download is tried again next time
+    - uses: actions/cache/save@v4
+      if: steps.assets_cache.outputs.cache-hit != 'true' && steps.assets.outputs.complete == 'true'
+      with:
+        path: assets
+        key: natron-tests-assets-2.3.12-both
+        enableCrossOsArchive: true
 
     - name: Python project round trip
       working-directory: Natron-Tests

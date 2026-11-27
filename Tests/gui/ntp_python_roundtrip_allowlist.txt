@@ -71,9 +71,11 @@
 #2012 /Project/Timeline_current_time
 #2012 */Value(animated)
 
-# Layer choices of older projects
+# Layer choices of older projects, when their inputs' images are missing (BayMax, when its images
+# could not be downloaded)
 #2013 *_channels}*
 #2013 /Project/NodesCollection/{HSVTool1}/{channels}/#0/Value BayMax*
+#2013 */{outputA}/#*/Value BayMax*
 
 # PyPlug instances get the installed PyPlug's parameter definitions, and plug-in parameters the
 # installed plug-in's defaults
@@ -99,7 +101,6 @@
 #2017 */{toneRanges}*
 #2017 */{dissolveCurve}*
 #2017 */{warp}*
-#2017 */{outputA}/#*/Value
 #2017 */{formatType}/#*/Value
 #2017 */{enableAlpha}/#*/Value
 #2017 */{bitDepth}/#*/Value

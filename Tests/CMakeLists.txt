@@ -358,7 +358,7 @@ if(Python3_Interpreter_FOUND)
     # all of Natron-Tests: .github/workflows/project_python_roundtrip.yml)
     add_test(NAME NtpPythonRoundTripTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_ntp_python_roundtrip_test.py $<TARGET_FILE:NatronRenderer>)
-    set_tests_properties(NtpPythonRoundTripTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 900)
+    set_tests_properties(NtpPythonRoundTripTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 300)
 endif()
 if(Python3_Interpreter_FOUND)
     # NatronRenderer -t exits at the end of a stdin that is not a console (the null device, a pipe)
