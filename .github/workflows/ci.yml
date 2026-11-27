@@ -111,7 +111,7 @@ jobs:
             qt5-qmake qtbase5-dev qtdeclarative5-dev \
             python3-dev libshiboken2-dev libpyside2-dev python3-pyside2.qtwidgets python3-qtpy \
             libwayland-dev libwayland-client0 libwayland-egl1 \
-            extra-cmake-modules clang ccache libgtest-dev \
+            extra-cmake-modules clang ccache libgtest-dev gdb \
             libgl1-mesa-dri mesa-utils x11-utils
 
       # The GUI tests need an OpenGL context (Mesa llvmpipe under Xvfb, see #536); without one,
@@ -251,6 +251,8 @@ jobs:
             ${MINGW_PACKAGE_PREFIX}-expat ${MINGW_PACKAGE_PREFIX}-python
             ${MINGW_PACKAGE_PREFIX}-qt5-base ${MINGW_PACKAGE_PREFIX}-pyside2 ${MINGW_PACKAGE_PREFIX}-shiboken2
             ${MINGW_PACKAGE_PREFIX}-python-qtpy ${MINGW_PACKAGE_PREFIX}-gtest
+            # RenderSoakTest takes the backtraces of a stalled NatronRenderer with gdb
+            ${MINGW_PACKAGE_PREFIX}-gdb
             # shiboken2 needs clang and llvm-tools, see tools/MINGW-packages/mingw-w64-natron-build-deps-qt5
             ${MINGW_PACKAGE_PREFIX}-clang ${MINGW_PACKAGE_PREFIX}-llvm-tools
           )

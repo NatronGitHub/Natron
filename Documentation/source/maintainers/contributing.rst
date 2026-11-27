@@ -358,6 +358,17 @@ standards such as C++23, other compilers or OS versions) are meant to run
 weekly or by hand, never per pull request; none is set up yet. Qt 6 is built
 by RB-2.7's Linux job (see :doc:`qt6-migration`), not on RB-2.6.
 
+**Render soak** (``render_soak.yml``, by hand only): on Linux and Windows,
+``Tests/gui/run_render_soak_test.py`` renders synthetic graphs and Natron-Tests'
+BayMax project for hours, thousands of frames per run, with several threading
+and RAM settings; a render that stops making progress saves the backtraces of
+all its threads in the artifacts and fails the job (#248). By default it soaks
+the packages (the ``natron_testing`` Linux archive, the Windows portable tree of
+the last ``build_installer.yml`` run), or a ``linux_packages.yml`` or
+``build_installer.yml`` run given by ``package_run_id``; ``natron_build=source``
+builds ``natron_ref`` instead, e.g. a commit before a fix. ctest runs a short
+version without BayMax (``RenderSoakTest``) in every build.
+
 **Installers and packages are built weekly, on demand and for tags (the
 Windows package repository only on demand and for tags), never for pull
 requests.** Before a pre-release tag, collect the CHANGELOG (see
