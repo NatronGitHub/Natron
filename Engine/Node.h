@@ -246,20 +246,19 @@ public:
     void setKnobsFrozen(bool frozen);
 
 
-    /*Returns in viewers the list of all the viewers connected to this node*/
+    /**
+     * @brief Appends to viewers the Viewers downstream of this node (this node included), each once, in the order of a
+     * depth-first walk through the outputs (getOutputsWithGroupRedirection()) that visits each node once and doesn't go
+     * past a Viewer. The walk is iterative (#1950). Takes the locks of getOutputsWithGroupRedirection() one call at a
+     * time, and no other lock.
+     **/
     void hasViewersConnected(std::list<ViewerInstance* >* viewers) const;
 
+    /**
+     * @brief The same for the output nodes (isOutput(): Writers, DiskCache, Viewers...) other than GroupOutput nodes: the
+     * walk doesn't go past an output node.
+     **/
     void hasOutputNodesConnected(std::list<OutputEffectInstance* >* writers) const;
-
-private:
-
-    void hasViewersConnectedInternal(std::list<ViewerInstance* >* viewers,
-                                     std::list<const Node*>* markedNodes) const;
-
-    void hasOutputNodesConnectedInternal(std::list<OutputEffectInstance* >* writers,
-                                         std::list<const Node*>* markedNodes) const;
-
-public:
 
     /**
      * @brief Forwarded to the live effect instance

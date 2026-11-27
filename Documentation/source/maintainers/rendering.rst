@@ -201,7 +201,10 @@ user, the walk downstream of
 ``Node::refreshInputRelatedDataInternal``), the split of the nodes into trees
 on project load (``Project::extractTreesFromNodes``), and the RotoPaint stroke walks
 (``Node::getNodesOnPathsUpstreamTo``), which visit each node once instead of
-once per path, which was exponential on chains of diamonds.
+once per path, which was exponential on chains of diamonds. Also iterative
+(#1950), in the same order: the walks downstream to the Viewers and the output
+nodes (``Node::hasViewersConnected`` and ``Node::hasOutputNodesConnected``,
+``visitNodesDepthFirst`` users run on every connection).
 
 The cache
 ---------
