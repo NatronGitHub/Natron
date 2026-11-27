@@ -25,6 +25,7 @@
 
 #include "WriteNode.h"
 
+#include <limits>
 #include <sstream> // stringstream
 
 #include "Global/QtCompat.h"
@@ -609,11 +610,18 @@ WriteNodePrivate::setReadNodeOriginalFrameRange()
         return;
     }
     double first, last;
-    writeNode->getEffectInstance()->getFrameRange_public(writeNode->getEffectInstance()->getHash(), &first, &last);
+    // not from the actions cache: this is called from knobChanged() on the frame range params, and the
+    // result cached for the writer's hash may be the range before the change (#1785)
+    writeNode->getEffectInstance()->getFrameRange_public(writeNode->getEffectInstance()->getHash(), &first, &last, true /*bypasscache*/);
+    if ( ( first <= std::numeric_limits<int>::min() ) || ( last >= std::numeric_limits<int>::max() ) ) {
+        // an infinite range (e.g. the union of the input ranges, with no input or a generator): the reader
+        // keeps the range of the files it finds (INT_MIN/INT_MAX also mean "not set" for the original range)
+        return;
+    }
 
+    // a reader may lack these params (not a GenericReader, or a Read node without decoder): skip them
     {
         KnobIPtr originalFrameRangeKnob = readNode->getKnobByName(kReaderParamNameOriginalFrameRange);
-        assert(originalFrameRangeKnob);
         KnobInt* originalFrameRange = dynamic_cast<KnobInt*>( originalFrameRangeKnob.get() );
         if (originalFrameRange) {
             originalFrameRange->setValues(first, last, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
@@ -621,7 +629,6 @@ WriteNodePrivate::setReadNodeOriginalFrameRange()
     }
     {
         KnobIPtr firstFrameKnob = readNode->getKnobByName(kParamFirstFrame);
-        assert(firstFrameKnob);
         KnobInt* firstFrame = dynamic_cast<KnobInt*>( firstFrameKnob.get() );
         if (firstFrame) {
             firstFrame->setValue(first);
@@ -629,7 +636,6 @@ WriteNodePrivate::setReadNodeOriginalFrameRange()
     }
     {
         KnobIPtr lastFrameKnob = readNode->getKnobByName(kParamLastFrame);
-        assert(lastFrameKnob);
         KnobInt* lastFrame = dynamic_cast<KnobInt*>( lastFrameKnob.get() );
         if (lastFrame) {
             lastFrame->setValue(last);
@@ -667,11 +673,15 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
             originalRange[1] = (int)last;
             args.addParamDefaultValueN<int>(kReaderParamNameOriginalFrameRange, originalRange);
             args.addParamDefaultValue<int>(kParamFirstFrame, (int)first);
-            args.addParamDefaultValue<int>(kParamFirstFrame, (int)last);
+            args.addParamDefaultValue<int>(kParamLastFrame, (int)last);
         }
 
 
         readBackNode = _publicInterface->getApp()->createNode(args);
+        // The default values above only reach the decoder's own params when the decoder is the OpenFX
+        // reader itself: a Read node (NATRON_ENABLE_IO_META_NODES) gets only the file name at its creation,
+        // and creates its decoder afterwards, which guesses the range from the files on disk (#1785).
+        setReadNodeOriginalFrameRange();
     }
 
     NodePtr input = inputNode.lock(), output = outputNode.lock();
