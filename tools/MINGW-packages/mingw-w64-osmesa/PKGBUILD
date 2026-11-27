@@ -55,6 +55,18 @@ options=('staticlibs' '!strip')
 source=("${_realname}"::"git+https://github.com/devernay/osmesa-install#commit=${gitcommit}")
 sha256sums=('SKIP')
 
+prepare() {
+  cd "${srcdir}/${_realname}"
+  # osmesa_mt_test, the multithreading test that osmesa-install builds (as C++) and runs, passes
+  # the thread number through a void* as a long, which is 32 bits on 64-bit Windows: g++
+  # -fpermissive only warns, clang (CLANGARM64, #1494) stops with "cast from pointer to smaller
+  # type 'long' loses information". Use intptr_t. The test isn't installed: the UCRT64 package
+  # is unchanged.
+  grep -q '(int)(long)arg' osdemo/osmesa_mt_test.c
+  sed -i -e 's|(int)(long)arg|(int)(intptr_t)arg|' -e 's|(void \*)(long)i|(void *)(intptr_t)i|' \
+    -e 's|^#include <stdlib.h>$|#include <stdlib.h>\n#include <stdint.h>|' osdemo/osmesa_mt_test.c
+}
+
 build() {
   cd "${srcdir}/${_realname}"
   [[ -d "build" ]] && rm -rf "build"
