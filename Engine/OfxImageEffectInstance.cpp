@@ -1541,7 +1541,14 @@ OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs,
                 std::cout << it->first << "->" << outArgs.getStringProperty(depthParamName) << "," << outArgs.getStringProperty(componentParamName) << "," << outArgs.getDoubleProperty(parParamName) << " ";
 #       endif
 
-                defaultPrefs.setBitDepth( inputNb, OfxClipInstance::ofxDepthToNatronDepth( outArgs.getStringProperty(depthParamName) ) );
+                // A depth that the plug-in may not set (the property is read-only, see
+                // setupClipPreferencesArgsFromMetadata()) keeps the host's value even if the plug-in wrote it (the
+                // ePluginReadOnlyWarn policy accepts the write): "the host will transparently map all of an effect's
+                // input and output clips to a single depth" (ofxClipPreferences.rst), the deepest of the inputs.
+                const OFX::Host::Property::String* depthProp = outArgs.fetchStringProperty(depthParamName);
+                if ( depthProp && !depthProp->getPluginReadOnly() ) {
+                    defaultPrefs.setBitDepth( inputNb, OfxClipInstance::ofxDepthToNatronDepth( depthProp->getValue() ) );
+                }
                 ImagePlaneDesc plane, pairedPlane;
                 std::string ofxComponentsType = outArgs.getStringProperty(componentParamName);
                 ImagePlaneDesc::mapOFXComponentsTypeStringToPlanes(ofxComponentsType, &plane, &pairedPlane);

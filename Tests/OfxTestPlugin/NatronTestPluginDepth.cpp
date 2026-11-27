@@ -23,6 +23,11 @@
 //   support only 8-bit, respectively 16-bit images, so that the host converts the float input. They
 //   don't support render scale (their region of definition fails at a scale other than 1), so that
 //   the host renders them at full scale and downscales the result itself (Image::downscaleMipmap()).
+// - net.natron.test.DepthWrite (Tests/OfxClipDepth_Test.cpp): a filter like DepthByte that supports 8-bit and
+//   float images but not kOfxImageEffectPropSupportsMultipleClipDepths, and sets its output depth to 8 bits in
+//   kOfxImageEffectActionGetClipPreferences, which only a plug-in that supports multiple clip depths may do
+//   (#1385). Its render copies Source to Output and fails unless both are float images, the depth the host
+//   must choose for a float input.
 
 #include <cstddef>
 #include <cstring>
@@ -46,6 +51,7 @@ enum PluginEnum
     eRamp,
     eDepthByte,
     eDepthShort,
+    eDepthWrite,
 };
 
 OfxStatus
@@ -194,8 +200,8 @@ depthPluginMain(PluginEnum plugin,
         if (stat != kOfxStatOK) {
             return stat;
         }
-        const char* const labels[] = { "RampTest", "DepthByteTest", "DepthShortTest" };
-        const char* const depths[] = { kOfxBitDepthFloat, kOfxBitDepthByte, kOfxBitDepthShort };
+        const char* const labels[] = { "RampTest", "DepthByteTest", "DepthShortTest", "DepthWriteTest" };
+        const char* const depths[] = { kOfxBitDepthFloat, kOfxBitDepthByte, kOfxBitDepthShort, kOfxBitDepthByte };
         gPropSuite->propSetString(props, kOfxPropLabel, 0, labels[plugin]);
         gPropSuite->propSetString(props, kOfxImageEffectPluginPropGrouping, 0, "Other/Test");
         if (plugin == eRamp) {
@@ -204,6 +210,10 @@ depthPluginMain(PluginEnum plugin,
             gPropSuite->propSetString(props, kOfxImageEffectPropSupportedContexts, 0, kOfxImageEffectContextFilter);
         }
         gPropSuite->propSetString(props, kOfxImageEffectPropSupportedPixelDepths, 0, depths[plugin]);
+        if (plugin == eDepthWrite) {
+            gPropSuite->propSetString(props, kOfxImageEffectPropSupportedPixelDepths, 1, kOfxBitDepthFloat);
+            gPropSuite->propSetInt(props, kOfxImageEffectPropSupportsMultipleClipDepths, 0, 0);
+        }
         gPropSuite->propSetString(props, kOfxImageEffectPluginRenderThreadSafety, 0, kOfxImageEffectRenderFullySafe);
 
         return kOfxStatOK;
@@ -232,6 +242,12 @@ depthPluginMain(PluginEnum plugin,
 
         return kOfxStatOK;
     }
+    if ( (plugin == eDepthWrite) && (std::strcmp(action, kOfxImageEffectActionGetClipPreferences) == 0) ) {
+        // not allowed: the plug-in doesn't support multiple clip depths. The host keeps float.
+        gPropSuite->propSetString(outArgs, "OfxImageClipPropDepth_" kOfxImageEffectOutputClipName, 0, kOfxBitDepthByte);
+
+        return kOfxStatOK;
+    }
     if (std::strcmp(action, kOfxImageEffectActionRender) == 0) {
         OfxTime time = 0.;
         OfxRectI renderWindow;
@@ -254,6 +270,9 @@ depthPluginMain(PluginEnum plugin,
         case eDepthShort:
 
             return copySource<unsigned short>(effect, time, renderWindow, kOfxBitDepthShort);
+        case eDepthWrite:
+
+            return copySource<float>(effect, time, renderWindow, kOfxBitDepthFloat);
         }
     }
 
@@ -287,6 +306,15 @@ depthShortMain(const char* action,
     return depthPluginMain(eDepthShort, action, (OfxImageEffectHandle)handle, inArgs, outArgs);
 }
 
+OfxStatus
+depthWriteMain(const char* action,
+               const void* handle,
+               OfxPropertySetHandle inArgs,
+               OfxPropertySetHandle outArgs)
+{
+    return depthPluginMain(eDepthWrite, action, (OfxImageEffectHandle)handle, inArgs, outArgs);
+}
+
 void
 setHost(OfxHost* host)
 {
@@ -297,8 +325,10 @@ OfxPlugin gPlugins[] = {
     { kOfxImageEffectPluginApi, 1, "net.natron.test.Ramp", 1, 0, setHost, rampMain },
     { kOfxImageEffectPluginApi, 1, "net.natron.test.DepthByte", 1, 0, setHost, depthByteMain },
     { kOfxImageEffectPluginApi, 1, "net.natron.test.DepthShort", 1, 0, setHost, depthShortMain },
+    { kOfxImageEffectPluginApi, 1, "net.natron.test.DepthWrite", 1, 0, setHost, depthWriteMain },
 };
 NatronTestPluginRegistrar gRegistrars[] = {
     NatronTestPluginRegistrar(&gPlugins[0]), NatronTestPluginRegistrar(&gPlugins[1]), NatronTestPluginRegistrar(&gPlugins[2]),
+    NatronTestPluginRegistrar(&gPlugins[3]),
 };
 } // anonymous namespace
