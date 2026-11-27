@@ -314,7 +314,9 @@ jobs:
         name: Natron-Linux-${{ matrix.arch }}
         path: dist
     - name: Run Natron-Tests in a clean Rocky Linux 9 container
-      run: tools/docker/natron-test.sh -n Natron-Tests -o results dist/*.tar.xz
+      run: |
+        echo "Natron-Tests: $(git -C Natron-Tests log -1 --format='%h %cs %s')" | tee -a "$GITHUB_STEP_SUMMARY"
+        tools/docker/natron-test.sh -n Natron-Tests -o results dist/*.tar.xz
     - uses: actions/upload-artifact@v4
       if: always()
       with:
@@ -373,7 +375,9 @@ jobs:
         . /etc/os-release
         echo "$PRETTY_NAME, $(ldd --version | head -1), $(uname -m)"
     - name: Run Natron-Tests on the latest Ubuntu
-      run: tools/docker/natron-test.sh -H -n Natron-Tests -o results dist/*.tar.xz
+      run: |
+        echo "Natron-Tests: $(git -C Natron-Tests log -1 --format='%h %cs %s')" | tee -a "$GITHUB_STEP_SUMMARY"
+        tools/docker/natron-test.sh -H -n Natron-Tests -o results dist/*.tar.xz
     - uses: actions/upload-artifact@v4
       if: always()
       with:

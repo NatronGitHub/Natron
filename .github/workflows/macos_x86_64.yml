@@ -181,6 +181,7 @@ jobs:
           repository: NatronGitHub/Natron-Tests
           ref: ${{ inputs.natron_tests_ref || 'master' }}
           path: Natron-Tests
+          persist-credentials: false
 
       - name: Download the DMG
         uses: actions/download-artifact@v4
@@ -190,6 +191,7 @@ jobs:
 
       - name: Run Natron-Tests
         run: |
+          echo "Natron-Tests: $(git -C Natron-Tests log -1 --format='%h %cs %s')" | tee -a "$GITHUB_STEP_SUMMARY"
           # runTests.sh downloads these from SourceForge, which is sometimes flaky: fetch them first
           for z in Natron_2.3.12_Spaceship.zip Natron_2.3.12_BayMax.zip; do
             curl -fsSL --retry 5 -o "Natron-Tests/$z" "https://downloads.sourceforge.net/project/natron/Examples/$z" || rm -f "Natron-Tests/$z"
