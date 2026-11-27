@@ -1442,7 +1442,17 @@ private:
 
     void refreshCreatedViews(KnobI* knob, bool silent);
 
-    void refreshInputRelatedDataRecursiveInternal(std::set<Node*>& markedNodes);
+    // The nodes already reached by a refresh of the input-related data: visited by the walk downstream
+    // (refreshInputRelatedDataRecursiveInternal()), and refreshed by the walk upstream through the dirty inputs
+    // (refreshInputRelatedDataInternal()). A node refreshed upstream is still visited downstream, so that its other
+    // outputs are refreshed too (#1951).
+    struct InputRelatedDataRefresh
+    {
+        std::set<Node*> visitedDownstream;
+        std::set<Node*> refreshedUpstream;
+    };
+
+    void refreshInputRelatedDataRecursiveInternal(InputRelatedDataRefresh& refresh);
 
     void refreshInputRelatedDataRecursive();
 
@@ -1456,7 +1466,7 @@ private:
 
     bool refreshAllInputRelatedData(bool hasSerializationData, const std::vector<NodeWPtr>& inputs);
 
-    void refreshInputRelatedDataInternal(std::set<Node*>& markedNodes);
+    void refreshInputRelatedDataInternal(InputRelatedDataRefresh& refresh);
 
     bool refreshDraftFlagInternal(const std::vector<NodeWPtr>& inputs);
 
