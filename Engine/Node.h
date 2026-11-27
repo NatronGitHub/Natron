@@ -1465,11 +1465,9 @@ private:
 
     void markInputRelatedDataDirtyRecursive();
 
-    void markInputRelatedDataDirtyRecursiveInternal(std::list<Node*>& markedNodes, bool recurse);
-
     bool refreshAllInputRelatedData(bool hasSerializationData, const std::vector<NodeWPtr>& inputs);
 
-    bool refreshInputRelatedDataInternal(bool domarking, std::set<Node*>& markedNodes);
+    void refreshInputRelatedDataInternal(std::set<Node*>& markedNodes);
 
     bool refreshDraftFlagInternal(const std::vector<NodeWPtr>& inputs);
 

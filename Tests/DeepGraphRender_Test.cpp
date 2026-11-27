@@ -1307,3 +1307,51 @@ TEST(DeepGraphRender, NodesOnPathsUpstreamOfDiamonds)
         }
     }
 }
+
+// The refresh of the input-related data (metadata, layer menus...) on project load and after a connection doesn't
+// overflow the stack in a very deep chain (#1628). On project load, the nodes are split into trees, and each tree is
+// refreshed from its output, which first refreshes its dirty inputs; after a connection, the data of every node
+// downstream is marked dirty, then refreshed, from the top. These walks were recursions, one stack frame per node of the
+// chain. As in VeryDeepDotChainRenderArgsAndHash, they run with little stack left on the main thread, to keep the chain
+// short.
+TEST(DeepGraphRender, VeryDeepDotChainInputRelatedData)
+{
+    if ( !canRunTest() ) {
+        return;
+    }
+    SmallProject smallProject;
+    printStep("start");
+    DeepChain chain(kVeryDeepDotChainLength, PLUGINID_NATRON_DOT);
+    ASSERT_TRUE( chain.isValid() );
+    printStep("Dot chain built");
+    const NodePtr generator = chain.nodes[0];
+    const NodePtr firstDot = chain.nodes[1];
+    ProjectPtr project = generator->getApp()->getProject();
+    const auto countDirty = [&chain]() {
+        int dirty = 0;
+        for (std::vector<NodePtr>::const_iterator it = chain.nodes.begin(); it != chain.nodes.end(); ++it) {
+            if ( (*it)->isInputRelatedDataDirty() ) {
+                ++dirty;
+            }
+        }
+
+        return dirty;
+    };
+
+    // as on project load: from the output, upstream
+    callWithLittleStackLeft( [&project]() {
+        project->forceComputeInputDependentDataOnAllTrees();
+    } );
+    EXPECT_EQ( 0, countDirty() );
+    printStep("input-related data refreshed upstream");
+
+    // after a connection at the top (Node::endInputEdition()): downstream. The former recursions use less stack per node
+    // there: 3000 nodes didn't overflow 256 KB, so this leaves 128 KB (56 of the 64 chunks of the margin). The connection
+    // itself is not made here: it runs other recursive walks downstream (Node::hasOutputNodesConnected(), for example).
+    const int kDownstreamMarginChunks = 56;
+    callWithLittleStackLeft( [&firstDot]() {
+        firstDot->forceRefreshAllInputRelatedData();
+    }, kDownstreamMarginChunks );
+    EXPECT_EQ( 0, countDirty() );
+    printStep("input-related data refreshed downstream");
+}
