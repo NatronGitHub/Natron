@@ -11,8 +11,10 @@ name: Linux packages
 # 3. Natron-Tests (master) on the archive, in a clean rockylinux/rockylinux:9 container
 #    (tools/docker/natron-test.sh): <name>-tests.txt, <name>-unit_tests_failures.zip;
 # 4. Natron-Tests on the archive again, directly on the latest Ubuntu runner of each arch, with
-#    only the runtime libraries that a desktop has (natron-test.sh -H; #1964, #1965): newer glibc,
-#    libstdc++ and X11/GL libraries than Rocky Linux 9's.
+#    the runtime libraries that a desktop has installed (natron-test.sh -H; #1964, #1965): newer
+#    glibc, libstdc++ and X11/GL libraries than Rocky Linux 9's. The runner image has much more
+#    than a desktop, so only the Rocky Linux 9 job (and checkBundle) catches a library missing
+#    from the archive.
 # Weekly (Sunday), on demand, and on pre-release tags (v2.6.0-rc1, -beta1, -alpha.1, ...), whose release gets the
 # archives and the test results; never on pull requests. The archives and the test results are
 # kept 14 days as workflow artifacts. On RB-2.6, the weekly and on-demand runs whose packages and
@@ -354,8 +356,8 @@ jobs:
       run: |
         # Ubuntu's names for the system libraries that the archive never bundles (INSTALL_LINUX.md,
         # "Runtime requirements of the Linux binaries"; the dnf list of natron-test.sh): libgomp,
-        # GLVND's libGL/libEGL/libOpenGL (no Mesa driver, no Xvfb: NatronRenderer needs no
-        # display), the X11/xcb/xkbcommon client libraries and ALSA, which Qt's libraries link
+        # GLVND's libGL/libEGL/libOpenGL (with Ubuntu's Mesa, which they depend on; no Xvfb:
+        # NatronRenderer needs no display), the X11/xcb/xkbcommon client libraries and ALSA, which Qt's libraries link
         # to, and fontconfig with a font. Most of them are already on the runner image. Plus the
         # tools that runTests.sh uses (zip, unzip, xz).
         sudo apt-get update -q
