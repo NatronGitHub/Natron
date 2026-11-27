@@ -350,20 +350,6 @@ AppManager::AppManager()
 #endif
 }
 
-#ifdef USE_NATRON_GIL
-void
-AppManager::takeNatronGIL()
-{
-    _imp->natronPythonGIL.lock();
-}
-
-void
-AppManager::releaseNatronGIL()
-{
-    _imp->natronPythonGIL.unlock();
-}
-#endif
-
 void
 StrUtils::ensureLastPathSeparator(QString& path)
 {
@@ -479,12 +465,7 @@ AppManager::loadFromArgs(const CLArgs& cl)
             std::string stdFcPath = fcPath.toStdString();
 
             qDebug() << "Setting FONTCONFIG_PATH to" << stdFcPath.c_str();
-#if 0 //def __NATRON_WIN32__ // commented out in https://github.com/NatronGitHub/Natron/commit/3445d671f15fbd97bca164b53ceb41cef47c61c3
-            // qputenv on mingw will just call putenv, but we want to keep the utf16 info, so we need to call _wputenv
-            _wputenv_s(L"FONTCONFIG_PATH", StrUtils::utf8_to_utf16(stdFcPath).c_str());
-#else
-             qputenv( "FONTCONFIG_PATH", stdFcPath.c_str() );
-#endif
+            qputenv( "FONTCONFIG_PATH", stdFcPath.c_str() );
         }
     }
 
@@ -4418,62 +4399,11 @@ Dialogs::printDismissedDialog(const std::string & title,
     std::cerr << "[dialog dismissed] " << title << ": " << message << std::endl;
 }
 
-#if 0 // dead code
-std::size_t
-NATRON_PYTHON_NAMESPACE::findNewLineStartAfterImports(std::string& script)
-{
-    ///Find position of the last import
-    size_t foundImport = script.find("import ");
-
-    if (foundImport != std::string::npos) {
-        for (;; ) {
-            size_t found = script.find("import ", foundImport + 1);
-            if (found == std::string::npos) {
-                break;
-            } else {
-                foundImport = found;
-            }
-        }
-    }
-
-    if (foundImport == std::string::npos) {
-        return 0;
-    }
-
-    ///find the next end line aftr the import
-    size_t endLine = script.find('\n', foundImport + 1);
-
-
-    if (endLine == std::string::npos) {
-        //no end-line, add one
-        script.append("\n");
-
-        return script.size();
-    } else {
-        return endLine + 1;
-    }
-}
-
-#endif
-
 PyObject*
 NATRON_PYTHON_NAMESPACE::getMainModule()
 {
     return appPTR->getMainModule();
 }
-
-#if 0 // dead code
-std::size_t
-NATRON_PYTHON_NAMESPACE::ensureScriptHasModuleImport(const std::string& moduleName,
-                                                     std::string& script)
-{
-    /// import module
-    script = "from " + moduleName + " import * \n" + script;
-
-    return NATRON_PYTHON_NAMESPACE::findNewLineStartAfterImports(script);
-}
-
-#endif
 
 namespace {
 // The number of interpretPythonScript() calls running, in all threads. It is only read and written with
@@ -4859,25 +4789,6 @@ NATRON_PYTHON_NAMESPACE::runPythonScriptFile(const std::string& script,
     return interpretPythonScriptImpl(script, error, output, NULL, NULL, ePythonScriptKindFile);
 }
 
-#if 0 // dead code
-void
-NATRON_PYTHON_NAMESPACE::compilePyScript(const std::string& script,
-                                         PyObject** code)
-{
-    ///Must be locked
-    assert( PyThreadState_Get() );
-
-    *code = (PyObject*)Py_CompileString(script.c_str(), "<string>", Py_file_input);
-    if (PyErr_Occurred() || !*code) {
-#ifdef DEBUG
-        PyErr_Print();
-#endif
-        throw std::runtime_error("failed to compile the script");
-    }
-}
-
-#endif
-
 static std::string
 makeNameScriptFriendlyInternal(const std::string& str,
                                bool allowDots)
@@ -4945,9 +4856,6 @@ NATRON_PYTHON_NAMESPACE::isKeyword(const std::string& str)
 
 #ifdef DEBUG_PYTHON_GIL
 QMap<QString,int> PythonGILLocker::pythonCount;
-#ifdef USE_NATRON_GIL
-QMap<QString,int> PythonGILLocker::natronCount;
-#endif
 #endif
 
 // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
@@ -4980,23 +4888,6 @@ PythonGILLocker::PythonGILLocker()
     qDebug() << QString::fromUtf8("Thread '%1' got the Python GIL (%2)").arg(threadname).arg(pythonCount[threadname]);
 #endif
 
-#ifdef USE_NATRON_GIL
-    // Take the Natron GIL https://github.com/NatronGitHub/Natron/commit/46d9d616dfebfbb931a79776734e2fa17202f7cb
-    // We do this after we got the Python GIL, to avoid deadlocks:
-    // If we do it the other way, this thread may be waiting for the Python GIL while keeping the Natron GIL
-    // locked, thus preventing other threads from getting the Python GIL.
-    if (appPTR) {
-#ifdef DEBUG_PYTHON_GIL
-        qDebug() << QString::fromUtf8("Thread '%1' is asking the Natron GIL").arg(threadname);
-#endif
-        appPTR->takeNatronGIL();
-#ifdef DEBUG_PYTHON_GIL
-        ++natronCount[threadname];
-        qDebug() << QString::fromUtf8("Thread '%1' got the Natron GIL (%2)").arg(threadname).arg(natronCount[threadname]);
-#endif
-    }
-#endif
-
     assert(PyThreadState_Get());
 #if PY_VERSION_HEX >= 0x030400F0
     assert(PyGILState_Check()); // Not available prior to Python 3.4
@@ -5008,19 +4899,9 @@ PythonGILLocker::~PythonGILLocker()
     if (!locked) {
         return;
     }
-    // Release the Natron GIL https://github.com/NatronGitHub/Natron/commit/46d9d616dfebfbb931a79776734e2fa17202f7cb
 #ifdef DEBUG_PYTHON_GIL
     QThread* curThread = QThread::currentThread();
     QString threadname = (qApp && qApp->thread() == curThread) ? QString::fromUtf8("Main") : curThread->objectName();
-#endif
-#ifdef USE_NATRON_GIL
-    if (appPTR) {
-#ifdef DEBUG_PYTHON_GIL
-        qDebug() << QString::fromUtf8("Thread '%1' is releasing the Natron GIL (%2)").arg(threadname).arg(natronCount[threadname]);
-        --natronCount[threadname];
-#endif
-        appPTR->releaseNatronGIL();
-    }
 #endif
 
     // We took the Python GIL too, so release it here.
@@ -5048,12 +4929,6 @@ PythonGILUnlocker::PythonGILUnlocker()
     QString threadname = (qApp && qApp->thread() == curThread) ? QString::fromUtf8("Main") : curThread->objectName();
     qDebug() << QString::fromUtf8("Thread '%1' is releasing the Python GIL").arg(threadname);
 #endif
-#ifdef USE_NATRON_GIL
-    // Release the Natron GIL https://github.com/NatronGitHub/Natron/commit/46d9d616dfebfbb931a79776734e2fa17202f7cb
-    if (appPTR) {
-        appPTR->releaseNatronGIL();
-    }
-#endif
     _state = PyEval_SaveThread();
 }
 
@@ -5062,13 +4937,7 @@ PythonGILUnlocker::~PythonGILUnlocker()
     if (!_state) {
         return;
     }
-    // Take the Python GIL before the Natron GIL, as PythonGILLocker does, to avoid deadlocks.
     PyEval_RestoreThread(_state);
-#ifdef USE_NATRON_GIL
-    if (appPTR) {
-        appPTR->takeNatronGIL();
-    }
-#endif
 #ifdef DEBUG_PYTHON_GIL
     QThread* curThread = QThread::currentThread();
     QString threadname = (qApp && qApp->thread() == curThread) ? QString::fromUtf8("Main") : curThread->objectName();

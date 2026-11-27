@@ -329,7 +329,6 @@ Settings::initializeKnobsThreading()
     _numberOfThreads->setDisplayMinimum(-1);
     _threadingPage->addKnob(_numberOfThreads);
 
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     _numberOfParallelRenders = AppManager::createKnob<KnobInt>( this, tr("Number of parallel renders (0=\"guess\")") );
     _numberOfParallelRenders->setHintToolTip( tr("Controls the number of parallel frame that will be rendered at the same time by the renderer. "
                                                  "A value of 0 indicate that %1 should automatically determine "
@@ -341,7 +340,6 @@ Settings::initializeKnobsThreading()
     _numberOfParallelRenders->setMinimum(0);
     _numberOfParallelRenders->disableSlider();
     _threadingPage->addKnob(_numberOfParallelRenders);
-#endif
 
     _useThreadPool = AppManager::createKnob<KnobBool>( this, tr("Effects use the thread-pool") );
     _useThreadPool->setName("useThreadPool");
@@ -1520,9 +1518,7 @@ Settings::setDefaultValues()
 
     // General/Threading
     _numberOfThreads->setDefaultValue(0, 0);
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     _numberOfParallelRenders->setDefaultValue(0, 0);
-#endif
     _useThreadPool->setDefaultValue(true);
     _nThreadsPerEffect->setDefaultValue(0);
     _renderInSeparateProcess->setDefaultValue(false, 0);
@@ -2309,11 +2305,7 @@ Settings::tryLoadOpenColorIOConfig()
     qDebug() << "setting OCIO=" << configFile;
 #endif
     std::string stdConfigFile = configFile.toStdString();
-#if 0 //def __NATRON_WIN32__ // commented out in https://github.com/NatronGitHub/Natron/commit/3445d671f15fbd97bca164b53ceb41cef47c61c3
-    _wputenv_s(L"OCIO", StrUtils::utf8_to_utf16(stdConfigFile).c_str());
-#else
     qputenv( NATRON_OCIO_ENV_VAR_NAME, stdConfigFile.c_str() );
-#endif
 
     std::string configPath = SequenceParsing::removePath(stdConfigFile);
     if ( !configPath.empty() && (configPath[configPath.size() - 1] == '/') ) {
@@ -3293,21 +3285,13 @@ Settings::isAutoFixRelativeFilePathEnabled() const
 int
 Settings::getNumberOfParallelRenders() const
 {
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-
     return _numberOfParallelRenders->getValue();
-#else
-
-    return 1;
-#endif
 }
 
 void
 Settings::setNumberOfParallelRenders(int nb)
 {
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     _numberOfParallelRenders->setValue(nb);
-#endif
 }
 
 bool

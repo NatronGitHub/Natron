@@ -2465,34 +2465,6 @@ Project::setupProjectForStereo()
     _imp->viewsList->setValue(encoded);
 }
 
-#if 0 // dead code
-// replaced by boost::to_lower(str)
-static std::string
-toLowerString(const std::string& str)
-{
-    std::string ret;
-    std::locale loc;
-
-    for (std::size_t i = 0; i < str.size(); ++i) {
-        ret.push_back( std::tolower(str[i], loc) );
-    }
-
-    return ret;
-}
-
-// replaced by StrUtils::iequals(lhs, rhs)
-static bool
-caseInsensitiveCompare(const std::string& lhs,
-                       const std::string& rhs)
-{
-    std::string lowerLhs = toLowerString(lhs);
-    std::string lowerRhs = toLowerString(rhs);
-
-    return lowerLhs == lowerRhs;
-}
-
-#endif
-
 void
 Project::createProjectViews(const std::vector<std::string>& views)
 {

@@ -398,7 +398,6 @@ HEADERS += \
     UpdateViewerParams.h \
     Utils.h \
     Variant.h \
-    VariantSerialization.h \
     ViewIdx.h \
     ViewerInstance.h \
     ViewerInstancePrivate.h \

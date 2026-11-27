@@ -182,17 +182,6 @@ EffectInstance::convertPlanesFormatsIfNeeded(const AppInstancePtr& app,
          **/
         Image::ReadAccess acc = inputImage->getReadRights();
         RectI bounds = inputImage->getBounds();
-#if 0 //def BOOST_NO_CXX11_VARIADIC_TEMPLATES
-       ImagePtr tmp( new Image(targetComponents,
-                                inputImage->getRoD(),
-                                bounds,
-                                inputImage->getMipmapLevel(),
-                                inputImage->getPixelAspectRatio(),
-                                targetDepth,
-                                inputImage->getPremultiplication(),
-                                inputImage->getFieldingOrder(),
-                                false) );
-#else
         ImagePtr tmp = std::make_shared<Image>(targetComponents,
                                                  inputImage->getRoD(),
                                                  bounds,
@@ -203,7 +192,6 @@ EffectInstance::convertPlanesFormatsIfNeeded(const AppInstancePtr& app,
                                                  inputImage->getFieldingOrder(),
                                                  false);
 
-#endif
         tmp->setKey(inputImage->getKey());
         const RectI clippedRoi = roi.intersect(bounds);
 

@@ -579,12 +579,6 @@ public:
 
     virtual void reloadStylesheets() {}
 
-#ifdef USE_NATRON_GIL
-    void takeNatronGIL();
-
-    void releaseNatronGIL();
-#endif
-
 #ifdef __NATRON_WIN32__
     void registerUNCPath(const QString& path, const QChar& driveLetter);
     QString mapUNCPathToPathWithDriveLetter(const QString& uncPath) const;
@@ -897,19 +891,6 @@ void printDismissedDialog(const std::string & title, const std::string & message
 // put global functions in a namespace, see https://google.github.io/styleguide/cppguide.html#Nonmember,_Static_Member,_and_Global_Functions
 namespace NATRON_PYTHON_NAMESPACE {
 /**
- * @brief Ensures that the given Python script as imported the given module
- * and returns the position of the start of the next line after the imports. Note that this position
- * can be the first character after the last one in the script.
- **/
-//std::size_t ensureScriptHasModuleImport(const std::string& moduleName,std::string& script);
-
-/**
- * @brief If the script contains import modules commands, this will return the position of the first character
- * of the next line after the last import call, if there's any, otherwise it returns 0.
- **/
-//std::size_t findNewLineStartAfterImports(std::string& script);
-
-/**
  * @brief Return a handle to the __main__ Python module, containing all global definitions.
  **/
 PyObject* getMainModule();
@@ -934,9 +915,6 @@ bool interpretPythonScript(const std::string& script, std::string* error, std::s
  * process with its status (as PyRun_SimpleString() does), and error does not contain the script.
  **/
 bool runPythonScriptFile(const std::string& script, std::string* error, std::string* output);
-
-
-//void compilePyScript(const std::string& script,PyObject** code);
 
 std::string makeNameScriptFriendlyWithDots(const std::string& str);
 std::string makeNameScriptFriendly(const std::string& str);
@@ -976,9 +954,6 @@ class PythonGILLocker
     bool locked; // false if Python was not initialized
 #ifdef DEBUG_PYTHON_GIL
     static QMap<QString, int> pythonCount;
-#ifdef USE_NATRON_GIL
-    static QMap<QString, int> natronCount;
-#endif
 #endif
 public:
     PythonGILLocker();

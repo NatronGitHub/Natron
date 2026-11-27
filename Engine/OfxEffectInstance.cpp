@@ -1217,7 +1217,6 @@ OfxEffectInstance::isOutput() const
 bool
 OfxEffectInstance::isGenerator() const
 {
-#if 1
     /*
      * This is to deal with effects that can be both filters and generators (e.g: like constant or S_Zap)
      * Some plug-ins unfortunately do not behave exactly the same in these 2 contexts and we want them to behave
@@ -1234,11 +1233,6 @@ OfxEffectInstance::isGenerator() const
     }
 
     return false;
-#else
-    assert(_context != eContextNone);
-
-    return _context == eContextGenerator || _context == eContextReader;
-#endif
 }
 
 bool
