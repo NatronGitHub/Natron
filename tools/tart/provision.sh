@@ -847,7 +847,8 @@ step_update() {
         echo "===== installing gtest"
         $PORT install gtest
     fi
-    # rebuild OSMesa/LLVM if missing or built for a newer macOS (delete /opt/osmesa/lib to force a rebuild)
+    # rebuild OSMesa/LLVM if missing, not the versions of step_osmesa, or built for a newer macOS
+    # (delete /opt/osmesa/lib to force a rebuild)
     step_osmesa
     rm -f "$LOGDIR/update.pending"
 }
