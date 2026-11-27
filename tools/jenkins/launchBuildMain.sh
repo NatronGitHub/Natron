@@ -706,6 +706,10 @@ fi
 
 dumpBuildOptions
 
+if [ "$FAIL" -ne "0" ]; then
+    echo "checking out the sources failed with status $FAIL"
+    exit $FAIL
+fi
 
 # Build plug-ins
 if $BUILD_2 && [ "$FAIL" = "0" ]; then

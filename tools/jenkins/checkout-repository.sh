@@ -52,11 +52,15 @@ function checkoutRepository() {
             # A commit is not a ref, so it cannot be given to clone -b: git fails
             # with "Remote branch <sha> not found in upstream origin". Clone the
             # branch, or the default branch when none was given, and fetch the
-            # commit itself below.
-            if [ -n "$REPO_BRANCH" ]; then
-                $TIMEOUT 1800 $GIT clone --depth 1 -b "${REPO_BRANCH#tags/}" "$REPO_URL" "$REPO_LOCAL_DIRNAME"
-            else
-                $TIMEOUT 1800 $GIT clone --depth 1 "$REPO_URL" "$REPO_LOCAL_DIRNAME"
+            # commit itself below. The branch may be gone by the time the build
+            # starts (a CI run can build hours after it was triggered, and a PR
+            # branch is deleted when the PR merges): then clone the default
+            # branch, the commit is still fetched by its sha.
+            if [ -z "$REPO_BRANCH" ] ||
+                ! $TIMEOUT 1800 $GIT clone --depth 1 -b "${REPO_BRANCH#tags/}" "$REPO_URL" "$REPO_LOCAL_DIRNAME"; then
+                [ -z "$REPO_BRANCH" ] || echo "Warning: could not clone branch $REPO_BRANCH of $REPO_URL: cloning the default branch, to fetch commit $REPO_COMMIT"
+                rm -rf "$REPO_LOCAL_DIRNAME"
+                $TIMEOUT 1800 $GIT clone --depth 1 "$REPO_URL" "$REPO_LOCAL_DIRNAME" || return 1
             fi
         else
             # fast version (depth=1):
@@ -64,7 +68,7 @@ function checkoutRepository() {
         fi
     fi
 
-    cd "$REPO_LOCAL_DIRNAME"
+    cd "$REPO_LOCAL_DIRNAME" || return 1
 
     if [ -z "$REPO_COMMIT" ]; then
         REPO_COMMIT=$(git rev-parse HEAD)
