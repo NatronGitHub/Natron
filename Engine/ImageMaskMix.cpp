@@ -275,11 +275,11 @@ Image::applyMaskMix(const RectI& roi,
     }
 
     int srcNComps = originalImg ? (int)originalImg->getComponentsCount() : 0;
-    //assert(0 < srcNComps && srcNComps <= 4);
     switch (srcNComps) {
-    //case 0:
-    //    applyMaskMixForSrcComponents<0>(realRoI, maskImg, originalImg, masked, maskInvert, mix);
-    //    break;
+    case 0:
+        // no original image (e.g. a Roto node without Bg input): mix with transparent black
+        applyMaskMixForSrcComponents<0>(realRoI, maskImg, originalImg, masked, maskInvert, mix);
+        break;
     case 1:
         applyMaskMixForSrcComponents<1>(realRoI, maskImg, originalImg, masked, maskInvert, mix);
         break;

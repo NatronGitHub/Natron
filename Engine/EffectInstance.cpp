@@ -2306,6 +2306,19 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
 
     if ( ( foundMaskInput != rectToRender.imgs.end() ) && !foundMaskInput->second.empty() ) {
         maskImage = foundMaskInput->second.front();
+        // The mask input is rendered in the layer of the selected mask channel (see getComponentsNeededDefault()),
+        // e.g. RGBA for Color.A, but applyMaskMix() reads a one-channel mask: extract that channel (#367).
+        if ( maskImage && (maskImage->getComponentsCount() != 1) ) {
+            const int maskInputNb = foundMaskInput->first;
+            std::list<ImagePlaneDesc> availableLayers;
+            _publicInterface->getAvailableLayers(time, view, maskInputNb, &availableLayers);
+            ImagePlaneDesc maskLayer;
+            const int maskChannel = _publicInterface->getMaskChannel(maskInputNb, availableLayers, &maskLayer);
+            maskImage = (maskChannel == -1) ? ImagePtr() : EffectInstance::convertPlanesFormatsIfNeeded(_publicInterface->getApp(), maskImage, renderMappedRectToRender,
+                                                                                       ImagePlaneDesc::getAlphaComponents(), maskImage->getBitDepth(),
+                                                                                       false /*useAlpha0ForRGBToRGBAConversion*/,
+                                                                                       eImagePremultiplicationOpaque, maskChannel);
+        }
     }
 
 #ifndef NDEBUG
@@ -2872,9 +2885,10 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
 
                 if (mappedOriginalInputImage) {
                     it->second.tmpImage->copyUnProcessedChannels(renderMappedRectToRender, planes.outputPremult, originalImagePremultiplication, processChannels, mappedOriginalInputImage, true);
-                    if (useMaskMix) {
-                        it->second.tmpImage->applyMaskMix(renderMappedRectToRender, maskImage.get(), mappedOriginalInputImage.get(), doMask, false, mix);
-                    }
+                }
+                if (useMaskMix) {
+                    // without an original image, the mix is with transparent black
+                    it->second.tmpImage->applyMaskMix(renderMappedRectToRender, maskImage.get(), mappedOriginalInputImage.get(), doMask, false, mix);
                 }
                 if ( ( it->second.fullscaleImage->getComponents() != it->second.tmpImage->getComponents() ) ||
                      ( it->second.fullscaleImage->getBitDepth() != it->second.tmpImage->getBitDepth() ) ) {

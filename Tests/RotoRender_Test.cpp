@@ -18,7 +18,8 @@
 
 // What the Roto node renders, compared with the expected alpha:
 // - the feather ramp of a shape, outward and inward (#157);
-// - overlapping feathers (#147).
+// - overlapping feathers (#147);
+// - the Mask input, with and without Bg input (#367).
 //
 // With a feather fall-off of 1, the alpha of a feather of width w at the distance d from the opaque edge is
 // (1 - d / w)^2 (the feather patches interpolate 1 - d / w, and RotoContextPrivate::renderBezier() squares it).
@@ -60,6 +61,7 @@ NATRON_NAMESPACE_USING
 
 namespace {
 const double kTime = 1.;
+const int kMaskInput = 10; // the Mask input of Roto and RotoPaint (ROTOPAINT_MASK_INPUT_INDEX)
 // The rasterization of the feather patches (8 bits, sampled at pixel centers or close)
 const double kRampTolerance = 0.02;
 
@@ -204,7 +206,7 @@ protected:
     virtual void SetUp() OVERRIDE FINAL
     {
         // Every shape is rendered by OpenFX nodes (see RotoDrawableItem::createNodes()).
-        _havePlugins = NatronTest::requirePlugins({ PLUGINID_OFX_MERGE, PLUGINID_OFX_ROTO }, "openfx-misc");
+        _havePlugins = NatronTest::requirePlugins({ PLUGINID_OFX_MERGE, PLUGINID_OFX_ROTO, PLUGINID_OFX_CONSTANT }, "openfx-misc");
     }
 
     // A Roto node, destroyed at the end of the test
@@ -303,4 +305,61 @@ TEST_F(RotoRenderTest, OverlappingFeathers)
     for (int x = 20; x < 100; ++x) {
         EXPECT_NEAR(featherRamp(100. - (x + 0.5), width), alpha.at(x, 250), 0.02) << "x=" << x;
     }
+}
+
+// #367: the Mask input of Roto limits the shapes to the mask; outside the mask, the output is the Bg input.
+TEST_F(RotoRenderTest, MaskInput)
+{
+    if (!_havePlugins) {
+        return;
+    }
+    // Bg: transparent gray
+    NodePtr bg = _nodes.create(PLUGINID_OFX_CONSTANT);
+    ASSERT_TRUE( bool(bg) );
+    KnobColorPtr color = std::dynamic_pointer_cast<KnobColor>( bg->getKnobByName("color") );
+    ASSERT_TRUE( bool(color) );
+    color->setValues(0.5, 0.5, 0.5, 0., ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+
+    NodePtr roto = makeRoto();
+    ASSERT_TRUE( bool(roto) );
+    ASSERT_TRUE( bool( makePolygon(roto->getRotoContext(), kSquare, 0.) ) );
+    ASSERT_TRUE( roto->connectInput(bg, 0) );
+
+    NodePtr mask = makeRoto();
+    ASSERT_TRUE( bool(mask) );
+    ASSERT_TRUE( bool( makePolygon(mask->getRotoContext(), { {250., 550.}, {550., 550.}, {550., 250.}, {250., 250.} }, 0.) ) );
+
+    {
+        const Alpha alpha( renderFrame(roto) );
+        EXPECT_EQ(1., alpha.at(150, 150));
+        EXPECT_EQ(1., alpha.at(300, 300));
+    }
+
+    ASSERT_TRUE( roto->connectInput(mask, kMaskInput) );
+    ASSERT_TRUE( roto->isMaskEnabled(kMaskInput) );
+    {
+        const Alpha alpha( renderFrame(roto) );
+        EXPECT_EQ(1., alpha.at(300, 300)); // in the shape and in the mask
+        EXPECT_EQ(0., alpha.at(150, 150)); // in the shape, not in the mask: Bg
+        EXPECT_EQ(0., alpha.at(500, 500)); // in the mask, not in the shape: Bg
+    }
+}
+
+// #367: without Bg input, outside the mask the output is transparent black.
+TEST_F(RotoRenderTest, MaskInputWithoutBg)
+{
+    if (!_havePlugins) {
+        return;
+    }
+    NodePtr roto = makeRoto();
+    ASSERT_TRUE( bool(roto) );
+    ASSERT_TRUE( bool( makePolygon(roto->getRotoContext(), kSquare, 0.) ) );
+    NodePtr mask = makeRoto();
+    ASSERT_TRUE( bool(mask) );
+    ASSERT_TRUE( bool( makePolygon(mask->getRotoContext(), { {250., 550.}, {550., 550.}, {550., 250.}, {250., 250.} }, 0.) ) );
+    ASSERT_TRUE( roto->connectInput(mask, kMaskInput) );
+    ASSERT_TRUE( roto->isMaskEnabled(kMaskInput) );
+    const Alpha alpha( renderFrame(roto) );
+    EXPECT_EQ(1., alpha.at(300, 300)); // in the shape and in the mask
+    EXPECT_EQ(0., alpha.at(150, 150)); // in the shape, not in the mask
 }

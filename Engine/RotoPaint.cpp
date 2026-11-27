@@ -1423,6 +1423,11 @@ RotoPaint::getFramesNeeded(double time,
     range.min = range.max = time;
     views[view].push_back(range);
     ret.insert( std::make_pair(0, views) );
+    // The host masking (see isHostMaskingEnabled()) reads the image of the Mask input, which is only fetched
+    // if it is listed here. The other inputs are only read by the nodes of the RotoPaint tree.
+    if ( getInput(ROTOPAINT_MASK_INPUT_INDEX) ) {
+        ret.insert( std::make_pair(ROTOPAINT_MASK_INPUT_INDEX, views) );
+    }
 
     return ret;
 }
