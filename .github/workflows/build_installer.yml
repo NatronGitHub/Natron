@@ -468,7 +468,7 @@ jobs:
           NAME=$(basename "$(dirname "${SETUP}")")
           echo "NAME=${NAME}" >> $GITHUB_ENV
           # Setup.exe reads its files with MAX_PATH (260) paths: the tree, nested twice under its
-          # long name (<artifact>/<name>/), at a short path (the longest files are ~110 characters)
+          # long name (<artifact>/<name>/), at a short path (the longest file is 123 characters)
           if [ -e /c/ns ]; then echo "::error::C:\\ns already exists"; exit 1; fi
           mv "$(dirname "${SETUP}")" /c/ns
           SETUP=/c/ns/Setup.exe
