@@ -4648,12 +4648,17 @@ KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
         }
     }
 
+    // create*Knob() returns NULL if otherHolder has a parameter with that name of another type or with fewer
+    // dimensions, and reports why in the Script Editor and the error log (#1787)
     KnobIPtr output;
     if (isBool) {
         KnobBoolPtr newKnob = otherHolder->createBoolKnob(newScriptName, newLabel, isUserKnob);
         output = newKnob;
     } else if (isInt) {
         KnobIntPtr newKnob = otherHolder->createIntKnob(newScriptName, newLabel, getDimension(), isUserKnob);
+        if (!newKnob) {
+            return KnobIPtr();
+        }
         newKnob->setMinimumsAndMaximums( isInt->getMinimums(), isInt->getMaximums() );
         newKnob->setDisplayMinimumsAndMaximums( isInt->getDisplayMinimums(), isInt->getDisplayMaximums() );
         if ( isInt->isSliderDisabled() ) {
@@ -4662,6 +4667,9 @@ KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
         output = newKnob;
     } else if (isDbl) {
         KnobDoublePtr newKnob = otherHolder->createDoubleKnob(newScriptName, newLabel, getDimension(), isUserKnob);
+        if (!newKnob) {
+            return KnobIPtr();
+        }
         newKnob->setSpatial( isDbl->getIsSpatial() );
         if ( isDbl->isRectangle() ) {
             newKnob->setAsRectangle();
@@ -4677,6 +4685,9 @@ KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
         output = newKnob;
     } else if (isChoice) {
         KnobChoicePtr newKnob = otherHolder->createChoiceKnob(newScriptName, newLabel, isUserKnob);
+        if (!newKnob) {
+            return KnobIPtr();
+        }
         if (!makeAlias) {
             newKnob->populateChoices( isChoice->getEntries_mt_safe(), isChoice->getExplicitDisplayOrder_mt_safe() );
         }
@@ -4686,11 +4697,17 @@ KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
         output = newKnob;
     } else if (isColor) {
         KnobColorPtr newKnob = otherHolder->createColorKnob(newScriptName, newLabel, getDimension(), isUserKnob);
+        if (!newKnob) {
+            return KnobIPtr();
+        }
         newKnob->setMinimumsAndMaximums( isColor->getMinimums(), isColor->getMaximums() );
         newKnob->setDisplayMinimumsAndMaximums( isColor->getDisplayMinimums(), isColor->getDisplayMaximums() );
         output = newKnob;
     } else if (isString) {
         KnobStringPtr newKnob = otherHolder->createStringKnob(newScriptName, newLabel, isUserKnob);
+        if (!newKnob) {
+            return KnobIPtr();
+        }
         if ( isString->isLabel() ) {
             newKnob->setAsLabel();
         }
@@ -4706,24 +4723,36 @@ KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
         output = newKnob;
     } else if (isFile) {
         KnobFilePtr newKnob = otherHolder->createFileKnob(newScriptName, newLabel, isUserKnob);
+        if (!newKnob) {
+            return KnobIPtr();
+        }
         if ( isFile->isInputImageFile() ) {
             newKnob->setAsInputImage();
         }
         output = newKnob;
     } else if (isOutputFile) {
         KnobOutputFilePtr newKnob = otherHolder->createOuptutFileKnob(newScriptName, newLabel, isUserKnob);
+        if (!newKnob) {
+            return KnobIPtr();
+        }
         if ( isOutputFile->isOutputImageFile() ) {
             newKnob->setAsOutputImageFile();
         }
         output = newKnob;
     } else if (isPath) {
         KnobPathPtr newKnob = otherHolder->createPathKnob(newScriptName, newLabel, isUserKnob);
+        if (!newKnob) {
+            return KnobIPtr();
+        }
         if ( isPath->isMultiPath() ) {
             newKnob->setMultiPath(true);
         }
         output = newKnob;
     } else if (isGrp) {
         KnobGroupPtr newKnob = otherHolder->createGroupKnob(newScriptName, newLabel, isUserKnob);
+        if (!newKnob) {
+            return KnobIPtr();
+        }
         if ( isGrp->isTab() ) {
             newKnob->setAsTab();
         }
@@ -4736,6 +4765,9 @@ KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
         output = newKnob;
     } else if (isParametric) {
         KnobParametricPtr newKnob = otherHolder->createParametricKnob(newScriptName, newLabel, isParametric->getDimension(), isUserKnob);
+        if (!newKnob) {
+            return KnobIPtr();
+        }
         output = newKnob;
         newKnob->setMinimumsAndMaximums( isParametric->getMinimums(), isParametric->getMaximums() );
         newKnob->setDisplayMinimumsAndMaximums( isParametric->getDisplayMinimums(), isParametric->getDisplayMaximums() );

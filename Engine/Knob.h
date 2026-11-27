@@ -1231,6 +1231,14 @@ private:
 public:
 
     virtual bool isMastersPersistenceIgnored() const = 0;
+
+    /**
+     * @brief Creates a copy of this parameter on otherHolder, named newScriptName (an alias of this parameter if
+     * makeAlias, else a link: this parameter gets an expression that reads the copy).
+     * @returns The copy. If otherHolder already has a parameter named newScriptName of the same type, with as many
+     * or more dimensions, it is reused. NULL if it has one of another type or with fewer dimensions (the reason is
+     * reported in the Script Editor and the error log), or if this type of parameter cannot be copied.
+     **/
     virtual KnobIPtr createDuplicateOnHolder(KnobHolder* otherHolder,
                                             const std::shared_ptr<KnobPage>& page,
                                             const std::shared_ptr<KnobGroup>& group,

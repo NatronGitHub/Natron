@@ -1849,6 +1849,13 @@ AddKnobDialog::onOkClicked()
 
             return;
         }
+        if (!_imp->knob) {
+            // see createDuplicateOnHolder() (#1787)
+            Dialogs::errorDialog( tr("Error while creating parameter").toStdString(),
+                                  tr("Cannot create the parameter \"%1\".").arg( QString::fromUtf8( stdName.c_str() ) ).toStdString() );
+
+            return;
+        }
 
         KnobColor* isColor = dynamic_cast<KnobColor*>( _imp->knob.get() );
         KnobDouble* isDbl = dynamic_cast<KnobDouble*>( _imp->knob.get() );
