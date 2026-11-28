@@ -1,0 +1,112 @@
+# The known differences of run_ntp_python_roundtrip_test.py (#2001): what a project loses when it is
+# saved as Python, compared with the .ntp. Each entry names the issue that tracks the loss; remove it
+# when the issue is fixed (the test prints the entries that no difference used).
+#
+# Each line: <issue> <difference path pattern> [<project pattern>]
+# The patterns are shell patterns (* also matches /), on the paths that the test prints, e.g.
+# /Project/NodesCollection/{Group1}/{myDouble}/#0/Value ({name}: a node or a parameter; #n: the
+# n-th item of a list; {name}(user): a user parameter, which the exporter writes in full, so that
+# "*}/..." matches only the other parameters), and on the project as given to the test (default:
+# every project).
+# Lines that start with "# " are comments.
+
+# Python projects that don't load: a large whole-number double is written as an int (on Windows)
+#2029 /(PythonProjectLoad) BayMax/*
+
+# The disk-cache keys of the nodes
+#2004 */CacheID
+#2004 */KnobsAge
+
+# The enabled state of the GPU Rendering project parameter, which comes from the preferences
+#2005 /Project/{gpuRendering}/#0/Enabled
+
+# The visibility and enabled state that plug-ins give their parameters
+#2006 *}/Secret
+#2006 *}/#*/Enabled
+#2006 */{screenAlpha}
+#2006 */{highDefUpstream}
+
+# NatronRenderer drops the Viewers of Python projects
+#2007 /Project/NodesCollection/*{Viewer*}
+#2007 /ProjectGui/NodesGui/*{Viewer*}
+
+# The node colours, with 4 significant digits, and positions, rounded
+#2008 /ProjectGui/NodesGui/*/[rgb]
+#2008 /ProjectGui/NodesGui/*/[XY]_position
+
+# The Viewer settings and the window layout
+#1937 /ProjectGui/Gui_Layout/*
+#1937 /ProjectGui/ViewersData/*
+#1937 /ProjectGui/OpenedPanels/*
+
+# Smooth and Cubic keyframes become Free, with other derivatives
+#2009 */Curve/KeyFrameSet/#*/InterpolationMethod
+#2009 */Curve/KeyFrameSet/#*/*Derivative
+#2009 */ParametricCurves/#*/KeyFrameSet/#*/*
+
+# Read and Write nodes: the decoder, and what it (or the encoder) sets from the file
+#2010 */{decodingPlugin*}*
+#2010 */{firstFrame}*
+#2010 */{lastFrame}*
+#2010 */{startingTime}*
+#2010 */{frameRate}*
+#2010 */{filePremult}*
+#2010 */{outputPremult}*
+#2010 */{ocioInputSpace}*
+#2010 */{ocioOutputSpace}*
+#2010 */{outputLayerChoice}*
+#2010 */{onMissingFrame}*
+#2010 */{ParamExistingInstance}*
+#2010 */{quality}*
+#2010 */{tileSize}*
+#2010 */{gopSize}*
+#2010 */{bFrames}*
+#2010 */{transformCenter}*
+
+# The font of node labels, and their automatic part
+#2011 */{userTextArea}/#0/Value
+#2011 */{Label}/#0/Value
+
+# The current frame, and the value of animated parameters at that frame
+#2012 /Project/Timeline_current_time
+#2012 */Value(animated)
+
+# Layer choices of older projects, when their inputs' images are missing (BayMax, when its images
+# could not be downloaded)
+#2013 *_channels}* BayMax*
+#2013 /Project/NodesCollection/{HSVTool1}/{channels}/#0/Value BayMax*
+#2013 */{outputA}/#*/Value BayMax*
+
+# PyPlug instances get the installed PyPlug's parameter definitions, and plug-in parameters the
+# installed plug-in's defaults
+#2014 *}/#*/Default
+#2014 /Project/NodesCollection/{Glow1}/* TestGlow*test.ntp
+#2014 /Project/NodesCollection/{LightWrap}/* BayMax*
+#2014 /Project/NodesCollection/{Fill1}/* TestFill*
+#2014 /Project/NodesCollection/{PIKColor}/* TestPIK*
+
+# Roto: the centers and the control-point curves
+#2015 */RotoContext/*
+#2015 */{*Roto*}/{center}*
+#2015 */{*Roto*}/{cloneCenter}*
+#2015 */{*Roto*}/{cloneFilter}*
+
+# Clones
+#2016 */MasterNode
+
+# Values that the plug-in set, not the user
+#2017 */{maskChannel_*}*
+#2017 */{outputComponents}*
+#2017 */{NatronParamFormatSize}*
+#2017 */{toneRanges}*
+#2017 */{dissolveCurve}*
+#2017 */{warp}*
+#2017 */{formatType}/#*/Value
+#2017 */{enableAlpha}/#*/Value
+#2017 */{bitDepth}/#*/Value
+#2017 */{ocioInputSpaceSet}/#*/Value
+
+# The page order of nodes without user pages (the path doesn't tell whether a node has user pages:
+# the entry also allows a different page order of the others)
+#2018 *}/name
+#2018 *}/name#*

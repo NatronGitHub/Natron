@@ -507,7 +507,7 @@ if __name__ == "__main__":
 """
 
 
-def _run_renderer(cmd, env):
+def run_renderer(cmd, env):
     """Runs NatronRenderer, prints its output.
 
     Returns:
@@ -570,7 +570,7 @@ def _print_differences(path, expected, got):
         print("  %s: %r, expected %r" % (path, got, expected))
 
 
-def _write_test_files(tmp_dir, env):
+def write_test_files(tmp_dir, env):
     """Writes the input files and the scripts, and sets their paths in env.
 
     Args:
@@ -616,7 +616,7 @@ def _check_results(files):
     """Compares the three states, and the files saved from them.
 
     Args:
-      files: the paths, see _write_test_files().
+      files: the paths, see write_test_files().
 
     Returns:
       True if everything matches.
@@ -659,11 +659,11 @@ def main(argv):
     try:
         env = natronrunner.natron_env(
             tmp_dir, NATRON_DISK_CACHE_PATH=os.path.join(tmp_dir, "cache"))
-        files = _write_test_files(tmp_dir, env)
-        if not (_run_renderer(renderer + ["-t", files["build"]], env)
-                and _run_renderer(renderer + ["-t", files["load"]], env)
-                and _run_renderer(renderer + ["-t", "-l", files["onload"],
-                                              files["first"]], env)):
+        files = write_test_files(tmp_dir, env)
+        if not (run_renderer(renderer + ["-t", files["build"]], env)
+                and run_renderer(renderer + ["-t", files["load"]], env)
+                and run_renderer(renderer + ["-t", "-l", files["onload"],
+                                             files["first"]], env)):
             return 1
         if not _check_results(files):
             return 1
