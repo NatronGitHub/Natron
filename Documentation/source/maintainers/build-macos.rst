@@ -25,16 +25,16 @@ producing the styled DMG, signing/notarizing, and testing.
 Overview
 --------
 
-The build system is based on `MacPorts <https://www.macports.org>`_ plus a set
-of **custom ports** in ``tools/MacPorts``. Homebrew is intentionally not used
-for releases (MacPorts is easier to customize and can build universal binaries).
-``launchBuildMain.sh`` performs six steps: checkout sources, build the plugins,
-build Natron, build the installer/DMG, run unit tests, archive artifacts.
-The plugins are built by ``tools/jenkins/build-plugins.sh``: openfx-misc,
-openfx-io, openfx-arena and openfx-gmic with CMake (#1203, #1280), all at ``-O3``
-without fast math (``PLUGINS_BUILD_SYSTEM=make`` selects their Makefiles instead).
-To build them by hand, see "Developing with the MacPorts SDK" in
-``INSTALL_MACOS.md``.
+The build system is based on `MacPorts <https://www.macports.org>`_ plus a
+set of **custom ports** in ``tools/MacPorts``. Homebrew is intentionally not
+used for releases (MacPorts is easier to customize and can build universal
+binaries). ``launchBuildMain.sh`` performs six steps: checkout sources, build
+the plugins, build Natron, build the installer/DMG, run unit tests, archive
+artifacts. The plugins are built by ``tools/jenkins/build-plugins.sh``:
+openfx-misc, openfx-io, openfx-arena and openfx-gmic with CMake (#1203,
+#1280), all at ``-O3`` without fast math (``PLUGINS_BUILD_SYSTEM=make``
+selects their Makefiles instead). To build them by hand, see "Developing with
+the MacPorts SDK" in ``INSTALL_MACOS.md``.
 
 Prerequisites
 -------------
@@ -43,6 +43,10 @@ Prerequisites
 - The **Natron custom-ports overlay** registered in MacPorts (see below).
 - The Xcode or Command Line Tools **clang** with MacPorts' ``libomp``, and a MacPorts
   clang matching the OS default for the qmake and Makefile builds (see *Compiler selection*).
+- **No Homebrew tool on the** ``PATH``: ``which pkg-config qmake cmake python3``
+  must not print anything under ``/opt/homebrew`` (or ``/usr/local`` on an
+  Intel Mac with Homebrew), or the build silently picks up Homebrew headers and
+  libraries.
 - **macOS packaging tools**, verified early by ``launchBuildMain.sh`` and
   documented in ``INSTALL_MACOS.md``:
 
@@ -60,11 +64,15 @@ Prerequisites
    document it in ``INSTALL_MACOS.md`` so the build fails fast with a clear
    message instead of after a multi-hour compile.
 
+.. _maint-macos-compiler:
+
 Compiler selection
 ------------------
 
 The release scripts build Natron and the plug-ins with the system (Xcode or
-Command Line Tools) clang, ``/usr/bin/clang++``, with OpenMP from MacPorts'
+Command Line Tools) clang, ``/usr/bin/clang++``, which must support the C++17
+that Natron and the plug-ins use at the macOS 14.0 deployment target (Apple
+clang 15 or later, see `C++17 in Apple clang`_), with OpenMP from MacPorts'
 ``libomp`` (#1134). ``tools/jenkins/compiler-common.sh`` checks that it
 compiles the C++ standard of the build (C++17 with Qt5, C++20 with Qt6) and
 links and runs an OpenMP program with ``libomp`` (``tools/jenkins/omp-probe.cpp``);
@@ -77,7 +85,19 @@ themselves (Apple's driver has no ``-fopenmp``, only ``-Xpreprocessor
 -fopenmp``, and Xcode ships no OpenMP runtime): the deprecated qmake build
 (``NATRON_BUILD_SYSTEM=qmake``) and the plug-ins' Makefiles
 (``PLUGINS_BUILD_SYSTEM=make``); either one switches Natron and all the
-plug-ins to it. ``NATRON_MACOS_CLANG=macports`` forces it too.
+plug-ins to it. ``NATRON_MACOS_CLANG=macports`` forces it too. These are
+fallbacks: the release builds use Apple clang.
+
+MacPorts builds some of its own ports with its own clang (``-fopenmp`` ones
+included). That's fine: MacPorts' clang links with the same system libc++
+(``/usr/lib/libc++.1.dylib``, see the check below) as Apple clang, so the
+libraries it builds are ABI-compatible with Natron and the plug-ins.
+
+Natron's and the plug-ins' own code is not built with MacPorts' clang 22: in
+C++20 its libc++ headers leave ``DBL_MAX``, ``FLT_MIN`` and the other
+``<cfloat>`` macros undefined when ``<cmath>`` is included before
+``<cfloat>`` (``use of undeclared identifier 'DBL_MAX'``; Apple clang and
+C++17 are fine). Use ``std::numeric_limits`` in new code.
 
 The MacPorts clang is chosen to match the OS's default (see
 ``clang_compilers.tcl``): Darwin ≥ 25 (macOS 26+) → clang-22, Darwin 24
@@ -120,6 +140,69 @@ any case, because recent poppler headers require it: ``POPPLER_CXX_STANDARD``
 in its CMake build (``CXX_EXTENSIONS ON``, i.e. ``-std=gnu++20``), and
 ``POPPLER_CXXSTD`` (``-std=gnu++2a``, after ``$CXX``'s ``-std``) in its
 Makefiles.
+
+C++17 in Apple clang
+~~~~~~~~~~~~~~~~~~~~
+
+Apple's clang and libc++ gained C++17 in steps, and some of the library also
+needs a minimum deployment target, because it lives in the system's
+``libc++.1.dylib``. The SDK headers mark those parts (``__attribute__((
+availability(macos, strict, introduced = …)))`` in
+``usr/include/c++/v1/__configuration/availability.h``; ``__availability`` in
+older SDKs): using one with a lower ``MACOSX_DEPLOYMENT_TARGET`` is a compile
+error (``'to_chars' is unavailable: introduced in macOS 13.3``).
+
+.. list-table::
+   :header-rows: 1
+   :widths: 34 33 33
+
+   * - C++17 part
+     - Compiler and SDK
+     - Deployment target
+   * - The language
+     - Xcode 15 (Apple clang 15) has every feature, except P0522R0
+       (matching of template template arguments) by default: Xcode 16.3
+       (Apple clang 17; upstream Clang 19), or
+       ``-frelaxed-template-template-args``
+     -
+   * - ``<any>``, ``<optional>``, ``<variant>``
+     - Xcode 10 (Apple clang 10)
+     -
+   * - ``<filesystem>``
+     - Xcode 11 (Apple clang 11)
+     - macOS 10.15
+   * - ``std::to_chars`` for ``float`` and ``double``
+     - Xcode 14.3 (Apple clang 14.0.3, macOS 13.3 SDK)
+     - macOS 13.3
+   * - ``<memory_resource>`` (``std::pmr``)
+     - Xcode 15 (Apple clang 15)
+     - macOS 14.0; not marked in the headers, so a lower target fails only
+       when the program is loaded
+   * - ``std::hardware_destructive_interference_size`` and
+       ``…_constructive_…``
+     - Xcode 16.3 (Apple clang 17; upstream LLVM 19)
+     - none (header-only)
+   * - ``std::from_chars`` for ``float`` and ``double``
+     - Xcode 26 (Apple clang 17; upstream libc++ 20)
+     - **macOS 26.0**
+   * - full-precision ``long double`` ``to_chars``/``from_chars``, the
+       special math functions (only ``std::hermite`` exists), the parallel
+       algorithms (only with ``-fexperimental-library``)
+     - not implemented by libc++
+     - n/a
+
+So **Apple clang 15** (Xcode 15, or the Command Line Tools for Xcode 15.3 of
+the release builds) **is the minimum** for the C++17 that Natron and the
+plug-ins use at the macOS 14.0 target. What it lacks there:
+
+- P0522R0 by default, and the interference sizes (Xcode 16.3);
+- floating-point ``std::from_chars``, which needs a macOS 26.0 target: don't
+  use it while Natron targets macOS 14 (use ``std::strtod`` in the C locale,
+  or another parser);
+- what libc++ never implemented (last row).
+
+The C++20 of the Qt 6 builds has its own deployment-target limits in the same
+header (e.g. ``<format>``'s floating-point output, the time zone database).
 
 The MacPorts overlay
 --------------------
@@ -324,9 +407,6 @@ default source in ``/opt/local/etc/macports/sources.conf`` is the HTTPS one.
 
 #. **Commit the changes,** one commit per port where practical, and mention
    the upstream version in the message.
-
-``tools/MacPorts/skills/macports-natron-upgrade/SKILL.md`` describes the same
-procedure for running it with an AI coding agent.
 
 Running the build
 ------------------

@@ -72,7 +72,13 @@ Build system: CMake replaces qmake
   (``tools/utils/checkQmakeSources.py``).
 - The plug-ins' Makefiles stay as fallbacks of Natron RB-2.6's release
   scripts; their CI builds with CMake, and their weekly runs check that the
-  Makefiles still build.
+  Makefiles still build. **Keep the Makefiles in sync with CMake by hand:** a
+  new source file, resource or test goes into both. No hand-written Xcode or
+  Visual Studio projects.
+- **The plug-ins' CMake builds use the shared helpers,** openfx's
+  ``cmake/OpenFX.cmake`` and SupportExt's (``cmake/SupportExt.cmake``), never
+  copies or forks of them; a missing feature is reported to the repository
+  that owns the helper (openfx or openfx-supportext).
 
 Code (Natron)
 -------------
@@ -105,12 +111,57 @@ Code (Natron)
   :doc:`building`).
 - **Docs:** don't hand-edit the generated ``_*.rst`` files, ``plugins/``, or
   ``index.rst`` (except to add a guide to its table of contents).
-- **OpenFX:** check the `OpenFX specification
-  <https://openfx.readthedocs.io>`_ (the headers and reference of
-  `AcademySoftwareFoundation/openfx
-  <https://github.com/AcademySoftwareFoundation/openfx>`_) before writing or
-  reviewing code that touches the OFX API, not what a host happens to do, and
-  quote it when a decision depends on it. The OFX ABI is fixed.
+- **OpenFX:** see `OpenFX specification and ABI`_.
+
+Code (plug-ins)
+---------------
+
+- **Look in openfx-supportext first.** Before writing a helper in a plug-in,
+  check whether SupportExt already has it; a new helper that more than one
+  plug-in could use goes into SupportExt.
+- **Use** ``OFXS_PI`` (from SupportExt), never ``M_PI`` or the other ``M_*``
+  constants: they aren't standard C++, and MSVC needs ``_USE_MATH_DEFINES``
+  for them.
+
+OpenFX specification and ABI
+----------------------------
+
+These rules apply to every repository: Natron as an OpenFX host, openfx, and
+the plug-ins.
+
+- **Follow the specification.** Before writing or reviewing code that touches
+  the OFX API (properties, coordinate systems, render scale, pixel aspect
+  ratio, RoD and RoI, isIdentity, frames needed, time, interacts and
+  overlays, clip preferences, multiview, multiplane), read the `OpenFX
+  specification <https://openfx.readthedocs.io>`_: the headers and the
+  reference of `AcademySoftwareFoundation/openfx
+  <https://github.com/AcademySoftwareFoundation/openfx>`_. Not memory, not
+  what a host happens to do, not comments in plug-in code.
+- **Which version:** HostSupport and the hosts (Natron) target OFX 1.5.1,
+  and upstream ``main`` is the authority for clarifications and for what was
+  added after 1.5.1; such additions are used only as optional features, with
+  a 1.5.1 fallback. The plug-ins use the 1.5 features only as optional ones,
+  with a 1.4 fallback, so that they keep working in OFX 1.4 hosts. The
+  NatronGitHub fork and the submodules may lag behind upstream.
+- **Quote it** when a decision depends on it: the 1.5.1 text, and the upstream
+  ``main`` text, named as such, when the change relies on a later addition.
+  Long quotes go in the ``<details>`` block of the description.
+- **Offer only options that follow it.** An option that deviates is named as a
+  deviation, with the quote. Don't invent host behaviour where the
+  specification defines it, and don't silently repair what it calls
+  undefined behaviour of a plug-in.
+- **openfx pull requests** have a ``### Spec conformance`` section: each OFX
+  behaviour the change touches, the text it follows (file and quote), and each
+  deviation with its reason (a host quirk with its source, or a fork
+  extension), or "none: no OFX behaviour touched". A missing or wrong section
+  blocks the merge.
+- **The OFX ABI is fixed:** plug-in binaries keep working. Never change the
+  layout of a suite struct; version a suite you extend.
+- **Deprecated things are removed,** not kept, unless they are upstream OpenFX
+  API or the public API of an official release.
+- **Overlays:** keep an overlay's OpenGL drawing (V1) and add a DrawSuite
+  version (V2) where possible; Natron uses the V1 overlay of a plug-in that
+  has both. The details are in :doc:`openfx-host`.
 
 Review standards
 ----------------
@@ -141,12 +192,16 @@ Review the way Bjarne Stroustrup and Herb Sutter would.
   works); duplication; data structures; readability (function size, nesting);
   documentation.
 - **Review the test results, not only the diff:** skips, expected failures,
-  warnings, runtimes that look wrong.
+  warnings, runtimes that look wrong, and every change of a golden or
+  benchmark metric, each traced to the commit that explains it.
 - **Scope:** new and changed code must follow these rules; code only touched in
   passing is not a blocker, but note the improvements with file:line.
 - **Constraints win:** Qt 5 and Qt 6 both build, the C++ standards below, the
-  fixed OFX ABI, the ``*Serialization`` format and the Python API. When a
-  guideline gives way to one of them, say so.
+  fixed OFX ABI (and OFX 1.4 hosts for the plug-ins, see `OpenFX
+  specification and ABI`_), the ``*Serialization`` format, the Python API, and the saved
+  projects of the plug-ins (see `Differences between the repositories`_).
+  Vendored code and the patches to it (G'MIC, CImg, ``libs/``) keep the
+  upstream style. When a guideline gives way to one of them, say so.
 - **No over-engineering.** A guideline citation alone doesn't justify work.
   Keep real bugs, crashes, hangs, leaks, spec violations and cheap safety fixes;
   don't ask for churn in stable code, unmeasured optimisations, cosmetic
@@ -177,29 +232,35 @@ The workflows are described in :doc:`github-builds`; the rules are:
   after Linux and Windows pass, and it is never a required check. Don't re-run
   a macOS job that was cancelled or got no runner.
 - **Green CI means Linux and Windows passed**, judged by the latest run of each
-  job. A Windows job that didn't run for lack of a runner (cancelled or timed
-  out before it started, or still queued after 3 hours) counts as green if
-  Linux passed; one that ran and failed is red.
+  job. A Windows job that didn't run for lack of a runner counts as green if
+  Linux passed: still queued after 3 hours, or cancelled or timed out before
+  its first build step (within 2 minutes of starting). A job cancelled because
+  a newer run superseded it (``concurrency``) doesn't count: judge the newer
+  run. A job that ran and failed is red.
 - **Test locally before every push, but only what the change affects:** build
   the changed targets and run the tests that cover the changed code (and,
   where CI lacks them, the GUI tests, plug-ins or Natron-Tests it touches);
   for a docs-only change, build the docs. On RB-2.6 that is a Qt 5 build; Qt 6
   is checked through RB-2.7. The full suite on every platform is GitHub CI's
-  job. Push a test together with its fix.
+  job. Push a test together with its fix, not before it.
 - **Everything else is weekly, never nightly,** or run by hand: extra C++
   standards, Qt 6, Debug builds, other compilers and OS versions. The plug-in
-  repositories and openfx run on Saturday (03:17 UTC), Natron on Sunday.
-  Natron's weekly run builds all three OSes and is never skipped. In the other
-  repositories, a weekly run may be skipped only if the default branch's head
-  is the commit that the last scheduled run (passed or failed, not cancelled)
-  tested, and never for jobs that build against a moving upstream or a rolling
-  toolchain.
+  repositories and openfx run on Saturday (03:17 UTC), Natron on Sunday
+  (openfx-misc's weekly workflow keeps its file name, ``nightly.yml``, for its
+  artifact links). Natron's and openfx-gmic's weekly runs are never skipped.
+  In the other repositories, a weekly run may be skipped only if the default
+  branch's head is the commit that the last scheduled run (passed or failed,
+  not cancelled) tested, and never for jobs that build against a moving
+  upstream or a rolling toolchain.
+- **Dispatch the weekly-only jobs when they matter:** when a pull request
+  changes what only a weekly or package workflow builds, run that workflow by
+  hand on its branch. Never dispatch a run on a commit that already has one.
 - **Workflow hygiene:** ``paths-ignore`` for documentation, ``concurrency``
   with ``cancel-in-progress`` for pull requests, read-only ``permissions``, one
   dependency cache per OS. User-facing artifacts are kept at least 14 days.
 - **Pre-release packages** (macOS DMG, Linux portable archive, Windows zip with
-  Setup.exe) are built on demand or on pre-release tags, never on pull
-  requests. Only Natron attaches them to a GitHub pre-release; the plug-in
+  Setup.exe) are built weekly, on demand and on pre-release tags, never on
+  pull requests. Only Natron attaches them to a GitHub pre-release; the plug-in
   repositories only upload CI artifacts. Each Natron pre-release tag is also
   created on the plug-in repositories, and every package workflow builds the
   plug-ins at that tag (not yet on macOS and Windows, #2051; see
@@ -208,13 +269,21 @@ The workflows are described in :doc:`github-builds`; the rules are:
   runner's macOS; only the release builds target macOS 14.0. Natron 2.6
   supports macOS 14 and later, arm64 and x86_64.
 - **macOS compiler:** the system (Xcode or Command Line Tools) clang, when it
-  supports the needed standard and has no blocking bug that a newer clang
-  fixes; a MacPorts clang only otherwise (#1134).
+  supports the C++17 that Natron and the plug-ins use (Apple clang 15, from
+  Xcode 15 or its Command Line Tools, or later, at the macOS 14.0 target; the
+  Qt 6 builds also need its C++20) and has no blocking bug that a newer clang
+  fixes; a MacPorts clang only otherwise (#1134). MacPorts builds some of its
+  own ports with its own clang, ``-fopenmp`` ones included; that's fine, since
+  both link with the same system libc++ and are ABI-compatible. The minimum
+  versions, the parts of C++17 that need more, and why our code isn't built
+  with MacPorts' clang 22 are in :ref:`maint-macos-compiler`.
 - **Windows toolchains:** Natron, openfx-io and openfx-arena are never built
   with MSVC: MSYS2 UCRT64, and MSYS2 CLANGARM64 for native ARM64 (#1494).
   openfx, openfx-misc (without OSMesa) and openfx-gmic may use MSVC or UCRT64
   per pull request (one fast C++17 build); their weekly runs use MSVC for
   x86-64 and Arm64X (or, if Arm64X isn't possible, Arm64EC and AArch64).
+  openfx-supportext uses MSVC per pull request (an x64 compile check), and
+  MSYS2 UCRT64 in its weekly run.
 - **No COMMERCIAL builds** (``NATRON_LICENSE`` or ``OFX_LICENSE`` set to
   ``COMMERCIAL``) in CI, weekly runs or releases; scripts may keep a manual
   option. COMMERCIAL work is labelled ``commercial`` and ``prio:low``. GPL
@@ -227,16 +296,17 @@ Pull requests
 
 The process, for every pull request, code or documentation:
 
-1. **Open it as a draft.** Drafts run no CI. Push the test and the fix
-   together.
+1. **Open it as a draft.** Drafts run no CI. A reproduction that must run on
+   CI on its own goes into a separate draft marked "[do not merge]", which is
+   never marked ready.
 2. **Two independent reviewers** review the draft. The author fixes the
    findings and the reviewers review again, until both say "merge" (see
    `Reviews`_).
 3. **Rebase it on the latest base branch** (RB-2.6 for Natron, ``master``
    for the openfx repositories) and force-push with lease (the pull request's
-   branch only). Run CI on the rebased head (by hand, since drafts run none,
-   see :doc:`github-builds`), and mark it ready once that run passes; marking
-   it ready runs CI again. Never rebase the RB-2.6 to RB-2.7 forward merge.
+   branch only), then mark it ready: marking it ready runs CI on the rebased
+   head. If that run fails, the pull request goes back to draft (step 5).
+   Never rebase the RB-2.6 to RB-2.7 forward merge.
 4. **CI passes:** the maintainer reviews it. **Only after the maintainer's
    approval** is it merged, and only when the reviewers say "merge" on the
    final head, every finding they raised is fixed or answered, CI passes on
@@ -249,6 +319,18 @@ Merge methods (Natron): squash a pull request that fixes one issue; rebase (one
 commit per issue) a pull request that fixes several; a merge commit for the
 forward merge; rebase or a merge commit (never squash) for the CHANGELOG
 collection, whose commit message the next collection reads (see :ref:`maint-changelog`).
+These are the only cases: other Natron pull requests never get a merge commit.
+The other repositories' merge methods are in `Differences between the
+repositories`_.
+
+**Stacked pull requests:** before a merged branch is deleted, retarget the
+pull requests stacked on it to the base branch. GitHub closes them otherwise,
+and a closed pull request whose branch was rebased can't be reopened.
+
+**Shared submodules** (the plug-ins' ``openfx`` and SupportExt, and
+openfx-arena's OpenFX-IO): a change to
+one is made in its own repository first, in its own pull request, and the
+submodule is then bumped.
 
 **Fewer pull requests, more issues fixed in each.** Group related fixes (same
 area, same files, or the same kind of change) into one pull request, one
@@ -265,7 +347,20 @@ need a closer review, and must not wait for the tool.*
 **Labels:** every pull request carries the labels of the issues it fixes or is
 part of, ``prio:`` and ``difficulty:`` included (with several issues, the
 highest priority and the hardest difficulty). A pull request without an issue
-gets its own ``prio:``, ``difficulty:``, ``type:`` and ``func:`` labels.
+gets its own ``prio:``, ``difficulty:``, ``type:`` and ``func:`` labels (for
+openfx-arena, see `Differences between the repositories`_). When the labels
+of its issues change, relabel the pull request.
+
+Commits
+-------
+
+- **One logical change per commit,** with a subject "Component: summary" and a
+  body that says why.
+- **A short comment in the code** for anything non-obvious: why, not what.
+- **Tool-assisted work is declared.** A commit or pull request written with the
+  help of a code-generation tool carries an ``Assisted-by: TOOL/MODEL``
+  trailer (in the pull request, a line at the end of the description), in
+  every repository.
 
 Descriptions and the CHANGELOG
 ------------------------------
@@ -277,7 +372,11 @@ Descriptions and the CHANGELOG
   no outside context ("as discussed"). Everything else (file:line details,
   alternatives, full test matrices, guideline citations, review rounds) goes
   in a collapsed ``<details>`` block.
-- **Pull requests don't edit CHANGELOG.md.** The description ends with a
+- **A pull request that fixes several issues** has one "Fixes #a, #b, #c" line
+  and a short section per issue. A reference to another repository's issue,
+  pull request or commit is a full URL.
+- **Pull requests don't edit the changelog file** (``CHANGELOG.md``, or
+  openfx-arena's ``ChangeLog.md``). The description ends with a
   ``### CHANGELOG`` section: its lines, each under its target heading (``New
   features``, ``Changes``, …), or ``none``. A script collects the lines of the
   pull requests merged since the last collection into ``CHANGELOG.md``, in one
@@ -296,9 +395,11 @@ Reviews
   blocking findings, the rest in ``<details>`` with the guideline links), and
   comments on the lines each finding is about.
 - **The author answers each finding** with the commit that fixes it, or the
-  reason it stays as is, and **resolves the thread** as it processes it, so
-  that only the open findings stay unresolved. A reviewer who disagrees with an
-  answer reopens the thread and replies in it.
+  reason it stays as is. A thread answered with its fixing commit is
+  **resolved by the author**, so that only the open findings stay unresolved;
+  a reviewer who finds the fix incomplete reopens it. A **declined** finding
+  (answered with the reason it stays as is) stays open, for the reviewer or
+  the maintainer to resolve.
 - **No duplicate line comments.** Before posting a line comment, read the
   comments already on the pull request. If one on the same lines makes the
   finding, reply in that thread ("Reviewer B: agreed; also …") instead, or edit
@@ -313,14 +414,22 @@ Reviews
   ends when every reviewer has done this.
 - **Week-review pull requests get a third reviewer.** A week-review pull
   request is a cleanup from reviewing a past period's code (duplication,
-  over-engineering, clarity, readability), with the bugs found on the way.
-  Reviewer C reviews correctness only, commit by commit, after reading the
-  other reviews: every refactor keeps the behaviour exactly (arguments,
-  defaults, edge cases, which copy won where copies had drifted, errors, side
-  effects, threads and locks, call order), each bug fix is right and complete,
-  no test is weakened, and API, ABI, serialization and build configuration
-  stay compatible. Such a pull request merges only when all three reviewers
-  say "merge".
+  over-engineering, clarity, readability), with the bugs found on the way. It
+  merges only when all three reviewers say "merge". Reviewer C reviews
+  correctness only, commit by commit, after reading the other reviews:
+
+  - every refactor keeps the behaviour exactly (arguments, defaults, edge
+    cases, which copy won where copies had drifted, errors, side effects,
+    threads and locks, call order), each bug fix is right and complete, no
+    test is weakened, and API, ABI, serialization and build configuration
+    stay compatible;
+  - each finding gives file:line, the old and the new behaviour, a failing
+    scenario and a severity (bug, risk or nit), under a summary "Reviewer C
+    (correctness), round N, at <sha>: …";
+  - on a pull request that is already merged: a comment, and the real bugs
+    become a fix pull request.
+
+  The maintainer may also ask for a third reviewer on any other pull request.
 - **External pull requests and issues get two independent reviewers too.**
   For an issue: is the bug real and reproduced, what is the root cause, its
   priority, and does it block a release. Their combined findings go to the
@@ -336,9 +445,21 @@ Issues
   loss, wrong output and hangs first, then broken features, release needs,
   performance, documentation and cleanup. Release blockers (milestone 2.6) are
   always ``prio:high``; COMMERCIAL-build issues are ``prio:low``.
+- **Difficulty is the work for a fix and its regression test:** ``easy``, a
+  small, local, low-risk change; ``medium``, a few functions or a new test
+  setup; ``hard``, a redesign, a change across several plug-ins or in
+  openfx or SupportExt, a new major version of a plug-in, an unclear root
+  cause, or a dependency on an upstream fix.
+- **Priorities the maintainer set explicitly stay;** a triage lists the ones
+  that look wrong instead of changing them. A new issue gets its two labels
+  when it is filed.
 - **Work by descending priority.** Triage all open issues again (both labels)
   whenever ``prio:high`` (the important ones) or ``difficulty:easy`` (the
   low-hanging fruit) becomes empty. Triage changes labels only.
+- **Upstream bugs** are filed upstream only with the maintainer's agreement,
+  with a minimal reproduction (openfx-gmic: a ``gmic`` command line).
+  openfx-io drafts them first in an issue labelled ``upstream`` and
+  ``prio:low``, and files nothing upstream before the 2.6 release.
 - See :doc:`issue-triage` for Natron's open issues.
 
 Tests
@@ -452,8 +573,10 @@ Differences between the repositories
    * - Windows and weekly runs
      - See `CI and packages`_.
    * - Merge method
-     - Natron: squash for one issue, rebase for several. openfx-io: one commit
-       per pull request (review fixes squashed). openfx-arena: squash.
+     - Natron: squash for one issue, rebase for several (see `Pull
+       requests`_). openfx-io: one commit per pull request (review fixes
+       squashed). openfx-arena: squash. openfx: upstream OpenFX is merged in
+       regularly, with a real merge commit.
    * - CHANGELOG
      - Every pull request has a ``### CHANGELOG`` section. Natron's collection
        also reads those of the plug-in repositories (see
@@ -471,8 +594,10 @@ Differences between the repositories
        major shipped in Natron 2.5.0, the change is incompatible (a project
        saved with it could no longer be loaded: a parameter removed, renamed or
        retyped, choice options reordered) and the behaviour differs; the old
-       major then stays registered and unchanged. A bug fix needs no new major,
-       even when it changes renders, and new choice options go at the end.
+       major then stays registered and unchanged (openfx-arena: each version
+       is a distinct factory class). A bug fix needs no new major, even when it
+       changes renders. New choice options go at the end: Nuke and Resolve
+       restore a choice by its index, Natron by its option id.
        openfx-supportext: a fix that changes plausible output of existing
        projects keeps the old behaviour behind a flag that the plug-in enables
        for its old version (crash, NaN and garbage fixes excepted). Library
@@ -480,4 +605,14 @@ Differences between the repositories
        old results need Natron 2.5.
    * - C++ standard
      - openfx Support and HostSupport, and openfx-supportext: C++17 minimum;
-       their users build them as C++17 to C++23.
+       their users build them as C++17 to C++23. openfx's ``include/`` headers
+       stay pure C, and the source compatibility of the code that uses openfx
+       is kept.
+   * - Descriptions
+     - openfx: a ``### Spec conformance`` section (see `OpenFX specification
+       and ABI`_).
+   * - Labels
+     - openfx-arena: ``type:`` and ``area:`` labels, no ``func:``.
+   * - Style
+     - Natron: astyle (see `Code (Natron)`_). openfx-io: its ``.clang-format``
+       (WebKit-based).
