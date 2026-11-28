@@ -77,7 +77,8 @@ Build system: CMake replaces qmake
   Visual Studio projects.
 - **The plug-ins' CMake builds use the shared helpers,** openfx's
   ``cmake/OpenFX.cmake`` and SupportExt's (``cmake/SupportExt.cmake``), never
-  copies or forks of them; a missing feature is reported to openfx.
+  copies or forks of them; a missing feature is reported to the repository
+  that owns the helper (openfx or openfx-supportext).
 
 Code (Natron)
 -------------
@@ -234,9 +235,8 @@ The workflows are described in :doc:`github-builds`; the rules are:
   job. A Windows job that didn't run for lack of a runner counts as green if
   Linux passed: still queued after 3 hours, or cancelled or timed out before
   its first build step (within 2 minutes of starting). A job cancelled because
-  a newer run
-  superseded it (``concurrency``) doesn't count: judge the newer run. A job
-  that ran and failed is red.
+  a newer run superseded it (``concurrency``) doesn't count: judge the newer
+  run. A job that ran and failed is red.
 - **Test locally before every push, but only what the change affects:** build
   the changed targets and run the tests that cover the changed code (and,
   where CI lacks them, the GUI tests, plug-ins or Natron-Tests it touches);
@@ -327,7 +327,8 @@ repositories`_.
 pull requests stacked on it to the base branch. GitHub closes them otherwise,
 and a closed pull request whose branch was rebased can't be reopened.
 
-**Shared submodules** (openfx-arena's SupportExt and OpenFX-IO): a change to
+**Shared submodules** (the plug-ins' ``openfx`` and SupportExt, and
+openfx-arena's OpenFX-IO): a change to
 one is made in its own repository first, in its own pull request, and the
 submodule is then bumped.
 
