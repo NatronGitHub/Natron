@@ -1539,14 +1539,14 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             try {
                 NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
             } catch (const std::exception& e) {
-                effect->getApp()->appendToScriptEditor( std::string("Failed to get signature of onFrameRendered callback: ")
-                                                        + e.what() );
+                // a failed callback fails the render, as when it raises (#817)
+                notifyRenderFailure( std::string("Failed to get signature of onFrameRendered callback: ") + e.what() );
 
                 return;
             }
 
             if ( !error.empty() ) {
-                effect->getApp()->appendToScriptEditor("Failed to get signature of onFrameRendered callback: " + error);
+                notifyRenderFailure("Failed to get signature of onFrameRendered callback: " + error);
 
                 return;
             }
@@ -1555,7 +1555,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             signatureError.append("The after frame render callback supports the following signature(s):\n");
             signatureError.append("- callback(frame, thisNode, app)");
             if ( (args.size() != 3) || (args[0] != "frame") || (args[1] != "thisNode") || (args[2] != "app") ) {
-                effect->getApp()->appendToScriptEditor("Wrong signature of onFrameRendered callback: " + signatureError);
+                notifyRenderFailure("Wrong signature of onFrameRendered callback: " + signatureError);
 
                 return;
             }
@@ -2014,14 +2014,15 @@ private:
             try {
                 NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
             } catch (const std::exception& e) {
-                output->getApp()->appendToScriptEditor( std::string("Failed to get signature of beforeFrameRendered callback: ")
-                                                        + e.what() );
+                // the frame is not rendered: fail the render, as when the callback raises. It used to wait forever
+                // for that frame (#817)
+                _imp->scheduler->notifyRenderFailure( std::string("Failed to get signature of beforeFrameRendered callback: ") + e.what() );
 
                 return;
             }
 
             if ( !error.empty() ) {
-                output->getApp()->appendToScriptEditor("Failed to get signature of beforeFrameRendered callback: " + error);
+                _imp->scheduler->notifyRenderFailure("Failed to get signature of beforeFrameRendered callback: " + error);
 
                 return;
             }
@@ -2030,7 +2031,7 @@ private:
             signatureError.append("The before frame render callback supports the following signature(s):\n");
             signatureError.append("- callback(frame, thisNode, app)");
             if ( (args.size() != 3) || (args[0] != "frame") || (args[1] != "thisNode") || (args[2] != "app") ) {
-                output->getApp()->appendToScriptEditor("Wrong signature of beforeFrameRendered callback: " + signatureError);
+                _imp->scheduler->notifyRenderFailure("Wrong signature of beforeFrameRendered callback: " + signatureError);
 
                 return;
             }
@@ -2318,11 +2319,18 @@ DefaultScheduler::getFrameRangeToRender(int& first,
 void
 DefaultScheduler::handleRenderFailure(const std::string& errorMessage)
 {
+    std::string message = errorMessage;
+    if ( message.empty() ) {
+        OutputEffectInstancePtr effect = _effect.lock();
+        message = "Error while rendering" + ( effect ? ": " + effect->getNode()->getScriptName_mt_safe() : std::string() );
+    }
     if ( appPTR->isBackground() ) {
-        std::cerr << errorMessage << std::endl;
+        std::cerr << message << std::endl;
         // the exit status of the process tells whether the writers succeeded
         appPTR->setBackgroundRenderFailed();
     }
+    // the Progress panel shows why the render failed (#817)
+    getEngine()->s_renderFailed( QString::fromUtf8( message.c_str() ) );
 }
 
 // true if node can only be rendered sequentially or is downstream of such a node; such nodes are added to affected.

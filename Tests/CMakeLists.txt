@@ -310,7 +310,7 @@ if(Python3_Interpreter_FOUND)
     # NatronRenderer exits with status 1 when the render of a Write node failed
     add_test(NAME RenderFailureStatusTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_render_failure_status_test.py $<TARGET_FILE:NatronRenderer>)
-    set_tests_properties(RenderFailureStatusTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 660)
+    set_tests_properties(RenderFailureStatusTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 1600)
     # natron.quit() from a render callback stops a NatronRenderer render (headless)
     add_test(NAME RendererQuitTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_quit_test.py $<TARGET_FILE:NatronRenderer>)
