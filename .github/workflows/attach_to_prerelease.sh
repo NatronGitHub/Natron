@@ -1,9 +1,9 @@
 #!/bin/bash
 # Attach files to the GitHub pre-release of TAG, creating the pre-release if it doesn't exist yet
 # (gh reads GH_TOKEN and GH_REPO from the environment). Used on pre-release tags by
-# linux_packages.yml, macos_x86_64.yml and build_installer.yml, which run at the same time: if
-# another workflow creates the release first, "gh release create" fails and the release is used.
-# Also used by macos_arm64.yml, for the test results of the arm64 DMG of a release.
+# linux_packages.yml, macos_arm64.yml, macos_x86_64.yml and build_installer.yml, which run at the
+# same time: if another workflow creates the release first, "gh release create" fails and the
+# release is used. macos_arm64.yml also uses it for the test results of a DMG given to it.
 #
 #   attach_to_prerelease.sh TAG FILE...
 set -euo pipefail

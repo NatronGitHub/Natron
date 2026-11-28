@@ -176,8 +176,9 @@ Every Mach-O file in the ``.dmg`` must have a minimum macOS (``minos`` in
   they were made on) are used. On a newer build macOS, ``buildfromsource
   always`` is needed too (``step_macports_conf`` sets it there), and
   ``qt5-qtwebengine`` then needs a full Xcode to build. ``macosx_sdk_version``
-  keeps its default (the build OS's SDK). The x86_64 DMG is built on GitHub's
-  macOS 15 Intel runner (``.github/workflows/macos_x86_64.yml``), where
+  keeps its default (the build OS's SDK). The arm64 and x86_64 DMGs are built
+  on GitHub's macOS 15 runners (``.github/workflows/macos_arm64.yml`` and
+  ``macos_x86_64.yml``, through ``macos_dmg.yml``), where
   ``provision.sh`` runs with ``BUNDLE_ONLY_REBUILD=1``: the binary archives are
   used, and only the ports whose files go into the ``.dmg`` are rebuilt from
   source (see ``tools/tart/README.md``).
@@ -496,10 +497,12 @@ DMG. Attach both to the GitHub release, as for v2.5.0
 ``Natron-2.5.0-macOS12-x86_64-unit_tests_failures.zip``). It exits with status
 1 when a test fails that is not a known failure, or when a known failure
 passes, so it can gate the release.
-For the x86_64 DMG, ``.github/workflows/macos_x86_64.yml`` runs the same
-script (``tools/tart/run-natron-tests.sh``) on a fresh macOS 15 Intel runner,
-with Homebrew moved away and no MacPorts, and attaches these files to the
-release on pre-release tags.
+For the DMGs built on GitHub, ``.github/workflows/macos_arm64.yml`` and
+``macos_x86_64.yml`` run the same script (``tools/tart/run-natron-tests.sh``,
+through ``macos_dmg_tests.yml``) on a fresh macOS 26 runner, with Homebrew
+moved away and no MacPorts, and attach these files to the release on
+pre-release tags; ``natron-test.sh`` on the GitHub-built arm64 DMG is still
+the macOS 14 check.
 The known failures are listed in Natron-Tests, shared by the three platforms:
 ``known_failures/common.txt``, ``macos.txt``, ``linux.txt``, ``windows.txt``,
 ``arm64.txt`` and ``x86_64.txt`` (one test per line, with its issue).

@@ -386,9 +386,15 @@ otherwise. ``build_pacman_repo.yml`` builds the Windows package repository, by
 hand or for ``v*`` tags (see ``tools/MINGW-packages/README.md``).
 ``linux_packages.yml`` builds the Linux portable archives weekly, by hand and
 for pre-release tags, in the Rocky Linux 9 SDK Docker image, and
-``macos_x86_64.yml`` the macOS x86_64 DMG on the same schedule. The macOS arm64
-release builds are made outside GitHub Actions, with ``tools/tart`` (in a macOS
-VM on a maintainer's Apple Silicon Mac).
+``macos_arm64.yml`` and ``macos_x86_64.yml`` the macOS arm64 and x86_64 DMGs on
+the same schedule (``macos_dmg.yml``), for macOS 14.0, on pinned macOS 15
+runners (``macos-15``, ``macos-15-intel``): a build runner is at most one macOS
+release above the deployment target, and moves when the target moves. Their
+Natron-Tests run on the latest runners (``macos-26``, ``macos-26-intel``).
+Every release package is thus built on GitHub. ``tools/tart`` (in a macOS VM
+on a maintainer's Apple Silicon Mac) remains the local fallback for the arm64
+DMG, and runs Natron-Tests on a clean macOS 14, the oldest supported macOS,
+before a release.
 
 ``project_python_roundtrip.yml`` checks, every Sunday (13:37 UTC, after the
 package workflows) and by hand, that the Python project format keeps everything
