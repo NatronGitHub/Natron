@@ -157,7 +157,11 @@ jobs:
           # shellcheck disable=SC2086 # one word per step
           "$SDK_TOOL" run $(( JOB_START + BUDGET_MINUTES * 60 )) $steps || rc=$?
           case $rc in
-            0) echo "finished=true" >> "$GITHUB_OUTPUT" ;;
+            0) echo "finished=true" >> "$GITHUB_OUTPUT"
+               # ports still built for a newer macOS after a rebuild: files of the DMG that
+               # check-minos can't see (e.g. librsvg's Rust std objects, tools/tart/README.md)
+               skip=~/provision-logs/rebuild_target.skip
+               [ ! -s "$skip" ] || echo "::warning::ports still built for a macOS newer than the target (rebuild_target.skip): $(tr '\n' ' ' < "$skip")" ;;
             3) echo "finished=false" >> "$GITHUB_OUTPUT" ;;
             *) echo "::error::provision.sh failed (see the log above; ~/provision-logs is uploaded)"; exit "$rc" ;;
           esac

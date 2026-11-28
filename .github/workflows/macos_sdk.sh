@@ -25,6 +25,8 @@ ARTIFACT_PREFIX=natron-sdk-macos-
 # The Xcode of the SDK and the DMG: one whose macOS SDK is at most one macOS release above the
 # deployment target (NATRON_MACOS_RELEASE_MIN, 14.0), which is the well-supported case (Xcode 16.4,
 # macOS 15.5 SDK); the runner (macOS 15) follows the same rule. Both move when the target moves.
+# It is part of the SDK key, but an update of an SDK keeps the ports built with the old Xcode:
+# after changing it, run macos_arm64.yml and macos_x86_64.yml with sdk=scratch.
 XCODE_APP=/Applications/Xcode_16.4.app
 # SDK steps of provision.sh on a runner: not disk, nobrew (Homebrew is hidden instead) and clt (the
 # runner's Xcode is used: GitHub has no macOS 14 runner, and no Command Line Tools 15.3)

@@ -11,7 +11,8 @@
 #
 # Changing the target also means: a new BASE_IMAGE and CLT_VERSION below, rebuilding the SDK image
 # (tools/tart/natron-sdk.sh create), the build runners of macos_arm64.yml and macos_x86_64.yml
-# and XCODE_APP in .github/workflows/macos_sdk.sh, and the system requirements in the User Guide.
+# and XCODE_APP in .github/workflows/macos_sdk.sh (then run both with sdk=scratch), and the system
+# requirements in the User Guide.
 
 # Oldest macOS the release runs on: MACOSX_DEPLOYMENT_TARGET of release builds (NATRON_MACOS_MIN,
 # see common.sh), macosx_deployment_target in MacPorts, and the default target of check-minos.sh.
