@@ -198,7 +198,10 @@ The workflows are described in :doc:`github-builds`; the rules are:
 - **Pre-release packages** (macOS DMG, Linux portable archive, Windows zip with
   Setup.exe) are built on demand or on pre-release tags, never on pull
   requests. Only Natron attaches them to a GitHub pre-release; the plug-in
-  repositories only upload CI artifacts.
+  repositories only upload CI artifacts. Each Natron pre-release tag is also
+  created on the plug-in repositories, and every package workflow builds the
+  plug-ins at that tag (not yet on macOS and Windows, #2051; see
+  :doc:`github-builds`).
 - **macOS deployment target:** CI builds, which aren't shipped, target the
   runner's macOS; only the release builds target macOS 14.0. Natron 2.6
   supports macOS 14 and later, arm64 and x86_64.
