@@ -552,8 +552,9 @@ jobs:
         run: |
           APP=$(cygpath -u 'C:\nt')
           timeout -k 10 600 env PATH="$(cygpath -u -S):$(cygpath -u -W)" NATRON_TEST_REQUIRE_JPEGXL=1 \
+            NATRON_DISK_CACHE_PATH="$(cygpath -m "${RUNNER_TEMP}/jpegxl-cache")" \
             OCIO="$(cygpath -m "${APP}/Resources/OpenColorIO-Configs/blender/config.ocio")" \
-            "${APP}/bin/NatronRenderer.exe" -t "$(cygpath -m natron-src/Tests/gui/headless_jpegxl_roundtrip.py)" < /dev/null
+            "${APP}/bin/NatronRenderer.exe" -t "$(cygpath -m "${PWD}/natron-src/Tests/gui/headless_jpegxl_roundtrip.py")" < /dev/null
 
       - name: Upload test results
         if: ${{ !cancelled() && steps.natron_tests.outcome != 'skipped' }}

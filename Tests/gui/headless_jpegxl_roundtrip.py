@@ -47,6 +47,9 @@ NEEDED = ("fr.inria.openfx.ReadPFM", "fr.inria.openfx.WritePFM",
 WIDTH, HEIGHT = 8, 4
 # the points checked, (x, y) with y = 0 at the bottom: the corners and a pixel inside
 POINTS = ((0, 0), (WIDTH - 1, 0), (0, HEIGHT - 1), (WIDTH - 1, HEIGHT - 1), (3, 2))
+# a lossless 32-bit float file gives the floats of the PFM file back (colour() is in double precision); a
+# 16-bit or half-float file, or a lossy one, would be off by more
+TOLERANCE = 1e-6
 # the signatures of a JPEG XL file: a bare codestream, or the ISO BMFF container
 JXL_SIGNATURES = (b"\xff\x0a", b"\x00\x00\x00\x0cJXL \x0d\x0a\x87\x0a")
 # set in the package workflows, where JPEG XL must work: no skip then
@@ -65,15 +68,6 @@ def write_pfm(path):
         for y in range(HEIGHT):
             for x in range(WIDTH):
                 f.write(struct.pack("<3f", *colour(x, y)))
-
-
-def set_option(node, name, option):
-    """Sets the choice parameter name of node to option; fails if there is no such option."""
-    param = node.getParam(name)
-    natronheadless.check(param is not None, "%s has no parameter %s" % (node.getScriptName(), name))
-    options = list(param.getOptions())
-    natronheadless.check(option in options, "%s: no option %s in %s" % (name, option, options))
-    param.set(options.index(option))
 
 
 def render(app, read_path, write_path, encoder, colorspace=None, bit_depth=None):
@@ -105,10 +99,10 @@ def render(app, read_path, write_path, encoder, colorspace=None, bit_depth=None)
                              "%s is written by %s by default, expected fr.inria.openfx.WriteOIIO"
                              % (write_path, default))
     else:
-        set_option(write, "encodingPluginChoice", encoder)
-    set_option(write, "outputComponents", "RGB")
+        natronheadless.set_option(write, "encodingPluginChoice", encoder)
+    natronheadless.set_option(write, "outputComponents", "RGB")
     if bit_depth is not None:
-        set_option(write, "bitDepth", bit_depth)
+        natronheadless.set_option(write, "bitDepth", bit_depth)
     if colorspace is not None:
         read.getParam("ocioInputSpace").set(colorspace)
     write.getParam("ocioOutputSpace").set(read.getParam("ocioInputSpace").get())
@@ -155,15 +149,15 @@ def roundtrip(app):
         pixels = natronheadless.read_pfm_pixels(back, POINTS)
         for point, pixel in zip(POINTS, pixels):
             expected = colour(*point)
-            natronheadless.check(all(abs(a - b) < 1e-3 for a, b in zip(pixel, expected)),
+            natronheadless.check(all(abs(a - b) < TOLERANCE for a, b in zip(pixel, expected)),
                                  "pixel %r after the JPEG XL round trip: %r, expected %r" % (point, pixel, expected))
 
 
 def main(app):
+    """Runs the test; with NATRON_TEST_REQUIRE_JPEGXL=1, a skip is a failure."""
     try:
         roundtrip(app)
     except natronheadless.Skipped as e:
-        # where JPEG XL must work, a skip is a failure
         natronheadless.check(not REQUIRED, "NATRON_TEST_REQUIRE_JPEGXL=1, but the test was skipped: %s" % e)
         raise
 

@@ -55,6 +55,15 @@ def require_plugins(*plugin_ids):
                       % (", ".join(missing), os.environ.get("OFX_PLUGIN_PATH", "")))
 
 
+def set_option(node, name, option):
+    """Sets the choice parameter name of node to option; fails if there is no such option."""
+    param = node.getParam(name)
+    check(param is not None, "%s has no parameter %s" % (node.getScriptName(), name))
+    options = list(param.getOptions())
+    check(option in options, "%s: no option %s in %s" % (name, option, options))
+    param.set(options.index(option))
+
+
 def check_rendered(path):
     """After app.render(): fails if nothing was written to path, or skips without OpenColorIO.
 
