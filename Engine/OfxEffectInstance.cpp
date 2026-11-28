@@ -2647,30 +2647,31 @@ OfxEffectInstance::render(const RenderActionArgs& args)
         // renderRoI() render again on the CPU, if the plug-in can.
         return eStatusOutOfMemory;
     }
-    if (stat != kOfxStatOK) {
-        if ( !getNode()->hasPersistentMessage() ) {
-            QString err;
-            if (stat == kOfxStatErrImageFormat) {
-                err = tr("Bad image format was supplied by %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
-                setPersistentMessage( eMessageTypeError, err.toStdString() );
-            } else if (stat == kOfxStatErrMemory) {
-                err = tr("Out of memory!");
-                setPersistentMessage( eMessageTypeError, err.toStdString() );
-            } else {
-                QString existingMessage;
-                int type;
-                getNode()->getPersistentMessage(&existingMessage, &type);
-                if (existingMessage.isEmpty()) {
-                    err = tr("Unknown failure reason.");
-                }
-            }
-
-        }
-
-        return eStatusFailed;
-    } else {
+    if (stat == kOfxStatOK) {
         return eStatusOK;
     }
+    // A failed render gets an error message, unless the plug-in posted one ("kOfxStatFailed, something
+    // wrong, but no error code appropriate, plugin to post message", ofxImageEffect.h) (#2062). In
+    // background mode (NatronRenderer), nodes store no persistent message (Node::setPersistentMessage()
+    // only prints it), and the plug-in may also have used the non-persistent message(): the generic line
+    // may then follow the plug-in's own message.
+    if ( !getNode()->hasPersistentMessage() ) {
+        QString err;
+        if (stat == kOfxStatErrImageFormat) {
+            err = tr("Bad image format was supplied by %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
+        } else if (stat == kOfxStatErrMemory) {
+            err = tr("Out of memory!");
+        } else if ( !aborted() ) {
+            // A plug-in may stop a render that the host aborted (abort() returns "1 if the effect should
+            // abort whatever processing it is doing", ofxImageEffect.h) with kOfxStatFailed: not an error.
+            err = tr("Unknown failure reason.");
+        }
+        if ( !err.isEmpty() ) {
+            setPersistentMessage( eMessageTypeError, err.toStdString() );
+        }
+    }
+
+    return eStatusFailed;
 } // render
 
 bool

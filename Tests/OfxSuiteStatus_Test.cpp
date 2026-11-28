@@ -19,7 +19,8 @@
 // The return codes of the OFX suites that Natron implements (OFX 1.5.1, #1385): the host's kOfxPropName
 // (ofxProperty.h), the multithread suite (ofxMultiThread.h), the message suite (ofxMessage.h), the
 // progress suite (ofxProgress.h), the timeline suite (ofxTimeLine.h), flushResources (ofxGPURender.h) and
-// requestDialog (ofxDialog.h).
+// requestDialog (ofxDialog.h). The statuses returned by the OFX actions of a plug-in, and what Natron does
+// with them (OfxActionStatus tests, below).
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -30,9 +31,11 @@
 #include "Global/Macros.h"
 
 #include <atomic>
+#include <chrono>
 #include <cmath>
 #include <limits>
 #include <list>
+#include <string>
 #include <thread>
 #include <vector>
 
@@ -51,6 +54,7 @@
 #include <ofxhImageEffect.h>
 #include <ofxDialog.h> // after ofxImageEffect.h, which declares OfxImageEffectHandle
 
+#include "Engine/AbortableRenderInfo.h"
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/KnobTypes.h"
@@ -58,6 +62,7 @@
 #include "Engine/Node.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxHost.h"
+#include "Engine/Project.h"
 #include "Engine/TimeLine.h"
 
 #include "OfxTestPlugin.h"
@@ -450,4 +455,150 @@ TEST_F(OfxSuiteStatusTest, InstanceReadOnlyParamProperties)
     EXPECT_FALSE( groupKnob->getValue() );
     EXPECT_EQ( kOfxStatOK, props->propSetInt(groupProps, kOfxParamPropGroupOpen, 0, 1) );
     EXPECT_TRUE( groupKnob->getValue() );
+}
+
+// The statuses that OFX actions return, and what Natron does with each, with the test plug-in
+// net.natron.test.ActionStatus (Tests/OfxTestPlugin/NatronTestPluginActionStatus.cpp), whose actions return
+// the status the test chose. Its Source input is a net.natron.test.Generator.
+namespace {
+const double kActionTime = 1.;
+
+// A counter of the test plug-ins set to value while the scope lives, and to 0 again after it, also if an
+// assertion fails. For the status of an action of net.natron.test.ActionStatus ("ActionStatus.status.<action>"),
+// 0 is kOfxStatOK.
+class CounterScope
+{
+public:
+    CounterScope(const std::string& counter,
+                 int value)
+        : _counter(counter)
+    {
+        NatronTestPlugin::setCounter(_counter, value);
+    }
+
+    CounterScope(const CounterScope&) = delete;
+    CounterScope& operator=(const CounterScope&) = delete;
+
+    ~CounterScope()
+    {
+        NatronTestPlugin::setCounter(_counter, 0);
+    }
+
+private:
+    const std::string _counter;
+};
+
+bool
+canRunActionStatusTest()
+{
+    for ( const char* id : { kNatronTestPluginActionStatus, kNatronTestPluginGenerator } ) {
+        if ( !NatronTestPlugin::isAvailable(id) ) {
+            NatronTestPlugin::reportMissing(id);
+
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// a net.natron.test.ActionStatus node, with a net.natron.test.Generator on its Source input, destroyed
+// with nodes
+NodePtr
+createActionStatusNode(NatronTest::NodeScope& nodes)
+{
+    NodePtr generator = nodes.create(kNatronTestPluginGenerator);
+    NodePtr node = nodes.create(kNatronTestPluginActionStatus);
+
+    if ( !generator || !node || !node->getApp()->getProject()->connectNodes(0, generator, node) ) {
+        return NodePtr();
+    }
+
+    return node;
+}
+
+// render node at kActionTime, and return what Natron printed (the tests run in background mode, where
+// Node::setPersistentMessage() prints the message instead of keeping it)
+std::string
+renderAndCaptureMessages(const NodePtr& node,
+                         const AbortableRenderInfoPtr& abortInfo = AbortableRenderInfoPtr())
+{
+    testing::internal::CaptureStdout();
+    const ImagePtr image = NatronTestPlugin::renderFrame(node, kActionTime, true, abortInfo);
+    std::string output = testing::internal::GetCapturedStdout();
+    EXPECT_FALSE( bool(image) ) << "the render must fail";
+
+    return output;
+}
+
+const char kUnknownFailure[] = "Unknown failure reason.";
+} // anonymous namespace
+
+// Regression test for #2062 (https://github.com/NatronGitHub/Natron/issues/2062): a render that fails
+// without a message from the plug-in gets an error message. kOfxImageEffectActionRender returns (OFX 1.5.1,
+// ofxImageEffect.h) "kOfxStatFailed, something wrong, but no error code appropriate, plugin to post message"
+// or kOfxStatErrFatal, but a plug-in may not post a message: Natron then posts "Unknown failure reason.",
+// which it computed but never posted. kOfxStatErrImageFormat and kOfxStatErrMemory keep their own messages.
+TEST(OfxActionStatus, RenderFailureMessage)
+{
+    if ( !canRunActionStatusTest() ) {
+        return;
+    }
+    struct Case
+    {
+        const char* id;
+        OfxStatus status;
+        const char* message;
+    };
+    const Case cases[] = {
+        { "Failed", kOfxStatFailed, kUnknownFailure },
+        { "ErrFatal", kOfxStatErrFatal, kUnknownFailure },
+        { "ErrImageFormat", kOfxStatErrImageFormat, "Bad image format was supplied by " NATRON_APPLICATION_NAME "." },
+        { "ErrMemory", kOfxStatErrMemory, "Out of memory!" },
+    };
+
+    for (const Case& c : cases) {
+        NatronTest::NodeScope nodes;
+        NodePtr node = createActionStatusNode(nodes);
+        ASSERT_TRUE( bool(node) ) << c.id;
+        CounterScope status("ActionStatus.status.render", c.status);
+        const int renders = NatronTestPlugin::counter("ActionStatus.render");
+        const std::string output = renderAndCaptureMessages(node);
+        EXPECT_EQ( 1, NatronTestPlugin::counter("ActionStatus.render") - renders ) << c.id;
+        EXPECT_NE( std::string::npos, output.find(c.message) ) << c.id << ": " << output;
+    }
+}
+
+// Regression test for #2062: a plug-in may stop a render that the host aborted (abort() returns "1 if the
+// effect should abort whatever processing it is doing", OFX 1.5.1, ofxImageEffect.h) by returning
+// kOfxStatFailed. The render was cancelled, it did not fail: Natron must not post "Unknown failure reason.".
+// The plug-in waits in its render until abort() returns 1; this test aborts the render from another thread.
+TEST(OfxActionStatus, AbortedRenderPostsNoMessage)
+{
+    if ( !canRunActionStatusTest() ) {
+        return;
+    }
+    NatronTest::NodeScope nodes;
+    NodePtr node = createActionStatusNode(nodes);
+    ASSERT_TRUE( bool(node) );
+    CounterScope status("ActionStatus.status.render", kOfxStatFailed);
+    CounterScope waitForAbort("ActionStatus.render.waitForAbort", 1);
+    const int waiting = NatronTestPlugin::counter("ActionStatus.render.waiting");
+    const int aborted = NatronTestPlugin::counter("ActionStatus.render.aborted");
+    AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(true /*canAbort*/, 0);
+    std::string output;
+    {
+        // abort the render once the plug-in waits for it (at most 10 s)
+        NatronTest::JoiningThread aborter([abortInfo, waiting]() {
+            const std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now() + std::chrono::seconds(10);
+            while ( (NatronTestPlugin::counter("ActionStatus.render.waiting") == waiting) &&
+                    (std::chrono::steady_clock::now() < end) ) {
+                std::this_thread::sleep_for( std::chrono::milliseconds(1) );
+            }
+            abortInfo->setAborted();
+        });
+        output = renderAndCaptureMessages(node, abortInfo);
+    }
+    ASSERT_EQ( aborted + 1, NatronTestPlugin::counter("ActionStatus.render.aborted") ) << "the plug-in did not see the abort";
+    EXPECT_EQ( std::string::npos, output.find(kUnknownFailure) ) << output;
 }

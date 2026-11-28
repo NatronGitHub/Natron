@@ -81,6 +81,7 @@
 #define kNatronTestPluginMaskIdentity "net.natron.test.MaskIdentity"
 #define kNatronTestPluginMaskIdentityNoTiles "net.natron.test.MaskIdentityNoTiles"
 #define kNatronTestPluginInOrder "net.natron.test.InOrder"
+#define kNatronTestPluginActionStatus "net.natron.test.ActionStatus"
 
 namespace NatronTestPlugin {
 using NatronTest::createNode;
@@ -224,12 +225,14 @@ protected:
 };
 
 // Render the output of node at time, view 0 and scale 1, as an interactive render (like the preview
-// render of Node::makePreviewImage()). allowGPURendering is passed to renderRoI(). Returns the
-// rendered image, or a null image if the render failed.
+// render of Node::makePreviewImage()). allowGPURendering is passed to renderRoI(). abortInfo, if not
+// null, is the abort info of the render, which a test may abort; otherwise the render can't be aborted.
+// Returns the rendered image, or a null image if the render failed.
 inline NATRON_NAMESPACE::ImagePtr
 renderFrame(const NATRON_NAMESPACE::NodePtr& node,
             double time,
-            bool allowGPURendering = true)
+            bool allowGPURendering = true,
+            NATRON_NAMESPACE::AbortableRenderInfoPtr abortInfo = NATRON_NAMESPACE::AbortableRenderInfoPtr())
 {
     NATRON_NAMESPACE_USING
     EffectInstancePtr effect = node->getEffectInstance();
@@ -245,7 +248,9 @@ renderFrame(const NATRON_NAMESPACE::NodePtr& node,
     }
     const RectI renderWindow = rod.toPixelEnclosing( mipmapLevel, effect->getAspectRatio(-1) );
     RenderingFlagSetter flagIsRendering(node);
-    AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(false, 0);
+    if (!abortInfo) {
+        abortInfo = AbortableRenderInfo::create(false, 0);
+    }
     ParallelRenderArgsSetter frameRenderArgs( time, view,
                                               true, // isRenderUserInteraction
                                               false, // isSequential
