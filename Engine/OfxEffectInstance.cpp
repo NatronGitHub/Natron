@@ -529,7 +529,7 @@ warnExtraSingleInstance(const OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                         const NodePtr& node,
                         const NodePtr& otherNode)
 {
-    const QString label = QString::fromUtf8( plugin->getDescriptor().getLabel().c_str() );
+    const QString label = QString::fromUtf8( AbstractOfxEffectInstance::makePluginLabel( plugin->getIdentifier(), plugin->getDescriptor() ).c_str() );
     const QString other = QString::fromUtf8( otherNode->getFullyQualifiedName().c_str() );
 
     appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( node->getScriptName_mt_safe().c_str() ), QDateTime::currentDateTime(),
@@ -592,7 +592,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                 warnExtraSingleInstance(plugin, getNode(), activeNode);
             } else {
                 // Refuse it: the node is not created, and the error is reported.
-                const QString label = QString::fromUtf8( plugin->getDescriptor().getLabel().c_str() );
+                const QString label = QString::fromUtf8( AbstractOfxEffectInstance::makePluginLabel( plugin->getIdentifier(), plugin->getDescriptor() ).c_str() );
                 const QString other = QString::fromUtf8( activeNode->getFullyQualifiedName().c_str() );
                 if ( !activeNode->isActivated() ) {
                     // its suspension is pending (see suspendSingleInstance())
