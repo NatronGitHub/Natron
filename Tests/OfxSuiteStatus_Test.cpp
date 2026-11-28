@@ -30,6 +30,7 @@
 
 #include "Global/Macros.h"
 
+#include <array>
 #include <atomic>
 #include <chrono>
 #include <cmath>
@@ -64,6 +65,7 @@
 #include "Engine/OfxHost.h"
 #include "Engine/Project.h"
 #include "Engine/TimeLine.h"
+#include "Engine/Transform.h"
 
 #include "OfxTestPlugin.h"
 
@@ -503,15 +505,23 @@ canRunActionStatusTest()
 }
 
 // a net.natron.test.ActionStatus node, with a net.natron.test.Generator on its Source input, destroyed
-// with nodes
+// with nodes. If failingSource is true, the region of definition and the render of the generator fail.
 NodePtr
-createActionStatusNode(NatronTest::NodeScope& nodes)
+createActionStatusNode(NatronTest::NodeScope& nodes,
+                       bool failingSource = false)
 {
     NodePtr generator = nodes.create(kNatronTestPluginGenerator);
     NodePtr node = nodes.create(kNatronTestPluginActionStatus);
 
     if ( !generator || !node || !node->getApp()->getProject()->connectNodes(0, generator, node) ) {
         return NodePtr();
+    }
+    if (failingSource) {
+        KnobBoolPtr fail = std::dynamic_pointer_cast<KnobBool>( generator->getKnobByName("fail") );
+        if (!fail) {
+            return NodePtr();
+        }
+        fail->setValue(true);
     }
 
     return node;
@@ -532,6 +542,13 @@ renderAndCaptureMessages(const NodePtr& node,
 }
 
 const char kUnknownFailure[] = "Unknown failure reason.";
+
+// the elements of m, row by row
+std::array<double, 9>
+matrixElements(const Transform::Matrix3x3& m)
+{
+    return { { m.a, m.b, m.c, m.d, m.e, m.f, m.g, m.h, m.i } };
+}
 } // anonymous namespace
 
 // Regression test for #2062 (https://github.com/NatronGitHub/Natron/issues/2062): a render that fails
@@ -601,4 +618,120 @@ TEST(OfxActionStatus, AbortedRenderPostsNoMessage)
     }
     ASSERT_EQ( aborted + 1, NatronTestPlugin::counter("ActionStatus.render.aborted") ) << "the plug-in did not see the abort";
     EXPECT_EQ( std::string::npos, output.find(kUnknownFailure) ) << output;
+}
+
+// Regression test for #2063 (https://github.com/NatronGitHub/Natron/issues/2063): the region of definition
+// while Natron doesn't know yet whether the effect supports render scales. Natron then probes: after a
+// success at scale 1, it calls the action at scale 0.5; after kOfxStatFailed at another scale, it calls it
+// at scale 1. The probe (a Natron heuristic, which the OFX specification doesn't define) only decides the
+// render-scale support. The result is the one of the call at the scale asked for, or of the call at scale 1
+// when only that one succeeded: the RoD is "in Canonical Coordinates" (kOfxImageEffectPropRegionOfDefinition,
+// OFX 1.5.1, ofxImageEffect.h), the same at any scale. The test plug-in returns a different RoD at scale 1
+// (kSize 8) and at other scales (16), so that the test sees which call's RoD Natron returns. The bugs: a
+// failed probe at scale 0.5 made the RoD at scale 1 fail; after a success at scale 1 only, Natron returned
+// the RoD of the failed call, which HostSupport doesn't set ("kOfxStatFailed, something wrong, but no error
+// code appropriate, plugin to post message"); and when the call at scale 1 returned kOfxStatReplyDefault and
+// the probe kOfxStatOK, the probe's status replaced it, which skipped the check of the input RoDs of the
+// default RoD (#1602): a failing input didn't make the RoD fail.
+TEST(OfxActionStatus, RegionOfDefinitionRenderScaleProbe)
+{
+    if ( !canRunActionStatusTest() ) {
+        return;
+    }
+    struct Case
+    {
+        const char* id;
+        OfxStatus scaleOneStatus;
+        OfxStatus otherScaleStatus;
+        unsigned int mipmapLevel; // of the RoD asked for: 0 is scale 1, 1 is scale 0.5
+        bool failingSource; // the RoD of the Source input fails
+        StatusEnum expected;
+        double rodSize; // of the RoD returned, if expected is eStatusOK
+        EffectInstance::SupportsEnum supportsRenderScale; // after the probe
+        int scaleOneCalls; // calls of the action at scale 1
+        int otherScaleCalls; // and at other scales
+    };
+    const Case cases[] = {
+        { "BothSucceedAtScaleOne", kOfxStatOK, kOfxStatOK, 0, false, eStatusOK, 8., EffectInstance::eSupportsYes, 1, 1 },
+        { "BothSucceedAtHalfScale", kOfxStatOK, kOfxStatOK, 1, false, eStatusOK, 16., EffectInstance::eSupportsYes, 0, 1 },
+        { "ProbeAtHalfScaleFails", kOfxStatOK, kOfxStatFailed, 0, false, eStatusOK, 8., EffectInstance::eSupportsNo, 1, 1 },
+        { "SucceedsOnlyAtScaleOne", kOfxStatOK, kOfxStatFailed, 1, false, eStatusOK, 8., EffectInstance::eSupportsNo, 1, 1 },
+        { "BothFail", kOfxStatFailed, kOfxStatFailed, 1, false, eStatusFailed, 0., EffectInstance::eSupportsMaybe, 1, 1 },
+        { "ReplyDefaultThenProbeOK", kOfxStatReplyDefault, kOfxStatOK, 0, true, eStatusFailed, 0., EffectInstance::eSupportsYes, 1, 1 },
+    };
+
+    for (const Case& c : cases) {
+        NatronTest::NodeScope nodes;
+        NodePtr node = createActionStatusNode(nodes, c.failingSource);
+        ASSERT_TRUE( bool(node) ) << c.id;
+        EffectInstancePtr effect = node->getEffectInstance();
+        // creating the node probed the render-scale support already: probe again
+        effect->setSupportsRenderScaleMaybe(EffectInstance::eSupportsMaybe);
+        CounterScope scaleOne("ActionStatus.status.rodScaleOne", c.scaleOneStatus);
+        CounterScope otherScale("ActionStatus.status.rodOtherScale", c.otherScaleStatus);
+        const int scaleOneCalls = NatronTestPlugin::counter("ActionStatus.rod.scaleOne");
+        const int otherScaleCalls = NatronTestPlugin::counter("ActionStatus.rod.otherScale");
+        RectD rod;
+        // getRegionOfDefinition(), not getRegionOfDefinition_public(): the actions cache doesn't answer
+        EXPECT_EQ( c.expected, effect->getRegionOfDefinition(node->getHashValue(), kActionTime, RenderScale::fromMipmapLevel(c.mipmapLevel),
+                                                              ViewIdx(0), &rod) ) << c.id;
+        if (c.expected == eStatusOK) {
+            EXPECT_EQ( RectD(0., 0., c.rodSize, c.rodSize), rod ) << c.id << ": " << rod.x1 << ' ' << rod.y1 << ' ' << rod.x2 << ' ' << rod.y2;
+        }
+        EXPECT_EQ( c.supportsRenderScale, effect->supportsRenderScaleMaybe() ) << c.id;
+        EXPECT_EQ( c.scaleOneCalls, NatronTestPlugin::counter("ActionStatus.rod.scaleOne") - scaleOneCalls ) << c.id;
+        EXPECT_EQ( c.otherScaleCalls, NatronTestPlugin::counter("ActionStatus.rod.otherScale") - otherScaleCalls ) << c.id;
+    }
+}
+
+// Regression test for #2063: kFnOfxImageEffectActionGetTransform (nuke/fnOfxExtensions.h) returns
+// "kOfxStatDefault - don't attempt to use the transform matrix, but render the image as per normal" or
+// "kOfxStatOK - the transfrom and clip name were set and can be used to modify the named image
+// appropriately". A plug-in may return other statuses: the Support library returns kOfxStatErrMemory,
+// kOfxStatErrMissingHostFeature or the status of a suite exception. Natron asserted (a Debug build crashed)
+// on any status but kOfxStatOK, kOfxStatReplyDefault and kOfxStatFailed, and copied the matrix that
+// HostSupport sets only on kOfxStatOK. Every other status is a failure, which leaves the transform and the
+// input as they were.
+TEST(OfxActionStatus, GetTransformStatus)
+{
+    if ( !canRunActionStatusTest() ) {
+        return;
+    }
+    NatronTest::NodeScope nodes;
+    NodePtr node = createActionStatusNode(nodes);
+    ASSERT_TRUE( bool(node) );
+    EffectInstancePtr effect = node->getEffectInstance();
+    const EffectInstancePtr source = effect->getInput(0);
+    ASSERT_TRUE( bool(source) );
+    struct Case
+    {
+        const char* id;
+        OfxStatus status;
+        StatusEnum expected;
+    };
+    const Case cases[] = {
+        { "OK", kOfxStatOK, eStatusOK },
+        { "ReplyDefault", kOfxStatReplyDefault, eStatusReplyDefault },
+        { "Failed", kOfxStatFailed, eStatusFailed },
+        { "ErrMemory", kOfxStatErrMemory, eStatusFailed },
+        { "ErrMissingHostFeature", kOfxStatErrMissingHostFeature, eStatusFailed },
+        { "ErrFatal", kOfxStatErrFatal, eStatusFailed },
+    };
+
+    for (const Case& c : cases) {
+        CounterScope status("ActionStatus.status.transform", c.status);
+        // the values the outputs keep unless the action succeeded
+        const Transform::Matrix3x3 unset(7., 7., 7., 7., 7., 7., 7., 7., 7.);
+        Transform::Matrix3x3 transform = unset;
+        EffectInstancePtr input;
+        EXPECT_EQ( c.expected, effect->getTransform_public(kActionTime, RenderScale::identity, false /*draftRender*/, ViewIdx(0), &input, &transform) ) << c.id;
+        if (c.expected == eStatusOK) {
+            // the plug-in's matrix, a scale by 2, applied to the Source input
+            EXPECT_EQ( source, input ) << c.id;
+            EXPECT_EQ( matrixElements( Transform::Matrix3x3(2., 0., 0., 0., 2., 0., 0., 0., 1.) ), matrixElements(transform) ) << c.id;
+        } else {
+            EXPECT_FALSE( bool(input) ) << c.id;
+            EXPECT_EQ( matrixElements(unset), matrixElements(transform) ) << c.id;
+        }
+    }
 }

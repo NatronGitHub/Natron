@@ -1926,75 +1926,74 @@ OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
                                             mipmapLevel);
 
         assert(_imp->effect);
-        if (getRecursionLevel() > 1) {
-            stat = _imp->effect->getRegionOfDefinitionAction(time, scale.toOfxPointD(), view, ofxRod);
-        } else {
-            ///Take the preferences lock so that it cannot be modified throughout the action.
-            QReadLocker preferencesLocker(&_imp->preferencesLock);
-            stat = _imp->effect->getRegionOfDefinitionAction(time, scale.toOfxPointD(), view, ofxRod);
+        // the RoD action at actionScale. HostSupport sets the RoD only on kOfxStatOK or kOfxStatReplyDefault.
+        struct RoDResult
+        {
+            OfxStatus status;
+            OfxRectD rod;
+        };
+        auto callRoDAction = [&](const OfxPointD& actionScale) {
+            RoDResult result = { kOfxStatFailed, { 0., 0., 0., 0. } };
+            if (getRecursionLevel() > 1) {
+                result.status = _imp->effect->getRegionOfDefinitionAction(time, actionScale, view, result.rod);
+            } else {
+                ///Take the preferences lock so that it cannot be modified throughout the action.
+                QReadLocker preferencesLocker(&_imp->preferencesLock);
+                result.status = _imp->effect->getRegionOfDefinitionAction(time, actionScale, view, result.rod);
+            }
+
+            return result;
+        };
+        auto succeeded = [](OfxStatus s) {
+            return (s == kOfxStatOK) || (s == kOfxStatReplyDefault);
+        };
+        {
+            const RoDResult result = callRoDAction( scale.toOfxPointD() );
+            stat = result.status;
+            ofxRod = result.rod;
         }
         if (supportsRS == eSupportsMaybe) {
-            OfxRectD tmpRod;
-            if ( (stat == kOfxStatOK) || (stat == kOfxStatReplyDefault) ) {
+            // Natron's render-scale probe (the OFX specification doesn't define it, but the host may call
+            // the RoD action again). A probe sets the render-scale support only: the result of this call
+            // stays stat and ofxRod (#2063).
+            if ( succeeded(stat) ) {
                 if (!scaleIsOne) {
                     // we got at least one success with RS != 1
                     setSupportsRenderScaleMaybe(eSupportsYes);
                 } else {
-                    //try with scale != 1
-                    // maybe the effect does not support renderscale
-                    // try again with scale one
+                    // maybe the effect does not support renderscale: try with scale != 1
                     OfxPointD halfScale;
                     halfScale.x = halfScale.y = .5;
-
+                    OfxStatus probeStat;
                     {
                         SET_CAN_SET_VALUE(false);
-                        assert(_imp->effect);
-
-                        if (getRecursionLevel() > 1) {
-                            stat = _imp->effect->getRegionOfDefinitionAction(time, halfScale, view, tmpRod);
-                        } else {
-                            ///Take the preferences lock so that it cannot be modified throughout the action.
-                            QReadLocker preferencesLocker(&_imp->preferencesLock);
-                            stat = _imp->effect->getRegionOfDefinitionAction(time, halfScale, view, tmpRod);
-                        }
+                        probeStat = callRoDAction(halfScale).status;
                     }
-                    if ( (stat == kOfxStatOK) || (stat == kOfxStatReplyDefault) ) {
-                        setSupportsRenderScaleMaybe(eSupportsYes);
-                    } else {
-                        setSupportsRenderScaleMaybe(eSupportsNo);
-                    }
+                    setSupportsRenderScaleMaybe( succeeded(probeStat) ? eSupportsYes : eSupportsNo );
                 }
             } else if (stat == kOfxStatFailed) {
                 if (scaleIsOne) {
                     //scale one failed, we can't say anything
                     return eStatusFailed;
-                } else {
-                    // maybe the effect does not support renderscale
-                    // try again with scale one
-                    OfxPointD scaleOne;
-                    scaleOne.x = scaleOne.y = 1.;
-
-                    {
-                        SET_CAN_SET_VALUE(false);
-                        assert(_imp->effect);
-
-                        if (getRecursionLevel() > 1) {
-                            stat = _imp->effect->getRegionOfDefinitionAction(time, scaleOne, view, tmpRod);
-                        } else {
-                            ///Take the preferences lock so that it cannot be modified throughout the action.
-                            QReadLocker preferencesLocker(&_imp->preferencesLock);
-                            stat = _imp->effect->getRegionOfDefinitionAction(time, scaleOne, view, tmpRod);
-                        }
-                    }
-
-                    if ( (stat == kOfxStatOK) || (stat == kOfxStatReplyDefault) ) {
-                        // we got success with scale = 1, which means it doesn't support renderscale after all
-                        setSupportsRenderScaleMaybe(eSupportsNo);
-                    } else {
-                        // if both actions failed, we can't say anything
-                        return eStatusFailed;
-                    }
                 }
+                // maybe the effect does not support renderscale: try again with scale one
+                OfxPointD scaleOne;
+                scaleOne.x = scaleOne.y = 1.;
+                RoDResult probe = { kOfxStatFailed, { 0., 0., 0., 0. } };
+                {
+                    SET_CAN_SET_VALUE(false);
+                    probe = callRoDAction(scaleOne);
+                }
+                stat = probe.status;
+                if ( !succeeded(stat) ) {
+                    // if both actions failed, we can't say anything
+                    return eStatusFailed;
+                }
+                // we got success with scale = 1, which means it doesn't support renderscale after all. The
+                // RoD is "in Canonical Coordinates" (kOfxImageEffectPropRegionOfDefinition, ofxImageEffect.h):
+                // the one at scale 1 is the RoD at any scale. ofxRod, from the failed call, is unset.
+                setSupportsRenderScaleMaybe(eSupportsNo);
+                ofxRod = probe.rod;
             }
         }
         if (stat == kOfxStatReplyDefault) {
@@ -2005,7 +2004,7 @@ OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
                 return eStatusFailed;
             }
         }
-        if ( ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) || inputRoDFailure.failed() ) {
+        if ( !succeeded(stat) || inputRoDFailure.failed() ) {
             return eStatusFailed;
         }
 
@@ -3553,7 +3552,7 @@ OfxEffectInstance::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) co
     }
 }
 
-void
+EffectInstance::ComponentsNeededStatusEnum
 OfxEffectInstance::getComponentsNeededAndProduced(double time,
                                                   ViewIdx view,
                                                   EffectInstance::ComponentsNeededMap* comps,
@@ -3561,7 +3560,6 @@ OfxEffectInstance::getComponentsNeededAndProduced(double time,
                                                   int* passThroughView,
                                                   int* passThroughInputNb)
 {
-    OfxStatus stat;
     {
         SET_CAN_SET_VALUE(false);
 
@@ -3571,39 +3569,55 @@ OfxEffectInstance::getComponentsNeededAndProduced(double time,
                                             0);
         OFX::Host::ImageEffect::ComponentsMap compMap;
         OFX::Host::ImageEffect::ClipInstance* ptClip = 0;
-        OfxTime ptTime;
-        stat = effectInstance()->getClipComponentsAction( (OfxTime)time, view, compMap, ptClip, ptTime, *passThroughView );
-        if (stat != kOfxStatFailed) {
-            *passThroughInputNb = -1;
-            if (ptClip) {
-                OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(ptClip);
-                if (clip) {
-                    *passThroughInputNb = clip->getInputNb();
-                }
+        // HostSupport sets the planes and the pass-through clip, time and view only on kOfxStatOK. Otherwise
+        // they are the defaults: no planes, no pass-through input, and the time and view of the action.
+        OfxTime ptTime = time;
+        int ptView = view;
+        const OfxStatus stat = effectInstance()->getClipComponentsAction( (OfxTime)time, view, compMap, ptClip, ptTime, ptView );
+        // kFnOfxImageEffectActionGetClipComponents (nuke/fnOfxExtensions.h) lists no statuses: "The OfxStatus
+        // value returned is dependent upon the action being called; however the value kOfxStatReplyDefault is
+        // returned if the plug-in does not trap the action" (OFX 1.5.1, ofxCoreAPI.rst) (#2063).
+        // kOfxStatFailed gives the defaults, as kOfxStatReplyDefault does, but they aren't cached: the
+        // Support library sends kOfxStatReplyDefault when the plug-in fails before it sets anything, and the
+        // MultiPlane plug-ins of openfx-misc fail when a channel they may not render is missing from their
+        // input; their render posts the error if they need it. The other error statuses fail.
+        if (stat == kOfxStatErrMemory) {
+            return eComponentsNeededStatusOutOfMemory;
+        } else if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) && (stat != kOfxStatFailed) ) {
+            return eComponentsNeededStatusFailed;
+        }
+        *passThroughView = ptView;
+        *passThroughInputNb = -1;
+        if (ptClip) {
+            OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(ptClip);
+            if (clip) {
+                *passThroughInputNb = clip->getInputNb();
             }
-            *passThroughTime = (SequenceTime)ptTime;
+        }
+        *passThroughTime = (SequenceTime)ptTime;
 
-            for (OFX::Host::ImageEffect::ComponentsMap::iterator it = compMap.begin(); it != compMap.end(); ++it) {
-                OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
-                assert(clip);
-                if (clip) {
-                    int index = clip->getInputNb();
-                    std::list<ImagePlaneDesc>& compNeeded = (*comps)[index];
-                    for (std::list<std::string>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+        for (OFX::Host::ImageEffect::ComponentsMap::iterator it = compMap.begin(); it != compMap.end(); ++it) {
+            OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
+            assert(clip);
+            if (clip) {
+                int index = clip->getInputNb();
+                std::list<ImagePlaneDesc>& compNeeded = (*comps)[index];
+                for (std::list<std::string>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
 
-                        ImagePlaneDesc plane;
-                        if ((*it2) == kFnOfxImagePlaneColour) {
-                            plane = ImagePlaneDesc::mapNCompsToColorPlane(getMetadataNComps(index));
-                        } else {
-                            plane = ImagePlaneDesc::mapOFXPlaneStringToPlane(*it2);
-                        }
-                        if (plane.getNumComponents() > 0) {
-                            compNeeded.push_back(plane);
-                        }
+                    ImagePlaneDesc plane;
+                    if ((*it2) == kFnOfxImagePlaneColour) {
+                        plane = ImagePlaneDesc::mapNCompsToColorPlane(getMetadataNComps(index));
+                    } else {
+                        plane = ImagePlaneDesc::mapOFXPlaneStringToPlane(*it2);
+                    }
+                    if (plane.getNumComponents() > 0) {
+                        compNeeded.push_back(plane);
                     }
                 }
             }
         }
+
+        return (stat == kOfxStatFailed) ? eComponentsNeededStatusDefault : eComponentsNeededStatusOK;
     } // ClipsThreadStorageSetter
 }
 
@@ -3709,7 +3723,8 @@ OfxEffectInstance::getTransform(double time,
 {
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
     std::string clipName;
-    double tmpTransform[9];
+    // HostSupport sets the clip name and the matrix only on kOfxStatOK
+    double tmpTransform[9] = { 1., 0., 0., 0., 1., 0., 0., 0., 1. };
     OfxStatus stat;
     {
         SET_CAN_SET_VALUE(false);
@@ -3724,32 +3739,30 @@ OfxEffectInstance::getTransform(double time,
         } catch (...) {
             return eStatusFailed;
         }
-
-        if (stat == kOfxStatReplyDefault) {
-            return eStatusReplyDefault;
-        } else if (stat == kOfxStatFailed) {
-            return eStatusFailed;
-        }
+    }
+    // kFnOfxImageEffectActionGetTransform (nuke/fnOfxExtensions.h) returns "kOfxStatDefault - don't attempt
+    // to use the transform matrix, but render the image as per normal" or "kOfxStatOK - the transfrom and
+    // clip name were set". Any other status is a failure: the Support library also returns kOfxStatErrMemory,
+    // kOfxStatErrMissingHostFeature or the status of a suite exception (#2063).
+    if (stat == kOfxStatReplyDefault) {
+        return eStatusReplyDefault;
+    } else if (stat != kOfxStatOK) {
+        return eStatusFailed;
     }
 
-
-    assert(stat == kOfxStatOK);
-
-    transform->a = tmpTransform[0]; transform->b = tmpTransform[1]; transform->c = tmpTransform[2];
-    transform->d = tmpTransform[3]; transform->e = tmpTransform[4]; transform->f = tmpTransform[5];
-    transform->g = tmpTransform[6]; transform->h = tmpTransform[7]; transform->i = tmpTransform[8];
-
-
-    OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(clipName);
-    assert(clip);
-    OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(clip);
+    // the clip that the plug-in named, which may not exist
+    OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>( effectInstance()->getClip(clipName) );
     if (!natronClip) {
         return eStatusFailed;
     }
-    *inputToTransform = natronClip->getAssociatedNode();
-    if (!*inputToTransform) {
+    EffectInstancePtr input = natronClip->getAssociatedNode();
+    if (!input) {
         return eStatusFailed;
     }
+    *inputToTransform = input;
+    transform->a = tmpTransform[0]; transform->b = tmpTransform[1]; transform->c = tmpTransform[2];
+    transform->d = tmpTransform[3]; transform->e = tmpTransform[4]; transform->f = tmpTransform[5];
+    transform->g = tmpTransform[6]; transform->h = tmpTransform[7]; transform->i = tmpTransform[8];
 
     return eStatusOK;
 }

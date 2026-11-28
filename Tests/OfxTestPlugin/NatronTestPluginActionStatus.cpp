@@ -24,7 +24,15 @@
 //   "ActionStatus.render.waitForAbort" is set, it first counts "ActionStatus.render.waiting" and waits
 //   (at most 10 s) until abort() returns 1, as a plug-in that stops a render the host aborted does, and
 //   counts "ActionStatus.render.aborted" if it did. It doesn't write the output image.
-// Its region of definition is (0, 0, kSize, kSize), with kSize 8.
+// - "rodScaleOne" and "rodOtherScale": kOfxImageEffectActionGetRegionOfDefinition at a render scale of 1,
+//   and at another scale. It counts its calls ("ActionStatus.rod.scaleOne", "ActionStatus.rod.otherScale").
+//   When the status is kOfxStatOK, it sets the region of definition: (0, 0, kSize, kSize) with kSize 8 at
+//   scale 1, and (0, 0, 2 kSize, 2 kSize) at other scales, so that a test can tell which call's RoD the host
+//   uses. That is deliberately not conformant (the RoD is in canonical coordinates, the same at any scale).
+//   With another status, it doesn't set it.
+// - "transform": kFnOfxImageEffectActionGetTransform (nuke/fnOfxExtensions.h; the plug-in sets
+//   kFnOfxImageEffectCanTransform). When the status is kOfxStatOK, it sets the clip name to Source and the
+//   matrix to kTransform (a scale by 2), and otherwise sets neither.
 
 #include <chrono>
 #include <cstring>
@@ -34,11 +42,13 @@
 #include <ofxCore.h>
 #include <ofxImageEffect.h>
 #include <ofxProperty.h>
+#include <nuke/fnOfxExtensions.h>
 
 #include "NatronTestPluginRegistry.h"
 
 namespace {
 const double kSize = 8.;
+const double kTransform[9] = { 2., 0., 0., 0., 2., 0., 0., 0., 1. };
 
 OfxHost* gHost = 0;
 const OfxPropertySuiteV1* gPropSuite = 0;
@@ -97,9 +107,40 @@ render(OfxImageEffectHandle effect)
 }
 
 OfxStatus
+getRegionOfDefinition(OfxPropertySetHandle inArgs,
+                      OfxPropertySetHandle outArgs)
+{
+    double scale[2] = { 0., 0. };
+    gPropSuite->propGetDoubleN(inArgs, kOfxImageEffectPropRenderScale, 2, scale);
+    const bool scaleIsOne = (scale[0] == 1.) && (scale[1] == 1.);
+    natronTestIncrementCounter(scaleIsOne ? "ActionStatus.rod.scaleOne" : "ActionStatus.rod.otherScale");
+    const OfxStatus stat = chosenStatus(scaleIsOne ? "rodScaleOne" : "rodOtherScale");
+    if (stat == kOfxStatOK) {
+        const double size = scaleIsOne ? kSize : 2. * kSize;
+        const double rod[4] = { 0., 0., size, size };
+        gPropSuite->propSetDoubleN(outArgs, kOfxImageEffectPropRegionOfDefinition, 4, rod);
+    }
+
+    return stat;
+}
+
+OfxStatus
+getTransform(OfxPropertySetHandle outArgs)
+{
+    const OfxStatus stat = chosenStatus("transform");
+
+    if (stat == kOfxStatOK) {
+        gPropSuite->propSetString(outArgs, kOfxPropName, 0, kOfxImageEffectSimpleSourceClipName);
+        gPropSuite->propSetDoubleN(outArgs, kFnOfxPropMatrix2D, 9, kTransform);
+    }
+
+    return stat;
+}
+
+OfxStatus
 actionStatusMain(const char* action,
                  const void* handle,
-                 OfxPropertySetHandle /*inArgs*/,
+                 OfxPropertySetHandle inArgs,
                  OfxPropertySetHandle outArgs)
 {
     OfxImageEffectHandle effect = (OfxImageEffectHandle)handle;
@@ -127,6 +168,7 @@ actionStatusMain(const char* action,
         gPropSuite->propSetString(props, kOfxImageEffectPluginRenderThreadSafety, 0, kOfxImageEffectRenderInstanceSafe);
         gPropSuite->propSetInt(props, kOfxImageEffectPluginPropHostFrameThreading, 0, 0);
         gPropSuite->propSetInt(props, kOfxImageEffectPropSupportsTiles, 0, 0);
+        gPropSuite->propSetInt(props, kFnOfxImageEffectCanTransform, 0, 1);
 
         return kOfxStatOK;
     }
@@ -139,10 +181,10 @@ actionStatusMain(const char* action,
         return defineClip(effect, kOfxImageEffectOutputClipName);
     }
     if (std::strcmp(action, kOfxImageEffectActionGetRegionOfDefinition) == 0) {
-        const double rod[4] = { 0., 0., kSize, kSize };
-        gPropSuite->propSetDoubleN(outArgs, kOfxImageEffectPropRegionOfDefinition, 4, rod);
-
-        return kOfxStatOK;
+        return getRegionOfDefinition(inArgs, outArgs);
+    }
+    if (std::strcmp(action, kFnOfxImageEffectActionGetTransform) == 0) {
+        return getTransform(outArgs);
     }
     if (std::strcmp(action, kOfxImageEffectActionRender) == 0) {
         return render(effect);

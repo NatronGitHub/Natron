@@ -1517,7 +1517,7 @@ ReadNode::getFrameRange(double *first,
     }
 }
 
-void
+EffectInstance::ComponentsNeededStatusEnum
 ReadNode::getComponentsNeededAndProduced(double time,
                                          ViewIdx view,
                                          EffectInstance::ComponentsNeededMap* comps,
@@ -1527,8 +1527,10 @@ ReadNode::getComponentsNeededAndProduced(double time,
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
-        p->getEffectInstance()->getComponentsNeededAndProduced(time, view, comps, passThroughTime, passThroughView, passThroughInput);
+        return p->getEffectInstance()->getComponentsNeededAndProduced(time, view, comps, passThroughTime, passThroughView, passThroughInput);
     }
+
+    return eComponentsNeededStatusOK;
 }
 
 StatusEnum

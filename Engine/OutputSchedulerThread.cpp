@@ -2112,12 +2112,16 @@ private:
                 //Use needed components to figure out what we need to render
                 EffectInstance::ComponentsNeededMap neededComps;
                 std::list<ImagePlaneDesc> passThroughPlanes;
-                bool processAll;
-                double ptTime;
-                int ptView;
+                bool processAll = false;
+                double ptTime = time;
+                int ptView = viewsToRender[view];
                 std::bitset<4> processChannels;
-                int ptInput;
-                activeInputToRender->getComponentsNeededAndProduced_public(activeInputToRenderHash,time, viewsToRender[view], &neededComps, &passThroughPlanes, &processAll, &ptTime, &ptView, &processChannels, &ptInput);
+                int ptInput = -1;
+                if (activeInputToRender->getComponentsNeededAndProduced_public(activeInputToRenderHash,time, viewsToRender[view], &neededComps, &passThroughPlanes, &processAll, &ptTime, &ptView, &processChannels, &ptInput) != eStatusOK) {
+                    _imp->scheduler->notifyRenderFailure("Error caught while rendering");
+
+                    return;
+                }
 
 
                 //Retrieve bitdepth only
