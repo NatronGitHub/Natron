@@ -146,6 +146,20 @@ jobs:
           if [ -n "$(cut -d/ -f1 <<< "${ZIP_LIST}" | grep -v -x -F "${INSTALLER_NAME}")" ]; then echo "::error::the zip has entries outside ${INSTALLER_NAME}/"; exit 1; fi
           if ! grep -q -x -F "${INSTALLER_NAME}/bin/Natron.exe" <<< "${ZIP_LIST}"; then echo "::error::the zip has no ${INSTALLER_NAME}/bin/Natron.exe"; exit 1; fi
           if grep -i -E '(^|/)(setup|unins[0-9]*)\.exe$' <<< "${ZIP_LIST}"; then echo "::error::the zip contains an installer"; exit 1; fi
+          # MAX_PATH: Explorer's "Extract All" fails on a path of 260 characters or more, and by
+          # default it nests the tree twice under the zip name: <Downloads>\<name>\<name>\<path>.
+          # The budget is a release zip, Natron-<version>-Windows-<arch> (at most 35 characters,
+          # e.g. Natron-2.6.0-beta10-Windows-x86_64), extracted to C:\Users\<20-character user
+          # name>\Downloads\ (40 characters): 40 + 2 x (35 + 1) + <path> <= 259, so the longest
+          # path inside the tree may have at most 147 characters; 140 keeps a margin. The longer
+          # names of weekly and branch builds (Natron-<branch>-<date>-<sha>-Windows-<arch>) only
+          # get a warning: they are test builds.
+          LONGEST=$(sed -e 's@^[^/]*/@@' <<< "${ZIP_LIST}" | awk '{ if (length($0) > m) { m = length($0); p = $0 } } END { print m + 0, p }')
+          LONGEST_LEN=${LONGEST%% *}
+          echo "Longest path in the tree (${LONGEST_LEN} characters, at most 140): ${LONGEST#* }"
+          if [ "${LONGEST_LEN}" -gt 140 ]; then echo "::error::${LONGEST#* } has ${LONGEST_LEN} characters (more than 140): Explorer could not extract a release zip to the Downloads folder (MAX_PATH)"; exit 1; fi
+          DEFAULT_LEN=$((40 + 2 * (${#INSTALLER_NAME} + 1) + LONGEST_LEN))
+          if [ "${DEFAULT_LEN}" -gt 259 ]; then echo "::warning::extracted with Explorer's defaults, ${INSTALLER_NAME}.zip would have paths of up to ${DEFAULT_LEN} characters (MAX_PATH: 259): extract it to a short folder"; fi
 
           # Unzip it for the checks below (they run on the unzipped tree)
           cd ${ARCHIVE_DIR}
@@ -263,20 +277,6 @@ jobs:
           }
           check_bundle "${INSTALLER_DIR}"
 
-      - name: Upload the files for the pre-release
-        # pre-release tags only (as the release job, which attaches them)
-        if: >-
-          github.event_name == 'push' &&
-          (contains(github.ref_name, '-alpha') || contains(github.ref_name, '-beta') ||
-          contains(github.ref_name, '-rc') || contains(github.ref_name, '-RC'))
-        uses: actions/upload-artifact@v4.3.1
-        with:
-          name: Natron-Windows-${{ matrix.msystem }}-prerelease
-          # the test results: natron-tests' Natron-Windows-<msystem>-tests-prerelease
-          path: ${{ steps.build.outputs.INSTALLER_ZIP }}
-          compression-level: 0
-          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
-
   natron-tests:
     # Natron-Tests on Natron as users get it (#1959, #1655): on a fresh runner, which never had
     # MSYS2 or the build's dependencies, the portable zip built by win-installer is unzipped into a
@@ -328,7 +328,7 @@ jobs:
         id: natron_tests
         timeout-minutes: 150
         run: |
-          ZIP=$(find /c/nd -maxdepth 2 -name 'Natron-*.zip')
+          ZIP=$(find /c/nd -maxdepth 2 -type f -name 'Natron-*.zip')
           if [ "$(echo "${ZIP}" | grep -c .)" != 1 ]; then echo "::error::not exactly one zip in the artifact:"; echo "${ZIP}"; exit 1; fi
           NAME=$(basename "${ZIP}" .zip)
           echo "NAME=${NAME}" >> $GITHUB_ENV
@@ -422,22 +422,6 @@ jobs:
             echo "::warning::Natron-Tests results differ from the 2.5.0 release (see the diff above)"
           fi
 
-      - name: Upload the test results for the pre-release
-        # pre-release tags only (as the release job, which attaches them)
-        if: >-
-          github.event_name == 'push' &&
-          (contains(github.ref_name, '-alpha') || contains(github.ref_name, '-beta') ||
-          contains(github.ref_name, '-rc') || contains(github.ref_name, '-RC'))
-        uses: actions/upload-artifact@v4.3.1
-        with:
-          name: Natron-Windows-${{ matrix.msystem }}-tests-prerelease
-          path: |
-            results/${{ env.NAME }}-tests.txt
-            results/${{ env.NAME }}-tests-summary.txt
-            results/${{ env.NAME }}-unit_tests_failures.zip
-          compression-level: 0
-          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
-
       - name: Check the Natron-Tests results
         # Last, so that every other check and upload runs first; not if Natron-Tests could not
         # start (that step failed already). runTests.sh doesn't fail the step when a test fails. A
@@ -485,8 +469,9 @@ jobs:
           sparse-checkout-cone-mode: false
       - uses: actions/download-artifact@v4
         with:
-          # the zips (win-installer) and the test results (natron-tests)
-          pattern: Natron-Windows-*-prerelease
+          # the portable zips (win-installer's Natron-<version>-Windows-<arch> artifacts) and the test
+          # results (natron-tests' -tests and -unit_tests_failures artifacts), not compare-*
+          pattern: Natron-*-Windows-*
           path: assets
           merge-multiple: true
       - name: Attach to the pre-release
