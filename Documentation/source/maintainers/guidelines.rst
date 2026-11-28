@@ -180,10 +180,12 @@ The workflows are described in :doc:`github-builds`; the rules are:
   job. A Windows job that didn't run for lack of a runner (cancelled or timed
   out before it started, or still queued after 3 hours) counts as green if
   Linux passed; one that ran and failed is red.
-- **Rely on GitHub CI, not local builds.** Build or test locally only what CI
-  can't (GUI tests, plug-ins or Natron-Tests that CI lacks, crash debugging,
-  SDK, MacPorts or installer work, a CI failure the log doesn't explain), and
-  never only for nits or re-reviews. Push a test together with its fix.
+- **Test locally before every push, but only what the change affects:** build
+  the changed targets and run the tests that cover the changed code (and,
+  where CI lacks them, the GUI tests, plug-ins or Natron-Tests it touches);
+  for a docs-only change, build the docs. On RB-2.6 that is a Qt 5 build; Qt 6
+  is checked through RB-2.7. The full suite on every platform is GitHub CI's
+  job. Push a test together with its fix.
 - **Everything else is weekly, never nightly,** or run by hand: extra C++
   standards, Qt 6, Debug builds, other compilers and OS versions. The plug-in
   repositories and openfx run on Saturday (03:17 UTC), Natron on Sunday.
@@ -338,6 +340,73 @@ Issues
   whenever ``prio:high`` (the important ones) or ``difficulty:easy`` (the
   low-hanging fruit) becomes empty. Triage changes labels only.
 - See :doc:`issue-triage` for Natron's open issues.
+
+Tests
+-----
+
+These rules apply to the unit and script tests of every repository (Natron's
+``Tests/``, the plug-in test suites), not to Natron-Tests' render comparisons.
+
+- **Two kinds of test.** A *functional* test checks a contract: the OFX
+  specification, an API, a command line, a file format. A *regression* test
+  reproduces one past bug and names its issue or pull request; it stays as long
+  as the bug could come back. A regression test for an upstream bug worked
+  around by a local patch names the upstream issue and the patch, and goes
+  away with the patch once an upstream release has the fix.
+- **Separate directories,** not labels or names: ``functional/`` and
+  ``regression/`` under each test suite, both picked up by the build. Shared
+  harness code (helpers, harness programs, test plug-ins, sample generators) is
+  not a test: it stays at the suite root or in ``common/``. Script- and
+  data-driven suites split their case files, not their driver. Natron:
+  ``Tests/functional/`` and ``Tests/regression/`` (each with ``gui/`` for the
+  Python GUI drivers), ``Tests/common/`` and ``Tests/plugins/`` (being
+  introduced by #2052: until then, all tests are in ``Tests/`` and
+  ``Tests/gui/``); the
+  ``TestsFunctional`` and ``TestsRegression`` programs are linked from one
+  object library, and special programs (the cache tests, software OpenGL) keep
+  their own binaries.
+- **Every test says what it checks and why,** in a docstring or comment with
+  a link (issue, pull request or specification section).
+- **One test per behaviour.** Tests of the same code path with the same kind
+  of input are one parameterised or table-driven test, and each case id says
+  what it covers.
+- **Remove a test only** if the code or API it tests is gone, if the bug class
+  can't happen any more (say what prevents it), or if another test covers the
+  same behaviour (name it, by id or file:line, and its assertion). "It never
+  failed" is not a reason; when unsure, keep the test.
+- **Never weaken a test:** no looser assertions, new skips or expected
+  failures, or longer timeouts; tracked expected failures stay strict. A pull
+  request that removes, fuses or moves tests lists each one with its reason and
+  the test that covers it now, with the test counts and run time before and
+  after; the line and branch coverage of ``Engine/`` and ``Gui/`` must not
+  drop.
+- **A test checks what it claims.** If its name or comment promises more than
+  it checks (a "bold text renders bold" test that only checks that a frame was
+  written), add the real check. A check that can't fail (an expected output
+  that accepts anything) is tightened, or removed and listed like a removed
+  test, with the check that replaces it.
+- **No coverage-only tests.** A test checks behaviour that matters (a
+  contract or a past bug); a test written only to raise the coverage figure,
+  with no meaningful assertion, isn't added.
+- **Third-party samples stay out of the repository.** A test that needs a file
+  from another project downloads it, with a hash check, from the
+  repository's "test assets" GitHub release; the release notes give its
+  provenance: source repository URL, path, commit, SHA-256, licence and
+  notice. A sample whose licence doesn't allow
+  redistribution isn't used.
+- **Tests are built and run through CMake and ctest,** never from hand-written
+  Makefiles. While RB-2.6 still supports qmake, the test lists of the ``*.pro``
+  files and of ``CMakeLists.txt`` stay in sync.
+- **Every CI configuration that runs tests runs the full set,** the weekly-only
+  ones (Debug, Qt 6, other compilers) included. Only tests that need what the
+  runner lacks are left out (the GUI tests where there is no display), and the
+  configuration says which and why.
+- **Contracts are never "trivial":** every public call of Natron's Python API
+  stays tested, old ``.ntp`` and ``.py`` projects keep loading (including each
+  ``BOOST_CLASS_VERSION`` path), and NatronRenderer's options and exit statuses
+  stay covered.
+- **CI:** a failure shows whether it is functional or regression (two
+  ``ctest`` steps in Natron, no extra job); both must pass to merge.
 
 Natron-Tests known failures
 ---------------------------
