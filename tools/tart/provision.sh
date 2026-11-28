@@ -707,7 +707,8 @@ deps_order() {
 # again when its version changes; the minos check of the DMG (check-minos.sh, natron-build.sh)
 # tells whether that matters. E.g. librsvg-2.a (not in the DMG) has the objects of the Rust
 # standard library of MacPorts' rust archive, built for the macOS of its builder; librsvg's
-# dylib is built for $macos_target. Never marked done: run after every update.
+# dylib has minos $macos_target but links the same objects (ld warns).
+# Never marked done: run after every update.
 step_rebuild_target() {
     local skip=$LOGDIR/rebuild_target.skip p v bdeps variants vfile out todo=() failed=() n=0
     touch "$skip"
