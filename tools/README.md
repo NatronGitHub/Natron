@@ -26,7 +26,7 @@ This directory contains various tools to help building and maintaining Natron.
 
 - **jenkins**
 
-  The release build scripts: `launchBuildMain.sh` checks out, builds and packages Natron and the plug-ins (the macOS DMG, the Linux portable archive, the Windows portable zip with Inno Setup's `Setup.exe`), and runs the unit tests. See [jenkins/README.md](jenkins/README.md).
+  The release build scripts: `launchBuildMain.sh` checks out, builds and packages Natron and the plug-ins (the macOS DMG, the Linux portable archive, the Windows portable zip), and runs the unit tests. See [jenkins/README.md](jenkins/README.md).
 
   `./include/scripts/build-Linux-sdk.sh` builds and installs all the Natron dependencies of the Linux SDK to `/opt/Natron-sdk`, which must be a user-writable directory. It is normally run inside the Rocky Linux 9 Docker image (see **docker** below).
 
@@ -42,7 +42,7 @@ This directory contains various tools to help building and maintaining Natron.
 
 - **MINGW-packages**
 
-  Natron's own MSYS2 packages, built in the UCRT64 environment, for the plug-ins and the Windows installer: only what MSYS2 doesn't provide in the form Natron needs (FFmpeg built GPLv2, LibRaw with and without the GPL demosaic packs, OpenImageIO built against that LibRaw, SeExpr, a static ImageMagick 7, OSMesa, the Inno Setup installer and the build-deps meta-packages). See [MINGW-packages/README.md](MINGW-packages/README.md) for the list, and for how to rebuild and publish the package repository.
+  Natron's own MSYS2 packages, built in the UCRT64 environment, for the plug-ins and the Windows portable zip: only what MSYS2 doesn't provide in the form Natron needs (FFmpeg built GPLv2, LibRaw with and without the GPL demosaic packs, OpenImageIO built against that LibRaw, SeExpr, a static ImageMagick 7, OSMesa and the build-deps meta-packages). See [MINGW-packages/README.md](MINGW-packages/README.md) for the list, and for how to rebuild and publish the package repository.
 
   The `check.sh` script reports the packages whose upstream PKGBUILD changed, supposing that `../../../MINGW-packages` contains a clone of [msys2/MINGW-packages](https://github.com/msys2/MINGW-packages).
 

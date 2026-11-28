@@ -56,9 +56,6 @@ jobs:
           msystem: ${{ matrix.msystem }}
           update: true
           install: git base-devel
-      - name: Install Inno Setup
-        run: choco install innosetup
-        shell: pwsh
       - name: Prep MSYS2 package version list
         run: |
           pacman -Sl ${MSYSTEM,,} msys > mingw-package-version-list.txt

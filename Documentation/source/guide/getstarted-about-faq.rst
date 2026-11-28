@@ -58,4 +58,4 @@ Natron needs a graphics card with OpenGL 2.0 and a few extensions (see :ref:`sys
 If your graphics card or driver is not supported, Natron can use a software OpenGL renderer. It is much slower.
 
 * On Linux, set the environment variable ``LIBGL_ALWAYS_SOFTWARE=1`` before starting Natron. This uses Mesa's software renderer.
-* On Windows, select the *OpenGL Software Renderer (FOR LEGACY HARDWARE ONLY)* component in the installer or, if you run Natron without installing it, copy ``bin\mesa\opengl32.dll`` to ``bin\``.
+* On Windows, copy ``bin\mesa\opengl32.dll`` to ``bin\`` in the Natron folder.

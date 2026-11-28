@@ -11,7 +11,7 @@ name: Render soak
 # On demand only (it takes hours). What is soaked (natron_build):
 # - package (default): the Natron that users get, with all the bundled plug-ins: on Linux the portable archive of
 #   the natron_testing pre-release (RB-2.6, replaced by the weekly linux_packages.yml runs), on Windows the portable
-#   tree of the last successful build_installer.yml run on RB-2.6; package_run_id picks a run of linux_packages.yml
+#   zip of the last successful build_installer.yml run on RB-2.6; package_run_id picks a run of linux_packages.yml
 #   (Linux) or build_installer.yml (Windows) instead. To soak an older commit with a package, dispatch those
 #   workflows on a branch at that commit, then pass their run ids. The packages' binaries are stripped: a stall found
 #   on a package has backtraces without symbols; reproduce it with natron_build=source for usable ones. They have no
@@ -265,8 +265,13 @@ jobs:
           fi
           [ -n "$run_id" ] || { echo "::error::no successful build_installer.yml run on RB-2.6: give package_run_id"; exit 1; }
           echo "build_installer.yml run $run_id"
-          # the unzipped portable tree (not the -prerelease zip or the -tests artifacts)
+          # the portable zip (not the -prerelease or the -tests artifacts), unzipped with Windows'
+          # tar (older runs uploaded the unzipped tree, used as is)
           gh run download "$run_id" -R "$GITHUB_REPOSITORY" -p 'Natron-*-Windows-x86_64' -D dist
+          find dist -maxdepth 2 -name 'Natron-*-Windows-x86_64.zip' | while IFS= read -r z; do
+            "$(cygpath -u -S)/tar.exe" -xf "$(cygpath -w "$z")" -C "$(cygpath -w "$(dirname "$z")")"
+            rm "$z"
+          done
           exe=$(find "$PWD/dist" -name NatronRenderer.exe -path '*/bin/*' | head -1)
           [ -n "$exe" ] || { echo "::error::no bin/NatronRenderer.exe in the artifacts of run $run_id (expired? give package_run_id)"; exit 1; }
           bin=$(dirname "$exe")

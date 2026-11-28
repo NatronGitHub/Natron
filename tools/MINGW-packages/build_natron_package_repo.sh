@@ -14,7 +14,6 @@ BUILD_SCRIPT_DIR=$(realpath $(dirname "${BASH_SOURCE[0]}"))
 PKGS="
 mingw-w64-freetype
 mingw-w64-qt5-base
-mingw-w64-natron-setup
 mingw-w64-libraw-gpl2
 mingw-w64-libraw-lgpl
 mingw-w64-openimageio
