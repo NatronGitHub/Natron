@@ -46,6 +46,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <utility>
@@ -78,12 +79,14 @@ const double kFrame = 12.;
 // Largest difference allowed between a render and its reference, on each channel. llvmpipe is
 // deterministic for a given Mesa, LLVM and CPU: each pixel is computed independently of the others
 // and of the threads that render the tiles, in 32-bit floats (OSMesa32 buffers, float textures).
-// The references were checked against the same shaders evaluated in double precision (bilinear
-// filtering and mirror wrapping included): every value is within 5e-7, with llvmpipe and softpipe.
-// A reference is shared by every platform (x86_64 with SSE or AVX, aarch64) and by the Mesa and
-// LLVM versions of the packages, whose renders may differ by the approximations of sin, exp and pow
-// and by fused multiply-adds (at most about 1e-5). 1e-3 is far above that; a broken render (black,
-// garbage, wrong filter or wrap mode, wrong iTime or iResolution, 8-bit textures) differs by more.
+// The references were rendered on macOS arm64 with Mesa 25.0.7 and LLVM 19.1.7, and checked against
+// the same shaders evaluated in double precision (bilinear filtering and mirror wrapping included):
+// every value is within 5e-7, with llvmpipe and softpipe. They are shared by every platform and
+// OSMesa of the packages (on RB-2.6: Linux x86_64 and aarch64 with Mesa 18.3.6 and LLVM 6.0.1,
+// Windows and macOS with Mesa 25.0.7), whose renders may differ by the approximations of sin, exp
+// and pow and by fused multiply-adds; each test prints its largest difference, the measured
+// margin. 1e-3 is far above these; a broken render (black, garbage, wrong filter or wrap mode,
+// wrong iTime or iResolution, 8-bit textures) differs by more.
 const float kTolerance = 1e-3f;
 
 bool
@@ -265,6 +268,8 @@ protected:
                           const std::string& name,
                           const std::string& outputName = std::string())
     {
+        // iTime is the frame divided by the project frame rate
+        ASSERT_EQ( 24., node->getApp()->getProjectFrameRate() ) << "the references were rendered at 24 fps";
         ImagePtr img = NatronTestPlugin::renderFrame(node, kFrame, false /*allowGPURendering*/);
 
         ASSERT_TRUE( bool(img) ) << name << ": the render failed";
@@ -312,6 +317,8 @@ protected:
         const int c = worst % 4;
         const int x = (worst / 4) % kWidth;
         const int y = worst / 4 / kWidth;
+        std::cout << "[  OSMESA   ] " << name << ": largest difference " << maxError << ", mean "
+                  << sumError / pixels.size() << " (tolerance " << kTolerance << ")" << std::endl;
         EXPECT_LE(maxError, kTolerance) << name << ": largest difference at (" << x << ", " << y << ") channel " << c
                                         << ": " << pixels[worst] << " instead of " << reference[worst]
                                         << "; mean difference " << sumError / pixels.size();
@@ -394,7 +401,9 @@ TEST_F(ShadertoyOSMesaTest, Texture)
     renderAndCompare(node, "Shadertoy-texture");
 }
 
-// softpipe, Mesa's reference driver, gives the same image as llvmpipe (the same reference)
+// softpipe, Mesa's reference driver, gives the same image as llvmpipe (the same reference). The
+// driver is chosen with the OSMESA_GALLIUM_DRIVER context attribute, added by the Mesa patches of
+// osmesa-install that every OSMesa of the packages has.
 TEST_F(ShadertoyOSMesaTest, SoftpipeFunctions)
 {
     NodePtr node = createShadertoy(kShaderFunctions, "softpipe");
