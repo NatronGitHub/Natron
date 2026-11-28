@@ -35,6 +35,8 @@ introduced where needed.
     python-bindings
     subsystems
     contributing
+    guidelines
+    github-builds
     qt6-migration
     todo
     issue-triage

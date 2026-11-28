@@ -12,11 +12,11 @@ whenever a header or a typesystem file changes.
 The pieces
 ----------
 
-- **The ``Py*`` C++ classes** (``Engine/PyNode.*``, ``PyParameter.*``,
+- **The** ``Py*`` **C++ classes** (``Engine/PyNode.*``, ``PyParameter.*``,
   ``PyRoto.*``, ``PyTracker.*``, ``PyAppInstance.*``, ``PyNodeGroup.*``,
   ``PyExprUtils.*``, ``PyGlobalFunctions.*``; ``Gui/PyGuiApp.*``,
-  ``PythonPanels.*``). These are deliberately small, stable, scripting-friendly
-  facades over the engine/GUI objects. They live in the
+  ``PyGlobalGui.*``, ``PythonPanels.*``). These are deliberately small, stable,
+  scripting-friendly facades over the engine/GUI objects. They live in the
   ``NATRON_PYTHON_NAMESPACE`` (see :ref:`maint-design`). The Python API surface
   is defined by these classes — not by the whole engine.
 - **Shiboken** — the binding generator (part of PySide). It reads the C++
@@ -132,13 +132,10 @@ The binding toolchain is tied to the Qt version:
 - Qt 5 builds use **Shiboken2 / PySide2**.
 - Qt 6 builds use **Shiboken6 / PySide6**.
 
-The CMake build already selects between them from the ``NATRON_QT6`` option (see
-:ref:`maint-building`), and the presence of both ``PySide2_*`` and ``PySide6_*``
-headers shows the port is under way. The bindings must be **regenerated** with
-the matching Shiboken when switching Qt major versions; a mismatch is a common
-source of the "``Qt.Alignment`` flags unrecognized" class of errors (issue
-`#854 <https://github.com/NatronGitHub/Natron/issues/854>`_). See
-:ref:`maint-qt6`.
+The CMake build selects between them from the ``NATRON_QT6`` option (see
+:ref:`maint-building`), with the matching ``PySide2_*`` or ``PySide6_*`` global
+headers. The bindings must be **regenerated** with
+the matching Shiboken when switching Qt major versions. See :ref:`maint-qt6`.
 
 Working on the bindings
 -----------------------

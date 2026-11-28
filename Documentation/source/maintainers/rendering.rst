@@ -361,6 +361,15 @@ Suppose the Viewer needs the visible region of a Blur node at frame 10.
     ``QtConcurrent::mapped`` only if the effect's render thread safety is
     ``eRenderSafetyFullySafeFrame``, there is more than one rectangle and the
     render is not on the GPU; otherwise they are rendered one after the other.
+    Around ``renderRoIInternal``, ``renderRoI`` holds the lock that the thread
+    safety asks for: ``eRenderSafetyUnsafe`` takes the plug-in's lock
+    (``Plugin::getPluginLock()``: one render at a time for all its instances);
+    ``eRenderSafetyInstanceSafe`` renders in a render clone
+    (``getOrCreateRenderInstance()``) and takes the node's
+    ``getRenderInstancesSharedMutex()``, which all its clones share. The fully
+    safe levels take no lock, except that an OpenGL render of an effect without
+    concurrent OpenGL renders also uses a render clone, and takes the node's
+    mutex when the main instance renders.
     ``tiledRenderingFunctor`` calls ``renderHandler`` (``EffectInstance.cpp``),
     which calls ``render_public`` and so the effect's ``render`` action. For
     OpenFX nodes, ``OfxEffectInstance::render`` calls the plug-in's render

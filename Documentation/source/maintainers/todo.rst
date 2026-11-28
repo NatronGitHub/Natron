@@ -25,13 +25,11 @@ replaced (PR #1084), and Engine, Gui and the Python bindings compile with Qt 6
 (PRs #1186–#1188): CMake's ``NATRON_QT6`` generates the Shiboken6/PySide6
 bindings, qmake has an untested Qt 6 path without bindings, and
 ``Global/QtCompat.h`` has the ``QtCompat::MutexLock`` and ``QEnterEvent``
-shims. What remains: validate the PySide6 bindings and the GUI at run time
-(including the enum/flag issue
-`#854 <https://github.com/NatronGitHub/Natron/issues/854>`_), build Qt 6 in CI
-on Windows and macOS (Linux: RB-2.7's Linux job). Qt 6 builds use C++20 (#1469, #1148). Qt 6 work that keeps
-Qt 5 unchanged goes to RB-2.6; RB-2.7 is the Qt 6 branch. Tracks
-`#1011 <https://github.com/NatronGitHub/Natron/issues/1011>`_ and
-`#827 <https://github.com/NatronGitHub/Natron/issues/827>`_.
+shims. What remains: validate the PySide6 bindings (including the enum/flag
+conversions) and the GUI at run time, and build Qt 6 in CI on Windows and macOS
+on RB-2.7 (Linux: RB-2.7's Linux job; RB-2.6 has no Qt 6 job). Qt 6 builds use
+C++20 (#1469, #1148). Qt 6 work that keeps Qt 5 unchanged goes to RB-2.6;
+RB-2.7 is the Qt 6 branch.
 
 **Retire the qmake build (P2).**
 CMake is the supported build, and the qmake build is deprecated
@@ -43,20 +41,19 @@ keep the ``*.pro``/``*.pri`` files in sync with CMake
 (``tools/utils/checkQmakeSources.py`` checks the source lists in CI). The qmake
 build gets no new features, in particular no further Qt 6 work.
 
-**Add the scheduled CI builds (P1).**
-CI runs on GitHub Actions (``.github/workflows/ci.yml``; the migration from
-Travis, `#601 <https://github.com/NatronGitHub/Natron/issues/601>`_, is done):
-each pull request builds Qt 5 and runs the ``Tests`` suite on Linux, Windows
-and macOS (see :ref:`maint-ci`). What is missing are the builds that the CI
-policy keeps out of pull requests: Qt 6 with tests on all three platforms,
-extra C++ standards (C++23), and other compilers or OS versions, to run
-weekly or by hand, so that regressions in the dual-toolkit build are
-still caught.
+**Complete the scheduled CI builds (P1).**
+CI runs on GitHub Actions (the migration from Travis,
+`#601 <https://github.com/NatronGitHub/Natron/issues/601>`_, is done): each pull
+request marked ready builds Qt 5 and runs the ``Tests`` suite on Linux, Windows
+and macOS, and the weekly runs add the Debug and Release builds and the
+packages (see :doc:`github-builds`). What is missing are the other builds that
+the CI policy keeps out of pull requests: extra C++ standards (C++23), other
+compilers or OS versions, and Qt 6 on Windows and macOS (on RB-2.7).
 
 **Adopt a modern C++ baseline consistently (P3).**
 The code compiles as C++17 with Qt 5 and C++20 with Qt 6, and has largely moved from
 C++98 to ``std::shared_ptr`` etc. Finish the job opportunistically: prefer
-``override``, range-based ``for`` (retiring ``foreach``/``Q_FOREACH``, ~46
+``override``, range-based ``for`` (retiring ``foreach``/``Q_FOREACH``, ~70
 uses), ``nullptr``, and ``enum class`` where it does not break the Python
 bindings. Do this file-by-file alongside other work, not as a mass reformat
 (which would fight the astyle hook and bloat diffs).
@@ -67,11 +64,11 @@ Stability and correctness (P0)
 These are the code-level counterparts of the P0 issues in
 :ref:`maint-issue-triage`.
 
-**Make the cache respect its limits (P0).**
-`#192 <https://github.com/NatronGitHub/Natron/issues/192>`_ reports that Natron
-does not observe disk/RAM cache size limits and crashes when the disk fills.
-Audit ``Cache.h`` / ``MemoryFile`` / ``TileCacheFile`` eviction and the
-disk-space checks; a compositor that fills the disk and crashes loses work.
+**Make the cache respect its limits (done).**
+`#192 <https://github.com/NatronGitHub/Natron/issues/192>`_ (Natron did not
+observe the disk cache size limits and crashed when the disk filled) is fixed:
+the disk cache counts its size correctly (#1128), and ``MemoryFile`` reserves
+the disk space of a cache file before writing it.
 
 **Diagnose the silent render stall (P0).**
 `#248 <https://github.com/NatronGitHub/Natron/issues/248>`_ (rendering silently
@@ -81,18 +78,18 @@ or a deadlock around the cache. High value; reproduce under a debug build with
 FP-exception trapping and thread sanitizer.
 
 **Fix launch/teardown crashes (P0).**
-Startup crashes (`#845 <https://github.com/NatronGitHub/Natron/issues/845>`_,
-`#1008 <https://github.com/NatronGitHub/Natron/issues/1008>`_) and
-shutdown/lifecycle crashes (`#795 <https://github.com/NatronGitHub/Natron/issues/795>`_,
+The startup crash `#1008 <https://github.com/NatronGitHub/Natron/issues/1008>`_ is still
+open; the earlier startup and shutdown/lifecycle crashes
+(`#845 <https://github.com/NatronGitHub/Natron/issues/845>`_,
+`#795 <https://github.com/NatronGitHub/Natron/issues/795>`_,
 `#1029 <https://github.com/NatronGitHub/Natron/issues/1029>`_,
-`#1057 <https://github.com/NatronGitHub/Natron/issues/1057>`_) recur across
-platforms. Several likely involve OpenGL context creation
-(`#516 <https://github.com/NatronGitHub/Natron/issues/516>`_, amdgpu-pro) — a
+`#1057 <https://github.com/NatronGitHub/Natron/issues/1057>`_) are closed. Several involved OpenGL context creation
+(`#516 <https://github.com/NatronGitHub/Natron/issues/516>`_, amdgpu-pro, closed) — a
 good place to add defensive checks and clearer diagnostics in ``OSGLContext_*``.
 
 **Invest in the crash-reporting pipeline (P1).**
 A large tail of issues are "random crashes" with no stack trace
-(`#557 <https://github.com/NatronGitHub/Natron/issues/557>`_). A crash reporter
+(`#557 <https://github.com/NatronGitHub/Natron/issues/557>`_, closed). A crash reporter
 that reliably delivers usable minidumps/symbols (sentry-native, replacing the
 removed Breakpad one:
 `#1183 <https://github.com/NatronGitHub/Natron/issues/1183>`_) converts that tail
@@ -102,10 +99,11 @@ Robustness of critical subsystems
 ---------------------------------
 
 **Guard the serialization format (P1).**
-Project loading uses Boost.Serialization (see :ref:`maint-design`). There is no
-automated test that round-trips and cross-version-loads real project files.
-Recommendation: add regression tests that load a corpus of old ``.ntp`` files
-and assert they still open; require a ``BOOST_CLASS_VERSION`` bump review for any
+Project loading uses Boost.Serialization (see :ref:`maint-design`).
+``Tests/ProjectFileFormat_Test.cpp`` round-trips the text and binary formats, and
+the Natron-Tests render suite and ``project_python_roundtrip.yml`` load its old
+``.ntp`` projects, but no test checks every ``BOOST_CLASS_VERSION`` of every
+``*Serialization`` class. Recommendation: require a ``BOOST_CLASS_VERSION`` bump review for any
 ``*Serialization`` change. This directly protects users from data loss.
 
 **Replace deprecated/removed Qt string and regex APIs (done).**
@@ -125,11 +123,11 @@ Testing and documentation
 -------------------------
 
 **Broaden automated test coverage (P2).**
-The ``Tests`` suite covers curves, LUT, images, hashing, tracking and the
-file-system model, but not the render pipeline, the cache, serialization, or
-knob expressions — the subsystems where the P0 bugs live. Add targeted tests as
-these areas are touched; a headless ``NatronRenderer`` render of a known project
-compared against a golden image would be a strong end-to-end regression test.
+The ``Tests`` suite now also covers parts of the render pipeline, the caches,
+the project formats, knob expressions and the OpenFX host (``Tests/*_Test.cpp``).
+Keep adding targeted tests as these areas are touched; a headless
+``NatronRenderer`` render of a known project compared against a golden image
+would be a strong end-to-end regression test.
 
 **Keep this Maintainer Guide current (P2).**
 Update it when the architecture changes — especially the Qt 6 status in
@@ -137,14 +135,16 @@ Update it when the architecture changes — especially the Qt 6 status in
 (the script used to produce it is simple GitHub-API + label aggregation).
 
 **Label and prune the issue tracker (P2).**
-As noted in :ref:`maint-issue-triage`, ~half of issues are untriaged and ~124
-are 2018 imports that may already be fixed. A labeling/pruning pass makes the
-backlog trustworthy and surfaces genuinely actionable work.
+Every open issue has a ``prio:`` and a ``difficulty:`` label (see
+:ref:`maint-issue-triage`), but ~124 are 2018 imports that may already be fixed.
+A pruning pass makes the backlog trustworthy and surfaces genuinely actionable
+work.
 
 Quick-reference: important issues
 ---------------------------------
 
-Priorities as of the July 2026 snapshot (see :ref:`maint-issue-triage`):
+Priorities as of the July 2026 snapshot (see :ref:`maint-issue-triage`); most of
+these issues have been closed since:
 
 ===================  ==================================================  ========
 Issue                Summary                                             Priority

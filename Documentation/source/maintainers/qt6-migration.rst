@@ -5,10 +5,11 @@ Qt 6 Migration Plan
 
 Natron is released with **Qt 5** (it was migrated from Qt 4 earlier). Since
 PRs #1186, #1187 and #1188 (November 2026), RB-2.6 also compiles with **Qt 6**,
-Qt 5 unchanged. Finishing **Qt 6** support, while keeping Qt 5 working, is a
-tracked goal
-(issues `#1011 <https://github.com/NatronGitHub/Natron/issues/1011>`_ "QT6
-Support?", and the Qt5 tracker `#827 <https://github.com/NatronGitHub/Natron/issues/827>`_).
+Qt 5 unchanged. Finishing **Qt 6** support, while keeping Qt 5 working, is the
+goal (issue `#1011 <https://github.com/NatronGitHub/Natron/issues/1011>`_ "QT6
+Support?" was closed once RB-2.6 built with Qt 6, and the Qt5 tracker
+`#827 <https://github.com/NatronGitHub/Natron/issues/827>`_ once 2.6 shipped
+Qt 5 pre-releases).
 This chapter is the concrete migration plan, based on an audit of the current
 source tree.
 
@@ -31,7 +32,7 @@ Groundwork already in place
 The port is further along than it looks; the two hardest pieces are already
 done:
 
-- **The OpenGL viewer already uses ``QOpenGLWidget``.** ``ViewerGL``,
+- **The OpenGL viewer already uses** ``QOpenGLWidget``. ``ViewerGL``,
   ``Histogram``, ``CurveWidget``, ``DopeSheetView``, ``TimeLineGui`` and
   ``CustomParamInteract`` all derive from ``QOpenGLWidget``, not the Qt6-removed
   ``QGLWidget``. This is normally the single biggest Qt6 blocker for a GL-heavy
@@ -42,7 +43,7 @@ done:
   Qt 5.15 + Shiboken2 + PySide2. So a dual-toolkit build is already modeled.
 - **Binding scaffolding for PySide6 exists** (``PySide6_*_Python.h`` alongside
   ``PySide2_*_Python.h``).
-- **``QtCompat.h`` already carries ``QT_VERSION_CHECK(6,0,0)`` shims** and
+- ``QtCompat.h`` **already carries** ``QT_VERSION_CHECK(6,0,0)`` **shims** and
   ``QT_NO_CAST_FROM_ASCII`` is already defined project-wide, so implicit
   ``const char*`` → ``QString`` conversions (a common Qt6 trap) are already
   disallowed.
@@ -54,10 +55,10 @@ Keep a single code base that compiles under Qt 5 and Qt 6, guarded where
 necessary by ``#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)``. Prefer, in order:
 
 1. **APIs that exist unchanged in both** (most code needs no change).
-2. **A shim in ``Global/QtCompat.h``** when the two versions need different
+2. **A shim in** ``Global/QtCompat.h`` when the two versions need different
    spellings — extend the existing pattern there rather than scattering version
    ``#if`` blocks through business logic.
-3. **A localized ``#if QT_VERSION`` block** only when a shim is impractical.
+3. **A localized** ``#if QT_VERSION`` **block** only when a shim is impractical.
 
 The Qt 6 build is the CMake one (``-DNATRON_QT6=ON``). The qmake build is
 deprecated (`#1181 <https://github.com/NatronGitHub/Natron/issues/1181>`_). It
@@ -124,12 +125,13 @@ Done: Engine, Gui and the Python bindings compile with Qt 6 (PRs #1186–#1188)
     byte-identical render as the Qt 5 build. It was also compiled on Linux.
     The GUI was only launched, used to connect nodes and render.
 
-To do: enum / ``QFlags`` scoping and the Python bindings (issue #854)
-    Qt 6 (and PySide6) are stricter about scoped enums and ``QFlags``. Issue
-    `#854 <https://github.com/NatronGitHub/Natron/issues/854>`_ ("Qt.Alignment
-    Flags Unrecognized (As Int)") is exactly this: alignment flags passed as raw
-    ``int`` no longer implicitly convert. Audit ``QtEnumConvert`` and any place
-    that stores Qt flags as ``int`` (e.g. through ``QVariant``), and make sure
+To do: enum / ``QFlags`` scoping and the Python bindings
+    Qt 6 (and PySide6) are stricter about scoped enums and ``QFlags``: flags
+    passed as raw ``int`` may no longer convert implicitly. (Issue
+    `#854 <https://github.com/NatronGitHub/Natron/issues/854>`_, "Qt.Alignment
+    Flags Unrecognized (As Int)", was the PySide 1 / Qt 4 form of this in
+    Natron 2.5, and is closed: with PySide2 5.15 these flags convert.) Audit
+    ``QtEnumConvert`` and any place that stores Qt flags as ``int`` (e.g. through ``QVariant``), and make sure
     the ``typesystem_*.xml`` files expose the flag types correctly to
     Shiboken6/PySide6. Regenerate the bindings with the Qt6 toolchain.
 
@@ -158,7 +160,7 @@ Done: module/include changes
     under ``equals(QT_MAJOR_VERSION, 6)`` (App, Gui and Tests, PR #1188).
 
 Lower-risk, non-blocking cleanups
-    ``foreach`` / ``Q_FOREACH`` (~46 uses) still compile under Qt 6 but are
+    ``foreach`` / ``Q_FOREACH`` (~70 uses) still compile under Qt 6 but are
     deprecated; migrate to range-based ``for`` opportunistically. ``QStyle``
     state flags (11) and ``Qt::SkipEmptyParts`` (already using the scoped form)
     are fine.
@@ -255,8 +257,8 @@ Suggested sequence
    compile errors with ``QtCompat.h`` shims or narrow ``#if QT_VERSION`` guards.
    Done in PRs #1186–#1188.
 4. **Generate the PySide6 bindings** (done with CMake in PR #1188), **then
-   validate them** with the tutorials and PyPlugs, and resolve the #854-class
-   enum/flag issues at run time. To do.
+   validate them** with the tutorials and PyPlugs, and resolve the enum/flag
+   issues at run time. To do.
 5. **Validate the GUI end-to-end** on each OS: file dialog, node graph, viewer,
    properties panels, curve editor/dope sheet, roto/tracker overlays, tablet
    input, multiple monitors, and the Python console/panels. Mirror the
@@ -264,9 +266,9 @@ Suggested sequence
    been launched and used to connect nodes and render.
 6. **Build Qt 6 in CI.** Linux: done on RB-2.7, whose Linux job builds Qt 6
    and PySide6; its log is checked after each forward merge of RB-2.6, and the
-   fixes go to RB-2.6, which has no Qt 6 job. To do: Windows and macOS, weekly
-   or on demand (the Windows job also needs a ``natron-build-deps-qt6`` package
-   in Natron's pacman repository).
+   fixes go to RB-2.6, which has no Qt 6 job. To do: Windows and macOS on
+   RB-2.7, weekly or on demand (on Windows, with the ``natron-build-deps-qt6``
+   meta-package of ``tools/MINGW-packages``).
 7. **Switch Qt 6 builds to C++20.** Done in PRs #1469 and #1148.
 
 Qt 6 work that keeps Qt 5 unchanged goes to RB-2.6, and reaches RB-2.7 by the

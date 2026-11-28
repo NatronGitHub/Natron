@@ -65,13 +65,14 @@ Reading it is the fastest way to understand how the pieces fit together::
     Engine.depends   = libmv openMVG HostSupport libtess ceres md4c
     Renderer.depends = Engine
     Gui.depends      = Engine qhttpserver
-    Tests.depends    = Gui Engine
+    Tests.depends    = Gui Engine NatronTestPlugin
     App.depends      = Gui Engine
 
 So the build order is: the bundled libraries first (``ceres``, ``libmv``,
 ``openMVG``, ``qhttpserver``, ``md4c``, ``libtess``),
 then ``HostSupport``, then ``Engine``, then the front-ends (``Renderer``,
-``Gui``), then ``App``, ``Tests`` and ``PythonBin``.
+``Gui``), then ``App``, ``Tests`` (with the OpenFX test plug-in of
+``Tests/OfxTestPlugin``) and ``PythonBin``.
 
 Third-party dependencies
 ------------------------
@@ -457,10 +458,10 @@ the authoritative formatter used by the hook.
 Verifying a build
 -----------------
 
-The ``Tests`` module builds a Google Test suite
-(``Curve_Test``, ``Lut_Test``, ``Image_Test``, ``Hash64_Test``,
-``KnobFile_Test``, ``Tracker_Test``, ``FileSystemModel_Test``,
-``OSGLContext_Test``). With CMake,
+The ``Tests`` module builds a Google Test suite from the ``Tests/*_Test.cpp``
+files (``Curve_Test``, ``Image_Test``, ``KnobFile_Test``, the ``Ofx*_Test``
+host-conformance tests, ``RenderThreadSafety_Test``…), listed in both
+``Tests/CMakeLists.txt`` and ``Tests/Tests.pro``. With CMake,
 tests are registered with CTest (``enable_testing()``) and built unless you pass
 ``-DNATRON_BUILD_TESTS=OFF``. Run them after building to confirm your toolchain
 and your change are sane before opening a pull request.

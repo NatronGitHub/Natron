@@ -15,6 +15,8 @@ periodically. Issue numbers link to GitHub.
    The absolute counts below will drift; the categories and prioritization
    method are the durable part. Re-generate with the GitHub issues API plus
    label aggregation (a few lines of Python) when you need fresh numbers.
+   Many of the issues listed below have been closed since (marked "closed");
+   check an issue's state before working on it.
 
 How the tracker is labeled
 --------------------------
@@ -34,10 +36,12 @@ Issues are (mostly) labeled along several axes, which makes triage tractable:
 - **Status** — ``status:confirmed`` (21), ``status:in-progress`` (5),
   ``status:fix-commited`` (1).
 
-Note that the large majority of issues have **no priority or difficulty label**;
-part of good maintenance is labeling them as they are reviewed. About 124 issues
-date from a 2018 bulk import from the previous tracker and should be re-validated
-against current releases — many may already be fixed.
+The counts above predate the current rule: every open issue has one ``prio:``
+and one ``difficulty:`` label, each value on about a third of the open issues,
+and all open issues are triaged again whenever ``prio:high`` or
+``difficulty:easy`` becomes empty. About 124 issues date from a 2018 bulk
+import from the previous tracker and should be re-validated against current
+releases — many may already be fixed.
 
 Prioritization framework
 ------------------------
@@ -69,53 +73,53 @@ the backlog:
   silently stalls after X frames* (engine; very high engagement;
   ``info:help-needed``). A silent render stall is catastrophic for the core use
   case.
-- `#516 <https://github.com/NatronGitHub/Natron/issues/516>`_ — *Won't open on
+- `#516 <https://github.com/NatronGitHub/Natron/issues/516>`_ (closed) — *Won't open on
   Ubuntu 20.04 with amdgpu-pro drivers* (confirmed, engine+gui, hard). A
   cannot-launch bug for a whole class of users; likely an OpenGL context issue
   (see ``OSGLContext_*``).
-- `#845 <https://github.com/NatronGitHub/Natron/issues/845>`_,
+- `#845 <https://github.com/NatronGitHub/Natron/issues/845>`_ (closed),
   `#1008 <https://github.com/NatronGitHub/Natron/issues/1008>`_,
-  `#907 <https://github.com/NatronGitHub/Natron/issues/907>`_ — *crashes on
+  `#907 <https://github.com/NatronGitHub/Natron/issues/907>`_ (closed) — *crashes on
   startup* (several reports, various Linux). Startup crashes block everything.
-- `#795 <https://github.com/NatronGitHub/Natron/issues/795>`_ — *stuck in memory
-  when closing a project*; `#1029 <https://github.com/NatronGitHub/Natron/issues/1029>`_
+- `#795 <https://github.com/NatronGitHub/Natron/issues/795>`_ (closed) — *stuck in memory
+  when closing a project*; `#1029 <https://github.com/NatronGitHub/Natron/issues/1029>`_ (closed)
   — *crash after repeatedly opening/closing*; `#1057
-  <https://github.com/NatronGitHub/Natron/issues/1057>`_ — *crash closing the
+  <https://github.com/NatronGitHub/Natron/issues/1057>`_ (closed) — *crash closing the
   file picker for Writer*. Lifecycle/teardown bugs.
-- `#192 <https://github.com/NatronGitHub/Natron/issues/192>`_ — *does not
-  observe cache size limits, crashes when disk full* (engine cache). Ties into
-  the ``Cache`` subsystem.
-- `#864 <https://github.com/NatronGitHub/Natron/issues/864>`_ — *command line
+- `#192 <https://github.com/NatronGitHub/Natron/issues/192>`_ (closed) — *does
+  not observe cache size limits, crashes when disk full*: fixed in 2.6 (the disk
+  cache size accounting, #1128, and the disk space reserved before writing).
+- `#864 <https://github.com/NatronGitHub/Natron/issues/864>`_ (closed) — *command line
   renders zero frames only* (``prio:high``); `#1047
   <https://github.com/NatronGitHub/Natron/issues/1047>`_ — *ReadFFmpeg
   performance* (``prio:high``, ``func:readers``).
 
 A recurring theme (``#557``, ``#862``, ``#903``, ``#958``, ``#1005``,
-``#1068`` …) is *random / hard-to-reproduce crashes*. Investing in the crash
-reporter pipeline (``#557``) so real stack traces come back from users would pay
-off across all of these.
+``#1068`` …, all closed since) is *random / hard-to-reproduce crashes*. Investing in the crash
+reporter pipeline (sentry-native, ``#1183``) so real stack traces come back
+from users would pay off across all of these.
 
 P1 — Sustainability (build, Qt 6, distribution)
 -----------------------------------------------
 
 - **Qt 6 migration** — `#1011 <https://github.com/NatronGitHub/Natron/issues/1011>`_
-  (QT6 support), `#854 <https://github.com/NatronGitHub/Natron/issues/854>`_
-  (Qt flag/enum binding bug), tracked historically alongside the Qt5 tracker
-  `#827 <https://github.com/NatronGitHub/Natron/issues/827>`_. See
+  (QT6 support, closed), `#854 <https://github.com/NatronGitHub/Natron/issues/854>`_
+  (Qt flag binding bug of PySide 1, closed), tracked historically alongside the Qt5 tracker
+  `#827 <https://github.com/NatronGitHub/Natron/issues/827>`_ (closed). See
   :ref:`maint-qt6` for the concrete plan.
 - **CI** — `#601 <https://github.com/NatronGitHub/Natron/issues/601>`_
   (migrate CI from Travis to GitHub Actions) is closed: CI runs on GitHub
-  Actions, and Linux, Windows and macOS build and test every pull request (see
-  :ref:`maint-ci`). What remains (the scheduled builds, including Qt 6) is
-  listed in :ref:`maint-todo`.
+  Actions, and Linux, Windows and macOS build and test every pull request
+  marked ready (see :ref:`maint-ci`). What remains is listed in
+  :ref:`maint-todo`.
 - **Binary distribution** — `#990
   <https://github.com/NatronGitHub/Natron/issues/990>`_ (Linux 2.6 distrib,
-  ``help-needed``), `#741 <https://github.com/NatronGitHub/Natron/issues/741>`_
-  / `#743 <https://github.com/NatronGitHub/Natron/issues/743>`_ (Linux/Windows
-  Qt5 distrib), `#215 <https://github.com/NatronGitHub/Natron/issues/215>`_
+  ``help-needed``), `#741 <https://github.com/NatronGitHub/Natron/issues/741>`_ (closed)
+  / `#743 <https://github.com/NatronGitHub/Natron/issues/743>`_ (closed; Linux/Windows
+  Qt5 distrib), `#215 <https://github.com/NatronGitHub/Natron/issues/215>`_ (closed)
   (Ubuntu PPA / Debian repo — the single most-commented issue),
-  `#318 <https://github.com/NatronGitHub/Natron/issues/318>`_ (AppImage),
-  `#681 <https://github.com/NatronGitHub/Natron/issues/681>`_ (update Windows
+  `#318 <https://github.com/NatronGitHub/Natron/issues/318>`_ (closed; AppImage),
+  `#681 <https://github.com/NatronGitHub/Natron/issues/681>`_ (closed; update Windows
   SDK) and `#668 <https://github.com/NatronGitHub/Natron/issues/668>`_
   (FreeBSD) round this out. (`#672
   <https://github.com/NatronGitHub/Natron/issues/672>`_, the OpenMP plug-in
@@ -126,14 +130,14 @@ P2 — Confirmed functional bugs & popular features
 
 Confirmed bugs in core workflows (good, scoped targets):
 
-- `#209 <https://github.com/NatronGitHub/Natron/issues/209>`_ — Viewer 8-bit
+- `#209 <https://github.com/NatronGitHub/Natron/issues/209>`_ (closed) — Viewer 8-bit
   textures don't work (viewer).
-- `#206 <https://github.com/NatronGitHub/Natron/issues/206>`_,
+- `#206 <https://github.com/NatronGitHub/Natron/issues/206>`_ (closed),
   `#367 <https://github.com/NatronGitHub/Natron/issues/367>`_,
-  `#510 <https://github.com/NatronGitHub/Natron/issues/510>`_,
+  `#510 <https://github.com/NatronGitHub/Natron/issues/510>`_ (closed),
   `#178 <https://github.com/NatronGitHub/Natron/issues/178>`_ — roto/rotopaint
   color-picking, mask input, first-frame stroke, bounding box.
-- `#839 <https://github.com/NatronGitHub/Natron/issues/839>`_ — undo broken for
+- `#839 <https://github.com/NatronGitHub/Natron/issues/839>`_ (closed) — undo broken for
   on-screen Transform (``prio:high``, confirmed).
 - `#195 <https://github.com/NatronGitHub/Natron/issues/195>`_ — conflicting
   roto/tracker key bindings (fix committed — verify & close).
@@ -151,21 +155,21 @@ Most-requested features (weight by demand):
   over the viewer.
 - `#798 <https://github.com/NatronGitHub/Natron/issues/798>`_ — UI/UX + icons
   overhaul.
-- `#283 <https://github.com/NatronGitHub/Natron/issues/283>`_ — Bodymovin/Lottie
+- `#283 <https://github.com/NatronGitHub/Natron/issues/283>`_ (closed) — Bodymovin/Lottie
   export (highest reaction count).
 
 P3 — Good first issues and polish
 ---------------------------------
 
 Well-scoped, low-risk tasks ideal for new contributors:
-`#818 <https://github.com/NatronGitHub/Natron/issues/818>`_ (default Shuffle
+`#818 <https://github.com/NatronGitHub/Natron/issues/818>`_ (closed; default Shuffle
 input),
 `#242 <https://github.com/NatronGitHub/Natron/issues/242>`_ (dot size),
 `#502 <https://github.com/NatronGitHub/Natron/issues/502>`_ (retime node in Dope
 Sheet display),
-`#480 <https://github.com/NatronGitHub/Natron/issues/480>`_ (load user
+`#480 <https://github.com/NatronGitHub/Natron/issues/480>`_ (closed; load user
 parameters immediately),
-and `#826 <https://github.com/NatronGitHub/Natron/issues/826>`_ (embed
+and `#826 <https://github.com/NatronGitHub/Natron/issues/826>`_ (closed; embed
 timecode in MOV).
 
 Investigation starting points for the P0 bugs
@@ -207,22 +211,14 @@ main window.
   was a stall of this kind, fixed in 2.6. A render thread waited for its own
   tiles, and with several parallel renders two such threads waited for each
   other forever. A race in the reference count of the images being rendered
-  (`#1127 <https://github.com/NatronGitHub/Natron/issues/1127>`_) could also
+  (`#1127 <https://github.com/NatronGitHub/Natron/issues/1127>`_, closed) could also
   leave tiles marked as being rendered forever. #248 may be related, since 1
   or 2 parallel renders avoid it: retest #248 projects with 2.6 before looking
   elsewhere.
 
 The memory/swap angle the reporter mentions suggests it triggers under cache
-pressure, which overlaps with #192. Reproduce headless (``NatronRenderer``) under
+pressure. Reproduce headless (``NatronRenderer``) under
 a thread sanitizer or capture a stuck-thread backtrace.
-
-**Cache ignores size limits, crashes on full disk — #192.** ``Engine/Cache.h``
-tracks ``_maximumInMemorySize`` / ``_maximumCacheSize`` and computes an
-``occupationPercentage`` to drive eviction, but the reporter shows the disk
-cache growing past its configured limit until the disk fills. Audit the
-disk-portion size accounting and eviction (the ``maximumDiskCacheSize`` branch)
-and add a free-disk-space guard (``MemoryInfo``) that stops caching gracefully
-instead of crashing. This likely interacts with #248.
 
 **Teardown / repeated-open crashes — #795, #1029, #1057.** These are lifecycle
 bugs (closing a project, or opening/closing repeatedly, or dismissing the Writer
@@ -235,12 +231,12 @@ way in.
 Maintenance recommendation
 --------------------------
 
-1. **Triage the untriaged.** ~half of open issues lack priority/difficulty
-   labels; label them as reviewed so this analysis stays meaningful.
+1. **Keep the triage current.** Label each new issue with its ``prio:`` and
+   ``difficulty:``, and re-triage when ``prio:high`` or ``difficulty:easy`` is empty.
 2. **Re-validate the 2018 import.** Bulk-verify the 124 issues imported in 2018
    against the current release and close the stale ones.
-3. **Close the loop on ``status:fix-commited`` / ``status:in-progress``.** Verify
+3. **Close the loop** on ``status:fix-commited`` / ``status:in-progress``. Verify
    and close (e.g. ``#195``) or unblock stalled work.
-4. **Bring back a crash reporter.** Usable crash reports (``#557``, with
-   sentry-native in ``#1183``) would turn the long tail of "random crash" issues into fixable, stack-trace-backed
-   bugs.
+4. **Bring back a crash reporter.** Usable crash reports (sentry-native,
+   ``#1183``; 2.6 releases ship without one) would turn the long tail of
+   "random crash" issues into fixable, stack-trace-backed bugs.
