@@ -38,8 +38,10 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
+#include <string>
 #include <thread>
 
+#include "Engine/AppManager.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
@@ -48,6 +50,7 @@
 
 #define kNatronTestPluginRenderLockUnsafe "net.natron.test.RenderLockUnsafe"
 #define kNatronTestPluginRenderLockInstanceSafe "net.natron.test.RenderLockInstanceSafe"
+#define kNatronTestPluginRenderLockUnsafeGL "net.natron.test.RenderLockUnsafeGL"
 
 NATRON_NAMESPACE_USING
 
@@ -76,6 +79,22 @@ setFetchTime(const NodePtr& node,
     return true;
 }
 
+// Sets the "waitFor" parameter of a test plug-in node: the label of the plug-in whose "inRender" counter its fetching
+// render action waits for, or "-" for no wait
+bool
+setWaitFor(const NodePtr& node,
+           const char* label)
+{
+    KnobStringPtr knob = std::dynamic_pointer_cast<KnobString>( node->getKnobByName("waitFor") );
+
+    if (!knob) {
+        return false;
+    }
+    knob->setValue(label);
+
+    return true;
+}
+
 // Wait (5 s at most) until the counter of the test plug-in is set
 bool
 waitForCounter(const char* name)
@@ -92,15 +111,17 @@ waitForCounter(const char* name)
 bool
 requireRenderLockPlugins()
 {
-    for (const char* id : { kNatronTestPluginGenerator, kNatronTestPluginRenderLockUnsafe, kNatronTestPluginRenderLockInstanceSafe }) {
+    for (const char* id : { kNatronTestPluginGenerator, kNatronTestPluginRenderLockUnsafe, kNatronTestPluginRenderLockInstanceSafe,
+                            kNatronTestPluginRenderLockUnsafeGL }) {
         if ( !NatronTestPlugin::isAvailable(id) ) {
             NatronTestPlugin::reportMissing(id);
 
             return false;
         }
     }
-    for (const char* label : { "Unsafe", "InstanceSafe" }) {
-        for (const char* counter : { ".inRender", ".waitTimeout", ".fetched", ".renderedByFetcher", ".renderedElsewhere", ".overlap", ".concurrent" }) {
+    for (const char* label : { "Unsafe", "InstanceSafe", "UnsafeGL", "Test" }) {
+        for (const char* counter : { ".inRender", ".waitTimeout", ".fetched", ".renderedByFetcher", ".renderedElsewhere", ".overlap", ".concurrent",
+                                     ".glRenders", ".textureErrMemory" }) {
             NatronTestPlugin::setCounter(std::string("RenderLock.") + label + counter, 0);
         }
     }
@@ -108,16 +129,18 @@ requireRenderLockPlugins()
     return true;
 }
 
-// Renders frame of output on a thread; finished is incremented when the render returns
+// Renders frame of output on a thread (with OpenGL if it is enabled, unless allowGPURendering is false); finished is
+// incremented when the render returns
 class RenderThread
 {
 public:
     RenderThread(const NodePtr& output,
                  double frame,
-                 std::atomic<int>& finished)
+                 std::atomic<int>& finished,
+                 bool allowGPURendering = true)
         : _rendered(false)
-        , _thread([this, output, frame, &finished]() {
-        _rendered = bool( NatronTestPlugin::renderFrame(output, frame) );
+        , _thread([this, output, frame, &finished, allowGPURendering]() {
+        _rendered = bool( NatronTestPlugin::renderFrame(output, frame, allowGPURendering) );
         ++finished;
     })
     {
@@ -256,4 +279,196 @@ TEST(OfxRenderLock, PixelsRenderedElsewhere)
     EXPECT_EQ( 0, NatronTestPlugin::counter("RenderLock.Unsafe.waitTimeout") );
     EXPECT_EQ( 0, NatronTestPlugin::counter("RenderLock.Unsafe.overlap") );
     EXPECT_EQ( 0, NatronTestPlugin::counter("RenderLock.Unsafe.concurrent") );
+}
+
+// The same deadlocks with an OpenGL render of an Unsafe plug-in, which holds its plug-in lock and the OpenGL context
+// during the action (#1998): the renders upstream of the action must not wait. Each test renders the frame on the
+// CPU after its OpenGL render could not fetch its input (kOfxStatErrMemory), as when an input texture can't be
+// allocated (#1945). OpenGL rendering needs a renderer: on Linux, the tests run with Mesa's llvmpipe under Xvfb in
+// the TestsOpenGLSoftware test (Tests/CMakeLists.txt), and are skipped in the Tests test, where it isn't used.
+namespace {
+bool
+requireOpenGLRenderLock(NatronTest::ScopedOpenGLRendering& enabler)
+{
+    if ( !requireRenderLockPlugins() ) {
+        return false;
+    }
+    // TestsOpenGLSoftware exists to run these tests: there, no OpenGL rendering (e.g. no X display) is a failure
+    const char* softwareRenderer = std::getenv("NATRON_OPENGL_ALLOW_SOFTWARE_RENDERER");
+    if ( softwareRenderer && (std::string(softwareRenderer) == "1") &&
+         ( !appPTR->isOpenGLLoaded() || appPTR->getOpenGLRenderers().empty() ) ) {
+        ADD_FAILURE() << "NATRON_OPENGL_ALLOW_SOFTWARE_RENDERER is set, but OpenGL rendering can't be used (is there an X display?)";
+
+        return false;
+    }
+    if ( !NatronTest::requireOpenGLRendering() ) {
+        return false;
+    }
+    if ( !enabler.isEnabled() ) {
+        ADD_FAILURE() << "OpenGL rendering could not be enabled";
+
+        return false;
+    }
+
+    return true;
+}
+} // anonymous namespace
+
+// Generator -> X (Instance-safe) -> B (Unsafe plug-in P, OpenGL) -> U2 (P, OpenGL):
+// - the render of frame 2 of B, on the CPU, holds the node lock of B, and B's action fetches the frame 102 of X with
+//   P's lock released; the action of X waits until the OpenGL render of U2 could not fetch B(101);
+// - the OpenGL render of frame 1 of U2 holds P's lock and the OpenGL context, and fetches the frame 101 of B, which
+//   needs the node lock of B, while the render of B waits for P's lock to go on.
+TEST(OfxRenderLockGPU, NodeLockOfAnotherNode)
+{
+    NatronTest::ScopedOpenGLRendering enabler;
+    if ( !requireOpenGLRenderLock(enabler) ) {
+        return;
+    }
+    NatronTest::NodeScope nodes;
+    NodePtr generator = nodes.create(kNatronTestPluginGenerator);
+    NodePtr x = nodes.create(kNatronTestPluginRenderLockInstanceSafe);
+    NodePtr b = nodes.create(kNatronTestPluginRenderLockUnsafeGL);
+    NodePtr u2 = nodes.create(kNatronTestPluginRenderLockUnsafeGL);
+    ASSERT_TRUE( connect(generator, x) );
+    ASSERT_TRUE( connect(x, b) );
+    ASSERT_TRUE( connect(b, u2) );
+    ASSERT_EQ( ePluginOpenGLRenderSupportYes, u2->getCurrentOpenGLRenderSupport() );
+    ASSERT_TRUE( setFetchTime(x, 102.) );
+    // until the OpenGL render of U2 could not fetch B(101) (the test sets "RenderLock.Test.inRender" then)
+    ASSERT_TRUE( setWaitFor(x, "Test") );
+    ASSERT_TRUE( setFetchTime(b, 2.) );
+    ASSERT_TRUE( setWaitFor(b, "-") );
+    ASSERT_TRUE( setFetchTime(u2, 1.) );
+
+    std::atomic<int> finished(0);
+    // frame 2 of B, on the CPU: holds the node lock of B, and waits in the action of X
+    RenderThread render2(b, 2., finished, false /*allowGPURendering*/);
+    EXPECT_TRUE( waitForCounter("RenderLock.InstanceSafe.inRender") );
+    // frame 1 of U2, with OpenGL
+    RenderThread render1(u2, 1., finished);
+    // its fetch of B(101) failed: let the render of frame 2 go on
+    EXPECT_TRUE( waitForCounter("RenderLock.UnsafeGL.textureErrMemory") );
+    NatronTestPlugin::setCounter("RenderLock.Test.inRender", 1);
+    waitOrExit(finished, 2);
+    EXPECT_TRUE( render1.join() );
+    EXPECT_TRUE( render2.join() );
+    EXPECT_EQ( 0, NatronTestPlugin::counter("RenderLock.InstanceSafe.waitTimeout") );
+    EXPECT_EQ( 0, NatronTestPlugin::counter("RenderLock.UnsafeGL.waitTimeout") );
+    // the OpenGL render of U2 ran, could not fetch B(101), and U2 was rendered again on the CPU, which fetched it
+    EXPECT_LE( 1, NatronTestPlugin::counter("RenderLock.UnsafeGL.glRenders") );
+    EXPECT_EQ( 1, NatronTestPlugin::counter("RenderLock.UnsafeGL.textureErrMemory") );
+    // X(102) fetched by B, and B(101) fetched by the CPU render of U2
+    EXPECT_EQ( 2, NatronTestPlugin::counter("RenderLock.UnsafeGL.fetched") );
+    EXPECT_EQ( 1, NatronTestPlugin::counter("RenderLock.InstanceSafe.fetched") );
+    EXPECT_EQ( 0, NatronTestPlugin::counter("RenderLock.UnsafeGL.overlap") );
+    EXPECT_EQ( 0, NatronTestPlugin::counter("RenderLock.UnsafeGL.concurrent") );
+}
+
+// Generator -> U1 (Unsafe plug-in P, OpenGL) -> U2 (P, OpenGL), as PixelsRenderedElsewhere: the OpenGL render of
+// frame f of U2 holds P's lock and the OpenGL context, and fetches the frame f + 100 of U1, whose pixels the render
+// of that frame (on the CPU, on another thread) has marked before it waits for P's lock. Before #1998 the OpenGL
+// render waited for these pixels with P's lock held.
+TEST(OfxRenderLockGPU, PixelsRenderedElsewhere)
+{
+    NatronTest::ScopedOpenGLRendering enabler;
+    if ( !requireOpenGLRenderLock(enabler) ) {
+        return;
+    }
+    NatronTest::NodeScope nodes;
+    NodePtr generator = nodes.create(kNatronTestPluginGenerator);
+    NodePtr u1 = nodes.create(kNatronTestPluginRenderLockUnsafeGL);
+    NodePtr u2 = nodes.create(kNatronTestPluginRenderLockUnsafeGL);
+    ASSERT_TRUE( connect(generator, u1) );
+    ASSERT_TRUE( connect(u1, u2) );
+    ASSERT_EQ( ePluginOpenGLRenderSupportYes, u2->getCurrentOpenGLRenderSupport() );
+
+    bool metElsewhere = false;
+    // 250 ms to 8 s: less than the 10 s that the action of U2 waits for the test
+    std::chrono::milliseconds delay(250);
+    for (int attempt = 0; attempt < 6 && !metElsewhere; ++attempt, delay *= 2) {
+        const double frame = 1. + attempt;
+        ASSERT_TRUE( setFetchTime(u2, frame) );
+        for (const char* counter : { "UnsafeGL.inRender", "InstanceSafe.inRender", "UnsafeGL.fetched", "UnsafeGL.textureErrMemory",
+                                     "UnsafeGL.renderedElsewhere", "UnsafeGL.renderedByFetcher" }) {
+            NatronTestPlugin::setCounter(std::string("RenderLock.") + counter, 0);
+        }
+        std::atomic<int> finished(0);
+        // frame f, with OpenGL: holds P's lock in the action of U2, which waits until the test sets
+        // "RenderLock.InstanceSafe.inRender"
+        RenderThread renderF(u2, frame, finished);
+        EXPECT_TRUE( waitForCounter("RenderLock.UnsafeGL.inRender") );
+        // frame f + 100 of U1, on the CPU: marks its pixels, then waits for P's lock
+        RenderThread renderF100(u1, frame + 100., finished, false /*allowGPURendering*/);
+        std::this_thread::sleep_for(delay);
+        NatronTestPlugin::setCounter("RenderLock.InstanceSafe.inRender", 1);
+        waitOrExit(finished, 2);
+        EXPECT_TRUE( renderF.join() );
+        EXPECT_TRUE( renderF100.join() );
+        // the scenario: the OpenGL render of U2 could not fetch the frame f + 100 (being rendered by the other
+        // thread), and the CPU render of U2 fetched it once the other thread had rendered it
+        metElsewhere = NatronTestPlugin::counter("RenderLock.UnsafeGL.renderedElsewhere") == 1 &&
+                       NatronTestPlugin::counter("RenderLock.UnsafeGL.renderedByFetcher") == 0 &&
+                       NatronTestPlugin::counter("RenderLock.UnsafeGL.textureErrMemory") == 1 &&
+                       NatronTestPlugin::counter("RenderLock.UnsafeGL.fetched") == 1;
+    }
+    EXPECT_TRUE(metElsewhere) << "the render of the fetched frame never marked its pixels before it was fetched";
+    EXPECT_LE( 1, NatronTestPlugin::counter("RenderLock.UnsafeGL.glRenders") );
+    EXPECT_EQ( 0, NatronTestPlugin::counter("RenderLock.UnsafeGL.waitTimeout") );
+    EXPECT_EQ( 0, NatronTestPlugin::counter("RenderLock.UnsafeGL.overlap") );
+    EXPECT_EQ( 0, NatronTestPlugin::counter("RenderLock.UnsafeGL.concurrent") );
+}
+
+// Generator -> X (Instance-safe) -> N (Unsafe plug-in P, OpenGL) -> U2 (P, OpenGL): the OpenGL action of U2 fetches
+// the frame 101 of N, rendered on the CPU (another time), whose own action fetches the frame 201 of X while another
+// thread holds the node lock of X (in the action of X at frame 202, which waits until that fetch failed).
+// N asks for no region of its input (see NatronTestPluginRenderLock.cpp), so only its action fetches X. The render
+// of N(101) must not wait (U2 holds the OpenGL context), nor be cached without its input, nor set a persistent
+// message on N: U2 renders the frame again on the CPU, which renders N(101) again once X is free.
+TEST(OfxRenderLockGPU, RefusedWaitInAnUpstreamAction)
+{
+    NatronTest::ScopedOpenGLRendering enabler;
+    if ( !requireOpenGLRenderLock(enabler) ) {
+        return;
+    }
+    NatronTest::NodeScope nodes;
+    NodePtr generator = nodes.create(kNatronTestPluginGenerator);
+    NodePtr x = nodes.create(kNatronTestPluginRenderLockInstanceSafe);
+    NodePtr n = nodes.create(kNatronTestPluginRenderLockUnsafeGL);
+    NodePtr u2 = nodes.create(kNatronTestPluginRenderLockUnsafeGL);
+    ASSERT_TRUE( connect(generator, x) );
+    ASSERT_TRUE( connect(x, n) );
+    ASSERT_TRUE( connect(n, u2) );
+    ASSERT_EQ( ePluginOpenGLRenderSupportYes, u2->getCurrentOpenGLRenderSupport() );
+    ASSERT_TRUE( setFetchTime(x, 202.) );
+    // until the OpenGL render of U2 could not fetch N(101) (the test sets "RenderLock.Test.inRender" then)
+    ASSERT_TRUE( setWaitFor(x, "Test") );
+    ASSERT_TRUE( setFetchTime(n, 101.) );
+    ASSERT_TRUE( setWaitFor(n, "-") );
+    ASSERT_TRUE( setFetchTime(u2, 1.) );
+
+    std::atomic<int> finished(0);
+    // frame 202 of X: holds the node lock of X in its action, until the OpenGL action of U2 runs
+    RenderThread render202(x, 202., finished, false /*allowGPURendering*/);
+    EXPECT_TRUE( waitForCounter("RenderLock.InstanceSafe.inRender") );
+    // frame 1 of U2, with OpenGL
+    RenderThread render1(u2, 1., finished);
+    // its fetch of N(101) failed: let the render of frame 202 go on
+    EXPECT_TRUE( waitForCounter("RenderLock.UnsafeGL.textureErrMemory") );
+    NatronTestPlugin::setCounter("RenderLock.Test.inRender", 1);
+    waitOrExit(finished, 2);
+    EXPECT_TRUE( render1.join() );
+    EXPECT_TRUE( render202.join() );
+    EXPECT_EQ( 0, NatronTestPlugin::counter("RenderLock.InstanceSafe.waitTimeout") );
+    EXPECT_EQ( 0, NatronTestPlugin::counter("RenderLock.UnsafeGL.waitTimeout") );
+    // the OpenGL render of U2 could not fetch N(101), and U2 was rendered again on the CPU, which fetched it
+    EXPECT_LE( 1, NatronTestPlugin::counter("RenderLock.UnsafeGL.glRenders") );
+    EXPECT_EQ( 1, NatronTestPlugin::counter("RenderLock.UnsafeGL.textureErrMemory") );
+    // N(101) was rendered again with its input X(201), not taken from the cache without it: the fetch of X(201) by
+    // N, and the fetch of N(101) by the CPU render of U2
+    EXPECT_EQ( 2, NatronTestPlugin::counter("RenderLock.UnsafeGL.fetched") );
+    // the refused fetch is not a failure of N
+    EXPECT_FALSE( n->hasPersistentMessage() );
+    EXPECT_EQ( 0, NatronTestPlugin::counter("RenderLock.UnsafeGL.overlap") );
+    EXPECT_EQ( 0, NatronTestPlugin::counter("RenderLock.UnsafeGL.concurrent") );
 }

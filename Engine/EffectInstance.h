@@ -918,6 +918,13 @@ public:
      **/
     void setThreadLocalOpenGLInputTextureFailed();
 
+    /**
+     * @brief True if this thread renders upstream of a GPU render action whose input could not be rendered without
+     * waiting for another render (#1998, see GPURenderAction in EffectInstanceRenderRoI.cpp): the failures of the
+     * renders on the way are not theirs (no persistent message), and the GPU effect renders again on the CPU.
+     **/
+    static bool isUpstreamOfRefusedGPUWait();
+
     void getThreadLocalInputImages(InputImagesMap* images) const;
 
     void addThreadLocalInputImageTempPointer(int inputNb, const ImagePtr & img);

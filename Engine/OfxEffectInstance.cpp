@@ -2648,7 +2648,8 @@ OfxEffectInstance::render(const RenderActionArgs& args)
         return eStatusOutOfMemory;
     }
     if (stat != kOfxStatOK) {
-        if ( !getNode()->hasPersistentMessage() ) {
+        // a fetch refused upstream of a GPU render action (#1998) is not this plug-in's failure
+        if ( !getNode()->hasPersistentMessage() && !isUpstreamOfRefusedGPUWait() ) {
             QString err;
             if (stat == kOfxStatErrImageFormat) {
                 err = tr("Bad image format was supplied by %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );

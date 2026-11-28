@@ -194,6 +194,19 @@ set_tests_properties(Tests PROPERTIES FIXTURES_SETUP OfxPluginCache TIMEOUT 1800
     ENVIRONMENT "NATRON_TESTS_CACHE_DIR=${NATRON_TESTS_CACHE_DIR}")
 set_tests_properties(TestsOfxCache PROPERTIES FIXTURES_REQUIRED OfxPluginCache TIMEOUT 600
     ENVIRONMENT "NATRON_TESTS_KEEP_OFX_CACHE=1;NATRON_TESTS_CACHE_DIR=${NATRON_TESTS_CACHE_DIR}")
+# The render-lock tests of OpenGL renders (Tests/OfxRenderLock_Test.cpp, #1998) on Linux with the default renderer,
+# also when it is a software renderer (Mesa's llvmpipe under Xvfb on CI), which Natron doesn't use for OpenGL
+# rendering otherwise: in the Tests test they are skipped there.
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_test(NAME TestsOpenGLSoftware COMMAND Tests "--gtest_filter=OfxRenderLockGPU.*")
+    # a skipped test fails it: it exists to run them
+    set_tests_properties(TestsOpenGLSoftware PROPERTIES FIXTURES_REQUIRED OfxPluginCache TIMEOUT 600
+        FAIL_REGULAR_EXPRESSION "\\[  SKIPPED \\]"
+        ENVIRONMENT "NATRON_OPENGL_ALLOW_SOFTWARE_RENDERER=1;NATRON_TESTS_KEEP_OFX_CACHE=1;NATRON_TESTS_CACHE_DIR=${NATRON_TESTS_CACHE_DIR}"
+        # not at the same time as TestsOfxCacheCorrupt, which copies the OFX plug-in cache: these tests enable OpenGL
+        # rendering, which deletes that cache until they write it back (ScopedOpenGLRendering in TestUtils.h)
+        RESOURCE_LOCK NatronTestsOfxCache)
+endif()
 # A copy of that cache, made unreadable: Natron discards it, scans all the plug-ins again and rewrites it
 # (see OfxCacheCorrupt.cmake).
 add_test(NAME TestsOfxCacheCorrupt COMMAND ${CMAKE_COMMAND}

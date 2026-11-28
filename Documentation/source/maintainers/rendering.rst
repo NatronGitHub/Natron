@@ -429,15 +429,51 @@ Suppose the Viewer needs the visible region of a Blur node at frame 10.
     (`#1614 <https://github.com/NatronGitHub/Natron/issues/1614>`_). The code
     of an Unsafe plug-in still never runs on two threads at once, but a render
     of another node of the plug-in may run while an action waits in
-    ``clipGetImage``. Known exceptions, which keep the plug-in lock while they
-    wait (`#1998 <https://github.com/NatronGitHub/Natron/issues/1998>`_):
-    OpenGL renders (for a plug-in without concurrent OpenGL renders, the
-    effect's ``attachedContextsMutex``, taken after the render locks, is held
-    during the action), and the threads of the OFX multi-thread suite (their
-    spawner holds the locks). An OpenGL render of an Unsafe plug-in can wait
-    for the pixels of another thread, as before #1614, and also for the node
-    lock of another node of the plug-in whose action has released the plug-in
-    lock and waits for it, which is new.
+    ``clipGetImage``.
+
+    **GPU renders** (`#1998 <https://github.com/NatronGitHub/Natron/issues/1998>`_).
+    A GPU render holds GPU resources during its action: a GPU context (or
+    queue) current for the frame, and, for a plug-in without concurrent GPU
+    renders, the effect's attachment (``attachedContextsMutex``). Where the
+    context goes in the lock order depends on how it is shared:
+
+    - **A context shared by the renders of several frames, taken during the
+      frame** (Natron's ``OSGLContext`` today: ``NATRON_RENDER_SHARED_CONTEXT``,
+      and ``OSGLContext::setContextCurrent()`` waits while another frame owns
+      the context). Such a context is a lock taken after render locks, so the
+      rule is: **a thread that holds it never waits for a render lock or for
+      the pixels of another thread**, and a thread that waits for it may hold
+      render locks. An effect takes its render locks for its own GPU render
+      without holding the context (it releases it, takes the locks, then takes
+      it again), and releases it before it waits for pixels that another
+      thread is rendering. Inside a GPU render action the context can't be
+      released (the plug-in's GPU state is in it): the images rendered upstream
+      for that action never wait. Their render locks are only tried and never
+      released, and pixels being rendered by another thread are not waited
+      for. When an upstream render would have to wait, the input fetch fails
+      (``kOfxStatErrMemory``). The renders on the way are then neither cached
+      nor reported as failures, and the effect renders the frame again without
+      the GPU, by the same rule as an input texture that can't be allocated
+      (`#1945 <https://github.com/NatronGitHub/Natron/issues/1945>`_,
+      `#1980 <https://github.com/NatronGitHub/Natron/issues/1980>`_). A plug-in
+      that can only render on the GPU fails then. The plug-in lock of a GPU
+      render is never released: taking it back would wait with the context
+      held.
+    - **A context (or queue) leased exclusively for a whole frame** (a pool
+      that gives each frame render its own: openfx HostSupport's
+      ``ContextPool::Lease``, or a CUDA stream, OpenCL queue or Metal command
+      queue pool). The lease is taken before the frame takes any render lock,
+      and never by a thread that holds one: it is first in the lock order. Its
+      holder may then wait for render locks and pixels, and the plug-in lock
+      of a GPU render can be released around upstream waits as on the CPU,
+      keeping the lease. No fallback to the CPU is needed. A pool that makes
+      frames wait for a lease must not be entered with render locks held.
+
+    Known exceptions: the threads of the OFX multi-thread suite and the tile
+    threads of an ``eRenderSafetyFullySafeFrame`` effect have neither the render
+    locks nor the GPU-action state of the thread that started them, while that
+    thread holds them (and the context, for a GPU render): an upstream render
+    on such a thread waits as usual.
 
     When ``renderRoI`` is called from ``getImage`` and the cached image is too
     small, the image is copied into a larger one (``copyAndResizeIfNeeded``)

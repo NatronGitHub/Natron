@@ -27,6 +27,8 @@
 
 #ifdef __NATRON_LINUX__
 
+#include <cstdlib> // getenv
+#include <cstring> // strcmp
 #include <stdexcept>
 #include <iostream>
 #include <sstream> // stringstream
@@ -942,7 +944,12 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
     }
     // the contexts made current below are destroyed before the restorer, which is declared first
     CurrentGLXContextRestorer restorer(glxInfo);
-    if (!glxInfo->_imp->MESA_query_renderer) {
+    // The renderers of GLX_MESA_query_renderer that are not hardware accelerated are skipped below (Mesa's llvmpipe,
+    // which also has no device ID). NATRON_OPENGL_ALLOW_SOFTWARE_RENDERER=1 uses the default renderer instead, whatever
+    // it is: the tests set it to render with OpenGL under Xvfb on CI (Tests/CMakeLists.txt, #1998).
+    const char* allowSoftwareRendererEnv = std::getenv("NATRON_OPENGL_ALLOW_SOFTWARE_RENDERER");
+    const bool allowSoftwareRenderer = allowSoftwareRendererEnv && (std::strcmp(allowSoftwareRendererEnv, "1") == 0);
+    if (!glxInfo->_imp->MESA_query_renderer || allowSoftwareRenderer) {
         std::unique_ptr<OSGLContext_x11> context;
         try {
             context.reset( new OSGLContext_x11(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, GLRendererID(), 0) );

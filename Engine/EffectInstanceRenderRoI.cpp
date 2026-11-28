@@ -353,39 +353,59 @@ namespace {
  *   graph: holding one while waiting upstream could deadlock.
  * Another render of an Unsafe plug-in, on another node, may then run while an action waits in clipGetImage.
  *
- * Known exceptions, where a render can still wait upstream with the plug-in lock held (#1998):
- * - OpenGL renders: the plug-in lock is not released (for a plug-in without concurrent OpenGL renders, the effect's
- *   attachedContextsMutex, taken after it and held during the action, would then be taken in the other order by the
- *   next render). Such a render can wait for the pixels of another thread, as before. It can also wait for the node
- *   lock of another node of the plug-in (a frame of it fetched in the action, rendered on the CPU) held by a thread
- *   that has released the plug-in lock and waits for it: this one is new, since that thread used to keep it.
- * - The threads of the OFX multi-thread suite: they have no RenderLock, while the thread that started them holds
- *   its locks.
+ * GPU renders (#1998). A GPU render holds a GPU context for the frame (OSGLContext). Natron's frames share their
+ * contexts (NATRON_RENDER_SHARED_CONTEXT): OSGLContext::setContextCurrent() waits while another frame owns the
+ * context, so it is a lock taken after render locks. The rule: a thread that holds such a context never waits for a
+ * render lock or for the pixels of another thread, so that a thread that waits for it may hold render locks.
+ * - Before an effect takes its render locks for its own GPU render, it releases its hold on the context, and takes
+ *   it again afterwards. It also releases it before it waits for pixels that another thread is rendering, and
+ *   before it renders again on the CPU.
+ * - Inside a GPU render action (GPURenderAction), the context can't be released: the plug-in's GPU state is in it.
+ *   The images rendered upstream for that action never wait: their render locks are only tried
+ *   (RenderLock::Mode::eTryLock), they are not released, and pixels being rendered by another thread are not waited
+ *   for. When an upstream render would have to wait, GPURenderAction::refuseWait() makes the effect of the action
+ *   render the frame again without the GPU, as when an input texture can't be allocated (#1945), or fail if it can
+ *   only render on the GPU.
+ * - The plug-in lock of a GPU render is never released: the context it needs to wait for it would be held.
+ * (With contexts leased exclusively for a whole frame before any render lock, as openfx HostSupport's ContextPool
+ * does, the lease comes first in the lock order instead: see "GPU renders" in rendering.rst.)
+ *
+ * Known exceptions, where a render can still wait upstream with render locks (and a GPU context) held by the thread
+ * that started it: the threads of the OFX multi-thread suite and the tile threads of an eRenderSafetyFullySafeFrame
+ * effect, which have no RenderLock nor GPURenderAction of their own.
  **/
 class RenderLock
 {
 public:
+    enum class Mode
+    {
+        eLock, // wait for the mutex
+        eTryLock // don't wait: owns() is false if another thread holds it
+    };
+
     RenderLock(QMutex* mutex,
-               bool releasable)
+               bool releasable,
+               Mode mode = Mode::eLock)
         : _mutex(mutex)
         , _recursiveMutex(nullptr)
         , _releasable(releasable)
         , _locked(false)
         , _previous(tCurrent)
     {
-        relock();
+        lock(mode);
         tCurrent = this;
     }
 
     RenderLock(QRecursiveMutex* mutex,
-               bool releasable)
+               bool releasable,
+               Mode mode = Mode::eLock)
         : _mutex(nullptr)
         , _recursiveMutex(mutex)
         , _releasable(releasable)
         , _locked(false)
         , _previous(tCurrent)
     {
-        relock();
+        lock(mode);
         tCurrent = this;
     }
 
@@ -418,16 +438,31 @@ public:
 
     void relock()
     {
-        assert(!_locked);
-        if (_mutex) {
-            _mutex->lock();
-        } else {
-            _recursiveMutex->lock();
-        }
-        _locked = true;
+        lock(Mode::eLock);
+    }
+
+    /// false if constructed with Mode::eTryLock and another thread held the mutex
+    bool owns() const
+    {
+        return _locked;
     }
 
 private:
+    void lock(Mode mode)
+    {
+        assert(!_locked);
+        if (mode == Mode::eTryLock) {
+            _locked = _mutex ? _mutex->tryLock() : _recursiveMutex->tryLock();
+        } else {
+            if (_mutex) {
+                _mutex->lock();
+            } else {
+                _recursiveMutex->lock();
+            }
+            _locked = true;
+        }
+    }
+
     void unlock()
     {
         if (!_locked) {
@@ -488,7 +523,94 @@ private:
     RenderLock* const _lock;
     bool _released;
 };
+
+/**
+ * @brief Marks the GPU render action that this thread runs, while it exists (see RenderLock): the renders upstream
+ * that the action needs don't wait. When one would have to wait, refuseWait() sets the "input texture failed" flag of
+ * the effect of the action, and of the GPU render actions it is nested in (#1945), which makes them render the frame
+ * again on the CPU whatever their plug-ins return, and throws GPURenderWouldWait. Until the action ends, the renders
+ * on the way (and any other render it needs) are not marked as rendered nor cached, set no persistent message and
+ * rethrow GPURenderWouldWait (waitWasRefused()), as with a GraphDepthGuard that failed.
+ **/
+class GPURenderAction
+{
+public:
+    explicit GPURenderAction(EffectInstance* effect)
+        : _effect(effect)
+        , _waitRefused(false)
+        , _previous(tCurrent)
+    {
+        tCurrent = this;
+    }
+
+    GPURenderAction(const GPURenderAction&) = delete;
+    GPURenderAction& operator=(const GPURenderAction&) = delete;
+
+    ~GPURenderAction()
+    {
+        assert(tCurrent == this);
+        tCurrent = _previous;
+    }
+
+    /// true if this thread runs a GPU render action
+    static bool isRunning()
+    {
+        return tCurrent != nullptr;
+    }
+
+    /// true if a render upstream of the GPU render action that this thread runs would have waited
+    static bool waitWasRefused()
+    {
+        return tCurrent && tCurrent->_waitRefused;
+    }
+
+    /// Instead of waiting upstream of the GPU render action that this thread runs
+    [[noreturn]] static void refuseWait();
+
+private:
+    static thread_local GPURenderAction* tCurrent;
+
+    EffectInstance* const _effect;
+    bool _waitRefused;
+    GPURenderAction* const _previous;
+};
+
+thread_local GPURenderAction* GPURenderAction::tCurrent = nullptr;
+
+/**
+ * @brief Thrown by a render upstream of a GPU render action instead of waiting (see RenderLock). A
+ * std::bad_alloc, like OpenGLTextureAllocationError: the input fetch returns kOfxStatErrMemory, and the effect of the
+ * action renders again without the GPU.
+ **/
+class GPURenderWouldWait
+    : public OpenGLTextureAllocationError
+{
+public:
+    virtual const char* what() const noexcept OVERRIDE
+    {
+        return "a render upstream of a GPU render would wait for another render";
+    }
+};
+
+void
+GPURenderAction::refuseWait()
+{
+    assert(tCurrent);
+    // The GPU render actions downstream, if this one is nested in another one, hold the context too: the wait would
+    // be refused for them as well. All of them render again without the GPU.
+    for (GPURenderAction* action = tCurrent; action; action = action->_previous) {
+        action->_waitRefused = true;
+        action->_effect->setThreadLocalOpenGLInputTextureFailed();
+    }
+    throw GPURenderWouldWait();
+}
 } // anonymous namespace
+
+bool
+EffectInstance::isUpstreamOfRefusedGPUWait()
+{
+    return GPURenderAction::waitWasRefused();
+}
 
 EffectInstance::RenderRoIRetCode
 EffectInstance::renderRoI(const RenderRoIArgs & args,
@@ -978,7 +1100,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     // or an input texture that could not be loaded): render again without OpenGL if the plug-in can render on the
     // CPU (not "needed", and kOfxImageEffectPropCPURenderSupported isn't "false"), else fail with a message. This
     // is the rule of openfx HostSupport's OpenGL::openGLFailed() and OpenGL::cpuRetryAllowed() (ofxhOpenGLRender.h).
+    OSGLContextAttacherPtr glContextLocker;
     const auto renderAgainWithoutOpenGL = [&]() -> RenderRoIRetCode {
+        if ( GPURenderAction::waitWasRefused() ) {
+            // not a failure of this render: the GPU render action downstream renders again without the GPU
+            throw GPURenderWouldWait();
+        }
         if (openGLSupport != ePluginOpenGLRenderSupportYes) {
             // The plug-in can only use GPU or doesn't support GPU
             if ( !getNode()->hasPersistentMessage() ) {
@@ -986,13 +1113,16 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             }
             throw std::runtime_error("Rendering Failed");
         }
+        // the CPU render must not hold the GPU context of this render while it waits (see RenderLock)
+        if (glContextLocker) {
+            glContextLocker->dettach();
+        }
         std::unique_ptr<RenderRoIArgs> newArgs( new RenderRoIArgs(args) );
         newArgs->allowGPURendering = false;
 
         return renderRoI(*newArgs, outputPlanes);
     };
     StorageModeEnum storage = eStorageModeRAM;
-    OSGLContextAttacherPtr glContextLocker;
 
     if ( dynamic_cast<DiskCacheNode*>(this) ) {
         storage = eStorageModeDisk;
@@ -1882,18 +2012,41 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
         assert(renderInstance);
 
-        if ( (safety == eRenderSafetyInstanceSafe) || (safety == eRenderSafetyUnsafe) ||
-             ( useRenderClone && ( renderInstance.get() == this ) ) ) {
+        // Upstream of a GPU render action, don't wait for the locks; for this effect's own GPU render, don't hold the
+        // GPU context while waiting for them (see RenderLock)
+        const bool upstreamOfGPUAction = GPURenderAction::isRunning();
+        const RenderLock::Mode lockMode = upstreamOfGPUAction ? RenderLock::Mode::eTryLock : RenderLock::Mode::eLock;
+        const bool takesNodeLock = (safety == eRenderSafetyInstanceSafe) || (safety == eRenderSafetyUnsafe) ||
+                                   ( useRenderClone && ( renderInstance.get() == this ) );
+        const bool releasesGPUContext = glContextLocker && !upstreamOfGPUAction && takesNodeLock;
+        if (releasesGPUContext) {
+            glContextLocker->dettach();
+        }
+        if (takesNodeLock) {
             // (the last case: no concurrent OpenGL renders, and the main instance is used, which
             // also happens when the effect makes no render clones, e.g. a single-instance OFX plug-in)
             // An Unsafe plug-in renders on the main instance (no render clones): its render action must not run twice at
             // the same time on the node while it waits for an upstream render with its plug-in lock released.
-            nodeLock.emplace(&getNode()->getRenderInstancesSharedMutex(), false /*releasable*/);
+            nodeLock.emplace(&getNode()->getRenderInstancesSharedMutex(), false /*releasable*/, lockMode);
         }
-        if (safety == eRenderSafetyUnsafe) {
+        if ( (safety == eRenderSafetyUnsafe) && ( !nodeLock || nodeLock->owns() ) ) {
             const Plugin* p = getNode()->getPlugin();
             assert(p);
-            pluginLock.emplace(p->getPluginLock(), storage != eStorageModeGLTex /*releasable*/);
+            // not released for a GPU render, nor upstream of one: taking it back would wait with the GPU context held
+            pluginLock.emplace(p->getPluginLock(), storage != eStorageModeGLTex && !upstreamOfGPUAction /*releasable*/, lockMode);
+        }
+        if ( ( nodeLock && !nodeLock->owns() ) || ( pluginLock && !pluginLock->owns() ) ) {
+            assert(upstreamOfGPUAction); // only tried there
+            // the GPU render action downstream renders again without the GPU
+            pluginLock.reset();
+            nodeLock.reset();
+            if (useRenderClone) {
+                releaseRenderInstance(renderInstance);
+            }
+            GPURenderAction::refuseWait();
+        }
+        if (releasesGPUContext) {
+            glContextLocker->attach();
         }
 
 
@@ -1950,6 +2103,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             }
         }
         if (attachGLOK) {
+            // the renders upstream that a GPU render action needs don't wait (see RenderLock)
+            std::optional<GPURenderAction> gpuRenderAction;
+            if (storage == eStorageModeGLTex) {
+                gpuRenderAction.emplace( renderInstance.get() );
+            }
             renderRetCode = renderRoIInternal(renderInstance.get(),
                                               args.time,
                                               frameArgs,
@@ -1997,6 +2155,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         // is wrong. Don't let it be marked as rendered in the cache.
         renderRetCode = eRenderRoIStatusRenderFailed;
     }
+    if ( GPURenderAction::waitWasRefused() && (renderRetCode != eRenderRoIStatusRenderFailed) ) {
+        // An input of this render, or of a render downstream, could not be rendered upstream of a GPU render action
+        // (see GPURenderAction): the result may be wrong. Don't let it be marked as rendered in the cache.
+        renderRetCode = eRenderRoIStatusRenderFailed;
+    }
 
     if ( !renderAborted && ( (renderRetCode == eRenderRoIStatusImageRendered) || (renderRetCode == eRenderRoIStatusImageAlreadyRendered) ) ) {
         // rendered in frame order by this render, into the cache entry of this key, by this thread or by another one
@@ -2014,10 +2177,25 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         if (renderRetCode == eRenderRoIStatusImageRendered) {
             guard->setRendered();
         }
+        bool gpuContextReleased = false;
         if ( guard->isBeingRenderedElsewhere() ) {
+            if ( GPURenderAction::isRunning() ) {
+                // don't wait for the other thread: the GPU render action downstream renders again without the GPU
+                GPURenderAction::refuseWait();
+            }
             downstreamRenderLock.release();
+            if (glContextLocker) {
+                // don't hold the GPU context while waiting (see RenderLock)
+                glContextLocker->dettach();
+                gpuContextReleased = true;
+            }
         }
         regionsComplete = guard->waitForPendingRegions();
+        if (gpuContextReleased && regionsComplete) {
+            // for the conversions of the output planes below (if the regions are not complete, the render below
+            // runs without it)
+            glContextLocker->attach();
+        }
     }
     guard.reset();
 
@@ -2052,6 +2230,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         if ( GraphDepthGuard::hasFailed() ) {
             // the outermost GraphDepthGuard reports the error
             return eRenderRoIRetCodeFailed;
+        }
+        if ( GPURenderAction::waitWasRefused() ) {
+            // the GPU render action downstream renders again without the GPU
+            throw GPURenderWouldWait();
         }
         ///Throwing this exception will ensure the render stops.
         ///This is slightly clumsy since we already have a render rect code indicating it, we should
