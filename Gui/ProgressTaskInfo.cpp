@@ -114,6 +114,8 @@ public:
     std::unique_ptr<TimeLapse> timer;
     std::unique_ptr<QTimer> refreshLabelTimer;
     QString message;
+    // why the render failed (RenderEngine::renderFailed()), empty if it did not
+    QString failureMessage;
     ProcessHandlerPtr process;
 
     PanelWidget* lastWidgetCurrentWhenShowingProgressDialog;
@@ -255,7 +257,8 @@ ProgressTaskInfo::cancelTask(bool calledFromRenderEngine,
                 updateTaskBarState(TaskBar::NoProgress);
             }
         } else {
-            if (retCode == 0) {
+            // a writer that could not finish its file fails after the last frame, with retCode 0
+            if ( (retCode == 0) && _imp->failureMessage.isEmpty() ) {
                 _imp->statusItem->setTextColor(Qt::black);
                 _imp->statusItem->setText( tr("Finished") );
                 _imp->status = eProgressTaskStatusFinished;
@@ -267,6 +270,14 @@ ProgressTaskInfo::cancelTask(bool calledFromRenderEngine,
                 _imp->statusItem->setTextColor(Qt::red);
                 _imp->statusItem->setText( tr("Failed") );
                 _imp->status = eProgressTaskStatusFinished;
+                if ( !_imp->failureMessage.isEmpty() ) {
+                    // the error, in the Task column: "Failed" alone did not say why (#817)
+                    _imp->statusItem->setToolTip(_imp->failureMessage);
+                    if (_imp->taskInfoItem) {
+                        _imp->taskInfoItem->setText( tr("%1: %2").arg(_imp->message, _imp->failureMessage) );
+                        _imp->taskInfoItem->setToolTip(_imp->failureMessage);
+                    }
+                }
                 updateTaskBarState(TaskBar::ErrorProgress);
             }
         }
@@ -281,7 +292,7 @@ ProgressTaskInfo::cancelTask(bool calledFromRenderEngine,
     if (effect && app) {
         app->removeRenderFromQueue(effect);
     }
-    if ( ( _imp->panel->isRemoveTasksAfterFinishChecked() && (retCode == 0) ) || (!_imp->canBePaused && !calledFromRenderEngine) ) {
+    if ( ( _imp->panel->isRemoveTasksAfterFinishChecked() && (retCode == 0) && _imp->failureMessage.isEmpty() ) || (!_imp->canBePaused && !calledFromRenderEngine) ) {
         _imp->panel->removeTaskFromTable( shared_from_this() );
         updateTaskBarState(TaskBar::NoProgress);
     }
@@ -328,6 +339,12 @@ ProgressTaskInfo::restartTask()
                                    _imp->frameStep,
                                    node->getApp()->isRenderStatsActionChecked() );
         w.isRestart = true;
+        _imp->failureMessage.clear();
+        _imp->statusItem->setToolTip( QString() );
+        if (_imp->taskInfoItem) {
+            _imp->taskInfoItem->setText(_imp->message);
+            _imp->taskInfoItem->setToolTip( QString() );
+        }
         _imp->statusItem->setTextColor(Qt::yellow);
         _imp->status = eProgressTaskStatusQueued;
         _imp->statusItem->setText( tr("Queued") );
@@ -374,6 +391,25 @@ ProgressTaskInfo::onRenderEngineStopped(int retCode)
     ProgressTaskInfoPtr thisShared = shared_from_this();
 
     cancelTask(true, retCode);
+}
+
+void
+ProgressTaskInfo::onRenderEngineFailed(const QString& errorMessage)
+{
+    // a paused or canceled render fails with "Render aborted": not an error. If that signal only arrives after the
+    // task was restarted, onRenderEngineStarted() clears it. The first error is the cause; the others usually
+    // follow from it.
+    if ( !wasCanceled() && _imp->failureMessage.isEmpty() ) {
+        _imp->failureMessage = errorMessage;
+    }
+}
+
+void
+ProgressTaskInfo::onRenderEngineStarted()
+{
+    // the RenderEngine emits renderStarted() once the previous render (e.g. a paused one) has finished, after the
+    // failures of that render
+    _imp->failureMessage.clear();
 }
 
 void

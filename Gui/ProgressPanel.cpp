@@ -496,6 +496,8 @@ ProgressPanel::startTask(const NodePtr& node,
                 RenderEnginePtr engine = isOutput->getRenderEngine();
                 assert(engine);
                 QObject::connect( engine.get(), SIGNAL(frameRendered(int,double)), task.get(), SLOT(onRenderEngineFrameComputed(int,double)) );
+                QObject::connect( engine.get(), SIGNAL(renderStarted(bool)), task.get(), SLOT(onRenderEngineStarted()) );
+                QObject::connect( engine.get(), SIGNAL(renderFailed(QString)), task.get(), SLOT(onRenderEngineFailed(QString)) );
                 QObject::connect( engine.get(), SIGNAL(renderFinished(int)), task.get(), SLOT(onRenderEngineStopped(int)) );
                 QObject::connect( task.get(), SIGNAL(taskCanceled()), engine.get(), SLOT(abortRendering_non_blocking()) );
             }

@@ -222,6 +222,13 @@ public:
                                int* lastFrame,
                                int* frameStep);
 
+    // Says why the render of writer cannot start. In background mode, the exit status becomes 1, as for a
+    // render that fails (#817).
+    static void reportRenderNotStarted(const OutputEffectInstance* writer, const QString& reason);
+
+    // A Write node whose input is not connected: its render would write black frames (#817)
+    static bool hasNoInput(const OutputEffectInstance* writer);
+
     void getSequenceNameFromWriter(const OutputEffectInstance* writer, QString* sequenceName);
 
     void startRenderingFullSequence(bool blocking, const RenderQueueItem& writerWork);
@@ -1976,12 +1983,19 @@ AppInstance::startWritersRenderingFromNames(bool enableRenderStats,
         //start rendering for all writers found in the project
         std::list<OutputEffectInstance*> writers;
         getProject()->getWriters(&writers);
+        // skipped with one warning, as the disabled ones are skipped: a stray Write node does not fail the render
+        // of the others (#817)
+        QStringList writersWithNoInput;
 
         for (std::list<OutputEffectInstance*>::const_iterator it2 = writers.begin(); it2 != writers.end(); ++it2) {
             assert(*it2);
             if (*it2) {
 
                 if ((*it2)->getNode()->isNodeDisabled() || !(*it2)->getNode()->isActivated()) {
+                    continue;
+                }
+                if ( AppInstancePrivate::hasNoInput(*it2) ) {
+                    writersWithNoInput.push_back( QString::fromUtf8( (*it2)->getNode()->getFullyQualifiedName().c_str() ) );
                     continue;
                 }
 
@@ -1995,6 +2009,14 @@ AppInstance::startWritersRenderingFromNames(bool enableRenderStats,
                     renderers.push_back(r);
                 }
             }
+        }
+        if ( !writersWithNoInput.isEmpty() ) {
+            const std::string message = tr("These Write nodes have no input and are not rendered: %1").arg( writersWithNoInput.join( QString::fromUtf8(", ") ) ).toStdString();
+            if ( renderers.empty() ) {
+                // not "missing a writer node"
+                throw std::invalid_argument(message);
+            }
+            Dialogs::warningDialog(tr("Render").toStdString(), message);
         }
     }
 
@@ -2028,7 +2050,13 @@ AppInstance::startWritersRendering(bool doBlockingRender,
 
     std::list<RenderQueueItem> itemsToQueue;
     for (std::list<RenderWork>::const_iterator it = writers.begin(); it != writers.end(); ++it) {
-        if (it->writer->getNode()->isNodeDisabled() || !it->writer->getNode()->isActivated()) {
+        const NodePtr writerNode = it->writer->getNode();
+        if ( writerNode->isNodeDisabled() || !writerNode->isActivated() ) {
+            AppInstancePrivate::reportRenderNotStarted( it->writer, tr("This node is disabled: it cannot render anything.") );
+            continue;
+        }
+        if ( AppInstancePrivate::hasNoInput(it->writer) ) {
+            AppInstancePrivate::reportRenderNotStarted( it->writer, tr("This node has no input: it cannot render anything.") );
             continue;
         }
         RenderQueueItem item;
@@ -2135,17 +2163,18 @@ AppInstancePrivate::validateRenderOptions(const AppInstance::RenderWork& w,
             _publicInterface->getFrameRange(&firstFrameD, &lastFrameD);
         }
 
-        if (firstFrameD > lastFrameD) {
-            Dialogs::errorDialog(w.writer->getNode()->getLabel_mt_safe(),
-                                 tr("First frame index in the sequence is greater than the last frame index.").toStdString(), false );
-
-            return false;
-        }
         *firstFrame = (int)firstFrameD;
         *lastFrame = (int)lastFrameD;
     } else {
         *firstFrame = w.firstFrame;
         *lastFrame = w.lastFrame;
+    }
+    // also for a range given to app.render() or on the command line ("-w Write1 3-1"), whose render never
+    // finished (#817)
+    if (*firstFrame > *lastFrame) {
+        reportRenderNotStarted( w.writer, tr("First frame index in the sequence is greater than the last frame index.") );
+
+        return false;
     }
 
     if ( (w.frameStep == std::numeric_limits<int>::max()) || (w.frameStep == std::numeric_limits<int>::min()) ) {
@@ -2156,6 +2185,24 @@ AppInstancePrivate::validateRenderOptions(const AppInstance::RenderWork& w,
     }
 
     return true;
+}
+
+void
+AppInstancePrivate::reportRenderNotStarted(const OutputEffectInstance* writer,
+                                           const QString& reason)
+{
+    Dialogs::errorDialog(writer->getNode()->getLabel_mt_safe(), reason.toStdString(), false);
+    if ( appPTR->isBackground() ) {
+        appPTR->setBackgroundRenderFailed();
+    }
+}
+
+bool
+AppInstancePrivate::hasNoInput(const OutputEffectInstance* writer)
+{
+    const NodePtr node = writer->getNode();
+
+    return writer->isWriter() && (node->getNInputs() > 0) && !node->getInput(0);
 }
 
 void

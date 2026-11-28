@@ -617,6 +617,7 @@ class RenderEngine
 
 
     friend class OutputSchedulerThread;
+    friend class DefaultScheduler;
     friend class ViewerDisplayScheduler;
 
 public:
@@ -794,6 +795,13 @@ Q_SIGNALS:
      **/
     void renderFinished(int retCode);
 
+    /**
+     * @brief Emitted when the render of a writer fails, before renderFinished(), with the error message.
+     * The render ends with renderFinished(), whose retCode may be 0 (e.g. when the writer could not finish
+     * its file).
+     **/
+    void renderFailed(const QString& errorMessage);
+
 
     void renderStarted(bool forward);
 
@@ -835,6 +843,8 @@ private:
     void s_renderStarted(bool forward) { Q_EMIT renderStarted(forward); }
 
     void s_renderFinished(int retCode) { Q_EMIT renderFinished(retCode); }
+
+    void s_renderFailed(const QString& errorMessage) { Q_EMIT renderFailed(errorMessage); }
 
     void s_refreshAllKnobs() { Q_EMIT refreshAllKnobs(); }
 

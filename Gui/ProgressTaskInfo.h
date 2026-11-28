@@ -140,6 +140,18 @@ public Q_SLOTS:
      **/
     void onRenderEngineStopped(int retCode);
 
+    /**
+     * @brief Executed when the render fails (RenderEngine::renderFailed()), before onRenderEngineStopped():
+     * the status of the task is then "Failed", with the error message.
+     **/
+    void onRenderEngineFailed(const QString& errorMessage);
+
+    /**
+     * @brief Executed when the render engine starts a render (RenderEngine::renderStarted()): forgets the
+     * failure of the previous render of the task.
+     **/
+    void onRenderEngineStarted();
+
     void onProcessCanceled();
 
     void getTableItems(std::vector<TableItem*>* items) const;
