@@ -62,7 +62,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # UCRT64 on tags (CLANGARM64 isn't released yet), else the environment(s) chosen. Only
+        # Both environments (UCRT64 and CLANGARM64) on scheduled and tag runs, else the one(s) chosen. Only
         # include, so that no environment is added by accident. repo_suffix: the name of the
         # package repository artifact of build_pacman_repo.yml (UCRT64 keeps the original name).
         # workspace: NATRON_BUILD_WORKSPACE, a short path (MAX_PATH) on the runner's largest disk:
