@@ -128,8 +128,10 @@ unit-test: GUI behaviour can be tested by a GUI test script in ``Tests/gui/``, r
 ``Natron --test`` (see :ref:`guiTests`; ``ctest -L gui`` runs them); otherwise, describe your
 manual test steps in the pull request.
 
-Where a test goes (``functional/`` or ``regression/``), how it is documented,
-and when one may be removed or fused: :doc:`guidelines`, "Tests".
+The paragraph above describes the current layout. The test rules, including
+the ``Tests/functional/`` and ``Tests/regression/`` layout that #2052 is
+introducing, how a test is documented, and when one may be removed or fused,
+are in :doc:`guidelines`, "Tests".
 
 Two changes deserve special care because they can silently break users:
 

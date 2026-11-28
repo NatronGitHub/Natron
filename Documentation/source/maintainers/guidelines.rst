@@ -344,7 +344,6 @@ Tests
 
 These rules apply to the unit and script tests of every repository (Natron's
 ``Tests/``, the plug-in test suites), not to Natron-Tests' render comparisons.
-Natron's test suite is being reorganised along them (#2052).
 
 - **Two kinds of test.** A *functional* test checks a contract: the OFX
   specification, an API, a command line, a file format. A *regression* test
@@ -358,7 +357,9 @@ Natron's test suite is being reorganised along them (#2052).
   not a test: it stays at the suite root or in ``common/``. Script- and
   data-driven suites split their case files, not their driver. Natron:
   ``Tests/functional/`` and ``Tests/regression/`` (each with ``gui/`` for the
-  Python GUI drivers), ``Tests/common/`` and ``Tests/plugins/``; the
+  Python GUI drivers), ``Tests/common/`` and ``Tests/plugins/`` (being
+  introduced by #2052: until then, all tests are in ``Tests/`` and
+  ``Tests/gui/``); the
   ``TestsFunctional`` and ``TestsRegression`` programs are linked from one
   object library, and special programs (the cache tests, software OpenGL) keep
   their own binaries.
