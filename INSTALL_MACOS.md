@@ -222,35 +222,23 @@ MacPorts only installs a port from a binary archive if the port's own ports tree
 
 #### 4. OSMesa and LLVM
 
-Natron and the openfx-misc plugins use a mangled OSMesa (software OpenGL, used for headless rendering) installed in `/opt/osmesa`, with a static LLVM in `/opt/llvm`. Build both with [osmesa-install](https://github.com/devernay/osmesa-install) **before** installing the other ports. The Mesa 18 build needs `python` to be Python 2.7, which is only selected for this step.
+Natron and the openfx-misc plugins use a mangled OSMesa (software OpenGL, used for headless rendering) installed in `/opt/osmesa`, with a static LLVM in `/opt/llvm`. Build both with [osmesa-install](https://github.com/devernay/osmesa-install) **before** installing the other ports. Natron 2.6 uses Mesa 25.0.7, the last Mesa release with OSMesa, and LLVM 19.1.7, as on Linux and Windows: OSMesa is thread-safe, and the Shadertoy plugin gets OpenGL 4.5 compatibility contexts. The meson build needs meson, ninja and Python 3.11 with mako, PyYAML and packaging.
 
 ```Shell
 sudo mkdir -p /opt/osmesa /opt/llvm
 sudo chown $(id -un):staff /opt/osmesa /opt/llvm
-sudo port -v -N install python27 cmake autoconf automake libtool pkgconfig gsed
-sudo port select --set python python27
+sudo port -v -N install cmake autoconf automake libtool pkgconfig xz meson ninja python311 py311-mako py311-yaml py311-packaging
 
 cd $NATRON_SRC/..   # anywhere outside the Natron checkout (not in tools/MacPorts)
 git clone https://github.com/devernay/osmesa-install.git
 mkdir osmesa-install/build && cd osmesa-install/build
-env LLVM_BUILD=1 MKJOBS=8 MACOSX_DEPLOYMENT_TARGET=14.0 ../osmesa-install.sh     # LLVM 6.0.1 into /opt/llvm, Mesa 18.3.6 into /opt/osmesa; no sudo
-
-sudo port select --set python none
+env OSMESA_VERSION=25.0.7 LLVM_VERSION=19.1.7 LLVM_BUILD=1 PYTHON=/opt/local/bin/python3.11 \
+    MKJOBS=8 MACOSX_DEPLOYMENT_TARGET=14.0 ../osmesa-install.sh   # LLVM 19.1.7 into /opt/llvm, then Mesa 25.0.7 into /opt/osmesa; no sudo
 ```
 
-Use osmesa-install master: it has the LLVM and Mesa build fixes needed with recent macOS SDKs and Xcode versions (verified with Xcode 27.2).
+Use osmesa-install master: it has the LLVM and Mesa build fixes needed with recent macOS SDKs and Xcode versions (verified with Xcode 27.2). Set `OSMESA_VERSION` and `LLVM_VERSION` anyway: they are osmesa-install's defaults today, but Natron's build shouldn't depend on them (osmesa-install commits before a450c88 defaulted to Mesa 18.3.6 with LLVM 6.0.1).
 
-**Mesa 25.0.7 (optional).** osmesa-install also builds Mesa 25.0.7 with LLVM 19.1.7, which gives thread-safe OSMesa and OpenGL 4.5 compatibility contexts to the Shadertoy plugin; Mesa 18.3.6 remains the default. It needs meson, ninja and a Python 3 with mako and PyYAML instead of Python 2.7 and gsed. Install it next to the default one, and select it for the Natron build with `OSMESA_PREFIX` and `LLVM_PREFIX`:
-
-```Shell
-sudo port -v -N install meson ninja py311-mako py311-yaml
-sudo mkdir -p /opt/osmesa-25.0.7 /opt/llvm-19.1.7
-sudo chown $(id -un):staff /opt/osmesa-25.0.7 /opt/llvm-19.1.7
-cd $NATRON_SRC/../osmesa-install/build   # the osmesa-install checkout of the step above
-env OSMESA_VERSION=25.0.7 OSMESA_PREFIX=/opt/osmesa-25.0.7 LLVM_PREFIX=/opt/llvm-19.1.7 \
-    PYTHON=/opt/local/bin/python3.11 MKJOBS=8 MACOSX_DEPLOYMENT_TARGET=14.0 ../osmesa-install.sh   # builds LLVM 19.1.7 first; no sudo
-# then build Natron (step 10) with: env OSMESA_PREFIX=/opt/osmesa-25.0.7 LLVM_PREFIX=/opt/llvm-19.1.7 ...
-```
+**Upgrading from Mesa 18.3.6** (the default until 2026-11): delete the old installation first, so that no LLVM 6 or Mesa 18 files are left: `sudo rm -rf /opt/osmesa /opt/llvm`, then run the commands above. Python 2.7 was only needed for Mesa 18: if `port select --show python` still shows `python27`, run `sudo port select --set python python311` (install section 8), and `sudo port uninstall python27` if nothing else uses it. Keep `gsed`: the build scripts use it (section 6).
 
 Don't use a MacPorts or Homebrew LLVM (`LLVM_SYSTEM=1`) for release builds: the Shadertoy plugin would then depend on their dylibs.
 
@@ -492,7 +480,7 @@ Do this every few weeks, and before a release build. Each step is safe to stop a
 
 9. **Rebuild and test,** if the upgrade touched anything Natron or the plug-ins link to: `qt5`, `py311-pyside2`, `python311`, `boost`, `ffmpeg`, `openimageio`, `opencolorio`, `libraw`, `openexr`, `ImageMagick`, `ImageMagick7`, `poppler`, `cairo`, `freetype`, … Rebuild from a fresh build directory (install section 10, or "Developing with the MacPorts SDK" below), clear Natron's cache (`rm -rf ~/Library/Caches/INRIA/Natron`), and run the unit tests (see [Testing](#testing)). Before a release, also run the Natron-Tests regression suite on the new DMG on a bare macOS 14 (required, `tools/tart/natron-test.sh`, see install section 10), and attach its `-tests.txt` and `-unit_tests_failures.zip` to the release.
 
-With the tart VMs (`tools/tart`), `tools/tart/natron-sdk.sh update` does steps 3 to 7 inside a copy of the SDK image: it installs the MacPorts version set by `MACPORTS_VERSION` in `tools/tart/provision.sh` and syncs the ports tree (instead of `selfupdate`), copies the host checkout's `tools/` into the VM (so update the host checkout first, step 1), runs `check.sh` (and only warns if the overlay is behind upstream: reintegrate on the host first), `./sync.sh`, reinstalls the pinned ports whose installed version differs from the overlay, upgrades the outdated ports one by one, installs `ImageMagick7 +natron` if the image doesn't have it yet, rebuilds from source the ports (and OSMesa/LLVM) built for a macOS newer than 14.0, if any (see "Building for an older macOS"; on the macOS 14 image there should be none), and re-applies the fixups. The previous image is kept as `natron-sdk-sonoma-prev`. See `tools/tart/README.md`.
+With the tart VMs (`tools/tart`), `tools/tart/natron-sdk.sh update` does steps 3 to 7 inside a copy of the SDK image: it installs the MacPorts version set by `MACPORTS_VERSION` in `tools/tart/provision.sh` and syncs the ports tree (instead of `selfupdate`), copies the host checkout's `tools/` into the VM (so update the host checkout first, step 1), runs `check.sh` (and only warns if the overlay is behind upstream: reintegrate on the host first), `./sync.sh`, reinstalls the pinned ports whose installed version differs from the overlay, upgrades the outdated ports one by one, installs `ImageMagick7 +natron` if the image doesn't have it yet, rebuilds from source the ports (and OSMesa/LLVM) built for a macOS newer than 14.0, if any (see "Building for an older macOS"; on the macOS 14 image there should be none), rebuilds OSMesa/LLVM if they are not Mesa 25.0.7 / LLVM 19.1.7 (install section 4), and re-applies the fixups. The previous image is kept as `natron-sdk-sonoma-prev`. See `tools/tart/README.md`.
 
 #### Switching from Python 3.10 to 3.11
 
@@ -519,7 +507,7 @@ sudo ln -sfn shiboken2-3.11 /opt/local/bin/shiboken2
 sudo ln -sfn dmgbuild-3.11 /opt/local/bin/dmgbuild   # if py311-dmgbuild is installed
 ```
 
-If you built Mesa 25.0.7 (install section 4), also `sudo port -v -N install py311-mako py311-yaml`; it only needs them to rebuild Mesa.
+Also `sudo port -v -N install py311-mako py311-yaml py311-packaging`: they are needed to rebuild OSMesa (install section 4).
 
 Check that the build sees Python 3.11: `python3 --version`, `ls -l /opt/local/bin/shiboken2`, and `port installed openimageio` (it must show `+python311`). `opencolorio` and `opencolorio1` are installed without Python bindings and need no change. Then rebuild Natron from a **fresh** build directory, with `-DPython3_EXECUTABLE=/opt/local/bin/python3.11` (a build directory configured with Python 3.10 keeps it in its CMake cache), and run the tests (step 9).
 
