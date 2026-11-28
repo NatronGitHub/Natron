@@ -62,12 +62,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # UCRT64 on tags (CLANGARM64 isn't released yet), else the environment(s) chosen. Only
+        # Both environments (UCRT64 and CLANGARM64) on scheduled and tag runs, else the one(s) chosen. Only
         # include, so that no environment is added by accident. repo_suffix: the name of the
         # package repository artifact of build_pacman_repo.yml (UCRT64 keeps the original name).
         # workspace: NATRON_BUILD_WORKSPACE, a short path (MAX_PATH) on the runner's largest disk:
         # windows-2022 has a D: drive, windows-11-arm only C: (#1494).
-        include: ${{ fromJSON((inputs.msystem == 'both' && '[{"msystem":"UCRT64","runner":"windows-2022","repo_suffix":"","workspace":"D:/nbw"},{"msystem":"CLANGARM64","runner":"windows-11-arm","repo_suffix":"-clangarm64","workspace":"C:/nbw"}]') || (inputs.msystem == 'CLANGARM64' && '[{"msystem":"CLANGARM64","runner":"windows-11-arm","repo_suffix":"-clangarm64","workspace":"C:/nbw"}]') || '[{"msystem":"UCRT64","runner":"windows-2022","repo_suffix":"","workspace":"D:/nbw"}]') }}
+        include: ${{ fromJSON(((inputs.msystem == 'both' || github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/')) && '[{"msystem":"UCRT64","runner":"windows-2022","repo_suffix":"","workspace":"D:/nbw"},{"msystem":"CLANGARM64","runner":"windows-11-arm","repo_suffix":"-clangarm64","workspace":"C:/nbw"}]') || (inputs.msystem == 'CLANGARM64' && '[{"msystem":"CLANGARM64","runner":"windows-11-arm","repo_suffix":"-clangarm64","workspace":"C:/nbw"}]') || '[{"msystem":"UCRT64","runner":"windows-2022","repo_suffix":"","workspace":"D:/nbw"}]') }}
     env:
       NATRON_BUILD_WORKSPACE: ${{ matrix.workspace }}
     defaults:
@@ -440,7 +440,7 @@ jobs:
       matrix:
         # the environments of win-installer (keep in sync with its matrix); arch: the architecture
         # in the zip name (WIN_ARCH)
-        include: ${{ fromJSON((inputs.msystem == 'both' && '[{"msystem":"UCRT64","runner":"windows-latest","arch":"x86_64"},{"msystem":"CLANGARM64","runner":"windows-11-arm","arch":"arm64"}]') || (inputs.msystem == 'CLANGARM64' && '[{"msystem":"CLANGARM64","runner":"windows-11-arm","arch":"arm64"}]') || '[{"msystem":"UCRT64","runner":"windows-latest","arch":"x86_64"}]') }}
+        include: ${{ fromJSON(((inputs.msystem == 'both' || github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/')) && '[{"msystem":"UCRT64","runner":"windows-latest","arch":"x86_64"},{"msystem":"CLANGARM64","runner":"windows-11-arm","arch":"arm64"}]') || (inputs.msystem == 'CLANGARM64' && '[{"msystem":"CLANGARM64","runner":"windows-11-arm","arch":"arm64"}]') || '[{"msystem":"UCRT64","runner":"windows-latest","arch":"x86_64"}]') }}
     defaults:
       run:
         shell: bash
