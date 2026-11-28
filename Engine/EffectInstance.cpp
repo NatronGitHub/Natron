@@ -3928,6 +3928,37 @@ EffectInstance::getRegionOfDefinitionFromCache(U64 hash,
     return eStatusFailed;
 }
 
+namespace {
+// The RoD failures of the traversal in progress on this thread. A failure is not kept in the actions cache
+// (#1602), so without this an effect whose RoD fails (a Read without its file) is asked again once per
+// path to it, which is exponential on chains of diamonds.
+typedef std::pair<std::pair<const EffectInstance*, U64>, std::pair<double, std::pair<int, unsigned int> > > RoDFailureKey;
+
+struct RoDFailureThreadData
+{
+    int depth;
+    std::set<RoDFailureKey> failed;
+};
+
+thread_local RoDFailureThreadData tRoDFailures = {};
+
+class RoDFailureScope
+{
+public:
+    RoDFailureScope()
+    {
+        ++tRoDFailures.depth;
+    }
+
+    ~RoDFailureScope()
+    {
+        if (--tRoDFailures.depth == 0) {
+            tRoDFailures.failed.clear();
+        }
+    }
+};
+} // anon namespace
+
 StatusEnum
 EffectInstance::getRegionOfDefinition_public(U64 hash,
                                              double time,
@@ -3948,6 +3979,13 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
     }
 
     unsigned int mipmapLevel = scale.toMipmapLevel();
+    RoDFailureScope failureScope;
+    const RoDFailureKey failureKey( std::make_pair(static_cast<const EffectInstance*>(this), hash),
+                                    std::make_pair( time, std::make_pair( (int)view, mipmapLevel ) ) );
+    if ( tRoDFailures.failed.find(failureKey) != tRoDFailures.failed.end() ) {
+        // already failed in this traversal
+        return eStatusFailed;
+    }
     bool foundInCache = _imp->actionsCache->getRoDResult(hash, time, view, mipmapLevel, rod);
     if (foundInCache) {
         if (isProjectFormat) {
@@ -4000,6 +4038,10 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
             }
             if ( (ret != eStatusOK) && (ret != eStatusReplyDefault) ) {
                 // rod is not valid. Don't cache the failure: it would be taken for an empty RoD (#1602)
+                if (ret == eStatusFailed) {
+                    tRoDFailures.failed.insert(failureKey);
+                }
+
                 return ret;
             }
 

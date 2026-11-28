@@ -28,6 +28,7 @@ Documentation/source/maintainers/contributing.rst).
 ### Changes
 
 - Preferences > Plug-ins > OpenFX host name: the "Sony Vegas" entry is now "VEGAS Pro", with the host name that VEGAS Pro 19 and later report, `com.vegascreativesoftware.vegas` (openfx-misc#66). A saved "Sony Vegas" choice is kept. #1666
+- Loading or editing a large project with a missing file (a Read node in error) upstream of many nodes with several inputs no longer takes minutes or hangs: within one request, the failing node was asked for its region of definition once per path leading to it. #1834
 - Auto-save restore: when several auto-saves are restored at startup and one of the later windows fails to load, the first window keeps its restored project, without an extra Viewer or a second `onProjectCreated` callback. #1743
 - Python: `getDerivativeAtTime()` and `getIntegrateFromTimeToTime()` return 0 for a dimension out of range, as `getValue()` does, instead of crashing Natron. #1743
 - Preferences: Restore defaults no longer deletes the user's settings file when Natron runs with `--no-settings`, `--test` or `--setting`, and no longer turns saving the settings back on for the rest of the session. #1728
