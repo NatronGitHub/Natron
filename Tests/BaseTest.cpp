@@ -581,9 +581,11 @@ TEST_F(BaseTest, ProjectFormatNotAutoSetDuringSequenceRender)
         std::cout << "Warning: the render finished too early, not testing the auto-set during the render" << std::endl;
     }
     // Wait for the render to finish and process the queued renderFinished signal, without sleeping,
-    // so that the signal is handled while the render engine may still be active.
+    // so that the signal is handled while the render engine may still be active. Under valgrind (the
+    // Linux packages' unit tests), the 200 frames take about a minute, and a slow runner took more
+    // than two (natively, less than a second).
     timer.restart();
-    while ( output->isDoingSequentialRender() && timer.elapsed() < 120000 ) {
+    while ( output->isDoingSequentialRender() && timer.elapsed() < 600000 ) {
         QCoreApplication::processEvents();
     }
     EXPECT_FALSE( output->isDoingSequentialRender() );
