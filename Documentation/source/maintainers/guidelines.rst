@@ -304,9 +304,9 @@ The process, for every pull request, code or documentation:
    `Reviews`_).
 3. **Rebase it on the latest base branch** (RB-2.6 for Natron, ``master``
    for the openfx repositories) and force-push with lease (the pull request's
-   branch only). Run CI on the rebased head (by hand, since drafts run none,
-   see :doc:`github-builds`), and mark it ready once that run passes; marking
-   it ready runs CI again. Never rebase the RB-2.6 to RB-2.7 forward merge.
+   branch only), then mark it ready: marking it ready runs CI on the rebased
+   head. If that run fails, the pull request goes back to draft (step 5).
+   Never rebase the RB-2.6 to RB-2.7 forward merge.
 4. **CI passes:** the maintainer reviews it. **Only after the maintainer's
    approval** is it merged, and only when the reviewers say "merge" on the
    final head, every finding they raised is fixed or answered, CI passes on
@@ -357,6 +357,10 @@ Commits
 - **One logical change per commit,** with a subject "Component: summary" and a
   body that says why.
 - **A short comment in the code** for anything non-obvious: why, not what.
+- **Tool-assisted work is declared.** A commit or pull request written with the
+  help of a code-generation tool carries an ``Assisted-by: TOOL/MODEL``
+  trailer (in the pull request, a line at the end of the description), in
+  every repository.
 
 Descriptions and the CHANGELOG
 ------------------------------
@@ -391,11 +395,11 @@ Reviews
   blocking findings, the rest in ``<details>`` with the guideline links), and
   comments on the lines each finding is about.
 - **The author answers each finding** with the commit that fixes it, or the
-  reason it stays as is, and **resolves the thread** as it processes it, so
-  that only the open findings stay unresolved. This includes a declined
-  finding: once the author has replied with the reason, the thread is
-  resolved, not left open for the reviewer. A reviewer who disagrees with an
-  answer reopens the thread and replies in it.
+  reason it stays as is. A thread answered with its fixing commit is
+  **resolved by the author**, so that only the open findings stay unresolved;
+  a reviewer who finds the fix incomplete reopens it. A **declined** finding
+  (answered with the reason it stays as is) stays open, for the reviewer or
+  the maintainer to resolve.
 - **No duplicate line comments.** Before posting a line comment, read the
   comments already on the pull request. If one on the same lines makes the
   finding, reply in that thread ("Reviewer B: agreed; also …") instead, or edit
