@@ -118,6 +118,7 @@ SOURCES += \
     OfxOverlayInput_Test.cpp \
     OfxParamInteract_Test.cpp \
     OfxParamUndo_Test.cpp \
+    OfxPluginLabel_Test.cpp \
     OfxPluginObsolete_Test.cpp \
     OfxPluginScan_Test.cpp \
     OfxProjectLoad_Test.cpp \

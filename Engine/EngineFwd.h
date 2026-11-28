@@ -90,6 +90,7 @@ namespace Property {
 class Set;
 }
 namespace ImageEffect {
+class Base;
 class ImageEffectPlugin;
 class Descriptor;
 class ClipDescriptor;

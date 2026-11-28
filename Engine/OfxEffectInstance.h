@@ -80,9 +80,11 @@ public:
                                           int versionMajor, int versionMinor,
                                           const std::string & pluginLabel,
                                           const std::string & grouping) WARN_UNUSED_RETURN;
-    static std::string makePluginLabel(const std::string & shortLabel,
-                                       const std::string & label,
-                                       const std::string & longLabel) WARN_UNUSED_RETURN;
+    // the label Natron shows for the plug-in pluginIdentifier, whose effect descriptor is effect: its label, else
+    // its short label, else its long label, a label equal to pluginIdentifier counting as unset (HostSupport's
+    // default); pluginIdentifier if the plug-in set none
+    static std::string makePluginLabel(const std::string & pluginIdentifier,
+                                       const OFX::Host::ImageEffect::Base & effect) WARN_UNUSED_RETURN;
 };
 
 struct OfxEffectInstancePrivate;

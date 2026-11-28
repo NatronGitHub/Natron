@@ -1453,20 +1453,21 @@ AbstractOfxEffectInstance::makePluginGrouping(const std::string & pluginIdentifi
 }
 
 std::string
-AbstractOfxEffectInstance::makePluginLabel(const std::string & shortLabel,
-                                           const std::string & label,
-                                           const std::string & longLabel)
+AbstractOfxEffectInstance::makePluginLabel(const std::string & pluginIdentifier,
+                                           const OFX::Host::ImageEffect::Base & effect)
 {
-    std::string labelToUse = label;
-
-    if ( labelToUse.empty() ) {
-        labelToUse = shortLabel;
+    // HostSupport gives the three labels of an effect descriptor the plug-in identifier as their default (ofxCore.h,
+    // kOfxPropLabel: "Default - the kOfxPropName the object was created with"; openfx#384). A label equal to the
+    // identifier is one the plug-in didn't set: a plug-in that sets only its short (or long) label shows it.
+    // (getShortLabel() and getLongLabel() give the label if they are empty.)
+    const std::string* const labels[] = { &effect.getLabel(), &effect.getShortLabel(), &effect.getLongLabel() };
+    for (const std::string* l : labels) {
+        if ( !l->empty() && (*l != pluginIdentifier) ) {
+            return *l;
+        }
     }
-    if ( labelToUse.empty() ) {
-        labelToUse = longLabel;
-    }
 
-    return labelToUse;
+    return pluginIdentifier;
 }
 
 std::string
@@ -1483,9 +1484,7 @@ OfxEffectInstance::getPluginLabel() const
     assert(_imp->context != eContextNone);
     assert(_imp->effect);
 
-    return makePluginLabel( _imp->effect->getDescriptor().getShortLabel(),
-                            _imp->effect->getDescriptor().getLabel(),
-                            _imp->effect->getDescriptor().getLongLabel() );
+    return makePluginLabel( _imp->effect->getPlugin()->getIdentifier(), _imp->effect->getDescriptor() );
 }
 
 void

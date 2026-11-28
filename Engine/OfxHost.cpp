@@ -1129,9 +1129,7 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
         const std::string & grouping = p->getDescriptor().getPluginGrouping();
         const std::string & bundlePath = p->getBinary()->getBundlePath();
         loadedBundlePaths.push_back(bundlePath);
-        std::string pluginLabel = OfxEffectInstance::makePluginLabel( p->getDescriptor().getShortLabel(),
-                                                                      p->getDescriptor().getLabel(),
-                                                                      p->getDescriptor().getLongLabel() );
+        std::string pluginLabel = OfxEffectInstance::makePluginLabel( openfxId, p->getDescriptor() );
         QStringList groups = OfxEffectInstance::makePluginGrouping(p->getIdentifier(),
                                                                    p->getVersionMajor(), p->getVersionMinor(),
                                                                    pluginLabel, grouping);
