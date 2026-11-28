@@ -119,9 +119,9 @@ Tests
 The ``Tests`` module (Google Test, about a hundred ``Tests/*_Test.cpp`` files)
 covers the engine (curves, LUTs, images, caches, hashing, knobs and
 expressions, rendering and its threads, tracking, projects, the Python API)
-and the OpenFX host (one ``Ofx*_Test.cpp`` per area). Run the tests that cover
-your change (locally, or with a manual CI run on your branch) before marking a
-pull request ready; the CI runs the whole suite (see :doc:`github-builds`). When you fix
+and the OpenFX host (one ``Ofx*_Test.cpp`` per area). Before every push, build
+locally and run the tests that cover your change (``ctest -R`` or
+``--gtest_filter``); the CI runs the whole suite (see :doc:`github-builds`). When you fix
 a bug that is unit-testable — anything in the color, image, curve, hashing or
 geometry code — add a regression test. Rendering and GUI behavior are harder to
 unit-test: GUI behaviour can be tested by a GUI test script in ``Tests/gui/``, run by

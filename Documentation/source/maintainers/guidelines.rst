@@ -180,10 +180,11 @@ The workflows are described in :doc:`github-builds`; the rules are:
   job. A Windows job that didn't run for lack of a runner (cancelled or timed
   out before it started, or still queued after 3 hours) counts as green if
   Linux passed; one that ran and failed is red.
-- **Rely on GitHub CI, not local builds.** Build or test locally only what CI
-  can't (GUI tests, plug-ins or Natron-Tests that CI lacks, crash debugging,
-  SDK, MacPorts or installer work, a CI failure the log doesn't explain), and
-  never only for nits or re-reviews. Push a test together with its fix.
+- **Test locally before every push, but only what the change affects:** build
+  the changed targets and run the tests that cover the changed code (and,
+  where CI lacks them, the GUI tests, plug-ins or Natron-Tests it touches);
+  for a docs-only change, build the docs. The full suite on every platform is
+  GitHub CI's job. Push a test together with its fix.
 - **Everything else is weekly, never nightly,** or run by hand: extra C++
   standards, Qt 6, Debug builds, other compilers and OS versions. The plug-in
   repositories and openfx run on Saturday (03:17 UTC), Natron on Sunday.
