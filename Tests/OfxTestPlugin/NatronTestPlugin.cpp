@@ -42,7 +42,7 @@
 //     choosing a preset sets "presetA", "presetB" and "presetC" in a paramEditBegin/paramEditEnd block,
 //     and sets "preset" back to 0;
 //   - "uiOnly" has kOfxParamPropEvaluateOnChange=0, "noUndo" has kOfxParamPropCanUndo=0;
-//   - "double2DRanged" has a range (kOfxParamPropMin/Max 0 to 1) but no display range
+//   - "double2DRanged" sets a range (kOfxParamPropMin/Max 0 to 1) but no display range, which the range resets
 //     (Tests/OfxParamRange_Test.cpp);
 //   - "intRect", "intRect2", "doubleRect" and "doubleRect2" are Natron rectangles (kNatronOfxParamPropTypeRectangle):
 //     each one's "_position" and "_size" parameters are one 4-dimensional knob.
@@ -696,7 +696,7 @@ paramsDescribeInContext(OfxImageEffectHandle effect)
         return kOfxStatFailed;
     }
     gPropSuite->propSetInt(props, kOfxParamPropCanUndo, 0, 0);
-    // a range without a display range: the display range keeps its default, -DBL_MAX to DBL_MAX
+    // a range without a display range: setting the range resets the display range to it (ofxParam.h)
     if (paramsDefine(paramSet, kOfxParamTypeDouble2D, "double2DRanged", &props) != kOfxStatOK) {
         return kOfxStatFailed;
     }

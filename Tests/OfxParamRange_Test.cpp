@@ -153,10 +153,11 @@ TEST_F(OfxParamRangeTest, MultiDimensional)
     }
 }
 
-// A 2D parameter with a range (0 to 1) but no display range: the display range stays exactly -DBL_MAX to
-// DBL_MAX, which the GUI (KnobGuiValue::createWidget()) recognizes as unset, so the slider covers the range
-// and the dimensions can be folded. With -1.79769e+308 to 1.79769e+308 it showed neither.
-TEST_F(OfxParamRangeTest, RangeWithoutDisplayRange)
+// A 2D parameter whose descriptor sets a range (0 to 1) but no display range: setting the range resets the
+// display range to it, per dimension ("Setting this will also reset kOfxParamPropDisplayMin", ofxParam.h,
+// kOfxParamPropMin; HostSupport since openfx#384), so the slider covers the range. Before, the display range
+// stayed -DBL_MAX to DBL_MAX, which the GUI (KnobGuiValue::createWidget()) also recognizes as unset.
+TEST_F(OfxParamRangeTest, RangeResetsDisplayRange)
 {
     if ( skipped() ) {
         return;
@@ -167,8 +168,13 @@ TEST_F(OfxParamRangeTest, RangeWithoutDisplayRange)
     for (int i = 0; i < 2; ++i) {
         EXPECT_EQ( 0., k->getMinimum(i) ) << i;
         EXPECT_EQ( 1., k->getMaximum(i) ) << i;
-        EXPECT_EQ( std::numeric_limits<double>::lowest(), k->getDisplayMinimum(i) ) << i;
-        EXPECT_EQ( std::numeric_limits<double>::max(), k->getDisplayMaximum(i) ) << i;
+        EXPECT_EQ( 0., k->getDisplayMinimum(i) ) << i;
+        EXPECT_EQ( 1., k->getDisplayMaximum(i) ) << i;
+        double v = -1.;
+        ASSERT_TRUE( doubleProperty("double2DRanged", kOfxParamPropDisplayMin, i, &v) ) << i;
+        EXPECT_EQ(0., v) << i;
+        ASSERT_TRUE( doubleProperty("double2DRanged", kOfxParamPropDisplayMax, i, &v) ) << i;
+        EXPECT_EQ(1., v) << i;
     }
 }
 

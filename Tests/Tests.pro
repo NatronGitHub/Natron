@@ -117,6 +117,7 @@ SOURCES += \
     OfxOpenGLSupport_Test.cpp \
     OfxOverlayInput_Test.cpp \
     OfxParamInteract_Test.cpp \
+    OfxParamLinkedProperties_Test.cpp \
     OfxParamUndo_Test.cpp \
     OfxPluginLabel_Test.cpp \
     OfxPluginObsolete_Test.cpp \
