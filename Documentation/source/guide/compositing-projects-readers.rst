@@ -204,7 +204,10 @@ more formats.
      - ``jxl``
      - ReadOIIO
      - WriteOIIO
-     - Depends on the build (JPEG XL support in OpenImageIO).
+     - 8 or 16-bit integer, or float; alpha. WriteOIIO writes lossless
+       files at Quality 100 (the default), lossy files below. The Natron
+       builds for macOS, Linux and Windows have it; other builds need an
+       OpenImageIO 2.6 or later built with libjxl.
    * - WebP
      - ``webp``
      - ReadOIIO

@@ -24,8 +24,9 @@ fi
 if build_step && { force_build || { [ "${REBUILD_OIIO:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME/lib/libOpenImage"* "$SDK_HOME/include/OpenImage"* || true
 fi
-# (the version check rebuilds OIIO on incremental SDK updates, e.g. against a new OpenEXR or OCIO)
-if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libOpenImageIO.so" ] || [ "$(pkg-config --modversion OpenImageIO)" != "$OIIO_VERSION" ]; }; }; then
+# (the version check rebuilds OIIO on incremental SDK updates, e.g. against a new OpenEXR or OCIO;
+# the libjxl check rebuilds an OIIO built before libjxl was added to the SDK)
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libOpenImageIO.so" ] || [ "$(pkg-config --modversion OpenImageIO)" != "$OIIO_VERSION" ] || ! ldd "$SDK_HOME/lib/libOpenImageIO.so" | grep -q libjxl; }; }; then
     start_build
     untar "$SRC_PATH/$OIIO_TAR"
     pushd "OpenImageIO-${OIIO_VERSION}"
@@ -63,6 +64,8 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libOpenImageIO.so" ] |
     OIIO_CMAKE_FLAGS+=( "-DLINKSTATIC=0" "-DBUILDSTATIC=0" )
     OIIO_CMAKE_FLAGS+=( "-DOpenJPEG_ROOT=$SDK_HOME" "-DOPENJPEG_HOME=$SDK_HOME" "-DOPENJPEG_INCLUDE_DIR=$SDK_HOME/include/openjpeg-$OPENJPEG2_VERSION_SHORT" "-DUSE_OPENJPEG:BOOL=TRUE" )
     OIIO_CMAKE_FLAGS+=( "-DUSE_HEIF:BOOL=TRUE" )
+    # JPEG XL (libjxl.sh, #980): fail if libjxl is not found, instead of building OIIO without it
+    OIIO_CMAKE_FLAGS+=( "-DUSE_JXL:BOOL=TRUE" "-DJXL_ROOT=$SDK_HOME" "-DOpenImageIO_REQUIRED_DEPS=JXL" )
     if version_gt 4.8.1 "$GCC_VERSION"; then
         OIIO_CMAKE_FLAGS+=( "-DUSE_CPP11:BOOL=FALSE" )
     fi
@@ -78,7 +81,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libOpenImageIO.so" ] |
     # OIIO 3: never download dependencies (fmt and robin-map come from $OIIO_EXT); use the SDK's OCIO 2
     OIIO_CMAKE_FLAGS+=( "-DOpenImageIO_BUILD_MISSING_DEPS=" "-DOpenImageIO_BUILD_LOCAL_DEPS=" "-DOpenColorIO_ROOT=$SDK_HOME" )
     OIIO_CMAKE_FLAGS+=( "-Dfmt_ROOT=$OIIO_EXT" "-DRobinmap_ROOT=$OIIO_EXT" )
-    OIIO_CMAKE_FLAGS+=( "-DUSE_PTEX:BOOL=FALSE" "-DUSE_DCMTK:BOOL=FALSE" "-DUSE_OPENVDB:BOOL=FALSE" "-DUSE_JXL:BOOL=FALSE" "-DUSE_LIBUHDR:BOOL=FALSE" "-DUSE_TBB:BOOL=FALSE" "-DUSE_NUKE:BOOL=FALSE" )
+    OIIO_CMAKE_FLAGS+=( "-DUSE_PTEX:BOOL=FALSE" "-DUSE_DCMTK:BOOL=FALSE" "-DUSE_OPENVDB:BOOL=FALSE" "-DUSE_LIBUHDR:BOOL=FALSE" "-DUSE_TBB:BOOL=FALSE" "-DUSE_NUKE:BOOL=FALSE" )
     OIIO_CMAKE_FLAGS+=( "-DCMAKE_INSTALL_LIBDIR=lib" "-DCMAKE_CXX_STANDARD=17" )
     mkdir build
     pushd build

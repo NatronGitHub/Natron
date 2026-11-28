@@ -9,7 +9,8 @@ name: Build Installer
 # windows-mingw-package-repo release) and fails at once if that zip isn't published; a manual run
 # can use the artifact of a "Build pacman repo" run instead (pacman_repo_run_id).
 # Natron-Tests run in the natron-tests job, on a fresh runner, against the Natron that Setup.exe
-# installs from the zip (#1959).
+# installs from the zip (#1959), followed by the JPEG XL round trip (Tests/gui/headless_jpegxl_roundtrip.py,
+# #980), which must not skip there.
 # GPL only: COMMERCIAL (non-GPL) builds are never made in CI, weekly builds or releases, only by hand
 # (NATRON_LICENSE=COMMERCIAL, see tools/jenkins/README.md).
 on:
@@ -536,6 +537,24 @@ jobs:
             "${SYS}/tar.exe" -a -cf "$(cygpath -w "${OUT}/${NAME}-unit_tests_failures.zip")" -C "$(cygpath -w failed)" . || echo "::warning::could not zip the failed tests' outputs"
           fi
           if [ ! -f "${OUT}/${NAME}-tests.txt" ]; then tail -n 50 "${OUT}/${NAME}-tests.log"; fi
+
+      - name: Check out Natron's headless tests
+        if: ${{ !cancelled() && steps.natron_tests.outcome == 'success' }}
+        uses: actions/checkout@v4
+        with:
+          path: natron-src
+          sparse-checkout: Tests/gui
+          persist-credentials: false
+
+      - name: JPEG XL round trip with the installed NatronRenderer (#980)
+        # natron_openimageio has libjxl and the bundled openfx-io includes openfx-io#483: the test must run, not skip
+        if: ${{ !cancelled() && steps.natron_tests.outcome == 'success' }}
+        run: |
+          APP=$(cygpath -u 'C:\nt')
+          timeout -k 10 600 env PATH="$(cygpath -u -S):$(cygpath -u -W)" NATRON_TEST_REQUIRE_JPEGXL=1 \
+            NATRON_DISK_CACHE_PATH="$(cygpath -m "${RUNNER_TEMP}/jpegxl-cache")" \
+            OCIO="$(cygpath -m "${APP}/Resources/OpenColorIO-Configs/blender/config.ocio")" \
+            "${APP}/bin/NatronRenderer.exe" -t "$(cygpath -m "${PWD}/natron-src/Tests/gui/headless_jpegxl_roundtrip.py")" < /dev/null
 
       - name: Upload test results
         if: ${{ !cancelled() && steps.natron_tests.outcome != 'skipped' }}
