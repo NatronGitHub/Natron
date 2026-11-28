@@ -2,8 +2,8 @@
 
 pkgname="${MINGW_PACKAGE_PREFIX}-natron-build-deps-common"
 pkgver=2026.11
-pkgrel=6
-pkgdesc="Minimal package set for building Natron installer for any version of Qt"
+pkgrel=7
+pkgdesc="Minimal package set for building the Natron portable zip for any version of Qt"
 url="https://natrongithub.github.io/"
 arch=("any")
 mingw_arch=('ucrt64' 'clangarm64')
@@ -54,17 +54,16 @@ depends=(
   "${MINGW_PACKAGE_PREFIX}-libxml2"
   # openfx-gmic
   "${MINGW_PACKAGE_PREFIX}-curl"
-  # installer (no crash reporter until #1183: no breakpad, no dump_syms)
+  # the portable zip (no crash reporter until #1183: no breakpad, no dump_syms)
   "zip"
   "unzip"
   "${MINGW_PACKAGE_PREFIX}-firebird"
   "${MINGW_PACKAGE_PREFIX}-pkgconf"
   "${MINGW_PACKAGE_PREFIX}-python-sphinx"
   "${MINGW_PACKAGE_PREFIX}-python-sphinx_rtd_theme"
-  "${MINGW_PACKAGE_PREFIX}-natron-setup"
   "${MINGW_PACKAGE_PREFIX}-ntldd"   # DLL dependency lists for bundling
-  # No qt-installer-framework: the Windows installer is Inno Setup (natron-setup),
-  # and the Qt IFW installers are being retired in favour of portable zips.
+  # No installer (no Inno Setup, no qt-installer-framework): Natron for Windows is a portable
+  # zip, unzipped and run in place.
 )
 
 # these should be empty, but saneman in CI complains, so we keep them here

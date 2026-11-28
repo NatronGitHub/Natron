@@ -1,15 +1,16 @@
 name: Build Installer
 
-# The Windows installer (Setup.exe and the portable zip, #1498): built weekly (Sunday, on the
-# default branch), on demand, and for release tags; never on pull requests. On pre-release tags, the
-# zip and the test results are attached to the GitHub pre-release (the release job). The weekly run is never
+# The Windows package, a portable zip that users unzip and run in place (there is no installer,
+# #1498): built weekly (Sunday, on the default branch), on demand, and for release tags; never on
+# pull requests. On pre-release tags, the zip and the test results are attached to the GitHub
+# pre-release (the release job). The weekly run is never
 # skipped, even if the branch didn't change: MSYS2 (setup-msys2 with update: true) is a rolling
 # toolchain. Every run uses the package repository pinned by
 # tools/MINGW-packages/windows_pacman_repo_version.txt (natron_package_repo-<version>.zip on the
 # windows-mingw-package-repo release) and fails at once if that zip isn't published; a manual run
 # can use the artifact of a "Build pacman repo" run instead (pacman_repo_run_id).
-# Natron-Tests run in the natron-tests job, on a fresh runner, against the Natron that Setup.exe
-# installs from the zip (#1959).
+# Natron-Tests run in the natron-tests job, on a fresh runner, against the Natron of the zip,
+# unzipped there (#1959).
 # GPL only: COMMERCIAL (non-GPL) builds are never made in CI, weekly builds or releases, only by hand
 # (NATRON_LICENSE=COMMERCIAL, see tools/jenkins/README.md).
 on:
@@ -43,7 +44,7 @@ permissions:
 
 env:
   CI: 'True'
-  # the Windows installer whose file list and DLLs the new one is compared with: the last one
+  # the Windows package whose file list and DLLs the new zip is compared with: the last one
   # built by these scripts (MINGW64, qmake)
   BASELINE_INSTALLER_URL: 'https://github.com/NatronGitHub/Natron/releases/download/v2.6.0-alpha1/Natron-RB-2.6-202305242302-b9a9b81-Windows-x86_64.zip'
   # how long the artifacts are kept: 14 days for the weekly runs (enough to compare two of them), the
@@ -56,7 +57,7 @@ jobs:
     # scripts take their paths and architecture from the environment (MINGW_PREFIX,
     # MINGW_PACKAGE_PREFIX, MSYSTEM_CARCH), so Windows ARM64 (#1494, MSYS2 CLANGARM64: clang)
     # runs the same steps on windows-11-arm, with the clangarm64 package repository.
-    name: Windows Installer (${{ matrix.msystem }})
+    name: Windows portable zip (${{ matrix.msystem }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 300
     strategy:
@@ -116,9 +117,6 @@ jobs:
             echo "::error::${MINGW_PACKAGE_PREFIX}-natron-build-deps-qt5 or ${MINGW_PACKAGE_PREFIX}-gtest could not be installed (unresolvable dependencies, see above)"
             exit 1
           fi
-          # for the Setup.exe step, which runs after "Uninstall Natron dependencies"
-          SETUP_VERSION=$(pacman -Q ${MINGW_PACKAGE_PREFIX}-natron-setup | cut -d' ' -f2)
-          echo "NATRON_SETUP_VERSION=${SETUP_VERSION}" >> $GITHUB_ENV
 
       - name: Build
         id: build
@@ -133,18 +131,39 @@ jobs:
           # here (UNIT_TESTS=false): the natron-tests job runs them on a fresh runner (#1959).
           WORKSPACE=${NATRON_BUILD_WORKSPACE_UNIX} BUILD_NAME=natron BUILD_NUMBER=1 BITS=64 NATRON_LICENSE=GPL GIT_URL=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git GIT_URL_IS_NATRON=1 SNAPSHOT_BRANCH=${GITHUB_REF_NAME} QT_VERSION_MAJOR=5 NOUPDATE=1 MKJOBS=$(nproc) MINIMIZE_DISK_USAGE=1 UNIT_TESTS=false ./launchBuildMain.sh
 
-          # the architecture in the installer name, as common.sh sets WIN_ARCH
+          # the architecture in the zip name, as common.sh sets WIN_ARCH
           case "${MSYSTEM_CARCH}" in
             aarch64) WIN_ARCH=arm64 ;;
             *) WIN_ARCH=${MSYSTEM_CARCH} ;;
           esac
           ARCHIVE_DIR=${NATRON_BUILD_WORKSPACE_UNIX}/builds_archive/natron/1
           INSTALLER_ZIP_UNIX=$(ls ${ARCHIVE_DIR}/Natron*Windows-${WIN_ARCH}.zip)
+          INSTALLER_NAME=$(basename ${INSTALLER_ZIP_UNIX} .zip)
 
-          # Unzip installer zip for artifact upload so we don't get a zipped zip file.
+          # The zip must be the portable tree alone: one top folder, named as the zip, with
+          # bin/Natron.exe, and no installer
+          ZIP_LIST=$(unzip -Z1 ${INSTALLER_ZIP_UNIX})
+          if [ -n "$(cut -d/ -f1 <<< "${ZIP_LIST}" | grep -v -x -F "${INSTALLER_NAME}")" ]; then echo "::error::the zip has entries outside ${INSTALLER_NAME}/"; exit 1; fi
+          if ! grep -q -x -F "${INSTALLER_NAME}/bin/Natron.exe" <<< "${ZIP_LIST}"; then echo "::error::the zip has no ${INSTALLER_NAME}/bin/Natron.exe"; exit 1; fi
+          if grep -i -E '(^|/)(setup|unins[0-9]*)\.exe$' <<< "${ZIP_LIST}"; then echo "::error::the zip contains an installer"; exit 1; fi
+          # MAX_PATH: Explorer's "Extract All" fails on a path of 260 characters or more, and by
+          # default it nests the tree twice under the zip name: <Downloads>\<name>\<name>\<path>.
+          # The budget is a release zip, Natron-<version>-Windows-<arch> (at most 35 characters,
+          # e.g. Natron-2.6.0-beta10-Windows-x86_64), extracted to C:\Users\<20-character user
+          # name>\Downloads\ (40 characters): 40 + 2 x (35 + 1) + <path> <= 259, so the longest
+          # path inside the tree may have at most 147 characters; 140 keeps a margin. The longer
+          # names of weekly and branch builds (Natron-<branch>-<date>-<sha>-Windows-<arch>) only
+          # get a warning: they are test builds.
+          LONGEST=$(sed -e 's@^[^/]*/@@' <<< "${ZIP_LIST}" | awk '{ if (length($0) > m) { m = length($0); p = $0 } } END { print m + 0, p }')
+          LONGEST_LEN=${LONGEST%% *}
+          echo "Longest path in the tree (${LONGEST_LEN} characters, at most 140): ${LONGEST#* }"
+          if [ "${LONGEST_LEN}" -gt 140 ]; then echo "::error::${LONGEST#* } has ${LONGEST_LEN} characters (more than 140): Explorer could not extract a release zip to the Downloads folder (MAX_PATH)"; exit 1; fi
+          DEFAULT_LEN=$((40 + 2 * (${#INSTALLER_NAME} + 1) + LONGEST_LEN))
+          if [ "${DEFAULT_LEN}" -gt 259 ]; then echo "::warning::extracted with Explorer's defaults, ${INSTALLER_NAME}.zip would have paths of up to ${DEFAULT_LEN} characters (MAX_PATH: 259): extract it to a short folder"; fi
+
+          # Unzip it for the checks below (they run on the unzipped tree)
           cd ${ARCHIVE_DIR}
           INSTALLER_DIR="${ARCHIVE_DIR}/i"
-          INSTALLER_NAME=$(basename ${INSTALLER_ZIP_UNIX} .zip)
           mkdir -p ${INSTALLER_DIR}
           cd ${INSTALLER_DIR}
           unzip -q ${INSTALLER_ZIP_UNIX}
@@ -161,7 +180,7 @@ jobs:
           CXX_BIN=$(command -v g++ || command -v clang++)
           ${CXX_BIN} -DWINDOWS -o verify_plugin_loads .github/workflows/verify_plugin_loads.cpp libs/OpenFX/HostSupport/src/ofxhBinary.cpp libs/OpenFX/HostSupport/src/ofxhUtilities.cpp -I libs/OpenFX/HostSupport/include/ -I libs/OpenFX/include/
 
-      - name: Compare with the previous Windows installer
+      - name: Compare with the previous Windows package
         # Informative: the file list and the DLLs of the new portable zip against those of
         # BASELINE_INSTALLER_URL. The report is the compare-<installer> artifact, and the DLL
         # differences are in the job summary. x86-64 only, as the baseline.
@@ -188,7 +207,7 @@ jobs:
           dlls "${INSTALLER_DIR}" > ${OUT}/dlls-new-normalized.txt
           diff ${OUT}/dlls-baseline-normalized.txt ${OUT}/dlls-new-normalized.txt > ${OUT}/dlls.diff || true
           {
-            echo "## Windows installer vs 2.6.0-alpha1"
+            echo "## Windows portable zip vs 2.6.0-alpha1"
             echo "Files: $(wc -l < ${OUT}/files-baseline.txt) before, $(wc -l < ${OUT}/files-new.txt) now (without docs, Python stdlib, OCIO configs, poppler data). DLLs: $(wc -l < ${OUT}/dlls-baseline-normalized.txt) before, $(wc -l < ${OUT}/dlls-new-normalized.txt) now."
             echo '```diff'
             cat ${OUT}/dlls.diff
@@ -212,11 +231,14 @@ jobs:
         run: |
           pacman -Rs --noconfirm ${MINGW_PACKAGE_PREFIX}-natron-build-deps-qt5
 
-      - name: Upload installer
+      - name: Upload the portable zip
+        # the zip itself (stored, not compressed again), which natron-tests unzips and tests: the
+        # artifact is a zip that holds the portable zip
         uses: actions/upload-artifact@v4.3.1
         with:
           name:  ${{ steps.build.outputs.INSTALLER_NAME }}
-          path:  ${{ steps.build.outputs.INSTALLER_DIR }}
+          path:  ${{ steps.build.outputs.INSTALLER_ZIP }}
+          compression-level: 0
           retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
 
       - name: Verify plugin loading
@@ -231,11 +253,6 @@ jobs:
         # After the build dependencies are uninstalled, with only the bundle's bin/ and the Windows
         # directories on PATH: a DLL, Python module or PySide module missing from the bundle fails
         # here (Tests.exe and the docs ran with /ucrt64/bin on PATH).
-        # No Python caches: this tree is Setup.exe's input, and caches written here would be
-        # installed as ordinary files, so the uninstall check of the next step would not test the
-        # [UninstallDelete] entries of Natron.iss.
-        env:
-          PYTHONDONTWRITEBYTECODE: 1
         run: |
           INSTALLER_DIR=$(cygpath -u '${{ steps.build.outputs.INSTALLER_DIR }}')/${{ steps.build.outputs.INSTALLER_NAME }}
           SYSPATH="$(cygpath -u -S):$(cygpath -u -W)"
@@ -260,176 +277,15 @@ jobs:
           }
           check_bundle "${INSTALLER_DIR}"
 
-      - name: Install, upgrade, run and uninstall with Setup.exe
-        # Setup.exe installs from the unzipped tree next to it (Natron.iss, "external" files):
-        # install every component silently for the current user, and check that each
-        # unconditional "Source:" of Natron.iss was installed completely (the first install goes
-        # into a folder that already has a bin\keep.dll, which must survive). Then install again over
-        # it (the upgrade path, [InstallDelete]): a stale DLL must be gone, the user's files must
-        # stay. Run the installed programs, then uninstall and check that everything was removed.
-        run: |
-          INSTALLER_DIR=$(cygpath -u '${{ steps.build.outputs.INSTALLER_DIR }}')/${{ steps.build.outputs.INSTALLER_NAME }}
-          ISS=tools/MINGW-packages/mingw-w64-natron-setup/Natron.iss
-          # the drive of the build workspace (D: on windows-2022, C: on windows-11-arm)
-          DRIVE="${NATRON_BUILD_WORKSPACE%%/*}"
-          APP_W="${DRIVE}\\ni"
-          APP=$(cygpath -u "${APP_W}")
-          SYSPATH="$(cygpath -u -S):$(cygpath -u -W)"
-          if [ -d "${INSTALLER_DIR}/Plugins/PySide6" ]; then PYSIDE=PySide6; else PYSIDE=PySide2; fi
-          if [ -e "${APP}" ]; then echo "::error::${APP} already exists"; exit 1; fi
-          errors=0
-          # every path of the portable tree that a Source: of Natron.iss names ("{src}\<path>\*" or
-          # "{src}\<path>"), and the ones without skipifsourcedoesntexist
-          sources() { grep '^Source: "{src}\\' "$ISS" | sed -e 's/^Source: "{src}\\\([^"]*\)".*/\1/' -e 's/\\\*$//' -e 's/\\/\//g'; }
-          required_sources() { grep '^Source: "{src}\\' "$ISS" | grep -v skipifsourcedoesntexist | sed -e 's/^Source: "{src}\\\([^"]*\)".*/\1/' -e 's/\\\*$//' -e 's/\\/\//g'; }
-          # the entries of the portable tree that no Source: covers (they would not be installed)
-          for e in $(cd "${INSTALLER_DIR}" && find . Plugins Plugins/OFX/Natron Resources -mindepth 1 -maxdepth 1 | sed -e 's@^\./@@' | sort -u); do
-            [ "$e" = Setup.exe ] && continue
-            covered=0
-            while IFS= read -r src; do
-              case "$src" in "$e"|"$e"/*) covered=1 ;; esac
-              case "$e" in "$src"/*) covered=1 ;; esac
-            done < <(sources)
-            if [ "$covered" = 0 ]; then echo "::error::${e} is in the portable tree but no Source: of Natron.iss installs it"; errors=1; fi
-          done
-          # every subdirectory of the portable bin/ (Qt plug-in directories, mesa) needs an
-          # [InstallDelete] entry, so that an upgrade removes its stale files
-          for d in $(cd "${INSTALLER_DIR}/bin" && find . -mindepth 1 -maxdepth 1 -type d | sed -e 's@^\./@@'); do
-            if ! grep -q -F "Type: filesandordirs; Name: \"{app}\\bin\\${d}\"" "$ISS"; then
-              echo "::error::bin/${d} has no [InstallDelete] entry in Natron.iss"; errors=1
-            fi
-          done
-          # all the components of the [Components] section, but sgl (Mesa) only in the x64 Setup.exe
-          # (#if NatronArch == "x64" in Natron.iss)
-          COMPONENTS=$(sed -n -e '/^\[Components\]/,/^\[/s/^Name: "\([a-z]*\)";.*/\1/p' "$ISS" | { if [ "${MSYSTEM_CARCH}" = x86_64 ]; then cat; else grep -v -x sgl; fi; } | paste -s -d, -)
-          echo "Components: ${COMPONENTS}"
-          setup() { # setup <log name>
-            # (no MSYS2 path conversion of the /OPTIONS)
-            MSYS2_ARG_CONV_EXCL='*' "${INSTALLER_DIR}/Setup.exe" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CURRENTUSER "/DIR=${APP_W}" "/COMPONENTS=${COMPONENTS}" "/LOG=$(cygpath -w "${GITHUB_WORKSPACE}/$1")" || { cat "$1"; echo "::error::Setup.exe failed ($1)"; return 1; }
-          }
-          check_installed() { # every file of each required Source: is installed
-            local src missing
-            while IFS= read -r src; do
-              # a single file (installed under the same path: DestDir "{app}\<its directory>")
-              if [ -f "${INSTALLER_DIR}/${src}" ]; then
-                if ! cmp -s "${INSTALLER_DIR}/${src}" "${APP}/${src}"; then echo "::error::${src} was not installed"; errors=1; fi
-                continue
-              fi
-              if [ ! -d "${INSTALLER_DIR}/${src}" ]; then
-                echo "::error::${src} is missing from the portable tree"; errors=1; continue
-              fi
-              missing=$(comm -23 <(cd "${INSTALLER_DIR}/${src}" && find . -type f | sort) <(cd "${APP}/${src}" 2>/dev/null && find . -type f | sort) | wc -l)
-              echo "${src}: $(cd "${INSTALLER_DIR}/${src}" && find . -type f | wc -l) files, ${missing} not installed"
-              if [ "${missing}" != 0 ]; then echo "::error::${missing} files of ${src} were not installed"; errors=1; fi
-            done < <(required_sources)
-          }
-          # Setup.exe must refuse the folder of a Natron 2.5 or older (Qt Installer Framework:
-          # bin\Natron.exe next to the NatronSetup.exe maintenance tool), and leave it untouched.
-          # natron-setup 1.0-9 and later only (exit code 7, #1911): older package repositories have an
-          # older Setup.exe.
-          # (NATRON_SETUP_VERSION: recorded when it was installed, "Uninstall Natron dependencies"
-          # removed the package)
-          SETUP_VERSION="${NATRON_SETUP_VERSION:?}"
-          if [ "$(vercmp "${SETUP_VERSION}" 1.0-9)" -lt 0 ]; then
-            echo "::warning::natron-setup ${SETUP_VERSION} is older than 1.0-9: the check that Setup.exe refuses the folder of a Natron 2.5 or older is skipped"
-          else
-            OLD_W="${DRIVE}\\ni25"
-            OLD=$(cygpath -u "${OLD_W}")
-            if [ -e "${OLD}" ]; then echo "::error::${OLD} already exists"; exit 1; fi
-            mkdir -p "${OLD}/bin"
-            echo old > "${OLD}/bin/Natron.exe"
-            touch "${OLD}/NatronSetup.exe" "${OLD}/bin/old.dll"
-            # exit code 7: PrepareToInstall refused to install
-            rc=0
-            MSYS2_ARG_CONV_EXCL='*' "${INSTALLER_DIR}/Setup.exe" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CURRENTUSER "/DIR=${OLD_W}" "/COMPONENTS=${COMPONENTS}" "/LOG=$(cygpath -w "${GITHUB_WORKSPACE}/setup-old.log")" || rc=$?
-            if [ "${rc}" != 7 ] || ! grep -q -F 'Refusing the folder of Natron 2.5 or older' setup-old.log; then
-              cat setup-old.log; echo "::error::Setup.exe did not refuse the folder of a Natron 2.5 or older (exit code ${rc})"; errors=1
-            fi
-            if [ ! -e "${OLD}/bin/old.dll" ] || [ "$(cat "${OLD}/bin/Natron.exe")" != old ] || [ -e "${OLD}/unins000.exe" ]; then
-              echo "::error::Setup.exe changed the folder of a Natron 2.5 or older"; errors=1
-            fi
-            rm -rf "${OLD}"
-          fi
-          # the first install goes into an existing folder that is not a Natron installation (no
-          # bin\Natron.exe): [InstallDelete] must not touch its bin\keep.dll
-          mkdir -p "${APP}/bin"
-          touch "${APP}/bin/keep.dll"
-          setup setup-1.log || exit 1
-          check_installed
-          if [ ! -e "${APP}/bin/keep.dll" ]; then echo "::error::installing into a folder that was not a Natron installation deleted its bin/keep.dll"; errors=1; fi
-          rm -f "${APP}/bin/keep.dll"
-          # upgrade: a stale DLL (as left by an older version) must be removed by [InstallDelete];
-          # the user's own files (a pip console script in bin/, an OFX plug-in next to Natron's)
-          # must stay
-          touch "${APP}/bin/natron-stale-test-1.dll" "${APP}/bin/natron-user-test.exe"
-          mkdir -p "${APP}/Plugins/OFX/Natron/UserTest.ofx.bundle"
-          touch "${APP}/Plugins/OFX/Natron/UserTest.ofx.bundle/keep"
-          setup setup-2.log || exit 1
-          check_installed
-          if [ -e "${APP}/bin/natron-stale-test-1.dll" ]; then echo "::error::the upgrade left a stale DLL in bin/"; errors=1; fi
-          for f in bin/natron-user-test.exe Plugins/OFX/Natron/UserTest.ofx.bundle/keep; do
-            if [ ! -e "${APP}/$f" ]; then echo "::error::the upgrade deleted the user's $f"; errors=1; fi
-          done
-          rm -rf "${APP}/bin/natron-user-test.exe" "${APP}/Plugins/OFX/Natron/UserTest.ofx.bundle"
-          if [ ! -x "${APP}/unins000.exe" ]; then echo "::error::no uninstaller in ${APP}"; errors=1; fi
-          # the installed programs, as a user runs them: they write Python caches (__pycache__) into
-          # the installation, which the uninstaller must remove ([UninstallDelete] in Natron.iss).
-          # NatronRenderer with a script imports the PyPlugs (those of Plugins\PyPlugs and of the OFX
-          # bundles) at startup.
-          before=$(cd "${APP}" && find . -type f | sort)
-          timeout -k 10 600 env PATH="${APP}/bin:${SYSPATH}" "${APP}/bin/NatronRenderer.exe" -v < /dev/null || { echo "::error::the installed NatronRenderer -v failed"; errors=1; }
-          printf 'print("NatronRenderer script ran")\nimport sys\nsys.exit(0)\n' > installed_renderer.py
-          timeout -k 10 600 env PATH="${APP}/bin:${SYSPATH}" "${APP}/bin/NatronRenderer.exe" --no-settings "$(cygpath -w "${GITHUB_WORKSPACE}/installed_renderer.py")" < /dev/null || { echo "::error::the installed NatronRenderer failed to run a script"; errors=1; }
-          timeout -k 10 600 env PATH="${APP}/bin:${SYSPATH}" "${APP}/bin/natron-python.exe" -c "import sys, ssl, ${PYSIDE}.QtCore, ${PYSIDE}.QtWidgets; print('natron-python', sys.version.split()[0], ${PYSIDE}.QtCore.qVersion())" < /dev/null || { echo "::error::the installed natron-python failed"; errors=1; }
-          wrote=$(comm -13 <(echo "${before}") <(cd "${APP}" && find . -type f | sort))
-          echo "Files that the installed programs wrote into ${APP_W}:"
-          echo "${wrote}" | sed -n '1,50p'
-          # the uninstall check below must cover the caches of [UninstallDelete]
-          if ! grep -q '^\./Plugins/PyPlugs/__pycache__/' <<< "${wrote}"; then
-            echo "::error::the installed programs wrote no Plugins/PyPlugs/__pycache__: the uninstall check would not test the [UninstallDelete] entries"; errors=1
-          fi
-          # The uninstaller copies itself to %TEMP% and returns at once: wait until no file is left,
-          # and no folder but those that existed before the first install (\ni and \ni\bin, see
-          # above), which the uninstaller keeps: it only removes the folders it created. (It removes some
-          # folders after unins000.exe and unins000.dat: those that still held [UninstallDelete]
-          # files at its first try.)
-          MSYS2_ARG_CONV_EXCL='*' "${APP}/unins000.exe" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART || { echo "::error::the uninstaller failed"; errors=1; }
-          for _ in $(seq 120); do
-            [ -n "$(find "${APP}" -mindepth 1 ! -path "${APP}/bin" -print -quit 2>/dev/null)" ] || break
-            sleep 2
-          done
-          if [ -e "${APP}" ]; then
-            left=$(find "${APP}" -mindepth 1 ! -path "${APP}/bin")
-            if [ -n "${left}" ]; then
-              echo "::error::the uninstaller left files or folders in ${APP}:"; echo "${left}" | sed -n '1,50p'; errors=1
-            fi
-          fi
-          exit ${errors}
-
-      - name: Upload the files for the pre-release
-        # pre-release tags only (as the release job, which attaches them)
-        if: >-
-          github.event_name == 'push' &&
-          (contains(github.ref_name, '-alpha') || contains(github.ref_name, '-beta') ||
-          contains(github.ref_name, '-rc') || contains(github.ref_name, '-RC'))
-        uses: actions/upload-artifact@v4.3.1
-        with:
-          name: Natron-Windows-${{ matrix.msystem }}-prerelease
-          # the test results: natron-tests' Natron-Windows-<msystem>-tests-prerelease
-          path: ${{ steps.build.outputs.INSTALLER_ZIP }}
-          compression-level: 0
-          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
-
   natron-tests:
     # Natron-Tests on Natron as users get it (#1959, #1655): on a fresh runner, which never had
-    # MSYS2 or the build's dependencies, the portable zip built by win-installer is installed with
-    # its Setup.exe into a new folder (the default "full" type, as an interactive install), and
-    # runTests.sh runs against the installed NatronRenderer.exe. runTests.sh needs a POSIX shell:
+    # MSYS2 or the build's dependencies, the portable zip built by win-installer is unzipped into a
+    # new folder, and runTests.sh runs against its NatronRenderer.exe. runTests.sh needs a POSIX shell:
     # the runner's Git Bash, with only its /usr/bin (POSIX tools and msys-*.dll, no native DLL) and
     # the Windows directories on PATH. A DLL or module missing from bin\ fails the job (the
-    # installed NatronRenderer -v); one missing from a plug-in bundle fails its tests.
+    # unzipped NatronRenderer -v); one missing from a plug-in bundle fails its tests.
     # The runner: the newest Windows Server image for x86-64, windows-11-arm for CLANGARM64 (#1961).
-    name: Natron-Tests (${{ matrix.msystem }}, installed with Setup.exe)
+    name: Natron-Tests (${{ matrix.msystem }}, portable zip)
     needs: win-installer
     # each environment whose zip was uploaded, even if a later check of win-installer failed
     if: ${{ !cancelled() && needs.win-installer.result != 'skipped' }}
@@ -449,9 +305,8 @@ jobs:
       - name: Download the portable zip
         uses: actions/download-artifact@v4
         with:
-          # the unzipped portable tree, with Setup.exe (not the -tests or -unit_tests_failures artifacts)
+          # the portable zip (not the -tests or -unit_tests_failures artifacts)
           pattern: Natron-*-Windows-${{ matrix.arch }}
-          # on C:, as the install, so that the step below can rename the tree
           path: C:/nd
 
       - name: Keep LF line endings
@@ -467,36 +322,34 @@ jobs:
           path: Natron-Tests
           persist-credentials: false
 
-      - name: Install with Setup.exe and run Natron-Tests
-        # Fails only if Natron could not be installed or Natron-Tests could not start; the results
+      - name: Unzip the portable zip and run Natron-Tests
+        # Fails only if the zip could not be unzipped or Natron-Tests could not start; the results
         # are judged in "Check the Natron-Tests results", after the uploads.
         id: natron_tests
         timeout-minutes: 150
         run: |
-          SETUP=$(find /c/nd -mindepth 3 -maxdepth 3 -name Setup.exe)
-          if [ "$(echo "${SETUP}" | grep -c .)" != 1 ]; then echo "::error::not exactly one Setup.exe in the artifact:"; echo "${SETUP}"; exit 1; fi
-          NAME=$(basename "$(dirname "${SETUP}")")
+          ZIP=$(find /c/nd -maxdepth 2 -type f -name 'Natron-*.zip')
+          if [ "$(echo "${ZIP}" | grep -c .)" != 1 ]; then echo "::error::not exactly one zip in the artifact:"; echo "${ZIP}"; exit 1; fi
+          NAME=$(basename "${ZIP}" .zip)
           echo "NAME=${NAME}" >> $GITHUB_ENV
-          # Setup.exe reads its files with MAX_PATH (260) paths: the tree, nested twice under its
-          # long name (<artifact>/<name>/), at a short path (the longest file is 123 characters)
-          if [ -e /c/ns ]; then echo "::error::C:\\ns already exists"; exit 1; fi
-          mv "$(dirname "${SETUP}")" /c/ns
-          SETUP=/c/ns/Setup.exe
-          APP_W='C:\nt'
-          APP=$(cygpath -u "${APP_W}")
-          if [ -e "${APP}" ]; then echo "::error::${APP_W} already exists"; exit 1; fi
+          SYS=$(cygpath -u -S)
+          # unzipped into a new folder with Windows' own tar (bsdtar), nothing from MSYS2 or Git:
+          # Natron runs from there, as a user runs it, with no installation step
+          if [ -e /c/nt ]; then echo "::error::C:\\nt already exists"; exit 1; fi
+          mkdir /c/nt
+          "${SYS}/tar.exe" -xf "$(cygpath -w "${ZIP}")" -C 'C:\nt' || { echo "::error::the zip could not be unzipped"; exit 1; }
+          rm -rf /c/nd
+          APP=/c/nt/${NAME}
           OUT=${GITHUB_WORKSPACE}/results
           mkdir -p "${OUT}"
-          MSYS2_ARG_CONV_EXCL='*' "${SETUP}" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CURRENTUSER "/DIR=${APP_W}" /TYPE=full "/LOG=$(cygpath -w "${OUT}/${NAME}-setup.log")" || { cat "${OUT}/${NAME}-setup.log"; echo "::error::Setup.exe failed"; exit 1; }
-          for f in bin/NatronRenderer.exe bin/ffmpeg.exe bin/idiff.exe Resources/OpenColorIO-Configs/blender/config.ocio; do
-            if [ ! -f "${APP}/$f" ]; then echo "::error::Setup.exe did not install $f"; exit 1; fi
+          for f in bin/Natron.exe bin/NatronRenderer.exe bin/ffmpeg.exe bin/idiff.exe Resources/OpenColorIO-Configs/blender/config.ocio; do
+            if [ ! -f "${APP}/$f" ]; then echo "::error::the zip has no ${NAME}/$f"; exit 1; fi
           done
           echo "Natron-Tests: $(git -C Natron-Tests log -1 --format='%h %cs %s')"
           # PATH for runTests.sh: Git Bash's /usr/bin before the Windows directories, whose
           # find.exe, sort.exe and timeout.exe aren't the POSIX ones (curl.exe and tar.exe come
           # from System32). Git for Windows may have no unzip, which runTests.sh uses on two zips
           # of example projects: then a minimal one with Windows' tar (bsdtar), in TOOLS.
-          SYS=$(cygpath -u -S)
           TESTPATH="/usr/bin:${SYS}:$(cygpath -u -W)"
           TOOLS=${RUNNER_TEMP}/natron-tests-tools
           mkdir -p "${TOOLS}"
@@ -516,9 +369,9 @@ jobs:
           if [ -n "$(cd Natron-Tests && git ls-files --eol runTests.sh | grep crlf)" ] || grep -q $'\r' Natron-Tests/runTests.sh; then
             echo "::error::Natron-Tests was checked out with CRLF line endings"; exit 1
           fi
-          # the installed Natron must start, with nothing but Windows on PATH (otherwise every test
+          # the unzipped Natron must start, with nothing but Windows on PATH (otherwise every test
           # would fail, which is only a warning)
-          timeout -k 10 600 env PATH="$(cygpath -u -S):$(cygpath -u -W)" "${APP}/bin/NatronRenderer.exe" -v < /dev/null || { echo "::error::the installed NatronRenderer -v failed"; exit 1; }
+          timeout -k 10 600 env PATH="$(cygpath -u -S):$(cygpath -u -W)" "${APP}/bin/NatronRenderer.exe" -v < /dev/null || { echo "::error::the unzipped NatronRenderer -v failed"; exit 1; }
           # (OCIO: a Windows path, as Natron reads it; KNOWN_FAILURES_ARCH: Git Bash sets no
           # MSYSTEM_CARCH, and may run emulated on ARM64)
           status=0
@@ -546,7 +399,6 @@ jobs:
             results/${{ env.NAME }}-tests.txt
             results/${{ env.NAME }}-tests-summary.txt
             results/${{ env.NAME }}-tests.log
-            results/${{ env.NAME }}-setup.log
           retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
 
       - name: Upload test failures
@@ -570,22 +422,6 @@ jobs:
             echo "::warning::Natron-Tests results differ from the 2.5.0 release (see the diff above)"
           fi
 
-      - name: Upload the test results for the pre-release
-        # pre-release tags only (as the release job, which attaches them)
-        if: >-
-          github.event_name == 'push' &&
-          (contains(github.ref_name, '-alpha') || contains(github.ref_name, '-beta') ||
-          contains(github.ref_name, '-rc') || contains(github.ref_name, '-RC'))
-        uses: actions/upload-artifact@v4.3.1
-        with:
-          name: Natron-Windows-${{ matrix.msystem }}-tests-prerelease
-          path: |
-            results/${{ env.NAME }}-tests.txt
-            results/${{ env.NAME }}-tests-summary.txt
-            results/${{ env.NAME }}-unit_tests_failures.zip
-          compression-level: 0
-          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
-
       - name: Check the Natron-Tests results
         # Last, so that every other check and upload runs first; not if Natron-Tests could not
         # start (that step failed already). runTests.sh doesn't fail the step when a test fails. A
@@ -600,7 +436,7 @@ jobs:
           # timeout, for example) and result.txt has the raw PASS/FAIL lines, known failures included
           if [ ! -f "${SUMMARY}" ]; then echo "::error::no Natron-Tests summary (${SUMMARY}): Natron-Tests did not finish"; exit 1; fi
           {
-            echo "## Natron-Tests (${{ matrix.msystem }}, installed with Setup.exe)"
+            echo "## Natron-Tests (${{ matrix.msystem }}, portable zip)"
             echo '```'
             cat "${SUMMARY}"
             echo '```'
@@ -614,7 +450,7 @@ jobs:
           if grep -q '^UNEXPECTED PASS: [1-9]' "${SUMMARY}"; then exit 1; fi
 
   # pre-release tags only (v*-alpha*, -beta*, -rc*, -RC*, as linux_packages.yml and macos_x86_64.yml):
-  # attach the portable zip (with Setup.exe) and the test results to the GitHub pre-release
+  # attach the portable zip and the test results to the GitHub pre-release
   release:
     name: Attach to the pre-release
     needs: [win-installer, natron-tests]
@@ -633,8 +469,9 @@ jobs:
           sparse-checkout-cone-mode: false
       - uses: actions/download-artifact@v4
         with:
-          # the zips (win-installer) and the test results (natron-tests)
-          pattern: Natron-Windows-*-prerelease
+          # the portable zips (win-installer's Natron-<version>-Windows-<arch> artifacts) and the test
+          # results (natron-tests' -tests and -unit_tests_failures artifacts), not compare-*
+          pattern: Natron-*-Windows-*
           path: assets
           merge-multiple: true
       - name: Attach to the pre-release

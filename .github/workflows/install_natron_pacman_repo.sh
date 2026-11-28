@@ -62,7 +62,7 @@ if [[ -e "${NATRON_REPO_DIR}/natron.db.tar.gz" && ! -e ${ZIP_FILENAME} ]]; then
 elif [[ -e ${ZIP_FILENAME} ]]; then
     unzip ${ZIP_FILENAME}
 elif [[ "${NATRON_REPO_NO_LOCAL_BUILD:-}" == "1" ]]; then
-    # (build_installer.yml: building the whole repository takes hours, and needs Inno Setup)
+    # (build_installer.yml: building the whole repository takes hours)
     echo "::error::${ZIP_FILENAME} is not on the windows-mingw-package-repo release: publish it, or (manual runs only) run the workflow with pacman_repo_run_id set to a \"Build pacman repo\" run of version ${WINDOWS_PACMAN_REPO_VERSION}"
     exit 1
 else

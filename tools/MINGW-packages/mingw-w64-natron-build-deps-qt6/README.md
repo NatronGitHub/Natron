@@ -1,1 +1,1 @@
-This meta package depends on all packages needed for building Natron with Qt6, the openfx plugins, and the Natron installer.
+This meta package depends on all packages needed for building Natron with Qt6, the openfx plugins, and the Natron portable zip.

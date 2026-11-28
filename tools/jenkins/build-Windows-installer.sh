@@ -17,14 +17,15 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 #
-# Build packages and installer for Windows
+# Build the Windows package: the portable zip, which users unzip and run in place (there is no
+# installer)
 #
 
 set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
 #set -x # Print commands and their arguments as they are executed.
 
-echo "*** Windows installer..."
+echo "*** Windows portable zip..."
 
 source common.sh
 source manageBuildOptions.sh
@@ -64,10 +65,10 @@ if [ -d "${BUILD_ARCHIVE_DIRECTORY}" ]; then
 fi
 
 mkdir -p "${BUILD_ARCHIVE_DIRECTORY}"
-# the list of bundled DLLs, for comparing installers
+# the list of bundled DLLs, for comparing packages
 cp dllVersions.txt "${BUILD_ARCHIVE_DIRECTORY}/${INSTALLER_BASENAME}-dlls.txt"
 
-# If we are in DEBUG_SYMBOLS mode there might already be deployed installer, remove them
+# If we are in DEBUG_SYMBOLS mode there might already be deployed portable trees, remove them
 if [ ! -z "$DEBUG_SCRIPTS" ]; then
     (cd "${TMP_BINARIES_PATH}" ; find . -type d -name 'Natron-*' -exec rm -rf {} \;) || true
 fi
@@ -75,11 +76,12 @@ fi
 
 mkdir -p "${TMP_PORTABLE_DIR}"
 
-# Everything goes into the portable tree ${TMP_PORTABLE_DIR}, which is zipped with Inno Setup's
-# Setup.exe: Setup.exe installs from the unzipped tree (Natron.iss, "external" files). The Qt
-# Installer Framework installers and their packages/ tree are retired (#1133).
+# Everything goes into the portable tree ${TMP_PORTABLE_DIR}, which is zipped as is: Natron runs
+# from wherever it is unzipped, without an installer, so the tree must hold everything it needs at
+# run time and rely on nothing in the registry or on PATH. The Qt Installer Framework installers
+# (#1133) and the Inno Setup Setup.exe are retired.
 
-# make sure we have mt (to embed the plug-in manifests) and the Inno Setup installer
+# make sure we have mt (to embed the plug-in manifests)
 
 MT_BIN=mt.exe
 if ! which ${MT_BIN}; then
@@ -100,13 +102,6 @@ if ! which ${MT_BIN}; then
         echo "Failed to find mt.exe"
         exit 1
     fi
-fi
-
-# The installer is Inno Setup's Setup.exe (${MINGW_PACKAGE_PREFIX}-natron-setup, from
-# natron-build-deps-common), embedded in the portable zip.
-if [ ! -f "${NATRON_SETUP_EXE:-}" ]; then
-    echo "Error: ${MINGW_PREFIX}/share/natron-setup/Setup.exe not found: install ${MINGW_PACKAGE_PREFIX}-natron-setup (tools/MINGW-packages)"
-    exit 1
 fi
 
 strip_binaries() { # strip_binaries <dir>...
@@ -296,11 +291,11 @@ if [ -x "${NATRON_PYTHON}" ]; then
 fi
 
 
-# Mesa opengl32.dll is an optional component of the installer (Natron.iss), so that the user can still fallback
-# on a software renderer if OpenGL driver is not good enough.
+# Mesa's opengl32.dll goes to bin/mesa/, not bin/: a user whose OpenGL driver is not good enough
+# can fall back on a software renderer by copying it to bin/ (getstarted-installation-windows.rst).
 # natron-windows-mesa only has x86 builds. On ARM64, MSYS2's mesa package (opengl32.dll and
 # libgallium_wgl.dll, with their dependencies) should be bundled instead, which is not done yet
-# (#1494): the ARM64 installer has no software OpenGL component.
+# (#1494): the ARM64 zip has no software OpenGL.
 if [ "$ARCH" = "x86_64" ]; then
     MESA_SHA256=123500be4539357c8055c7057cf5a11ef2557b893bee2458f595b5febff5dce5
     if [ ! -d "$SRC_PATH/natron-windows-mesa" ]; then
@@ -352,19 +347,14 @@ if [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
     "$CWD"/check-commercial-bundle.sh "${TMP_PORTABLE_DIR}"
 fi
 
-# Create the installer: the portable zip, with Inno Setup's Setup.exe
-ZIP_INSTALL_DIR="."
-
-# Portable zip, with Setup.exe
+# The portable zip: the only Windows package (DISABLE_PORTABLE_ARCHIVE=1 makes none)
 if [ "$DISABLE_PORTABLE_ARCHIVE" != "1" ]; then
-    mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$ZIP_INSTALL_DIR"
-    cp -a "${NATRON_SETUP_EXE}" "${TMP_BINARIES_PATH}/${PORTABLE_DIRNAME}/Setup.exe"
-    (cd "${TMP_BINARIES_PATH}" && zip -9 -q -r "${PORTABLE_DIRNAME}.zip" "${PORTABLE_DIRNAME}"; mv "${PORTABLE_DIRNAME}.zip" "${BUILD_ARCHIVE_DIRECTORY}/$ZIP_INSTALL_DIR/${PORTABLE_DIRNAME}.zip")
+    (cd "${TMP_BINARIES_PATH}" && zip -9 -q -r "${PORTABLE_DIRNAME}.zip" "${PORTABLE_DIRNAME}"; mv "${PORTABLE_DIRNAME}.zip" "${BUILD_ARCHIVE_DIRECTORY}/${PORTABLE_DIRNAME}.zip")
 fi
 
 echo "*** Artifacts:"
 ls -R  "${BUILD_ARCHIVE_DIRECTORY}"
-echo "*** Windows installer: done!"
+echo "*** Windows portable zip: done!"
 
 # Local variables:
 # mode: shell-script

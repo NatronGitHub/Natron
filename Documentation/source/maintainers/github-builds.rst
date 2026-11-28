@@ -44,8 +44,7 @@ Overview
      - the MacPorts SDK, the x86_64 DMG, Natron-Tests on it
    * - *Build Installer* (``build_installer.yml``)
      - Sunday 06:17 UTC; by hand; ``v*`` tags
-     - the Windows portable tree with Setup.exe, Natron-Tests on the
-       installed Natron
+     - the Windows portable zip, Natron-Tests on the unzipped Natron
    * - *Project Python round trip* (``project_python_roundtrip.yml``)
      - Sunday 13:37 UTC; by hand
      - the Python project format against the ``.ntp``, on the packages
@@ -85,8 +84,8 @@ runs ``ctest`` (the ``Tests`` google-test binary, the Python-driven
   OpenColorIO-Configs 2.5.
 - **Windows** (``win-test``): ``windows-latest`` with MSYS2 UCRT64 and the stock
   MSYS2 packages (Qt 5, PySide2, MSYS2's Python), gcc and Ninja. It doesn't
-  need Natron's package repository, which only the plug-ins and the installer
-  use. The tests use the ``natron_testing`` UCRT64 builds of openfx-io and
+  need Natron's package repository, which only the plug-ins and the Windows
+  package use. The tests use the ``natron_testing`` UCRT64 builds of openfx-io and
   openfx-misc.
 - **macOS** (``macos-test``): macOS 15 arm64, the system (Xcode) clang and
   MacPorts libraries (Python 3.11, PySide2), never Homebrew, which the job
@@ -291,7 +290,7 @@ released yet, so it is built by hand only (``windows_arm64.yml``, or the
 The package repository
 ~~~~~~~~~~~~~~~~~~~~~~
 
-The plug-ins and the installer need packages that MSYS2 doesn't have, or
+The plug-ins and the Windows package need packages that MSYS2 doesn't have, or
 that Natron patches (``tools/MINGW-packages``: ``mingw-w64-natron_*``,
 ``osmesa``, ``freetype`` and ``qt5-base`` with Natron's fixes, …).
 ``build_pacman_repo.yml`` builds them into a pacman repository, by hand or on
@@ -308,38 +307,38 @@ that Natron patches (``tools/MINGW-packages``: ``mingw-w64-natron_*``,
    ``natron_package_repo-clangarm64-<version>.zip``). Never delete the zips of
    older versions: older branches and tags use them.
 3. Run *Build Installer* on the branch, then merge it. Until the zip is
-   published, every installer run on that branch fails (a manual run can use
+   published, every *Build Installer* run on that branch fails (a manual run can use
    the artifact instead, with ``pacman_repo_run_id``; the weekly run can't).
 
 The packages are built against the MSYS2 of the day, so the repository must
 also be rebuilt when MSYS2 moves under it, even if no PKGBUILD changed. In
 particular, **OSMesa links MSYS2's static LLVM libraries and pins the exact
 LLVM version it was built with**: every MSYS2 LLVM update breaks the
-installer until the repository is rebuilt and republished (#2042).
+Windows package until the repository is rebuilt and republished (#2042).
 ``tools/MINGW-packages/README.md`` has the full procedure, the list of
 packages and when to rebuild.
 
-The installer
-~~~~~~~~~~~~~
+The Windows portable zip
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``build_installer.yml`` (*Build Installer*) builds the Windows package with
 ``tools/jenkins/launchBuildMain.sh`` (CMake, UCRT64, GPL only) on
 ``windows-2022``, with the package repository pinned by
-``windows_pacman_repo_version.txt``. Its ``win-installer`` job makes the
-portable tree with Setup.exe in it, checks that every plug-in loads
-(``verify_plugin_loads.cpp``), runs the bundle without MSYS2, installs,
-upgrades, runs and uninstalls it with Setup.exe, and compares its file list
-and DLLs with the 2.6.0-alpha1 installer (the ``compare-<installer>``
-artifact). The build runs in a short workspace path (``D:/nbw``), because of
-Windows' 260-character ``MAX_PATH``.
+``windows_pacman_repo_version.txt``. The Windows package is a portable zip:
+users unzip it and run Natron in place; there is no installer (no Setup.exe).
+The ``win-installer`` job makes the zip, checks that it holds only the
+portable tree, checks that every plug-in loads (``verify_plugin_loads.cpp``),
+runs the bundle without MSYS2, and compares its file list and DLLs with the
+2.6.0-alpha1 package (the ``compare-<installer>`` artifact). Its artifact is
+the zip itself (so downloading it gives a zip that holds the portable zip).
+The build runs in a short workspace path (``D:/nbw``), because of Windows'
+260-character ``MAX_PATH``.
 
 The ``natron-tests`` job then runs Natron-Tests on Natron as users get it
-(#1959): on a fresh ``windows-latest`` runner that never had MSYS2, it installs
-the portable tree with its Setup.exe into a new folder and runs
-``runTests.sh`` with the runner's Git Bash against the installed
-``NatronRenderer.exe``. Setup.exe reads its files with ``MAX_PATH`` paths, so
-the tree is first moved to a short path (``C:\ns``) and installed into
-``C:\nt`` (#1990). A known failure that passes (``UNEXPECTED PASS``) fails the
+(#1959): on a fresh ``windows-latest`` runner that never had MSYS2, it unzips
+the portable zip with Windows' own ``tar`` into a new folder (``C:\nt``) and
+runs ``runTests.sh`` with the runner's Git Bash against the unzipped
+``NatronRenderer.exe``. A known failure that passes (``UNEXPECTED PASS``) fails the
 job; other failures are only warnings until the Windows known failures have
 been checked against a 2.6 run (#1629).
 
@@ -493,7 +492,7 @@ Other workflows
   threading and RAM settings; a render that stops making progress saves the
   backtraces of all its threads in the artifacts and fails the job (#248). By
   default it soaks the packages (the ``natron_testing`` Linux archive, the
-  Windows portable tree of the last successful ``build_installer.yml`` run on
+  Windows portable zip of the last successful ``build_installer.yml`` run on
   RB-2.6), or the ``linux_packages.yml`` or ``build_installer.yml`` run given
   by ``package_run_id``; ``natron_build=source`` builds ``natron_ref``
   instead (RelWithDebInfo, for backtraces with symbols), e.g. a commit before
@@ -505,7 +504,7 @@ Other workflows
   ``Tests/data`` as a text ``.ntp``, and as Python, which it loads and saves
   as a text ``.ntp`` again, and compares the two ``.ntp`` files (#2001). It
   builds nothing: it uses the Linux x86_64 archive of ``natron_testing`` and
-  the Windows portable tree of the last successful ``build_installer.yml``
+  the Windows portable zip of the last successful ``build_installer.yml``
   run on RB-2.6 (a manual run can name other runs). A difference fails the job
   unless ``Tests/gui/ntp_python_roundtrip_allowlist.txt`` lists it, with the
   issue that tracks it; remove the entry when the issue is fixed. The
@@ -538,7 +537,7 @@ Natron's GitHub releases are made from tags:
   with their Natron-Tests results, to the GitHub pre-release
   (``.github/workflows/attach_to_prerelease.sh``, which creates the
   pre-release if it doesn't exist yet): the Linux archives, the x86_64 DMG,
-  the Windows portable zip with Setup.exe.
+  the Windows portable zip.
 
   **The rule:** each Natron pre-release tag is also created on the plug-in
   repositories (``Natron-<version>``), and every package workflow builds the

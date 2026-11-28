@@ -81,7 +81,7 @@ See [System requirements](https://natron.readthedocs.io/en/rb-2.6/guide/getstart
 
 ### Binary distribution
 
-Binary distributions of Natron are available for GNU/Linux (a portable `.tar.xz` archive), Windows (a `.zip` archive that runs as is and contains an installer, `Setup.exe`), and macOS (a `.dmg`) on [GitHub](https://github.com/NatronGitHub/Natron/releases), or from [the Natron web site](https://natrongithub.github.io/#download). These distributions contain Natron and four included sets of OpenFX plugins:
+Binary distributions of Natron are available for GNU/Linux (a portable `.tar.xz` archive), Windows (a portable `.zip` archive: unzip it and run Natron in place, there is no installer), and macOS (a `.dmg`) on [GitHub](https://github.com/NatronGitHub/Natron/releases), or from [the Natron web site](https://natrongithub.github.io/#download). These distributions contain Natron and four included sets of OpenFX plugins:
 
 - [openfx-io](https://github.com/NatronGitHub/openfx-io/)
 - [openfx-misc](https://github.com/NatronGitHub/openfx-misc)

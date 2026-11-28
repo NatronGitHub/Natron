@@ -9,7 +9,7 @@ name: Python project round trip
 # projects only, in every CI build.
 # The builds are not made here: Linux uses the x86_64 archive of the natron_testing pre-release (the
 # last weekly or on-demand run of linux_packages.yml on RB-2.6 whose packages and Natron-Tests
-# passed), Windows the portable tree of the last successful build_installer.yml run on RB-2.6 (or the
+# passed), Windows the portable zip of the last successful build_installer.yml run on RB-2.6 (or the
 # runs given by hand). The check itself (the driver and the allowlist) comes from the branch of the
 # run. Weekly (Sunday, after the package workflows) and on demand; never skipped: the packages are
 # rebuilt every week, with the plug-ins' moving branches. No macOS job yet (#2001 asks for the Linux
@@ -22,7 +22,7 @@ on:
         required: false
         default: ''
       windows_run_id:
-        description: 'Optional: ID of a "Build Installer" run whose Windows x86_64 portable tree is used instead of the last successful run on RB-2.6'
+        description: 'Optional: ID of a "Build Installer" run whose Windows x86_64 portable zip is used instead of the last successful run on RB-2.6'
         required: false
         default: ''
   schedule:
@@ -120,8 +120,13 @@ jobs:
           [ -n "${RUN_ID}" ] || { echo "::error::no successful Build Installer run on RB-2.6"; exit 1; }
         fi
         echo "Build Installer run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}"
-        # the unzipped portable tree (not the -tests, -unit_tests_failures or compare- artifacts)
+        # the portable zip (not the -tests, -unit_tests_failures or compare- artifacts), unzipped
+        # with Windows' tar (older runs uploaded the unzipped tree, used as is)
         gh run download "${RUN_ID}" -R "${GITHUB_REPOSITORY}" -p 'Natron-*-Windows-x86_64' -D dist
+        find dist -maxdepth 2 -type f -name 'Natron-*-Windows-x86_64.zip' | while IFS= read -r z; do
+          "$(cygpath -u -S)/tar.exe" -xf "$(cygpath -w "$z")" -C "$(cygpath -w "$(dirname "$z")")"
+          rm "$z"
+        done
         RENDERER=$(find dist -name NatronRenderer.exe -path '*/bin/*')
         [ "$(echo "${RENDERER}" | grep -c .)" = 1 ] || { echo "::error::not exactly one NatronRenderer.exe:"; echo "${RENDERER}"; exit 1; }
         APP=$(dirname "$(dirname "${RENDERER}")")

@@ -258,8 +258,8 @@ The workflows are described in :doc:`github-builds`; the rules are:
 - **Workflow hygiene:** ``paths-ignore`` for documentation, ``concurrency``
   with ``cancel-in-progress`` for pull requests, read-only ``permissions``, one
   dependency cache per OS. User-facing artifacts are kept at least 14 days.
-- **Pre-release packages** (macOS DMG, Linux portable archive, Windows zip with
-  Setup.exe) are built weekly, on demand and on pre-release tags, never on
+- **Pre-release packages** (macOS DMG, Linux portable archive, Windows
+  portable zip) are built weekly, on demand and on pre-release tags, never on
   pull requests. Only Natron attaches them to a GitHub pre-release; the plug-in
   repositories only upload CI artifacts. Each Natron pre-release tag is also
   created on the plug-in repositories, and every package workflow builds the

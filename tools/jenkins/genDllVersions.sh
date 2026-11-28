@@ -25,8 +25,8 @@
 #
 # Most DLLs go to bin/, next to Natron.exe, which Windows always searches. The ones that only the
 # Arena or G'MIC plug-in uses (*_PRIVATE_DLLS) go into the plug-in bundle, as before, so that the
-# optional installer component of the plug-in carries them: build-Windows-installer.sh embeds a
-# manifest that lists them into the plug-in.
+# plug-in's folder carries them: build-Windows-installer.sh embeds a manifest that lists them
+# into the plug-in.
 #
 # Environment:
 #   MINGW_PREFIX       MSYS2 prefix (/ucrt64, /clangarm64...); SDK_HOME is accepted too
@@ -162,8 +162,8 @@ WINDOWS_DIR="${WINDOWS_DIR//\\//}"
 WINDOWS_DIR="${WINDOWS_DIR%/}"
 
 # Never bundled, even if an MSYS2 package installed them in a search directory: Mesa's
-# opengl32.dll would replace the OpenGL driver of the system (the software renderer is an optional
-# installer component, see build-Windows-installer.sh), and the Vulkan loader and the Direct3D
+# opengl32.dll would replace the OpenGL driver of the system (the software renderer is in bin/mesa/,
+# which users copy to bin/ by hand, see build-Windows-installer.sh), and the Vulkan loader and the Direct3D
 # shader compiler are always the system's.
 NEVER_BUNDLED="opengl32.dll glu32.dll libgallium_wgl.dll vulkan-1.dll d3dcompiler_47.dll"
 
