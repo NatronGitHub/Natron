@@ -457,7 +457,8 @@ foreach(_natron_headless_test ${NatronHeadlessTests_SCRIPTS})
         ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/headless-tests-cache/${_natron_headless_test_name}")
 endforeach()
 # thousands of nodes; several renders
-set_tests_properties(headless.node_naming headless.layer_passthrough headless.writer_pass_through PROPERTIES
+set_tests_properties(headless.node_naming headless.layer_passthrough headless.writer_pass_through
+    headless.read_special_paths PROPERTIES
     TIMEOUT 300)
 # the PyPlugs of the tests
 set_property(TEST headless.pyplug_rebound_app headless.unsaved_project_path APPEND PROPERTY ENVIRONMENT
