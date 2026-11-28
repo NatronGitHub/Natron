@@ -175,6 +175,19 @@ version: two test runs at the same time would rewrite each other's (#1569).
   and the driver scripts of ``Tests/gui`` (``run_*.py``) a temporary one, removed at the end,
   unless ``NATRON_DISK_CACHE_PATH`` is set.
 
+OSMesa renders
+~~~~~~~~~~~~~~
+
+``ShadertoyOSMesaTest.*`` (``Tests/ShadertoyOSMesa_Test.cpp``) renders fixed shaders with
+openfx-misc's Shadertoy on the CPU, through OSMesa (llvmpipe, and softpipe if it can be
+selected), and compares them with ``Tests/data/osmesa/*.pfm`` (largest difference 0.001). This
+is what tests an OSMesa, Mesa or LLVM upgrade of the packages. The tests are skipped without
+Shadertoy or with a Shadertoy built without OSMesa (as in ``ci.yml``), and fail instead with
+``NATRON_TESTS_REQUIRE_OSMESA=1``, which ``tools/jenkins/common.sh`` sets for the release
+builds. After an intended change of the renders (never to hide an OSMesa regression), write new
+ones with ``NATRON_TESTS_OSMESA_OUTPUT_DIR=<dir> Tests --gtest_filter='ShadertoyOSMesaTest.*'``,
+look at them, and copy them to ``Tests/data/osmesa/``.
+
 Debugging and profiling
 -----------------------
 

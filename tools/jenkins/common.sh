@@ -490,6 +490,10 @@ else
     (>&2 echo "Info: Setting OSMESA_PATH=$SDK_HOME/osmesa")
     OSMESA_PATH="$SDK_HOME/osmesa"
 fi
+# build-plugins.sh always builds openfx-misc's Shadertoy with OSMesa: the Tests runs of
+# build-natron.sh and build-*-installer.sh must render with it (Tests/ShadertoyOSMesa_Test.cpp
+# fails instead of skipping)
+export NATRON_TESTS_REQUIRE_OSMESA=1
 
 if [ -n "${LLVM_PREFIX:-}" ]; then
     LLVM_PATH="${LLVM_PREFIX}"

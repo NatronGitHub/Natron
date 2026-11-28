@@ -121,6 +121,7 @@ set(Tests_SOURCES
     RotoPaint_Test.cpp
     SequentialRender_Test.cpp
     Settings_Test.cpp
+    ShadertoyOSMesa_Test.cpp
     ShuffleAutoConnect_Test.cpp
     StrUtilsFormat_Test.cpp
     LibMVTrackRegion_Test.cpp
