@@ -385,10 +385,11 @@ Differences between the repositories
    * - CHANGELOG
      - Every pull request has a ``### CHANGELOG`` section. Natron's collection
        also reads those of the plug-in repositories (see
-       :ref:`maint-changelog`). openfx-io and openfx-misc have no changelog
-       file; openfx-gmic keeps a ``CHANGELOG.md`` and openfx-arena a
-       ``ChangeLog.md``; openfx-supportext has none (its lines stay in the pull
-       request descriptions).
+       :ref:`maint-changelog`). openfx-gmic's ``CHANGELOG.md`` and
+       openfx-arena's ``ChangeLog.md`` are updated when a pre-release is
+       tagged, with the lines collected from their pull requests; pull
+       requests don't edit them. openfx-io, openfx-misc and openfx-supportext
+       have no changelog file.
    * - Draft CI
      - openfx runs its bindings-sync check on drafts: a change to a virtual
        function of ``HostSupport/include`` updates the Python adapters of

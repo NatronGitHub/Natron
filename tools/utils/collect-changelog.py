@@ -32,7 +32,7 @@ paragraphs is left as it is, with the new lines at its end. PRs without a
 CHANGELOG section, lines under a heading that CHANGELOG.md doesn't have, and
 lines that can't be parsed are reported.
 
-The plug-in repositories have no CHANGELOG.md of their own: --extra-repo
+Natron's CHANGELOG.md also lists the plug-in repositories' changes: --extra-repo
 collects their merged PRs too (base branch master by default). Their lines
 go to the Plugins section unless they name another heading; a bare "#NNN"
 in them becomes "<repo>#NNN" (e.g. "openfx-io#343"; a Natron reference is

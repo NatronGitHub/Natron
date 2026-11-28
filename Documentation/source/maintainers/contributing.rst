@@ -247,10 +247,12 @@ Start each line with the component it is about (``Python:``, ``Viewer:``,
 ``Plugins``), and write it for users: what they see, not how the code changed.
 A line without a ``#NNN`` reference gets the number of its pull request. The
 plug-in repositories' pull requests (openfx-io, openfx-misc, openfx-arena,
-openfx-gmic) carry the same section, with
-``Plugins:`` lines such as ``- ReadFFmpeg: ... (openfx-io#NNN)``. In them, a
-bare ``#NNN`` is an issue of that repository and becomes ``openfx-io#NNN``:
-write a Natron reference as ``Natron#NNN``. Pull requests opened against
+openfx-gmic) carry the same section, with ``Plugins:`` lines such as
+``- ReadFFmpeg: ... (openfx-io#NNN)``. In them, a bare ``#NNN`` is an issue of
+that repository and becomes ``openfx-io#NNN``: write a Natron reference as
+``Natron#NNN``. openfx-gmic's ``CHANGELOG.md`` and openfx-arena's
+``ChangeLog.md`` are updated from these lines when a pre-release is tagged;
+pull requests don't edit them. Pull requests opened against
 RB-2.7 only (Qt 6 work) are not collected: the script reads RB-2.6.
 
 ``tools/utils/collect-changelog.py`` collects the lines of the pull requests

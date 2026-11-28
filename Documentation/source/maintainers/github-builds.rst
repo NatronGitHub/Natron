@@ -534,15 +534,19 @@ Natron's GitHub releases are made from tags:
 
 - **Pre-release tags** (``v2.6.0-alpha1``, ``-beta1``, ``-rc1``, ``-RC1``,
   ``-alpha.1``, …): ``linux_packages.yml``, ``macos_x86_64.yml`` and
-  ``build_installer.yml`` build the packages from the tag and attach them, with their Natron-Tests
-  results, to the GitHub pre-release
+  ``build_installer.yml`` build the packages from the tag and attach them,
+  with their Natron-Tests results, to the GitHub pre-release
   (``.github/workflows/attach_to_prerelease.sh``, which creates the
   pre-release if it doesn't exist yet): the Linux archives, the x86_64 DMG,
-  the Windows portable zip with Setup.exe. Only ``linux_packages.yml`` makes a
-  release build (``RELEASE_TAG``), whose plug-ins come from their
-  ``Natron-<version>`` tags; ``macos_x86_64.yml`` and ``build_installer.yml``
-  pass the tag as a branch name, so they make a snapshot build with the
-  plug-ins of ``Global/plugin-branches.sh``. ``linux_packages.yml`` attaches
+  the Windows portable zip with Setup.exe.
+
+  **The rule:** each Natron pre-release tag is also created on the plug-in
+  repositories (``Natron-<version>``), and every package workflow builds the
+  plug-ins at that tag. **Not implemented yet** (#2051): only
+  ``linux_packages.yml`` makes a release build (``RELEASE_TAG``), with the
+  plug-ins at their tags; ``macos_x86_64.yml`` and ``build_installer.yml``
+  pass the tag as a branch name, so they still build the plug-ins at the
+  branch heads of ``Global/plugin-branches.sh``. ``linux_packages.yml`` attaches
   every archive it built, with the test results, whatever they are;
   ``macos_x86_64.yml`` and ``build_installer.yml`` attach nothing unless their
   Natron-Tests job passed. The arm64 DMG is built with ``tools/tart`` and
