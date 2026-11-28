@@ -27,6 +27,7 @@
 #include "EffectInstancePrivate.h"
 
 #include <map>
+#include <optional>
 #include <sstream>
 #include <algorithm> // min, max
 #include <limits>
@@ -269,6 +270,12 @@ public:
         return _rectsToRender;
     }
 
+    /// true if other threads are rendering parts of the RoI: waitForPendingRegions() waits for them
+    bool isBeingRenderedElsewhere() const
+    {
+        return _isBeingRenderedElseWhere;
+    }
+
     /// Call when the rectangles returned by getRectsToRender() were successfully rendered
     void setRendered()
     {
@@ -322,6 +329,167 @@ private:
 };
 #endif // #if NATRON_ENABLE_TRIMAP
 
+namespace {
+/**
+ * @brief A render lock that a thread holds while it runs the render action of an effect (#1614). Each lock guards
+ * the plug-in code of the render action, not data:
+ * - the node's lock (Node::getRenderInstancesSharedMutex()), for Unsafe and Instance-safe effects, and for effects
+ *   without concurrent OpenGL renders that render on their main instance: the render action of the node never runs
+ *   twice at the same time (on the main instance, as for an Unsafe plug-in or an effect without render clones, or
+ *   on a render clone);
+ * - then, for an Unsafe plug-in, the plug-in's lock (Plugin::getPluginLock(), shared by all its instances): the code
+ *   of the plug-in never runs on two threads at the same time.
+ *
+ * The render action may render images upstream (getImage() of an image that was not rendered before the action,
+ * e.g. a frame not asked for in getFramesNeeded, or an identity tile), which needs the render locks of the nodes
+ * upstream, or pixels that another thread is rendering (ImageBitMapMarker_RAII). The lock order (CP.21, CP.22:
+ * https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#rconc-lock,
+ * https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#rconc-unknown):
+ * - node locks are taken from downstream to upstream, following the graph, and are never released during the
+ *   action;
+ * - a plug-in lock is taken last, and released (UpstreamRenderLockRelease) before the thread renders anything
+ *   upstream or waits for the pixels of other threads, then taken again. A thread that holds a plug-in lock
+ *   therefore never waits for anything upstream. The locks of Unsafe plug-ins are shared by nodes anywhere in the
+ *   graph: holding one while waiting upstream could deadlock.
+ * Another render of an Unsafe plug-in, on another node, may then run while an action waits in clipGetImage.
+ *
+ * Known exceptions, where a render can still wait upstream with the plug-in lock held (#1998):
+ * - OpenGL renders: the plug-in lock is not released (for a plug-in without concurrent OpenGL renders, the effect's
+ *   attachedContextsMutex, taken after it and held during the action, would then be taken in the other order by the
+ *   next render). Such a render can wait for the pixels of another thread, as before. It can also wait for the node
+ *   lock of another node of the plug-in (a frame of it fetched in the action, rendered on the CPU) held by a thread
+ *   that has released the plug-in lock and waits for it: this one is new, since that thread used to keep it.
+ * - The threads of the OFX multi-thread suite: they have no RenderLock, while the thread that started them holds
+ *   its locks.
+ **/
+class RenderLock
+{
+public:
+    RenderLock(QMutex* mutex,
+               bool releasable)
+        : _mutex(mutex)
+        , _recursiveMutex(nullptr)
+        , _releasable(releasable)
+        , _locked(false)
+        , _previous(tCurrent)
+    {
+        relock();
+        tCurrent = this;
+    }
+
+    RenderLock(QRecursiveMutex* mutex,
+               bool releasable)
+        : _mutex(nullptr)
+        , _recursiveMutex(mutex)
+        , _releasable(releasable)
+        , _locked(false)
+        , _previous(tCurrent)
+    {
+        relock();
+        tCurrent = this;
+    }
+
+    RenderLock(const RenderLock&) = delete;
+    RenderLock& operator=(const RenderLock&) = delete;
+
+    ~RenderLock()
+    {
+        assert(tCurrent == this);
+        tCurrent = _previous;
+        unlock();
+    }
+
+    /// The innermost render lock of this thread (locked or released), or NULL
+    static RenderLock* current()
+    {
+        return tCurrent;
+    }
+
+    /// Unlock, if it may be released and is locked; returns true if it was unlocked
+    bool release()
+    {
+        if (!_releasable || !_locked) {
+            return false;
+        }
+        unlock();
+
+        return true;
+    }
+
+    void relock()
+    {
+        assert(!_locked);
+        if (_mutex) {
+            _mutex->lock();
+        } else {
+            _recursiveMutex->lock();
+        }
+        _locked = true;
+    }
+
+private:
+    void unlock()
+    {
+        if (!_locked) {
+            return;
+        }
+        _locked = false;
+        if (_mutex) {
+            _mutex->unlock();
+        } else {
+            _recursiveMutex->unlock();
+        }
+    }
+
+    static thread_local RenderLock* tCurrent;
+
+    QMutex* const _mutex;
+    QRecursiveMutex* const _recursiveMutex;
+    const bool _releasable;
+    bool _locked;
+    RenderLock* const _previous;
+};
+
+thread_local RenderLock* RenderLock::tCurrent = nullptr;
+
+/**
+ * @brief In renderRoI(): releases the plug-in lock of the downstream render action that called renderRoI() on this
+ * thread, if any, while renderRoI() renders or waits for upstream pixels, and takes it again when renderRoI()
+ * returns (see RenderLock).
+ **/
+class UpstreamRenderLockRelease
+{
+public:
+    UpstreamRenderLockRelease()
+        : _lock( RenderLock::current() )
+        , _released(false)
+    {
+    }
+
+    UpstreamRenderLockRelease(const UpstreamRenderLockRelease&) = delete;
+    UpstreamRenderLockRelease& operator=(const UpstreamRenderLockRelease&) = delete;
+
+    ~UpstreamRenderLockRelease()
+    {
+        if (_released) {
+            _lock->relock();
+        }
+    }
+
+    /// Call before rendering or waiting for pixels of other threads
+    void release()
+    {
+        if (_lock && !_released) {
+            _released = _lock->release();
+        }
+    }
+
+private:
+    RenderLock* const _lock;
+    bool _released;
+};
+} // anonymous namespace
+
 EffectInstance::RenderRoIRetCode
 EffectInstance::renderRoI(const RenderRoIArgs & args,
                           std::map<ImagePlaneDesc, ImagePtr>* outputPlanes)
@@ -346,6 +514,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     // renderRoI recurses upstream, once per node: stop before the stack overflows (#1440)
     GraphDepthGuard depthGuard(eGraphTraversalRender, this);
+    // the render lock of the render action downstream, if it called this (see RenderLock)
+    UpstreamRenderLockRelease downstreamRenderLock;
     if ( depthGuard.isTooDeep() ) {
         return eRenderRoIRetCodeFailed;
     }
@@ -1448,6 +1618,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     }
 
     bool hasSomethingToRender = !planesToRender->rectsToRender.empty();
+    if (hasSomethingToRender) {
+        // the inputs are rendered, and this effect takes its render locks, below
+        downstreamRenderLock.release();
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// End Determine rectangles left to render /////////////////////////////////////////////////
@@ -1688,7 +1862,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         ///locks belongs to an instance)
 
 
-        std::unique_ptr<QtCompat::MutexLock> locker;
+        // The render locks (see RenderLock): the node's lock, never released during the action, then the lock of an
+        // Unsafe plug-in, released while the action waits for an upstream render
+        std::optional<RenderLock> nodeLock;
+        std::optional<RenderLock> pluginLock;
 
 
         EffectInstancePtr renderInstance;
@@ -1705,18 +1882,18 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
         assert(renderInstance);
 
-        if ( (safety == eRenderSafetyInstanceSafe) ||
+        if ( (safety == eRenderSafetyInstanceSafe) || (safety == eRenderSafetyUnsafe) ||
              ( useRenderClone && ( renderInstance.get() == this ) ) ) {
-            // (the second case: no concurrent OpenGL renders, and the main instance is used, which
+            // (the last case: no concurrent OpenGL renders, and the main instance is used, which
             // also happens when the effect makes no render clones, e.g. a single-instance OFX plug-in)
-            locker.reset( new QtCompat::MutexLock( &getNode()->getRenderInstancesSharedMutex() ) );
-        } else if (safety == eRenderSafetyUnsafe) {
+            // An Unsafe plug-in renders on the main instance (no render clones): its render action must not run twice at
+            // the same time on the node while it waits for an upstream render with its plug-in lock released.
+            nodeLock.emplace(&getNode()->getRenderInstancesSharedMutex(), false /*releasable*/);
+        }
+        if (safety == eRenderSafetyUnsafe) {
             const Plugin* p = getNode()->getPlugin();
             assert(p);
-            locker.reset( new QtCompat::MutexLock( p->getPluginLock() ) );
-        } else {
-            // no need to lock
-            Q_UNUSED(locker);
+            pluginLock.emplace(p->getPluginLock(), storage != eStorageModeGLTex /*releasable*/);
         }
 
 
@@ -1836,6 +2013,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     if ( !renderAborted && ( (renderRetCode == eRenderRoIStatusImageRendered) || (renderRetCode == eRenderRoIStatusImageAlreadyRendered) ) ) {
         if (renderRetCode == eRenderRoIStatusImageRendered) {
             guard->setRendered();
+        }
+        if ( guard->isBeingRenderedElsewhere() ) {
+            downstreamRenderLock.release();
         }
         regionsComplete = guard->waitForPendingRegions();
     }

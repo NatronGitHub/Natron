@@ -408,6 +408,37 @@ Suppose the Viewer needs the visible region of a Blur node at frame 10.
     `#248 <https://github.com/NatronGitHub/Natron/issues/248>`_ may be related
     (see :ref:`maint-issue-triage`).
 
+    **Render locks.** These locks guard the plug-in code of the render
+    action, not data. The render action of an Unsafe or Instance-safe effect
+    (or of an effect without concurrent OpenGL renders, on its main instance)
+    runs under the node's lock (``Node::getRenderInstancesSharedMutex()``), so
+    it never runs twice at the same time on the node. That of an Unsafe
+    plug-in also runs under the plug-in's lock (``Plugin::getPluginLock()``,
+    shared by all its instances), taken after it. The action may render
+    images upstream: ``getImage`` of an image that was not rendered before the
+    action (a frame not asked for in ``getFramesNeeded``, a larger region), or
+    an identity tile. The lock order: node locks are taken from downstream to
+    upstream, following the graph, and are held during the whole action; a
+    plug-in lock is taken last, and released while the thread renders upstream
+    or waits for the pixels of other threads. The nested ``renderRoI``
+    releases it (``UpstreamRenderLockRelease`` and ``RenderLock`` in
+    ``EffectInstanceRenderRoI.cpp``) before it renders anything or waits for
+    other threads, and takes it again when it returns. The locks of Unsafe
+    plug-ins are shared by nodes anywhere in the graph: holding one while
+    waiting upstream could deadlock two renders
+    (`#1614 <https://github.com/NatronGitHub/Natron/issues/1614>`_). The code
+    of an Unsafe plug-in still never runs on two threads at once, but a render
+    of another node of the plug-in may run while an action waits in
+    ``clipGetImage``. Known exceptions, which keep the plug-in lock while they
+    wait (`#1998 <https://github.com/NatronGitHub/Natron/issues/1998>`_):
+    OpenGL renders (for a plug-in without concurrent OpenGL renders, the
+    effect's ``attachedContextsMutex``, taken after the render locks, is held
+    during the action), and the threads of the OFX multi-thread suite (their
+    spawner holds the locks). An OpenGL render of an Unsafe plug-in can wait
+    for the pixels of another thread, as before #1614, and also for the node
+    lock of another node of the plug-in whose action has released the plug-in
+    lock and waits for it, which is new.
+
     When ``renderRoI`` is called from ``getImage`` and the cached image is too
     small, the image is copied into a larger one (``copyAndResizeIfNeeded``)
     that replaces it in the cache. The pixels other threads are rendering into

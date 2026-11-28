@@ -91,6 +91,7 @@ set(Tests_SOURCES
     OfxProjectLoad_Test.cpp
     OfxQuestion_Test.cpp
     OfxRenderClone_Test.cpp
+    OfxRenderLock_Test.cpp
     OfxSequenceRenderArgs_Test.cpp
     OfxSingleInstance_Test.cpp
     OfxStrChoiceParam_Test.cpp
