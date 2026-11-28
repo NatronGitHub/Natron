@@ -1,8 +1,9 @@
 name: macOS x86_64 DMG
 
 # The macOS x86_64 (Intel) DMG of Natron, built on GitHub's Intel runner (macos-15-intel), and
-# tested there with Natron-Tests. The arm64 DMG is built in a tart VM (tools/tart). Runs weekly
-# (Sunday), on demand, and on pre-release tags (v*-alpha*, -beta*, -rc*, -RC*), never on pull requests.
+# tested with Natron-Tests on the latest Intel runner (macos-26-intel). The arm64 DMG is built in
+# a tart VM (tools/tart) and tested by macos_arm64.yml. Runs weekly (Sunday), on demand, and on
+# pre-release tags (v*-alpha*, -beta*, -rc*, -RC*), never on pull requests.
 #
 # 1. SDK (macos_x86_64_sdk.yml, up to 4 chained stages of less than 6 hours): the MacPorts SDK of
 #    tools/tart/provision.sh, for macOS 14.0 (every Mach-O file has minos <= 14.0). On macOS 15 the
@@ -16,8 +17,10 @@ name: macOS x86_64 DMG
 # 2. dmg: Natron and the plug-ins built from source with tools/jenkins/launchBuildMain.sh (CMake,
 #    the compiler of compiler-common.sh), the DMG, and its minos check (tools/tart/check-minos.sh).
 #    Never skipped: MacPorts and the runner image are rolling.
-# 3. test: Natron-Tests on a fresh runner, against the DMG's Natron.app, with Homebrew moved away
-#    and no SDK (tools/tart/run-natron-tests.sh, as tools/tart/natron-test.sh).
+# 3. test: Natron-Tests on a fresh runner of the latest Intel macOS, against the DMG's Natron.app,
+#    with Homebrew moved away and no SDK (macos_dmg_tests.yml, which runs tools/tart/run-natron-tests.sh,
+#    as tools/tart/natron-test.sh does).
+#    The build targets macOS 14.0, which GitHub no longer has (all macOS 14 images are retired).
 # 4. release (pre-release tags only): the DMG and the test results attached to the GitHub release.
 # Weekly and on-demand runs keep the DMG and test results as artifacts for 14 days.
 on:
@@ -167,43 +170,11 @@ jobs:
     # the SDK stages after the one that finished are skipped: without a status function, a job
     # whose (indirect) dependencies were skipped is skipped too
     if: ${{ !cancelled() && needs.dmg.result == 'success' }}
-    runs-on: macos-15-intel
-    timeout-minutes: 300
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/checkout@v4
-        with:
-          repository: NatronGitHub/Natron-Tests
-          path: Natron-Tests
-
-      - name: Download the DMG
-        uses: actions/download-artifact@v4
-        with:
-          name: Natron-macOS-x86_64-dmg
-          path: ${{ runner.temp }}/dmg
-
-      - name: Run Natron-Tests
-        run: |
-          # runTests.sh downloads these from SourceForge, which is sometimes flaky: fetch them first
-          for z in Natron_2.3.12_Spaceship.zip Natron_2.3.12_BayMax.zip; do
-            curl -fsSL --retry 5 -o "Natron-Tests/$z" "https://downloads.sourceforge.net/project/natron/Examples/$z" || rm -f "Natron-Tests/$z"
-          done
-          # a bare macOS, as far as possible: no Homebrew (/usr/local), no SDK, no MacPorts
-          "$GITHUB_WORKSPACE/.github/workflows/macos_x86_64_sdk.sh" hide-homebrew
-          [ ! -e /opt/local ] || { echo "::error::/opt/local exists"; exit 1; }
-          dmg=$(ls "$RUNNER_TEMP"/dmg/Natron-*.dmg)
-          echo "DMG_NAME=$(basename "${dmg%.dmg}")" >> "$GITHUB_ENV"
-          tools/tart/run-natron-tests.sh "$dmg" Natron-Tests "$RUNNER_TEMP/results" "$(basename "${dmg%.dmg}")"
-
-      - name: Upload the test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          overwrite: true
-          name: Natron-macOS-x86_64-tests
-          path: ${{ runner.temp }}/results
-          retention-days: 14
+    uses: ./.github/workflows/macos_dmg_tests.yml
+    with:
+      artifact: Natron-macOS-x86_64-dmg
+      runner: macos-26-intel
+      results: Natron-macOS-x86_64-tests
 
   release:
     name: Attach to the release

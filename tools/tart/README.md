@@ -86,8 +86,32 @@ Known failures are listed in Natron-Tests itself, in `known_failures/common.txt`
 - **Stages.** From scratch this takes longer than GitHub's 6-hour job limit, so `macos_x86_64_sdk.yml` runs as up to 4 chained jobs (2 from scratch): each one runs `provision.sh` for at most `BUDGET_MINUTES`, stops it, and saves the whole state (`/opt/local` with MacPorts' build directories, `/opt/osmesa`, `/opt/llvm`, the done markers) as an artifact that the next job restores; MacPorts resumes the interrupted build. The job that finishes saves the SDK as the artifact `natron-sdk-macos-x86_64-<key>` (kept 90 days), where the key is a hash of `tools/MacPorts`, `provision.sh`, `check-minos.sh`, `macos-release.sh` and `macos_x86_64_sdk.sh` (its list of SDK steps).
 - **Reuse.** A Linux job looks for the SDK artifacts of earlier runs, so a reused SDK holds no macOS runner. A run reuses the SDK of the same key if it is less than 30 days old; otherwise it updates the newest SDK of the branch or of the default branch (`provision.sh update`, then the SDK steps), and only builds from scratch if there is none. The `sdk` input of `workflow_dispatch` forces `update` or `scratch`. The DMG itself is built in every run: MacPorts and the runner image are rolling.
 - **DMG.** `provision.sh sync fixups build`, as `natron-build.sh`, with this commit: `launchBuildMain.sh` builds Natron and the plug-ins with CMake for macOS 14.0 and checks the DMG with `check-minos.sh`.
-- **Tests.** On a fresh runner, with Homebrew moved away and no `/opt/local`: `run-natron-tests.sh`, the script that `natron-test.sh` runs in its VM, with the same result files.
-- **Limits, compared with the arm64 tart builds.** The SDK and the DMG are built with Xcode 16.4's macOS 15.5 SDK (deployment target 14.0), not the Command Line Tools 15.3; the Xcode version and the `osmesa-install` commit (its moving HEAD) are not part of the SDK key. The tests run on macOS 15, not 14, and the runner keeps Xcode, so problems that only show on macOS 14 or without the Command Line Tools are not caught there. A tag run builds the tagged commit as a snapshot (`launchBuildMain.sh` without `RELEASE_TAG`: the plug-ins come from the branches that Natron selects, not from `Natron-x.y.z` tags, which don't exist for 2.6 pre-releases yet), as the Windows installer workflow does.
+- **Tests.** On a fresh runner of the latest Intel macOS (`macos-26-intel`), with Homebrew moved away and no `/opt/local`: `run-natron-tests.sh`, the script that `natron-test.sh` runs in its VM, with the same result files.
+- **Limits, compared with the arm64 tart builds.** The SDK and the DMG are built with Xcode 16.4's macOS 15.5 SDK (deployment target 14.0), not the Command Line Tools 15.3; the Xcode version and the `osmesa-install` commit (its moving HEAD) are not part of the SDK key. The tests run on macOS 26, not 14 (GitHub retired its macOS 14 images), and the runner keeps Xcode, so problems that only show on macOS 14 or without the Command Line Tools are not caught there. A tag run builds the tagged commit as a snapshot (`launchBuildMain.sh` without `RELEASE_TAG`: the plug-ins come from the branches that Natron selects, not from `Natron-x.y.z` tags, which don't exist for 2.6 pre-releases yet), as the Windows installer workflow does.
+
+## Test the arm64 DMG on GitHub's latest macOS
+
+`natron-test.sh` tests on macOS 14, the oldest supported macOS. `.github/workflows/macos_arm64.yml` runs the same tests (`run-natron-tests.sh`, through `macos_dmg_tests.yml`, which `macos_x86_64.yml` uses too) on a clean `macos-26` runner, the latest macOS arm64 that GitHub offers: it downloads the DMG, mounts it, copies `Natron.app` out of it as a user would, moves Homebrew (`/opt/homebrew` and `/usr/local`) and `/Library/Frameworks/Python.framework` away (there is no MacPorts), and runs the whole Natron-Tests suite with its known failures. This checks that the macOS 14 build runs on the newest macOS. The DMG is built here, not on GitHub, so it has to be uploaded first:
+
+- **Pre-release (`v*-alpha*`, `-beta*`, `-rc*`, `-RC*`).** Attach the DMG to the GitHub release of the tag, then run the tests on it:
+
+  ```sh
+  gh release upload v2.6.0-rc1 natron-builds/<vm>/natron_github_RB2/1/Natron-*-macOS14-arm64.dmg
+  gh workflow run macos_arm64.yml -f dmg=v2.6.0-rc1
+  ```
+
+  The release of a pre-release tag is created by the other release workflows (`attach_to_prerelease.sh`); if it doesn't exist yet, `gh release create v2.6.0-rc1 --verify-tag --prerelease` creates it. With `dmg=TAG`, the workflow takes the release's `*-arm64.dmg` asset (`dmg=TAG/ASSET` for another one), and when the tests pass on an arm64 DMG it attaches `<dmg name>-tests.txt`, `-tests-summary.txt` and `-unit_tests_failures.zip` to the release, as `macos_x86_64.yml` does for the x86_64 DMG (`-f attach=false` to only test). The push of a pre-release tag also starts the workflow, which runs the tests only if the DMG is already attached (a build takes longer than that, so this usually ends with a notice). An on-demand run uses the workflow and `run-natron-tests.sh` of the branch it runs on (RB-2.6 by default), and Natron-Tests master, not those of the tag.
+- **Any other build.** Upload it to a draft release, which only the repository's maintainers can see, and give the draft's tag and the asset name (the workflow's download job has `contents: write`, which it needs to see drafts); nothing is attached to a draft:
+
+  ```sh
+  gh release create macos-dmg-tests --draft --title "macOS DMGs to test (draft, never published)" --notes "" || true
+  gh release upload macos-dmg-tests --clobber Natron-….dmg
+  gh workflow run macos_arm64.yml -f dmg=macos-dmg-tests/Natron-….dmg
+  ```
+
+  The DMG can also be a workflow run artifact (`dmg=RUN_ID/ARTIFACT`) or the `https://` URL of a `.dmg` file.
+
+The results are kept as the artifact `Natron-macOS-arm64-tests` (14 days): `gh run download <run id> -n Natron-macOS-arm64-tests`. An x86_64 DMG given to `macos_arm64.yml` runs under Rosetta, as a smoke test of the workflow only; `run-natron-tests.sh` takes the known failures of the app's architecture (`KNOWN_FAILURES_ARCH`), not the runner's.
 
 ## Settings
 
