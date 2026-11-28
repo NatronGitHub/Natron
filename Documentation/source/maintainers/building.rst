@@ -479,5 +479,5 @@ its prefix to ``CMAKE_PREFIX_PATH``), or configure with
 ``-DNATRON_BUILD_TESTS=OFF``. The configure log says which one is used
 (``Tests: Google Test 1.18.0 (<prefix>/lib/cmake/GTest)``). Only Google Test is
 linked, not Google Mock, which no test uses. The release scripts don't ship it:
-it is a static library on macOS and in the Linux SDK, and the Windows installer
-removes ``libgtest.dll`` with ``Tests.exe``.
+it is a static library on macOS and in the Linux SDK, and the Windows packaging
+script removes ``libgtest.dll`` with ``Tests.exe``.

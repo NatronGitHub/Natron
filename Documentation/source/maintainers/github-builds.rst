@@ -84,8 +84,8 @@ runs ``ctest`` (the ``Tests`` google-test binary, the Python-driven
   OpenColorIO-Configs 2.5.
 - **Windows** (``win-test``): ``windows-latest`` with MSYS2 UCRT64 and the stock
   MSYS2 packages (Qt 5, PySide2, MSYS2's Python), gcc and Ninja. It doesn't
-  need Natron's package repository, which only the plug-ins and the installer
-  use. The tests use the ``natron_testing`` UCRT64 builds of openfx-io and
+  need Natron's package repository, which only the plug-ins and the Windows
+  package use. The tests use the ``natron_testing`` UCRT64 builds of openfx-io and
   openfx-misc.
 - **macOS** (``macos-test``): macOS 15 arm64, the system (Xcode) clang and
   MacPorts libraries (Python 3.11, PySide2), never Homebrew, which the job
@@ -290,7 +290,7 @@ released yet, so it is built by hand only (``windows_arm64.yml``, or the
 The package repository
 ~~~~~~~~~~~~~~~~~~~~~~
 
-The plug-ins and the installer need packages that MSYS2 doesn't have, or
+The plug-ins and the Windows package need packages that MSYS2 doesn't have, or
 that Natron patches (``tools/MINGW-packages``: ``mingw-w64-natron_*``,
 ``osmesa``, ``freetype`` and ``qt5-base`` with Natron's fixes, …).
 ``build_pacman_repo.yml`` builds them into a pacman repository, by hand or on
@@ -307,19 +307,19 @@ that Natron patches (``tools/MINGW-packages``: ``mingw-w64-natron_*``,
    ``natron_package_repo-clangarm64-<version>.zip``). Never delete the zips of
    older versions: older branches and tags use them.
 3. Run *Build Installer* on the branch, then merge it. Until the zip is
-   published, every installer run on that branch fails (a manual run can use
+   published, every *Build Installer* run on that branch fails (a manual run can use
    the artifact instead, with ``pacman_repo_run_id``; the weekly run can't).
 
 The packages are built against the MSYS2 of the day, so the repository must
 also be rebuilt when MSYS2 moves under it, even if no PKGBUILD changed. In
 particular, **OSMesa links MSYS2's static LLVM libraries and pins the exact
 LLVM version it was built with**: every MSYS2 LLVM update breaks the
-installer until the repository is rebuilt and republished (#2042).
+Windows package until the repository is rebuilt and republished (#2042).
 ``tools/MINGW-packages/README.md`` has the full procedure, the list of
 packages and when to rebuild.
 
-The installer
-~~~~~~~~~~~~~
+The Windows portable zip
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``build_installer.yml`` (*Build Installer*) builds the Windows package with
 ``tools/jenkins/launchBuildMain.sh`` (CMake, UCRT64, GPL only) on

@@ -54,8 +54,8 @@ natron-python
 - Linux: ``<install>/bin/natron-python``, where ``<install>`` is the directory that contains the
   ``Natron`` launch script;
 - macOS: ``Natron.app/Contents/MacOS/natron-python``;
-- Windows: ``<install>\bin\natron-python.exe``, for example
-  ``C:\Program Files\Natron\bin\natron-python.exe``.
+- Windows: ``<install>\bin\natron-python.exe``, where ``<install>`` is the folder unzipped from
+  the Natron zip, for example ``C:\Natron\bin\natron-python.exe``.
 
 It is a plain Python interpreter that uses the same Python and the same paths as Natron, so you
 can use it to test whether a module can be imported, or to run pip::
@@ -72,7 +72,7 @@ Installing extra packages from the command line
 
 Run pip with natron-python, giving its full path if its directory isn't on ``PATH``. Without
 other options, ``natron-python -m pip install`` installs into the ``site-packages`` directory of
-the Natron installation, so you need write access to it: on Windows, an installation in
+the Natron installation, so you need write access to it: on Windows, a Natron folder moved to
 ``C:\Program Files`` needs an administrator prompt. On a shared or read-only installation,
 install the packages into another directory with ``--target``, and add that directory to
 ``PYTHONPATH``::
@@ -85,8 +85,8 @@ install the packages into another directory with ``--target``, and add that dire
     /Applications/Natron.app/Contents/MacOS/natron-python -m pip install --target ~/natron-python-modules numpy
     export PYTHONPATH=~/natron-python-modules
 
-    rem Windows (cmd.exe)
-    "C:\Program Files\Natron\bin\natron-python.exe" -m pip install --target %USERPROFILE%\natron-python-modules numpy
+    rem Windows (cmd.exe), Natron extracted to C:\Natron
+    C:\Natron\bin\natron-python.exe -m pip install --target %USERPROFILE%\natron-python-modules numpy
     set PYTHONPATH=%USERPROFILE%\natron-python-modules
 
 ``export`` and ``set`` only reach a Natron started from the same shell. For a Natron started

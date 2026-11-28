@@ -29,6 +29,11 @@ Install
    ``C:\Users\<username>\Natron`` (no administrator rights needed) or
    ``C:\Program Files\Natron``. Always extract the ZIP file first: Natron
    doesn't run from inside it.
+
+   If *Extract All* reports that a path is too long, extract to a short
+   folder instead, such as ``C:\Natron`` (choose it in the *Extract All*
+   dialog): by default, the tree is nested twice under the long name of the
+   ZIP file, and Windows limits paths to 260 characters.
 #. Start Natron: double-click ``bin\Natron.exe`` in that folder.
 
 Windows may show a *Windows protected your PC* warning the first time you start
@@ -48,7 +53,10 @@ Start menu, desktop and ``.ntp`` files
 
 Because there is no installer, unzipping Natron adds no Start menu entry, no
 desktop icon and no uninstall entry, and double-clicking a Natron project
-file (``.ntp``) doesn't start Natron. To set them up by hand:
+file (``.ntp``) doesn't start Natron. Project files also keep the generic file
+icon, even after you make them open with Natron, and you can't leave out a set
+of plug-ins (all the bundled OpenFX plug-ins, PyPlugs and OpenColorIO
+configurations are always there). To set up the rest by hand:
 
 - **Start menu or taskbar:** right-click ``bin\Natron.exe``, then select *Pin
   to Start* or *Pin to taskbar* (on Windows 11, first *Show more options*).
