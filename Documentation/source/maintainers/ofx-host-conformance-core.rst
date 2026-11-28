@@ -321,8 +321,8 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - P7
      - `ofxCore.h:708-751 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxCore.h#L708-L751>`__ kOfxPropLabel default = kOfxPropName; "resetting this will also reset kOfxPropShortLabel and kOfxPropLongLabel"; Short/Long "initially kOfxPropName, but will be reset if kOfxPropLabel is changed"
      - DEFAULT / MUST
-     - Effect descriptor labels default to "" (HS/ofxhImageEffect.cpp:86-89). Reading them falls back to the label on the host side (HS/ofxhImageEffect.cpp:206, 229), but a plug-in reading Short/Long gets "". ``propReset(kOfxPropLabel)`` and setting kOfxPropLabel do not touch Short/Long (no hook links them). Params are the params area.
-     - PARTIAL
+     - Effect descriptor labels default to "" (HS/ofxhImageEffect.cpp:86-89). Reading them falls back to the label on the host side (HS/ofxhImageEffect.cpp:206, 229), but a plug-in reading Short/Long gets "". ``propReset(kOfxPropLabel)`` and setting kOfxPropLabel do not touch Short/Long (no hook links them). Params are the params area. Fixed: the three labels default to the plug-in identifier (an effect descriptor has no kOfxPropName; clip descriptors: their name), and the plug-in's setting or resetting of kOfxPropLabel resets Short/Long (``Property::LinkedPropertiesHook``; on effect, clip and param descriptors and param instances). Natron shows the short or long label of a plug-in whose label is its identifier (``makePluginLabel()``, test ``OfxPluginLabel``).
+     - OK (fixed by `NatronGitHub/openfx#384 <https://github.com/NatronGitHub/openfx/pull/384>`__, in libs/OpenFX since `#2041 <https://github.com/NatronGitHub/Natron/pull/2041>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - P8
@@ -802,7 +802,7 @@ Spec-only
 
 21. **P5:** the host kOfxPropName is user-set and proxied per plug-in (deliberate). There is also a typo: ``loadingPluginVersionMinor = getVersionMajor()`` (Engine/OfxHost.cpp:676), harmless. The proxied name is deliberate, won't fix; the typo is in `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
-22. **P7:** effect descriptor Short/Long labels default to "", and resetting or setting kOfxPropLabel does not reset them. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+22. **P7:** effect descriptor Short/Long labels default to "", and resetting or setting kOfxPropLabel does not reset them. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `NatronGitHub/openfx#384 <https://github.com/NatronGitHub/openfx/pull/384>`__ (in libs/OpenFX since `#2041 <https://github.com/NatronGitHub/Natron/pull/2041>`__).
 
 23. **G5/G7:** host-level Error and Warning messages go only to the log (deliberate, because of Sapphire). Natron also clears persistent messages itself (Engine/Node.cpp:2815, 3352). Host-level messages going to the log is deliberate, won't fix. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. Clearing the plug-in's persistent messages is kept, deliberately, until the plug-ins clear their own (see G7).
 
