@@ -339,6 +339,51 @@ Issues
   low-hanging fruit) becomes empty. Triage changes labels only.
 - See :doc:`issue-triage` for Natron's open issues.
 
+Tests
+-----
+
+These rules apply to the unit and script tests of every repository (Natron's
+``Tests/``, the plug-in test suites), not to Natron-Tests' render comparisons.
+Natron's test suite is being reorganised along them (#2052).
+
+- **Two kinds of test.** A *functional* test checks a contract: the OFX
+  specification, an API, a command line, a file format. A *regression* test
+  reproduces one past bug and names its issue or pull request; it stays as long
+  as the bug could come back. A regression test for an upstream bug worked
+  around by a local patch names the upstream issue and the patch, and goes
+  away with the patch once an upstream release has the fix.
+- **Separate directories,** not labels or names: ``functional/`` and
+  ``regression/`` under each test suite, both picked up by the build. Shared
+  harness code (helpers, harness programs, test plug-ins, sample generators) is
+  not a test: it stays at the suite root or in ``common/``. Script- and
+  data-driven suites split their case files, not their driver. Natron:
+  ``Tests/functional/`` and ``Tests/regression/`` (each with ``gui/`` for the
+  Python GUI drivers), ``Tests/common/`` and ``Tests/plugins/``; the
+  ``TestsFunctional`` and ``TestsRegression`` programs are linked from one
+  object library, and special programs (the cache tests, software OpenGL) keep
+  their own binaries.
+- **Every test says what it checks and why,** in a docstring or comment with
+  a link (issue, pull request or specification section).
+- **One test per behaviour.** Tests of the same code path with the same kind
+  of input are one parameterised or table-driven test, and each case id says
+  what it covers.
+- **Remove a test only** if the code or API it tests is gone, if the bug class
+  can't happen any more (say what prevents it), or if another test covers the
+  same behaviour (name it, by id or file:line, and its assertion). "It never
+  failed" is not a reason; when unsure, keep the test.
+- **Never weaken a test:** no looser assertions, new skips or expected
+  failures, or longer timeouts; tracked expected failures stay strict. A pull
+  request that removes, fuses or moves tests lists each one with its reason and
+  the test that covers it now, with the test counts and run time before and
+  after; the line and branch coverage of ``Engine/`` and ``Gui/`` must not
+  drop.
+- **Contracts are never "trivial":** every public call of Natron's Python API
+  stays tested, old ``.ntp`` and ``.py`` projects keep loading (including each
+  ``BOOST_CLASS_VERSION`` path), and NatronRenderer's options and exit statuses
+  stay covered.
+- **CI:** a failure shows whether it is functional or regression (two
+  ``ctest`` steps in Natron, no extra job); both must pass to merge.
+
 Natron-Tests known failures
 ---------------------------
 
