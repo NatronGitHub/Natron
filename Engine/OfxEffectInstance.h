@@ -269,11 +269,11 @@ public:
     virtual SequentialPreferenceEnum getSequentialPreference() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum getPreferredMetadata(NodeMetadata& metadata) OVERRIDE FINAL;
     virtual void onMetadataRefreshed(const NodeMetadata& metadata) OVERRIDE FINAL;
-    virtual void getComponentsNeededAndProduced(double time, ViewIdx view,
-                                                EffectInstance::ComponentsNeededMap* comps,
-                                                double* passThroughTime,
-                                                int* passThroughView,
-                                                int* passThroughInput) OVERRIDE;
+    virtual ComponentsNeededStatusEnum getComponentsNeededAndProduced(double time, ViewIdx view,
+                                                                      EffectInstance::ComponentsNeededMap* comps,
+                                                                      double* passThroughTime,
+                                                                      int* passThroughView,
+                                                                      int* passThroughInput) OVERRIDE WARN_UNUSED_RETURN;
     virtual bool isMultiPlanar() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual EffectInstance::PassThroughEnum isPassThroughForNonRenderedPlanes() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isViewAware() const OVERRIDE FINAL WARN_UNUSED_RETURN;

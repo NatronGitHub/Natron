@@ -464,15 +464,27 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ComponentsNeededMap::iterator foundOutputNeededComps;
     std::bitset<4> processChannels;
     std::list<ImagePlaneDesc> passThroughPlanes;
-    int ptInputNb;
-    double ptTime;
-    int ptView;
+    int ptInputNb = -1;
+    double ptTime = args.time;
+    int ptView = args.view;
     {
-        bool processAllComponentsRequested;
+        bool processAllComponentsRequested = false;
 
         {
 
-            getComponentsNeededAndProduced_public(nodeHash, args.time, args.view, neededComps.get(), &passThroughPlanes, &processAllComponentsRequested, &ptTime, &ptView, &processChannels, &ptInputNb);
+            // the getClipComponents action of a multi-planar effect failed: the render fails, as for the
+            // other actions, with an error message unless the effect posted one (#2063), the same as
+            // OfxEffectInstance::render() posts. Posted here, not where the action is called, so that the
+            // other callers (the layer menus) post nothing.
+            const StatusEnum componentsStatus = getComponentsNeededAndProduced_public(nodeHash, args.time, args.view, neededComps.get(), &passThroughPlanes, &processAllComponentsRequested, &ptTime, &ptView, &processChannels, &ptInputNb);
+            if (componentsStatus != eStatusOK) {
+                if ( !getNode()->hasPersistentMessage() && !aborted() ) {
+                    const QString err = (componentsStatus == eStatusOutOfMemory) ? tr("Out of memory!") : tr("Unknown failure reason.");
+                    setPersistentMessage( eMessageTypeError, err.toStdString() );
+                }
+
+                return eRenderRoIRetCodeFailed;
+            }
 
 
             foundOutputNeededComps = neededComps->find(-1);

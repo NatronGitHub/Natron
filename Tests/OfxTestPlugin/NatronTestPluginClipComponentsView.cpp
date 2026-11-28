@@ -22,6 +22,8 @@
 // missing) and, as the Support library's plug-ins do (setPassThroughClip(clip, args.time, args.view)),
 // returns it as the pass-through view. It asks for the color plane of both clips. Its render action does
 // not write the output image.
+// The action returns the status that the counter "ClipComponentsView.status" holds (0, the default, is
+// kOfxStatOK), and sets its outputs only on kOfxStatOK (#2063).
 
 #include <cstring>
 #include <string>
@@ -99,6 +101,10 @@ clipComponentsViewMain(const char* action,
             view = -1;
         }
         natronTestIncrementCounter( "ClipComponentsView.view" + std::to_string(view) );
+        const OfxStatus stat = (OfxStatus)natronTestGetCounter("ClipComponentsView.status");
+        if (stat != kOfxStatOK) {
+            return stat;
+        }
         gPropSuite->propSetString(outArgs, kFnOfxImageEffectActionGetClipComponentsPropString kOfxImageEffectOutputClipName, 0, kFnOfxImagePlaneColour);
         gPropSuite->propSetString(outArgs, kFnOfxImageEffectActionGetClipComponentsPropString kOfxImageEffectSimpleSourceClipName, 0, kFnOfxImagePlaneColour);
         gPropSuite->propSetString(outArgs, kFnOfxImageEffectPropPassThroughClip, 0, kOfxImageEffectSimpleSourceClipName);

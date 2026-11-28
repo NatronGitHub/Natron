@@ -930,6 +930,15 @@ public:
         return false;
     }
 
+    // the result of getComponentsNeededAndProduced()
+    enum ComponentsNeededStatusEnum
+    {
+        eComponentsNeededStatusOK, // the outputs are set, and may be cached
+        eComponentsNeededStatusDefault, // the outputs are the defaults (an OFX plug-in returned kOfxStatFailed): not cached
+        eComponentsNeededStatusFailed, // the effect failed: the outputs are left as they were
+        eComponentsNeededStatusOutOfMemory // the same, because the effect ran out of memory (kOfxStatErrMemory)
+    };
+
     enum PassThroughEnum
     {
         ePassThroughBlockNonRenderedPlanes,
@@ -1916,15 +1925,19 @@ private:
 
 public:
 
-    void getComponentsNeededAndProduced_public(U64 hash,
-                                               double time, ViewIdx view,
-                                               EffectInstance::ComponentsNeededMap* comps,
-                                               std::list<ImagePlaneDesc>* passThroughPlanes,
-                                               bool* processAllRequested,
-                                               double* passThroughTime,
-                                               int* passThroughView,
-                                               std::bitset<4> *processChannels,
-                                               int* passThroughInput);
+    // eStatusFailed (eStatusOutOfMemory if it ran out of memory) if the getClipComponents action of a
+    // multi-planar effect failed: the outputs are then left as they were, and nothing is cached. A result
+    // that isn't eComponentsNeededStatusOK isn't cached either (#2063). This eStatusOutOfMemory is not the
+    // "render again on the CPU" status of render(): a caller must not return it from render().
+    StatusEnum getComponentsNeededAndProduced_public(U64 hash,
+                                                     double time, ViewIdx view,
+                                                     EffectInstance::ComponentsNeededMap* comps,
+                                                     std::list<ImagePlaneDesc>* passThroughPlanes,
+                                                     bool* processAllRequested,
+                                                     double* passThroughTime,
+                                                     int* passThroughView,
+                                                     std::bitset<4> *processChannels,
+                                                     int* passThroughInput) WARN_UNUSED_RETURN;
 
 
     void getAvailableLayers(double time, ViewIdx view, int inputNb, std::list<ImagePlaneDesc>* availableLayers) ;
@@ -2103,12 +2116,14 @@ protected:
      * @brief Returns a map of the components produced by this effect and the components needed by the inputs of this effect.
      * The output is mapped against -1. For all components not produced and if this effect is passthrough, it should use the
      * passThroughInput to fetch the components needed.
+     * Returns eComponentsNeededStatusFailed or eComponentsNeededStatusOutOfMemory if the effect failed to give
+     * them, and then leaves the outputs as they were.
      **/
-    virtual void getComponentsNeededAndProduced(double time, ViewIdx view,
-                                                EffectInstance::ComponentsNeededMap* comps,
-                                                double* passThroughTime,
-                                                int* passThroughView,
-                                                int* passThroughInput);
+    virtual ComponentsNeededStatusEnum getComponentsNeededAndProduced(double time, ViewIdx view,
+                                                                      EffectInstance::ComponentsNeededMap* comps,
+                                                                      double* passThroughTime,
+                                                                      int* passThroughView,
+                                                                      int* passThroughInput) WARN_UNUSED_RETURN;
 
 
     virtual void setInteractColourPicker(const OfxRGBAColourD& /*color*/, bool /*setColor*/, bool /*hasColor*/)

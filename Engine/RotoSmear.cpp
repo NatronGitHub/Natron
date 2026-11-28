@@ -235,12 +235,14 @@ RotoSmear::render(const RenderActionArgs& args)
 
     EffectInstance::ComponentsNeededMap neededComps;
     std::list<ImagePlaneDesc> ptPlanes;
-    bool processAll;
+    bool processAll = false;
     std::bitset<4> processChannels;
-    double ptTime;
-    int ptView;
-    int ptInput;
-    getComponentsNeededAndProduced_public(getRenderHash(), args.time, args.view, &neededComps, &ptPlanes, &processAll, &ptTime, &ptView, &processChannels, &ptInput);
+    double ptTime = args.time;
+    int ptView = args.view;
+    int ptInput = -1;
+    if (getComponentsNeededAndProduced_public(getRenderHash(), args.time, args.view, &neededComps, &ptPlanes, &processAll, &ptTime, &ptView, &processChannels, &ptInput) != eStatusOK) {
+        return eStatusFailed;
+    }
 
 
     EffectInstance::ComponentsNeededMap::iterator foundBg = neededComps.find(0);
