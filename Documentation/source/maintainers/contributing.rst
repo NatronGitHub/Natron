@@ -95,8 +95,9 @@ pull request as follows:
   gone.
 
 When a pull request mixes these kinds of changes, split it along the same
-lines. Smaller pull requests, one topic each, are much easier to review and
-test on both Qt versions.
+lines, so that each one can be merged, forward-merged and tested on both Qt
+versions on its own. (Related fixes in the same area are otherwise grouped into
+one pull request, one commit per issue: see :doc:`guidelines`.)
 
 Code style
 ----------
@@ -110,12 +111,17 @@ surrounding code: the idioms in :ref:`maint-design` (namespace macros,
 ``Fwd`` typedefs, PIMPL, the ``…I`` interfaces, ``shared_ptr`` ownership rules)
 are conventions, not suggestions.
 
+.. _maint-tests:
+
 Tests
 -----
 
-The ``Tests`` module (Google Test) covers focused pieces of the
-engine: curves, LUT/color, images, hashing, tracking, the file-system model and
-GL contexts. Build and run the suite before opening a pull request. When you fix
+The ``Tests`` module (Google Test, about a hundred ``Tests/*_Test.cpp`` files)
+covers the engine (curves, LUTs, images, caches, hashing, knobs and
+expressions, rendering and its threads, tracking, projects, the Python API)
+and the OpenFX host (one ``Ofx*_Test.cpp`` per area). Run the tests that cover
+your change before opening a pull request; the CI runs the whole suite (see
+:doc:`github-builds`). When you fix
 a bug that is unit-testable — anything in the color, image, curve, hashing or
 geometry code — add a regression test. Rendering and GUI behavior are harder to
 unit-test: GUI behaviour can be tested by a GUI test script in ``Tests/gui/``, run by
@@ -304,105 +310,13 @@ The script's unit tests (``tools/utils/test_collect_changelog.py``, with
 fixtures in ``tools/utils/testdata/collect_changelog``) run in the Linux CI
 job: ``python3 -m unittest discover -s tools/utils -p 'test_*.py'``.
 
-.. _maint-ci:
-
 Continuous integration
 ----------------------
 
-The CI runs on GitHub Actions, and is kept small on purpose: hosted runners,
-macOS ones above all, are scarce, and every related repository (openfx,
-openfx-misc, openfx-io, openfx-arena, openfx-gmic, …) follows the same rules.
-
-**Per pull request and per push** (``.github/workflows/ci.yml``, workflow
-*Tests*), there are three jobs, each building Natron with CMake and running the
-``Tests`` suite:
-
-- **Linux**: Ubuntu 24.04 with its Qt 5, PySide2 and Python 3.12. It also
-  checks that qmake and CMake build the same sources, and runs the unit tests
-  of the Python tools in ``tools/utils``.
-- **Windows**: MSYS2 UCRT64, with the stock MSYS2 packages (Qt 5, PySide2
-  and MSYS2's Python).
-- **macOS**: macOS 15 arm64, the system (Xcode) clang and MacPorts libraries
-  (never Homebrew), with ``/opt/local`` restored from a cache. It starts only
-  after the Linux and Windows jobs have passed.
-
-Each job builds the Fast configuration (CMake Debug with ``-O1`` and no
-``-g``) per pull request and per push; the weekly, tag and manual runs build
-Debug and Release instead.
-
-The ``Tests`` suite includes the GUI tests (``Tests/gui``, ctest label ``gui``, see
-:ref:`guiTests`), which take a few seconds each. On Linux they run under Xvfb with Mesa
-(the job checks the GLX context first, see #536, and sets ``NATRON_GUI_TESTS=1``),
-interactive ones included (``NATRON_TEST_INTERACTIVE=1``), in the Fast (per pull request) and
-Release builds, not in the weekly Debug one (``ctest -LE gui``). The environment variable ``NATRON_GUI_TESTS=1`` enables them at run
-time; the CMake option ``NATRON_BUILD_GUI_TESTS`` registers them (on by default). In the other jobs, which don't set
-``NATRON_GUI_TESTS``, they are skipped (exit status 77), not failed; they can be enabled there
-once their runners are known to have an OpenGL context for the viewer.
-
-Linux and Windows must pass before a pull request is merged. The macOS job is
-informative: it is never a required check, so a pull request doesn't wait for
-it.
-
-The workflow also:
-
-- runs on pushes to ``master``, the ``RB-*`` branches and ``v*`` tags only, and
-  on pull requests against ``master`` and ``RB-*``, so that a change on a topic
-  branch is built once, through its pull request;
-- skips draft pull requests (marking one as ready starts the run);
-- ignores changes under ``Documentation/`` (``paths-ignore``): Read the Docs
-  builds the documentation;
-- cancels a pull request's previous run when it gets a new push
-  (``concurrency``), but never a run for a push to a branch or a tag;
-- runs with read-only ``permissions`` (``contents: read``).
-
-**Weekly** (Sunday 03:17 UTC), all three jobs build the default branch in
-Debug and Release; macOS runs without waiting for Linux and Windows. The weekly
-run is never skipped: every job uses rolling toolchains. Any branch can also be run by hand (``workflow_dispatch``). Other configurations (extra C++
-standards such as C++23, other compilers or OS versions) are meant to run
-weekly or by hand, never per pull request; none is set up yet. Qt 6 is built
-by RB-2.7's Linux job (see :doc:`qt6-migration`), not on RB-2.6.
-
-**Render soak** (``render_soak.yml``, by hand only): on Linux and Windows,
-``Tests/gui/run_render_soak_test.py`` renders synthetic graphs and Natron-Tests'
-BayMax project for hours, thousands of frames per run, with several threading
-and RAM settings; a render that stops making progress saves the backtraces of
-all its threads in the artifacts and fails the job (#248). By default it soaks
-the packages (the ``natron_testing`` Linux archive, the Windows portable tree of
-the last ``build_installer.yml`` run), or a ``linux_packages.yml`` or
-``build_installer.yml`` run given by ``package_run_id``; ``natron_build=source``
-builds ``natron_ref`` instead, e.g. a commit before a fix. ctest runs a short
-version without BayMax (``RenderSoakTest``) in every build.
-
-**Installers and packages are built weekly, on demand and for tags (the
-Windows package repository only on demand and for tags), never for pull
-requests.** Before a pre-release tag, collect the CHANGELOG (see
-:ref:`maint-changelog`). ``build_installer.yml`` builds the Windows installer
-(the portable tree, with Setup.exe in it) every Sunday (06:17 UTC), by hand and for
-``v*`` tags, with the package repository pinned by
-``tools/MINGW-packages/windows_pacman_repo_version.txt``; the weekly run is never
-skipped (MSYS2 is a rolling toolchain) and fails if that repository's zip isn't
-published. Its artifacts are kept 14 days for the weekly runs, 90 days
-otherwise. ``build_pacman_repo.yml`` builds the Windows package repository, by
-hand or for ``v*`` tags (see ``tools/MINGW-packages/README.md``).
-``linux_packages.yml`` builds the Linux portable archives weekly, by hand and
-for pre-release tags, in the Rocky Linux 9 SDK Docker image, and
-``macos_x86_64.yml`` the macOS x86_64 DMG on the same schedule. The macOS arm64
-release builds are made outside GitHub Actions, with ``tools/tart`` (in a macOS
-VM on a maintainer's Apple Silicon Mac).
-
-``project_python_roundtrip.yml`` checks, every Sunday (13:37 UTC, after the
-package workflows) and by hand, that the Python project format keeps everything
-the ``.ntp`` keeps: ``Tests/gui/run_ntp_python_roundtrip_test.py`` saves each
-Natron-Tests project (BayMax and Spaceship included) and each project of
-``Tests/data`` as a text ``.ntp``, and as Python, which it loads and saves as a
-text ``.ntp`` again, and compares the two ``.ntp`` files. It uses the packaged
-builds, which have the plug-ins, without building them: the Linux x86_64 archive
-of the ``natron_testing`` pre-release and the Windows portable tree of the last
-successful ``build_installer.yml`` run on RB-2.6 (a manual run can name other
-runs). A difference fails the job unless
-``Tests/gui/ntp_python_roundtrip_allowlist.txt`` lists it, with the issue that
-tracks it; remove the entry when the issue is fixed. The ``NtpPythonRoundTripTest``
-ctest runs the same check on the built-in projects only.
+Every pull request that is ready for review is built and tested on GitHub
+Actions (Linux, Windows, then macOS); the packages are built weekly, on
+demand and for tags. :doc:`github-builds` explains every workflow, and how to
+run one by hand.
 
 Where to start
 --------------
@@ -411,6 +325,8 @@ The project README grades starter tasks by difficulty. A reasonable on-ramp is:
 build Natron locally; fix a small, well-scoped bug labeled ``difficulty:easy``;
 then take on a ``difficulty:medium`` item. The :ref:`maint-issue-triage` chapter
 lists concrete good-first-issue candidates.
+
+.. _maint-building-manual:
 
 Building this manual
 --------------------
