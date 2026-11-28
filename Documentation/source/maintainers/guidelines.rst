@@ -387,9 +387,12 @@ These rules apply to the unit and script tests of every repository (Natron's
   downloads it, with a hash check, from the repository's "test assets" GitHub
   release; the release notes give its provenance: source repository URL, path,
   commit, SHA-256, licence and notice.
-- **Tests run with CMake and ctest only,** never from Makefiles, and every CI
-  configuration (Debug included) runs the full set; a configuration that
-  leaves tests out says which and why.
+- **Tests are built and run through CMake and ctest,** never from hand-written
+  Makefiles. While RB-2.6 still supports qmake, the test lists of the ``*.pro``
+  files and of ``CMakeLists.txt`` stay in sync.
+- **Every CI configuration that runs tests runs the full set,** the weekly-only
+  ones (Debug, Qt 6, other compilers) included; a configuration that leaves
+  tests out says which and why.
 - **Contracts are never "trivial":** every public call of Natron's Python API
   stays tested, old ``.ntp`` and ``.py`` projects keep loading (including each
   ``BOOST_CLASS_VERSION`` path), and NatronRenderer's options and exit statuses
