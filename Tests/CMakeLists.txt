@@ -198,6 +198,9 @@ add_test(NAME TestsOfxCacheCorrupt COMMAND ${CMAKE_COMMAND}
     "-DSRC_CACHE_DIR=${NATRON_TESTS_CACHE_DIR}"
     "-DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/tests-cache-corrupt"
     -P "${CMAKE_CURRENT_SOURCE_DIR}/OfxCacheCorrupt.cmake")
+# not at the same time as TestsOfxCache (ctest -j), which reads the cache that this test copies: a rewrite of the
+# cache (OfxHost::writeOFXCache() removes the file, then writes it) would make the copy fail
+set_tests_properties(TestsOfxCache TestsOfxCacheCorrupt PROPERTIES RESOURCE_LOCK NatronTestsOfxCache)
 set_tests_properties(TestsOfxCacheCorrupt PROPERTIES FIXTURES_REQUIRED OfxPluginCache)
 
 # A minimal OFX plug-in bundle for the tests (OfxTestPlugin/NatronTestPlugin.cpp, read through
@@ -300,7 +303,8 @@ target_compile_definitions(Tests PRIVATE
 if(Python3_Interpreter_FOUND)
     add_test(NAME GuiSmokeTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_gui_smoke_test.py $<TARGET_FILE:Natron>)
-    set_tests_properties(GuiSmokeTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 960 LABELS gui)
+    # one Natron GUI at a time, as the gui.* tests (ctest -j)
+    set_tests_properties(GuiSmokeTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 960 LABELS gui RESOURCE_LOCK NatronGui)
     # NatronRenderer exits with status 1 when the render of a Write node failed
     add_test(NAME RenderFailureStatusTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_render_failure_status_test.py $<TARGET_FILE:NatronRenderer>)

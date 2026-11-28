@@ -182,7 +182,10 @@ jobs:
           cd build
           # the GUI tests (label gui) run in the Fast and Release builds, not twice in the weekly Debug one
           gui=(); [ "$CI_CONFIG" = Debug ] && gui=(-LE gui)
-          OFX_PLUGIN_PATH=$PWD/../Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V --no-tests=error "${gui[@]}"
+          # in parallel, which the private cache directories of the tests allow (#1505): TestsOfxCache, which
+          # must find the OFX plug-in cache that Tests wrote, runs next to the other tests (the GUI ones still
+          # one at a time, RESOURCE_LOCK NatronGui)
+          OFX_PLUGIN_PATH=$PWD/../Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V --no-tests=error -j$(nproc) "${gui[@]}"
 
       - name: Upload ${{ matrix.os }} ${{ matrix.config }} Test Log artifacts
         if: always()
