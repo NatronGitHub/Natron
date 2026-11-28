@@ -175,6 +175,10 @@ version: two test runs at the same time would rewrite each other's (#1569).
   and the driver scripts of ``Tests/gui`` (``run_*.py``) a temporary one, removed at the end,
   unless ``NATRON_DISK_CACHE_PATH`` is set.
 
+So ``ctest -j`` can run them in parallel, next to other test runs or a running Natron: the
+Linux CI job does (#1505). Only two ``ctest`` runs in the same build tree at the same time
+share ``<build>/Tests/tests-cache``.
+
 Debugging and profiling
 -----------------------
 
