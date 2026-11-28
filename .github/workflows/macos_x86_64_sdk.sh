@@ -103,6 +103,25 @@ restore)
     # -p: keep the owners (macports) and modes
     zstd -dc "$file" | sudo tar -xpf - -C /
     rm -f "$file"
+    # A stage's state has no distfiles (see save), but a port build stopped at the deadline keeps
+    # its work directory, whose state file says that the distfiles were fetched: MacPorts would
+    # then "extract" the missing distfile into nothing (bzip2 fails, tar doesn't) and fail at the
+    # patch phase on every retry (libassuan in run 46020996105). Forget the fetch and checksum of
+    # those builds, so that MacPorts fetches their distfiles again; the later phases stay done.
+    # (tee rewrites the file in place: it stays owned by, and writable for, the macports user)
+    states=/opt/local/var/macports/build
+    if [ -d "$states" ]; then
+        sudo find "$states" -maxdepth 3 -path '*/work/.macports.*.state' -print0 |
+            while IFS= read -r -d '' f; do
+                sudo grep -qE '^target: org\.macports\.(fetch|checksum)$' "$f" || continue
+                # fetch.type git or hg (libvpx, ctl): the fetch is a clone into the work directory,
+                # which the state has (and a second clone into it would fail)
+                [ -z "$(sudo find "$(dirname "$f")" -mindepth 2 -maxdepth 2 \( -name .git -o -name .hg \))" ] || continue
+                echo "resumed build, its distfiles will be fetched again: $f"
+                kept=$(sudo grep -vE '^target: org\.macports\.(fetch|checksum)$' "$f")
+                printf '%s\n' "$kept" | sudo tee "$f" > /dev/null
+            done
+    fi
     sudo chown -R "$(id -un)" "$HOME/provision-logs"
     cat /opt/local/etc/natron-sdk.txt 2> /dev/null || true
     df -h /
