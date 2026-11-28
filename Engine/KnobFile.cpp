@@ -29,6 +29,8 @@
 #include <cassert>
 #include <stdexcept>
 #include <sstream> // stringstream
+#include <string>
+#include <vector>
 
 #include <QStringList>
 #include <QMutexLocker>
@@ -97,11 +99,33 @@ KnobFile::typeName() const
     return typeNameStatic();
 }
 
+// Replaces the view variables of a file name: %V is the view name, %v its first letter in upper case, as
+// SequenceParsing::generateFileNameFromPattern() does. Without a valid view the name is returned as is.
+static std::string
+replaceViewVariables(const std::string& name,
+                     const std::vector<std::string>& views,
+                     ViewIdx view)
+{
+    const int viewIndex = view.value();
+    if ( (viewIndex < 0) || ( viewIndex >= (int)views.size() ) ) {
+        return name;
+    }
+    const QString viewName = QString::fromUtf8( views[viewIndex].c_str() );
+    QString result = QString::fromUtf8( name.c_str() );
+    result.replace( QString::fromUtf8("%V"), viewName );
+    result.replace( QString::fromUtf8("%v"), viewName.left(1).toUpper() );
+
+    return result.toStdString();
+}
+
 // The file name of a file parameter at a time and view. The name of an image sequence is a pattern, whose
-// frame number ('#', "%04d") and view ("%v", "%V") variables are replaced. A video file name is not a sequence
-// pattern: only its view variables are replaced, and a '#' in it is part of the name (#693). The callers say
-// whether the holder is a video reader or writer (for a Read or Write node, the ReadNode or WriteNode knows its
-// embedded plug-in); the holder gives the project views.
+// frame number ('#', "%04d") and view ("%v", "%V") variables are replaced. The frame number variables are only
+// those of the last component, the file name, as when a sequence is listed (FileSystemModel::filesListFromPattern()
+// looks for the files in the directory as written): a '#' or "%02d" in a directory name is part of the name
+// (e.g. "Frog #01/plate.exr" was read as "Frog 101/plate.exr", #848). The view variables are replaced in the
+// directories too. A video file name is not a sequence pattern: only its view variables are replaced, and a '#'
+// in it is part of the name (#693). The callers say whether the holder is a video reader or writer (for a Read or
+// Write node, the ReadNode or WriteNode knows its embedded plug-in); the holder gives the project views.
 static std::string
 fileNameFromPattern(const std::string& pattern,
                     const KnobHolder* holder,
@@ -117,21 +141,16 @@ fileNameFromPattern(const std::string& pattern,
     if ( !view.isViewIdx() ) {
         view = ViewIdx(0);
     }
+    const ViewIdx viewIdx( view.value() );
     if (isVideo) {
-        const int viewIndex = view.value();
-        if ( (viewIndex < 0) || ( viewIndex >= (int)views.size() ) ) {
-            return pattern;
-        }
-        // as SequenceParsing::generateFileNameFromPattern(): %V is the view name, %v its first letter in upper case
-        const QString viewName = QString::fromUtf8( views[viewIndex].c_str() );
-        QString name = QString::fromUtf8( pattern.c_str() );
-        name.replace( QString::fromUtf8("%V"), viewName );
-        name.replace( QString::fromUtf8("%v"), viewName.left(1).toUpper() );
-
-        return name.toStdString();
+        return replaceViewVariables(pattern, views, viewIdx);
     }
+    // split as the sequence listing and OutputEffectInstance::createWriterPath() do
+    std::string name = pattern;
+    const std::string directory = SequenceParsing::removePath(name);
 
-    return SequenceParsing::generateFileNameFromPattern(pattern, views, time, view);
+    return replaceViewVariables(directory, views, viewIdx) +
+           SequenceParsing::generateFileNameFromPattern(name, views, time, viewIdx);
 }
 
 std::string
