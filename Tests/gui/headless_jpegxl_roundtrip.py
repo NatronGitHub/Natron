@@ -24,8 +24,8 @@ OFX_PLUGIN_PATH), without an OpenColorIO configuration for the writers (set OCIO
 openfx-io older than openfx-io#483 (whose WriteFFmpeg still offers .jxl files), or when the
 OpenImageIO that openfx-io uses has no JPEG XL support (built without libjxl, or older than 2.6):
 the OpenImageIO nodes get their file extensions from OpenImageIO. With NATRON_TEST_REQUIRE_JPEGXL=1
-(the package workflows, whose OpenImageIO has libjxl and whose openfx-io is its master branch), the
-test fails instead of skipping.
+(the package workflows, whose OpenImageIO has libjxl and whose openfx-io includes openfx-io#483),
+the test fails instead of skipping.
 
     Read gradient.pfm -> Write gradient.jxl (the default writer: WriteOIIO, 32-bit float, lossless)
     Read gradient.jxl -> Write back.pfm

@@ -8,6 +8,7 @@
         <file alias="LICENSE-AGPL-3.0.txt">../tools/license/components/LICENSE-AGPL-3.0.txt</file>
         <file alias="LICENSE-Apache-2.0.txt">../tools/license/components/LICENSE-Apache-2.0.txt</file>
         <file alias="LICENSE-Boost.txt">../tools/license/components/LICENSE-Boost.txt</file>
+        <file alias="LICENSE-Brotli.txt">../tools/license/components/LICENSE-Brotli.txt</file>
         <file alias="LICENSE-CeCILL-C.txt">../tools/license/components/LICENSE-CeCILL-C.txt</file>
         <file alias="LICENSE-CeresSolver.txt">../tools/license/components/LICENSE-CeresSolver.txt</file>
         <file alias="LICENSE-Field3D.txt">../tools/license/components/LICENSE-Field3D.txt</file>
@@ -41,6 +42,7 @@
         <file alias="LICENSE-libedit.txt">../tools/license/components/LICENSE-libedit.txt</file>
         <file alias="LICENSE-libffi.txt">../tools/license/components/LICENSE-libffi.txt</file>
         <file alias="LICENSE-libjpeg.txt">../tools/license/components/LICENSE-libjpeg.txt</file>
+        <file alias="LICENSE-libjxl.txt">../tools/license/components/LICENSE-libjxl.txt</file>
         <file alias="LICENSE-libmng.txt">../tools/license/components/LICENSE-libmng.txt</file>
         <file alias="LICENSE-libmv.txt">../tools/license/components/LICENSE-libmv.txt</file>
         <file alias="LICENSE-libogg.txt">../tools/license/components/LICENSE-libogg.txt</file>

@@ -547,7 +547,7 @@ jobs:
           persist-credentials: false
 
       - name: JPEG XL round trip with the installed NatronRenderer (#980)
-        # natron_openimageio has libjxl and the bundled openfx-io is master: the test must run, not skip
+        # natron_openimageio has libjxl and the bundled openfx-io includes openfx-io#483: the test must run, not skip
         if: ${{ !cancelled() && steps.natron_tests.outcome == 'success' }}
         run: |
           APP=$(cygpath -u 'C:\nt')

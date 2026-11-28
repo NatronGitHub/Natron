@@ -372,7 +372,7 @@ jobs:
     - name: Run Natron-Tests on the latest Ubuntu
       run: tools/docker/natron-test.sh -H -n Natron-Tests -o results dist/*.tar.xz
     - name: JPEG XL round trip with the archive's NatronRenderer (#980)
-      # the archive's OpenImageIO has libjxl and its openfx-io is master: the test must run, not skip
+      # the archive's OpenImageIO has libjxl and its openfx-io includes openfx-io#483: the test must run, not skip
       if: ${{ !cancelled() }}
       run: |
         d=$(mktemp -d)
