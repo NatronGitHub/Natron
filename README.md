@@ -97,7 +97,7 @@ For each architecture / operating system, you can either download a stable relea
 There are instructions for building Natron and the basic plugins from source in this directory on various architectures / operating systems. Natron is built with CMake; the qmake build is deprecated and will be removed in a future release ([#1181](https://github.com/NatronGitHub/Natron/issues/1181)):
 
 - [GNU/Linux](INSTALL_LINUX.md)
-- [macOS](INSTALL_MACOS.md) (on an Apple Silicon Mac, [tools/tart](tools/tart/README.md) also builds the arm64 DMG, for macOS 14 and later, automatically in a VM; build the Intel DMG with the MacPorts steps of INSTALL_MACOS.md on an Intel Mac)
+- [macOS](INSTALL_MACOS.md) (the arm64 and Intel DMGs, for macOS 14 and later, are built on GitHub by `.github/workflows/macos_arm64.yml` and `macos_x86_64.yml`; on an Apple Silicon Mac, [tools/tart](tools/tart/README.md) also builds the arm64 DMG automatically in a VM)
 - [FreeBSD](INSTALL_FREEBSD.md)
 - [Windows](INSTALL_WINDOWS.md)
 

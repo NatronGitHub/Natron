@@ -1,0 +1,190 @@
+name: macOS arm64 DMG
+
+# The macOS arm64 (Apple Silicon) DMG of Natron, built for macOS 14.0 on GitHub's arm64 runner
+# (macos-15, pinned, not macos-latest: at most one macOS release above the deployment target, see
+# macos_dmg.yml), and tested with Natron-Tests on the latest arm64 runner (macos-26), as
+# macos_x86_64.yml does for x86_64. Runs weekly (Sunday), on demand, and on pre-release tags
+# (v*-alpha*, -beta*, -rc*, -RC*), never on pull requests.
+#
+# build: the SDK, the DMG and the tests (macos_dmg.yml, which describes the steps).
+# release (pre-release tags only): the DMG and the test results attached to the GitHub release.
+# Weekly and on-demand runs keep the DMG and test results as artifacts for 14 days.
+#
+# With the "dmg" input, nothing is built: Natron-Tests runs on that DMG instead (e.g. one built in
+# a tart VM with tools/tart/natron-build.sh, see tools/tart/README.md), and when it is the arm64
+# DMG asset of a v* release and the tests pass, the test results are attached to that release.
+on:
+  workflow_dispatch:
+    inputs:
+      sdk:
+        description: 'SDK: reuse (same definition, < 30 days old; else update the newest), update (the newest), or scratch (rebuild it)'
+        type: choice
+        options: [reuse, update, scratch]
+        default: reuse
+      dmg:
+        description: 'Only test this DMG, build nothing: TAG (the *-arm64.dmg asset of the GitHub release of TAG), TAG/ASSET, RUN_ID/ARTIFACT (an artifact of a workflow run), or the https:// URL of a .dmg file'
+        type: string
+        default: ''
+      attach:
+        description: 'With dmg: attach the test results to the release, if the DMG is the arm64 DMG asset of a v* release and the tests pass'
+        type: boolean
+        default: true
+  schedule:
+  # Sunday 05:47 UTC (macos_x86_64.yml runs at 05:17, on other runners)
+  - cron: '47 5 * * 0'
+  push:
+    # pre-release tags, as linux_packages.yml
+    tags:
+    - 'v*-alpha*'
+    - 'v*-beta*'
+    - 'v*-rc*'
+    - 'v*-RC*'
+
+permissions:
+  contents: read
+
+concurrency:
+  # macOS runners are scarce: one run at a time per ref (a newer pending run replaces an older one)
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: ${{ !inputs.dmg }}
+    uses: ./.github/workflows/macos_dmg.yml
+    permissions:
+      contents: read
+      actions: read
+    with:
+      arch: arm64
+      build_runner: macos-15
+      test_runner: macos-26
+      sdk: ${{ inputs.sdk || 'reuse' }}
+
+  release:
+    name: Attach to the release
+    needs: build
+    # pre-release tags only (the push trigger), not a workflow_dispatch run on a tag
+    if: ${{ !cancelled() && needs.build.result == 'success' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/workflows/attach_to_prerelease.sh
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: Natron-macOS-arm64-{dmg,tests}
+          merge-multiple: true
+          path: assets
+
+      - name: Upload the assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          ls -l assets
+          # as macos_x86_64.yml: the DMG, <dmg>-tests.txt, -tests-summary.txt and -unit_tests_failures.zip
+          shopt -s nullglob
+          .github/workflows/attach_to_prerelease.sh "$TAG" assets/*.dmg assets/*-tests.txt assets/*-tests-summary.txt assets/*-unit_tests_failures.zip
+
+  # only with the dmg input: test a DMG built elsewhere
+  find:
+    name: Download the DMG
+    if: ${{ inputs.dmg }}
+    runs-on: ubuntu-latest
+    permissions:
+      # draft releases (where tools/tart/README.md puts the DMGs that aren't release assets) are
+      # visible only with push access; this job runs no code of the repository, only gh and curl
+      contents: write
+      actions: read
+    outputs:
+      found: ${{ steps.find.outputs.found }}
+      tag: ${{ steps.find.outputs.tag }}
+    steps:
+      - id: find
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          DMG_SOURCE: ${{ inputs.dmg }}
+          ATTACH: ${{ inputs.attach }}
+        run: |
+          dir=$RUNNER_TEMP/dmg
+          mkdir -p "$dir"
+          case $DMG_SOURCE in
+          https://*)
+            url=${DMG_SOURCE%%\?*}
+            case $url in *.dmg) ;; *) echo "::error::$DMG_SOURCE: not the URL of a .dmg file"; exit 1 ;; esac
+            curl -fL --retry 5 -o "$dir/$(basename "$url")" "$DMG_SOURCE" ;;
+          [0-9]*/?*)
+            gh run download "${DMG_SOURCE%%/*}" -n "${DMG_SOURCE#*/}" -D "$dir" ;;
+          ?*/?*)
+            gh release download "${DMG_SOURCE%%/*}" -p "${DMG_SOURCE#*/}" -D "$dir" ;;
+          ?*)
+            gh release download "$DMG_SOURCE" -p '*-arm64.dmg' -D "$dir" ;;
+          *)
+            echo "::error::no DMG given"; exit 1 ;;
+          esac
+          shopt -s nullglob
+          dmgs=("$dir"/*.dmg)
+          [ ${#dmgs[@]} = 1 ] || { echo "::error::$DMG_SOURCE: ${#dmgs[@]} DMG files, not 1"; ls -l "$dir"; exit 1; }
+          ls -l "${dmgs[0]}"
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          # the results are attached only for the arm64 DMG asset of a v* release (TAG or TAG/ASSET),
+          # not for a run artifact, a URL, or another asset (e.g. the x86_64 DMG, whose results
+          # macos_x86_64.yml attaches)
+          case $DMG_SOURCE:${dmgs[0]} in
+          https://*|[0-9]*/*) ;;
+          v*-arm64.dmg) [ "$ATTACH" != true ] || echo "tag=${DMG_SOURCE%%/*}" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Keep the DMG for the test job
+        if: steps.find.outputs.found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Natron-macOS-dmg-to-test
+          path: ${{ runner.temp }}/dmg/*.dmg
+          retention-days: 1
+          compression-level: 0
+
+  test-dmg:
+    needs: find
+    if: needs.find.outputs.found == 'true'
+    uses: ./.github/workflows/macos_dmg_tests.yml
+    with:
+      artifact: Natron-macOS-dmg-to-test
+      runner: macos-26
+      results: Natron-macOS-arm64-tests
+
+  release-tests:
+    name: Attach the test results to the release
+    needs: [find, test-dmg]
+    if: ${{ !cancelled() && needs.test-dmg.result == 'success' && needs.find.outputs.tag != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/workflows/attach_to_prerelease.sh
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: Natron-macOS-arm64-tests
+          path: assets
+
+      - name: Upload the test results
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.find.outputs.tag }}
+        run: |
+          ls -l assets
+          # as macos_x86_64.yml: <dmg>-tests.txt, -tests-summary.txt and -unit_tests_failures.zip
+          shopt -s nullglob
+          .github/workflows/attach_to_prerelease.sh "$TAG" assets/*-tests.txt assets/*-tests-summary.txt assets/*-unit_tests_failures.zip

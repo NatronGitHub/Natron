@@ -1,19 +1,28 @@
-name: macOS x86_64 SDK stage
+name: macOS SDK stage
 
-# One stage of the macOS x86_64 MacPorts SDK, called by macos_x86_64.yml (see there). MacPorts
+# One stage of the macOS MacPorts SDK of one architecture, called by macos_dmg.yml (see there, and
+# macos_x86_64.yml, macos_arm64.yml). MacPorts
 # builds the overlay ports and the ports that go into the DMG from source, which takes longer than
 # GitHub's 6-hour job limit: each stage runs tools/tart/provision.sh until it is done or until its
 # time budget is used, then saves the whole state (/opt/local with the MacPorts build directories,
 # OSMesa/LLVM, provision.sh's done markers) as an artifact, which the next stage restores and
-# resumes. The stage that finishes saves the SDK as natron-sdk-macos-x86_64-<key>, which later
-# runs reuse (same key) or update (macos_x86_64_sdk.sh find).
+# resumes. The stage that finishes saves the SDK as natron-sdk-macos-<arch>-<key>, which later
+# runs reuse (same key) or update (macos_sdk.sh find).
 on:
   workflow_call:
     inputs:
+      # x86_64 or arm64
+      arch:
+        type: string
+        required: true
+      # the runner that builds it: macOS 15 for the 14.0 target (see macos_dmg.yml)
+      runner:
+        type: string
+        required: true
       stage:
         type: number
         required: true
-      # stage 1: reuse, update or scratch (macos_x86_64_sdk.sh find)
+      # stage 1: reuse, update or scratch (macos_sdk.sh find)
       mode:
         type: string
         default: reuse
@@ -21,7 +30,7 @@ on:
       state:
         type: string
         default: ''
-      # the number of stages of the caller (the sdk-N jobs of macos_x86_64.yml): the last one fails
+      # the number of stages of the caller (the sdk-N jobs of macos_dmg.yml): the last one fails
       # if the SDK isn't finished
       last_stage:
         type: number
@@ -63,7 +72,7 @@ jobs:
         name: SDK key
         env:
           # everything that defines the SDK: a change makes the next run update the SDK
-          SDK_KEY: ${{ hashFiles('tools/MacPorts/*/*/**', 'tools/MacPorts/sync.sh', 'tools/MacPorts/macports-env.sh', 'tools/tart/provision.sh', 'tools/tart/check-minos.sh', 'tools/jenkins/macos-release.sh', '.github/workflows/macos_x86_64_sdk.sh') }}
+          SDK_KEY: ${{ hashFiles('tools/MacPorts/*/*/**', 'tools/MacPorts/sync.sh', 'tools/MacPorts/macports-env.sh', 'tools/tart/provision.sh', 'tools/tart/check-minos.sh', 'tools/jenkins/macos-release.sh', '.github/workflows/macos_sdk.sh') }}
         run: echo "SDK_KEY_SHORT=${SDK_KEY:0:16}" >> "$GITHUB_ENV"
 
       - name: Find an SDK to start from
@@ -73,23 +82,23 @@ jobs:
           # schedule events have no repository payload: they run on the default branch
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch || github.ref_name }}
         run: |
-          found=$(.github/workflows/macos_x86_64_sdk.sh find "$SDK_KEY_SHORT" "${{ inputs.mode }}")
+          found=$(.github/workflows/macos_sdk.sh find "${{ inputs.arch }}" "$SDK_KEY_SHORT" "${{ inputs.mode }}")
           read -r name run what <<< "$found"
-          echo "SDK key $SDK_KEY_SHORT: $what ${name} (run ${run})"
+          echo "${{ inputs.arch }} SDK key $SDK_KEY_SHORT: $what ${name} (run ${run})"
           { echo "name=$name"; echo "run=$run"; echo "what=$what"; } >> "$GITHUB_OUTPUT"
 
   sdk:
-    name: SDK stage ${{ inputs.stage }}
+    name: ${{ inputs.arch }} SDK stage ${{ inputs.stage }}
     needs: find
     # find is skipped in the stages after the first one
     if: ${{ !cancelled() && (inputs.stage > 1 || (needs.find.result == 'success' && needs.find.outputs.what != 'reuse')) }}
-    runs-on: macos-15-intel
+    runs-on: ${{ inputs.runner }}
     # GitHub's limit is 360 minutes: provision.sh stops at BUDGET_MINUTES after the job start, which
     # leaves time to save and upload the state
     timeout-minutes: 358
     env:
       BUDGET_MINUTES: 290
-      SDK_TOOL: ${{ github.workspace }}/.github/workflows/macos_x86_64_sdk.sh
+      SDK_TOOL: ${{ github.workspace }}/.github/workflows/macos_sdk.sh
     outputs:
       sdk: ${{ steps.result.outputs.sdk }}
       sdk_run_id: ${{ steps.result.outputs.sdk_run_id }}
@@ -98,7 +107,8 @@ jobs:
       - name: Start
         run: |
           echo "JOB_START=$(date +%s)" >> "$GITHUB_ENV"
-          uname -m; sw_vers -productVersion; sysctl -n machdep.cpu.brand_string hw.ncpu; df -h /
+          uname -m; sw_vers -productVersion; sysctl -n machdep.cpu.brand_string hw.ncpu hw.memsize; df -h /
+          [ "$(uname -m)" = "${{ inputs.arch }}" ] || { echo "::error::runner ${{ inputs.runner }} is $(uname -m), not ${{ inputs.arch }}"; exit 1; }
 
       - uses: actions/checkout@v4
 
@@ -124,6 +134,7 @@ jobs:
 
       - name: Prepare the runner
         run: |
+          "$SDK_TOOL" select-xcode
           "$SDK_TOOL" hide-homebrew
           # provision.sh's layout (tools/tart/tart-common.sh)
           mkdir -p ~/Documents/third_party
@@ -146,7 +157,11 @@ jobs:
           # shellcheck disable=SC2086 # one word per step
           "$SDK_TOOL" run $(( JOB_START + BUDGET_MINUTES * 60 )) $steps || rc=$?
           case $rc in
-            0) echo "finished=true" >> "$GITHUB_OUTPUT" ;;
+            0) echo "finished=true" >> "$GITHUB_OUTPUT"
+               # ports still built for a newer macOS after a rebuild: files of the DMG that
+               # check-minos can't see (e.g. librsvg's Rust std objects, tools/tart/README.md)
+               skip=~/provision-logs/rebuild_target.skip
+               [ ! -s "$skip" ] || echo "::warning::ports still built for a macOS newer than the target (rebuild_target.skip): $(tr '\n' ' ' < "$skip")" ;;
             3) echo "finished=false" >> "$GITHUB_OUTPUT" ;;
             *) echo "::error::provision.sh failed (see the log above; ~/provision-logs is uploaded)"; exit "$rc" ;;
           esac
@@ -156,7 +171,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           overwrite: true
-          name: sdk-logs-stage-${{ inputs.stage }}
+          name: sdk-logs-${{ inputs.arch }}-stage-${{ inputs.stage }}
           # with MacPorts' logs of the ports that failed (they are deleted after a successful install)
           path: |
             ~/provision-logs
@@ -175,7 +190,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           overwrite: true
-          name: natron-sdk-macos-x86_64-${{ env.SDK_KEY_SHORT }}
+          name: natron-sdk-macos-${{ inputs.arch }}-${{ env.SDK_KEY_SHORT }}
           path: ${{ runner.temp }}/out/natron-sdk.tar.zst
           retention-days: 90
           compression-level: 0
@@ -185,7 +200,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           overwrite: true
-          name: sdk-state-${{ inputs.stage }}
+          name: sdk-state-${{ inputs.arch }}-${{ inputs.stage }}
           path: ${{ runner.temp }}/out/natron-sdk.tar.zst
           retention-days: 3
           compression-level: 0
@@ -198,13 +213,13 @@ jobs:
           LAST_STAGE: ${{ inputs.last_stage }}
         run: |
           if [ "${{ steps.upload_sdk.outcome }}" = success ]; then
-            echo "sdk=natron-sdk-macos-x86_64-$SDK_KEY_SHORT" >> "$GITHUB_OUTPUT"
+            echo "sdk=natron-sdk-macos-${{ inputs.arch }}-$SDK_KEY_SHORT" >> "$GITHUB_OUTPUT"
             echo "sdk_run_id=$GITHUB_RUN_ID" >> "$GITHUB_OUTPUT"
           elif [ "${{ steps.provision.outputs.finished }}" = false ]; then
             if [ "$STAGE" -ge "$LAST_STAGE" ]; then
-              echo "::error::the SDK is not finished after the last stage (${{ inputs.last_stage }}): add stages to macos_x86_64.yml"
+              echo "::error::the SDK is not finished after the last stage (${{ inputs.last_stage }}): add stages to macos_dmg.yml"
               exit 1
             fi
-            echo "state=sdk-state-${{ inputs.stage }}" >> "$GITHUB_OUTPUT"
+            echo "state=sdk-state-${{ inputs.arch }}-${{ inputs.stage }}" >> "$GITHUB_OUTPUT"
           fi
           echo "stage ${{ inputs.stage }} ended after $(( ($(date +%s) - JOB_START) / 60 )) minutes"

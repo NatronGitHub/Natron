@@ -1,0 +1,191 @@
+name: macOS DMG
+
+# The macOS DMG of Natron for one architecture, built on a GitHub-hosted runner of that
+# architecture and tested there with Natron-Tests. Called by macos_x86_64.yml (macos-15-intel) and
+# macos_arm64.yml (macos-15), which attach the DMG to pre-releases.
+#
+# Runners: the build runner is at most one macOS release above the deployment target
+# (NATRON_MACOS_RELEASE_MIN, 14.0: macOS 15, with Xcode 16.4 and its macOS 15.5 SDK, see
+# macos_sdk.sh): building for the previous macOS release is the well-supported case, while SDKs,
+# toolchains and MacPorts binary archives two releases ahead are not. The build runners (and
+# XCODE_APP in macos_sdk.sh) must move when the target moves. The tests may run on a newer macOS
+# (macos-26, macos-26-intel); the oldest supported macOS is checked in a clean macOS 14 tart VM
+# (tools/tart/natron-test.sh), since GitHub has no macOS 14 image any more.
+#
+# 1. SDK (macos_sdk.yml, up to 4 chained stages of less than 6 hours): the MacPorts SDK of
+#    tools/tart/provision.sh, for macOS 14.0 (every Mach-O file has minos <= 14.0). On macOS 15 the
+#    MacPorts binary archives are built for macOS 15, so provision.sh runs with BUNDLE_ONLY_REBUILD=1:
+#    the archives are used for the build tools, and the ports whose files go into the DMG are rebuilt
+#    from source, as are the overlay ports (which have no archives). From scratch this takes about
+#    8.5 hours of runner time in 2 stages on Intel; the result is kept as an artifact (90 days)
+#    keyed by the architecture and a hash of what defines the SDK (tools/MacPorts, provision.sh,
+#    ...). A run reuses the SDK of the same key if it is less than 30 days old, else it updates the
+#    newest one (port sync, upgrade outdated, rebuild: 50 minutes with a few upgrades), and only
+#    builds from scratch if there is none (the "sdk" input).
+# 2. dmg: Natron and the plug-ins built from source with tools/jenkins/launchBuildMain.sh (CMake,
+#    the compiler of compiler-common.sh), the DMG (build-OSX-installer.sh, as in the tart VM), and
+#    its minos check (tools/tart/check-minos.sh -t 14.0). Never skipped: MacPorts and the runner
+#    image are rolling.
+# 3. test: Natron-Tests on a fresh runner, against the DMG's Natron.app, with Homebrew moved away
+#    and no SDK (macos_dmg_tests.yml, which runs tools/tart/run-natron-tests.sh, as
+#    tools/tart/natron-test.sh does).
+# The DMG (Natron-macOS-<arch>-dmg), its minos list, the build logs and the test results
+# (Natron-macOS-<arch>-tests) are kept as artifacts for 14 days.
+on:
+  workflow_call:
+    inputs:
+      arch:
+        description: 'x86_64 or arm64'
+        type: string
+        required: true
+      build_runner:
+        description: 'The runner of the SDK and the DMG: at most one macOS release above the deployment target (see above)'
+        type: string
+        required: true
+      test_runner:
+        description: 'The runner of Natron-Tests (a newer macOS is fine)'
+        type: string
+        required: true
+      sdk:
+        description: 'reuse, update or scratch (macos_sdk.sh find)'
+        type: string
+        default: reuse
+
+permissions:
+  contents: read
+
+jobs:
+  sdk-1:
+    uses: ./.github/workflows/macos_sdk.yml
+    permissions:
+      contents: read
+      actions: read
+    with:
+      arch: ${{ inputs.arch }}
+      runner: ${{ inputs.build_runner }}
+      stage: 1
+      mode: ${{ inputs.sdk }}
+  sdk-2:
+    needs: sdk-1
+    if: needs.sdk-1.outputs.state != ''
+    uses: ./.github/workflows/macos_sdk.yml
+    permissions:
+      contents: read
+      actions: read
+    with:
+      arch: ${{ inputs.arch }}
+      runner: ${{ inputs.build_runner }}
+      stage: 2
+      state: ${{ needs.sdk-1.outputs.state }}
+  sdk-3:
+    needs: sdk-2
+    if: needs.sdk-2.outputs.state != ''
+    uses: ./.github/workflows/macos_sdk.yml
+    permissions:
+      contents: read
+      actions: read
+    with:
+      arch: ${{ inputs.arch }}
+      runner: ${{ inputs.build_runner }}
+      stage: 3
+      state: ${{ needs.sdk-2.outputs.state }}
+  sdk-4:
+    needs: sdk-3
+    if: needs.sdk-3.outputs.state != ''
+    uses: ./.github/workflows/macos_sdk.yml
+    permissions:
+      contents: read
+      actions: read
+    with:
+      arch: ${{ inputs.arch }}
+      runner: ${{ inputs.build_runner }}
+      stage: 4
+      state: ${{ needs.sdk-3.outputs.state }}
+
+  dmg:
+    name: Build the ${{ inputs.arch }} DMG
+    needs: [sdk-1, sdk-2, sdk-3, sdk-4]
+    if: ${{ !cancelled() && (needs.sdk-1.outputs.sdk || needs.sdk-2.outputs.sdk || needs.sdk-3.outputs.sdk || needs.sdk-4.outputs.sdk) != '' }}
+    runs-on: ${{ inputs.build_runner }}
+    timeout-minutes: 300
+    permissions:
+      contents: read
+      actions: read
+    env:
+      ARCH: ${{ inputs.arch }}
+      SDK: ${{ needs.sdk-1.outputs.sdk || needs.sdk-2.outputs.sdk || needs.sdk-3.outputs.sdk || needs.sdk-4.outputs.sdk }}
+      SDK_RUN_ID: ${{ needs.sdk-1.outputs.sdk_run_id || needs.sdk-2.outputs.sdk_run_id || needs.sdk-3.outputs.sdk_run_id || needs.sdk-4.outputs.sdk_run_id }}
+      SDK_TOOL: ${{ github.workspace }}/.github/workflows/macos_sdk.sh
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download the SDK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: '"$SDK_TOOL" download "$SDK" "$SDK_RUN_ID" "$RUNNER_TEMP/sdk"'
+
+      - name: Restore the SDK
+        run: |
+          echo "SDK $SDK from run $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$SDK_RUN_ID"
+          "$SDK_TOOL" restore "$RUNNER_TEMP/sdk/natron-sdk.tar.zst"
+          "$SDK_TOOL" select-xcode
+          "$SDK_TOOL" hide-homebrew
+          mkdir -p ~/Documents/third_party
+          ln -sfn "$GITHUB_WORKSPACE" ~/Documents/third_party/Natron
+
+      - name: Build Natron, the plug-ins and the DMG
+        run: |
+          . tools/MacPorts/macports-env.sh
+          # provision.sh's build step, as tools/tart/natron-build.sh: launchBuildMain.sh checks out
+          # this commit and the plug-ins, builds them with CMake for macOS 14.0 (NATRON_MACOS_MIN),
+          # makes the DMG and checks its minos (check-minos.sh). sync: the overlay of this commit.
+          GIT_BRANCH=$GITHUB_REF_NAME GIT_COMMIT=$GITHUB_SHA UNIT_TESTS=false NATRON_LICENSE=GPL \
+            tools/tart/provision.sh sync fixups build
+          cd ~/Development/workspace/builds_archive/natron_github_RB2/1
+          ls -l
+          dmg=$(ls Natron-*.dmg)
+          case $dmg in *-"$ARCH".dmg) ;; *) echo "::error::$dmg: not an $ARCH DMG"; exit 1 ;; esac
+          mnt=$(mktemp -d); hdiutil attach -quiet -readonly -nobrowse -mountpoint "$mnt" "$dmg"
+          archs=$(lipo -archs "$mnt"/*.app/Contents/MacOS/Natron); hdiutil detach -quiet "$mnt"
+          [ "$archs" = "$ARCH" ] || { echo "::error::Natron is built for $archs, not $ARCH"; exit 1; }
+          echo "DMG_DIR=$PWD" >> "$GITHUB_ENV"
+          echo "DMG_NAME=${dmg%.dmg}" >> "$GITHUB_ENV"
+
+      - name: Upload the DMG
+        uses: actions/upload-artifact@v4
+        with:
+          overwrite: true
+          name: Natron-macOS-${{ inputs.arch }}-dmg
+          path: ${{ env.DMG_DIR }}/*.dmg
+          retention-days: 14
+          compression-level: 0
+
+      - name: Upload the minos list
+        # also when the minos check fails: it lists the files (and so the ports) built for a newer macOS
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          overwrite: true
+          name: Natron-macOS-${{ inputs.arch }}-minos
+          path: ~/Development/workspace/builds_archive/natron_github_RB2/1/*-minos.txt
+          retention-days: 14
+
+      - name: Upload the build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          overwrite: true
+          name: Natron-macOS-${{ inputs.arch }}-build-logs
+          path: ~/provision-logs
+          retention-days: 14
+
+  test:
+    needs: dmg
+    # the SDK stages after the one that finished are skipped: without a status function, a job
+    # whose (indirect) dependencies were skipped is skipped too
+    if: ${{ !cancelled() && needs.dmg.result == 'success' }}
+    uses: ./.github/workflows/macos_dmg_tests.yml
+    with:
+      artifact: Natron-macOS-${{ inputs.arch }}-dmg
+      runner: ${{ inputs.test_runner }}
+      results: Natron-macOS-${{ inputs.arch }}-tests

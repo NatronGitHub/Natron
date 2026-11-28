@@ -1,0 +1,103 @@
+name: macOS DMG tests
+
+# Natron-Tests on a Natron DMG, installed as a user gets it, on a clean GitHub-hosted macOS runner:
+# the DMG is downloaded and mounted, Natron.app is copied out of it, Homebrew is moved away (there
+# is no MacPorts and no SDK), and tools/tart/run-natron-tests.sh runs the whole suite against the
+# copied app, with the known failures of Natron-Tests (an unexpected pass fails the job), as
+# tools/tart/natron-test.sh does in a tart VM. Called by macos_dmg.yml (the DMG it builds, for
+# macos_x86_64.yml on the latest Intel runner and macos_arm64.yml on the latest arm64 runner) and
+# macos_arm64.yml (a DMG given to it, e.g. one built with tools/tart), with the DMG as an artifact
+# of the calling run. The results are kept as an artifact for 14 days.
+on:
+  workflow_call:
+    inputs:
+      artifact:
+        description: 'The name of an artifact of this run with the DMG (one .dmg file)'
+        type: string
+        required: true
+      runner:
+        description: 'The runner label (macos-26: arm64, macos-26-intel: x86_64)'
+        type: string
+        required: true
+      results:
+        description: 'The name of the artifact with the test results'
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Natron-Tests on the DMG (${{ inputs.runner }})
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/checkout@v4
+        with:
+          repository: NatronGitHub/Natron-Tests
+          path: Natron-Tests
+          persist-credentials: false
+
+      - name: Download the DMG
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact }}
+          path: ${{ runner.temp }}/dmg
+
+      - name: Find the DMG
+        run: |
+          shopt -s nullglob
+          dmgs=("$RUNNER_TEMP"/dmg/*.dmg)
+          [ ${#dmgs[@]} = 1 ] || { echo "::error::artifact $ARTIFACT: ${#dmgs[@]} DMG files, not 1"; ls -l "$RUNNER_TEMP/dmg"; exit 1; }
+          ls -l "${dmgs[0]}"
+          echo "DMG=${dmgs[0]}" >> "$GITHUB_ENV"
+          echo "DMG_NAME=$(basename "${dmgs[0]%.dmg}")" >> "$GITHUB_ENV"
+        env:
+          ARTIFACT: ${{ inputs.artifact }}
+
+      - name: Check the DMG and the runner
+        run: |
+          sw_vers
+          mnt=$(mktemp -d); hdiutil attach -quiet -readonly -nobrowse -mountpoint "$mnt" "$DMG"
+          trap 'hdiutil detach -quiet "$mnt"' EXIT
+          archs=$(lipo -archs "$mnt"/*.app/Contents/MacOS/NatronRenderer)
+          echo "NatronRenderer: $archs; runner: $(uname -m)"
+          case " $archs " in
+          *" $(uname -m) "*) ;;
+          " x86_64 ")
+            # an x86_64 DMG on an arm64 runner: only a smoke test of this workflow, under Rosetta
+            echo "::warning::testing an x86_64 DMG on an arm64 runner, under Rosetta"
+            arch -x86_64 /usr/bin/true 2> /dev/null || sudo softwareupdate --install-rosetta --agree-to-license ;;
+          *)
+            echo "::error::NatronRenderer is built for $archs: it cannot run on this $(uname -m) runner"; exit 1 ;;
+          esac
+
+      - name: Run Natron-Tests
+        run: |
+          # runTests.sh downloads these from SourceForge, which is sometimes flaky: fetch them first
+          for z in Natron_2.3.12_Spaceship.zip Natron_2.3.12_BayMax.zip; do
+            curl -fsSL --retry 5 -o "Natron-Tests/$z" "https://downloads.sourceforge.net/project/natron/Examples/$z" || rm -f "Natron-Tests/$z"
+          done
+          # a bare macOS, as far as possible: no Homebrew (/usr/local; /opt/homebrew on arm64), no SDK,
+          # no MacPorts, and no Python.framework in /Library/Frameworks (which dyld searches by
+          # default, so it could hide a framework missing from Natron.app)
+          .github/workflows/macos_sdk.sh hide-homebrew
+          [ ! -e /opt/homebrew ] || { echo "::error::/opt/homebrew exists"; exit 1; }
+          hidden=$HOME/hidden-from-tests; mkdir -p "$hidden"
+          [ ! -e /Library/Frameworks/Python.framework ] || sudo mv /Library/Frameworks/Python.framework "$hidden/"
+          [ ! -e /opt/local ] || { echo "::error::/opt/local exists"; exit 1; }
+          tools/tart/run-natron-tests.sh "$DMG" Natron-Tests "$RUNNER_TEMP/results" "$DMG_NAME"
+
+      - name: Upload the test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          overwrite: true
+          name: ${{ inputs.results }}
+          path: ${{ runner.temp }}/results
+          retention-days: 14

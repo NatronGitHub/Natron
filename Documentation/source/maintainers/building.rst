@@ -392,7 +392,8 @@ Release builds
 
 The installers are built by ``tools/jenkins/launchBuildMain.sh``, which calls
 ``build-plugins.sh``, ``build-natron.sh`` and ``build-<OS>-installer.sh``
-(macOS: through ``tools/tart``; Linux: in the SDK Docker image, by
+(macOS: through ``tools/tart/provision.sh``, by ``macos_arm64.yml`` and
+``macos_x86_64.yml`` on GitHub Actions, or in a ``tools/tart`` VM; Linux: in the SDK Docker image, by
 ``linux_packages.yml`` on GitHub Actions; Windows: ``build_installer.yml``).
 ``build-natron.sh`` builds Natron with CMake:
 
