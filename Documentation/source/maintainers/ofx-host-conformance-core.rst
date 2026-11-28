@@ -798,11 +798,11 @@ Spec-only
 
 19. **R4:** the host kOfxPropName get-hook returns ErrValue instead of ErrBadIndex for index≠0 (Engine/OfxHost.cpp:483-484). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__.
 
-20. **P4:** render clones start with the main instance's kOfxPropInstanceData instead of NULL (HS/ofxhImageEffect.cpp:780-797). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `#1992 <https://github.com/NatronGitHub/Natron/pull/1992>`__.
+20. **P4:** render clones start with the main instance's kOfxPropInstanceData instead of NULL (HS/ofxhImageEffect.cpp:780-797). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `#1992 <https://github.com/NatronGitHub/Natron/pull/1992>`__ in Natron, then by `NatronGitHub/openfx#384 <https://github.com/NatronGitHub/openfx/pull/384>`__ in HostSupport (in libs/OpenFX since `#2041 <https://github.com/NatronGitHub/Natron/pull/2041>`__), which also reinstalls the clone's get hooks (project size, frame rate...).
 
 21. **P5:** the host kOfxPropName is user-set and proxied per plug-in (deliberate). There is also a typo: ``loadingPluginVersionMinor = getVersionMajor()`` (Engine/OfxHost.cpp:676), harmless. The proxied name is deliberate, won't fix; the typo is in `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
-22. **P7:** effect descriptor Short/Long labels default to "", and resetting or setting kOfxPropLabel does not reset them. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `NatronGitHub/openfx#384 <https://github.com/NatronGitHub/openfx/pull/384>`__ (in libs/OpenFX since `#2041 <https://github.com/NatronGitHub/Natron/pull/2041>`__).
+22. **P7 (fixed):** effect descriptor Short/Long labels defaulted to "", and resetting or setting kOfxPropLabel did not reset them. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `NatronGitHub/openfx#384 <https://github.com/NatronGitHub/openfx/pull/384>`__ (in libs/OpenFX since `#2041 <https://github.com/NatronGitHub/Natron/pull/2041>`__).
 
 23. **G5/G7:** host-level Error and Warning messages go only to the log (deliberate, because of Sapphire). Natron also clears persistent messages itself (Engine/Node.cpp:2815, 3352). Host-level messages going to the log is deliberate, won't fix. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. Clearing the plug-in's persistent messages is kept, deliberately, until the plug-ins clear their own (see G7).
 
