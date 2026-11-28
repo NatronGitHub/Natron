@@ -56,8 +56,8 @@ and was removed. A crash reporter will come back with sentry-native/Crashpad
 crashes are diagnosed from backtraces: a debugger, the system crash log, or the
 ``SIGSEGV`` handler that prints a backtrace on Linux.
 
-Because so many open issues are unreproducible "random crashes"
-(`#557 <https://github.com/NatronGitHub/Natron/issues/557>`_), bringing a crash-reporting
+Because so many issues are unreproducible "random crashes" (for example
+`#557 <https://github.com/NatronGitHub/Natron/issues/557>`_), bringing a crash-reporting
 pipeline back — dumps captured, symbols available, reports delivered — is one
 of the highest-leverage things a maintainer can do (see :ref:`maint-todo`).
 

@@ -214,8 +214,6 @@ same pixels again (``markImageAsBeingRendered``,
 Known problems
 --------------
 
-- `#192 <https://github.com/NatronGitHub/Natron/issues/192>`_: Natron does not
-  respect the disk cache size limits and crashes when the disk is full.
 - `#248 <https://github.com/NatronGitHub/Natron/issues/248>`_: rendering can
   stall after a number of frames; the wait for pixels "being rendered
   elsewhere" is a suspect (see :ref:`maint-issue-triage`).
