@@ -114,6 +114,9 @@ restore)
         sudo find "$states" -maxdepth 3 -path '*/work/.macports.*.state' -print0 |
             while IFS= read -r -d '' f; do
                 sudo grep -qE '^target: org\.macports\.(fetch|checksum)$' "$f" || continue
+                # fetch.type git or hg (libvpx, ctl): the fetch is a clone into the work directory,
+                # which the state has (and a second clone into it would fail)
+                [ -z "$(sudo find "$(dirname "$f")" -mindepth 2 -maxdepth 2 \( -name .git -o -name .hg \))" ] || continue
                 echo "resumed build, its distfiles will be fetched again: $f"
                 kept=$(sudo grep -vE '^target: org\.macports\.(fetch|checksum)$' "$f")
                 printf '%s\n' "$kept" | sudo tee "$f" > /dev/null
