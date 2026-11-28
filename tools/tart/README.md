@@ -101,14 +101,16 @@ Known failures are listed in Natron-Tests itself, in `known_failures/common.txt`
 
 `macos_arm64.yml` with the `dmg` input builds nothing: it runs the same tests (`macos_dmg_tests.yml`) on a DMG built elsewhere, e.g. with `natron-build.sh`, on a clean `macos-26` runner, the latest macOS arm64 that GitHub offers: it downloads the DMG, mounts it, copies `Natron.app` out of it as a user would, moves Homebrew (`/opt/homebrew` and `/usr/local`) and `/Library/Frameworks/Python.framework` away (there is no MacPorts), and runs the whole Natron-Tests suite with its known failures. This checks that the macOS 14 build runs on the newest macOS. The DMG has to be uploaded first:
 
-- **Pre-release (`v*-alpha*`, `-beta*`, `-rc*`, `-RC*`).** If a tart DMG replaces the GitHub-built one, attach it to the GitHub release of the tag, then run the tests on it:
+- **Pre-release (`v*-alpha*`, `-beta*`, `-rc*`, `-RC*`).** If a tart DMG replaces the GitHub-built one, delete the GitHub-built DMG and its test results from the release of the tag first (the names differ: a tart DMG has its own date and commit), attach the tart DMG, then run the tests on it:
 
   ```sh
-  gh release upload --clobber v2.6.0-rc1 natron-builds/<vm>/natron_github_RB2/1/Natron-*-macOS14-arm64.dmg
+  gh release view v2.6.0-rc1 --json assets --jq '.assets[].name'        # the GitHub-built *-arm64* assets
+  gh release delete-asset v2.6.0-rc1 Natron-…-macOS14-arm64.dmg          # and its -tests* files
+  gh release upload v2.6.0-rc1 natron-builds/<vm>/natron_github_RB2/1/Natron-*-macOS14-arm64.dmg
   gh workflow run macos_arm64.yml -f dmg=v2.6.0-rc1
   ```
 
-  With `dmg=TAG`, the workflow takes the release's `*-arm64.dmg` asset (`dmg=TAG/ASSET` for another one), and when the tests pass on an arm64 DMG it attaches `<dmg name>-tests.txt`, `-tests-summary.txt` and `-unit_tests_failures.zip` to the release (`-f attach=false` to only test). A tart DMG has another name than the GitHub-built one (its date and commit): delete the asset it replaces, and its test results, from the release. An on-demand run uses the workflow and `run-natron-tests.sh` of the branch it runs on (RB-2.6 by default), and Natron-Tests master, not those of the tag.
+  With `dmg=TAG`, the workflow takes the release's only `*-arm64.dmg` asset (`dmg=TAG/ASSET` for a given one), and when the tests pass on an arm64 DMG it attaches `<dmg name>-tests.txt`, `-tests-summary.txt` and `-unit_tests_failures.zip` to the release (`-f attach=false` to only test). An on-demand run uses the workflow and `run-natron-tests.sh` of the branch it runs on (RB-2.6 by default), and Natron-Tests master, not those of the tag.
 - **Any other build.** Upload it to a draft release, which only the repository's maintainers can see, and give the draft's tag and the asset name (the workflow's download job has `contents: write`, which it needs to see drafts); nothing is attached to a draft:
 
   ```sh

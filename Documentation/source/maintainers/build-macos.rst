@@ -151,11 +151,14 @@ Minimum macOS version
 
 Natron 2.6 for macOS runs on **macOS 14 (Sonoma) or later** (maintainer
 decision, 2026-11-18), and macOS 14 is the **distribution baseline**
-(2026-11-21): the release is built *on* macOS 14, in the tart SDK image
-``natron-sdk-sonoma`` (made from the stock
-``ghcr.io/cirruslabs/macos-sonoma-base`` image), with only the Command Line
-Tools for Xcode 15.3 (macOS 14.4 SDK, Apple clang 15.0.0) and no Xcode. GitHub
-CI keeps its ``macos-15`` runners, because GitHub has no macOS 14 runners.
+(2026-11-21): the DMGs are built for macOS 14.0 and tested on a clean macOS
+14. GitHub has no macOS 14 runners, so the release DMGs are built on its
+pinned ``macos-15`` and ``macos-15-intel`` runners with Xcode 16.4 (a build
+runner is at most one macOS release above the deployment target, and moves
+with it). The tart SDK image ``natron-sdk-sonoma`` (made from the stock
+``ghcr.io/cirruslabs/macos-sonoma-base`` image) builds *on* macOS 14, with only
+the Command Line Tools for Xcode 15.3 (macOS 14.4 SDK, Apple clang 15.0.0) and
+no Xcode: it is the local fallback for the arm64 DMG.
 Every Mach-O file in the ``.dmg`` must have a minimum macOS (``minos`` in
 ``otool -l``'s ``LC_BUILD_VERSION``) of 14.0 or older:
 

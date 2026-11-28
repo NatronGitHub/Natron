@@ -3,12 +3,15 @@
 # single place to change when the oldest supported macOS changes.
 #
 # Maintainer decisions: 2026-11-18, Natron 2.6 for macOS runs on macOS 14 (Sonoma) or later;
-# 2026-11-21, macOS 14 is the distribution baseline: the release is built on macOS 14, in a tart
-# VM made from the stock cirruslabs Sonoma image, with only the Command Line Tools that have the
-# macOS 14 SDK (no Xcode). GitHub CI uses macos-15 runners only because there are no macOS 14 ones.
+# 2026-11-21, macOS 14 is the distribution baseline: every Mach-O file of the DMG has minos 14.0,
+# and the DMG is tested on a clean macOS 14 (tools/tart/natron-test.sh). The release DMGs are built
+# on GitHub's macOS 15 runners (.github/workflows/macos_dmg.yml: a build runner is at most one
+# macOS release above the target, with Xcode 16.4); the tart SDK image (macOS 14, the Command Line
+# Tools with the macOS 14 SDK, no Xcode) is the local fallback for arm64.
 #
 # Changing the target also means: a new BASE_IMAGE and CLT_VERSION below, rebuilding the SDK image
-# (tools/tart/natron-sdk.sh create), and the system requirements in the User Guide.
+# (tools/tart/natron-sdk.sh create), the build runners of macos_arm64.yml and macos_x86_64.yml
+# and XCODE_APP in .github/workflows/macos_sdk.sh, and the system requirements in the User Guide.
 
 # Oldest macOS the release runs on: MACOSX_DEPLOYMENT_TARGET of release builds (NATRON_MACOS_MIN,
 # see common.sh), macosx_deployment_target in MacPorts, and the default target of check-minos.sh.
