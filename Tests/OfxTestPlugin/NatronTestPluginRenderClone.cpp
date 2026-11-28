@@ -29,7 +29,10 @@
 //   kOfxActionCreateInstance (its default is NULL, ofxCore.h). Each instance then sets it to its own data;
 // - renderWithExtraPlanes, renderWithoutExtraPlanes: the renders whose instance (a render clone or the main
 //   instance) reported extra planes (kNatronOfxExtraCreatedPlanes, ofxNatron.h: the project's default planes and
-//   the node's user-created ones) with a non-empty first value, and those that reported none.
+//   the node's user-created ones) with a non-empty first value, and those that reported none;
+// - renderWithProjectInfo, renderWithoutProjectInfo: the renders whose instance reported a positive project
+//   size (kOfxImageEffectPropProjectSize) and frame rate (kOfxImageEffectPropFrameRate), properties that
+//   HostSupport computes through get hooks (Natron's overrides), and those that reported 0 or failed.
 
 #include <chrono>
 #include <cstring>
@@ -158,6 +161,15 @@ render(OfxImageEffectHandle effect)
         natronTestIncrementCounter("RenderClone.renderWithExtraPlanes");
     } else {
         natronTestIncrementCounter("RenderClone.renderWithoutExtraPlanes");
+    }
+    double projectSize[2] = { 0., 0. };
+    double frameRate = 0.;
+    if ( props && (gPropSuite->propGetDoubleN(props, kOfxImageEffectPropProjectSize, 2, projectSize) == kOfxStatOK) &&
+         (gPropSuite->propGetDouble(props, kOfxImageEffectPropFrameRate, 0, &frameRate) == kOfxStatOK) &&
+         (projectSize[0] > 0.) && (projectSize[1] > 0.) && (frameRate > 0.) ) {
+        natronTestIncrementCounter("RenderClone.renderWithProjectInfo");
+    } else {
+        natronTestIncrementCounter("RenderClone.renderWithoutProjectInfo");
     }
     natronTestIncrementCounter("RenderClone.inRender");
     while (natronTestGetCounter("RenderClone.blockRender") != 0) {
