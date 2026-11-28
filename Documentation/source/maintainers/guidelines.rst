@@ -380,19 +380,21 @@ These rules apply to the unit and script tests of every repository (Natron's
   drop.
 - **A test checks what it claims.** If its name or comment promises more than
   it checks (a "bold text renders bold" test that only checks that a frame was
-  written), add the real check; remove checks that can't fail (an expected
-  output that accepts anything).
+  written), add the real check. A check that can't fail (an expected output
+  that accepts anything) is tightened, or removed and listed like a removed
+  test, with the check that replaces it.
 - **Third-party samples stay out of the repository.** A test that needs a file
-  from another project (a sample from another project's test data, say)
-  downloads it, with a hash check, from the repository's "test assets" GitHub
+  from another project downloads it, with a hash check, from the repository's "test assets" GitHub
   release; the release notes give its provenance: source repository URL, path,
-  commit, SHA-256, licence and notice.
+  commit, SHA-256, licence and notice. A sample whose licence doesn't allow
+  redistribution isn't used.
 - **Tests are built and run through CMake and ctest,** never from hand-written
   Makefiles. While RB-2.6 still supports qmake, the test lists of the ``*.pro``
   files and of ``CMakeLists.txt`` stay in sync.
 - **Every CI configuration that runs tests runs the full set,** the weekly-only
-  ones (Debug, Qt 6, other compilers) included; a configuration that leaves
-  tests out says which and why.
+  ones (Debug, Qt 6, other compilers) included. Only tests that need what the
+  runner lacks are left out (the GUI tests where there is no display), and the
+  configuration says which and why.
 - **Contracts are never "trivial":** every public call of Natron's Python API
   stays tested, old ``.ntp`` and ``.py`` projects keep loading (including each
   ``BOOST_CLASS_VERSION`` path), and NatronRenderer's options and exit statuses
