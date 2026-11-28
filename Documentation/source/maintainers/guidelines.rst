@@ -183,8 +183,9 @@ The workflows are described in :doc:`github-builds`; the rules are:
 - **Test locally before every push, but only what the change affects:** build
   the changed targets and run the tests that cover the changed code (and,
   where CI lacks them, the GUI tests, plug-ins or Natron-Tests it touches);
-  for a docs-only change, build the docs. The full suite on every platform is
-  GitHub CI's job. Push a test together with its fix.
+  for a docs-only change, build the docs. On RB-2.6 that is a Qt 5 build; Qt 6
+  is checked through RB-2.7. The full suite on every platform is GitHub CI's
+  job. Push a test together with its fix.
 - **Everything else is weekly, never nightly,** or run by hand: extra C++
   standards, Qt 6, Debug builds, other compilers and OS versions. The plug-in
   repositories and openfx run on Saturday (03:17 UTC), Natron on Sunday.
@@ -385,9 +386,10 @@ These rules apply to the unit and script tests of every repository (Natron's
   that accepts anything) is tightened, or removed and listed like a removed
   test, with the check that replaces it.
 - **Third-party samples stay out of the repository.** A test that needs a file
-  from another project downloads it, with a hash check, from the repository's "test assets" GitHub
-  release; the release notes give its provenance: source repository URL, path,
-  commit, SHA-256, licence and notice. A sample whose licence doesn't allow
+  from another project downloads it, with a hash check, from the
+  repository's "test assets" GitHub release; the release notes give its
+  provenance: source repository URL, path, commit, SHA-256, licence and
+  notice. A sample whose licence doesn't allow
   redistribution isn't used.
 - **Tests are built and run through CMake and ctest,** never from hand-written
   Makefiles. While RB-2.6 still supports qmake, the test lists of the ``*.pro``
