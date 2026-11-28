@@ -378,6 +378,18 @@ These rules apply to the unit and script tests of every repository (Natron's
   the test that covers it now, with the test counts and run time before and
   after; the line and branch coverage of ``Engine/`` and ``Gui/`` must not
   drop.
+- **A test checks what it claims.** If its name or comment promises more than
+  it checks (a "bold text renders bold" test that only checks that a frame was
+  written), add the real check; remove checks that can't fail (an expected
+  output that accepts anything).
+- **Third-party samples stay out of the repository.** A test that needs a file
+  from another project (a sample from another project's test data, say)
+  downloads it, with a hash check, from the repository's "test assets" GitHub
+  release; the release notes give its provenance: source repository URL, path,
+  commit, SHA-256, licence and notice.
+- **Tests run with CMake and ctest only,** never from Makefiles, and every CI
+  configuration (Debug included) runs the full set; a configuration that
+  leaves tests out says which and why.
 - **Contracts are never "trivial":** every public call of Natron's Python API
   stays tested, old ``.ntp`` and ``.py`` projects keep loading (including each
   ``BOOST_CLASS_VERSION`` path), and NatronRenderer's options and exit statuses
