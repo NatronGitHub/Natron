@@ -26,6 +26,7 @@
 
 #include "AppInstance.h"
 
+#include <algorithm> // std::max
 #include <fstream>
 #include <iostream>
 #include <limits>
@@ -72,6 +73,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/Node.h"
 #include "Engine/OutputEffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
+#include "Engine/NodeGroupSerialization.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
@@ -1526,13 +1528,23 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
         bool createInitialNodes = !args.getProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes);
         if (serialization) {
             if ( serialization && !serialization->getPythonModule().empty() ) {
-                QString pythonModulePath = QString::fromUtf8( ( serialization->getPythonModule().c_str() ) );
+                // the script found as when the project is loaded (#1920), so that the node gets the directory of its
+                // PyPlug (its resources, the export dialog), even if the project saved only a file name or a path of
+                // another machine
+                QString pythonModulePath = NodeCollectionSerialization::findPyPlugScript( serialization->getPythonModule() );
+                if ( pythonModulePath.isEmpty() ) {
+                    pythonModulePath = QString::fromUtf8( serialization->getPythonModule().c_str() );
+                }
                 QString moduleName;
                 QString modulePath;
-                int foundLastSlash = pythonModulePath.lastIndexOf( QChar::fromLatin1('/') );
+                // a path saved on Windows may use backslashes
+                int foundLastSlash = std::max( pythonModulePath.lastIndexOf( QChar::fromLatin1('/') ), pythonModulePath.lastIndexOf( QChar::fromLatin1('\\') ) );
                 if (foundLastSlash != -1) {
                     modulePath = pythonModulePath.mid(0, foundLastSlash + 1);
                     moduleName = pythonModulePath.remove(0, foundLastSlash + 1);
+                } else {
+                    // a file name alone, which was not found: the module is imported by its name
+                    moduleName = pythonModulePath;
                 }
                 QtCompat::removeFileExtension(moduleName);
                 setGroupLabelIDAndVersion(node, modulePath, moduleName);
