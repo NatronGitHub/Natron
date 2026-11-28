@@ -100,8 +100,7 @@ OfxImageEffectInstance::OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffe
     , _pluginEditHolder()
     , _progressStarted(false)
 {
-    getProps().setGetHook(kNatronOfxExtraCreatedPlanes, (OFX::Host::Property::GetHook*)this);
-
+    getProps().setGetHook(kNatronOfxExtraCreatedPlanes, this);
 }
 
 OfxImageEffectInstance::OfxImageEffectInstance(const OfxImageEffectInstance& other)
@@ -114,15 +113,12 @@ OfxImageEffectInstance::OfxImageEffectInstance(const OfxImageEffectInstance& oth
     , _pluginEditHolder()
     , _progressStarted(false)
 {
-    // A render clone (OfxEffectInstance::createRenderClone()) is a new plug-in instance: its kOfxPropInstanceData
-    // starts at NULL, the default, and not at the main instance's pointer, which the copied property set holds
-    // ("This data pointer is unique to each plug-in instance", ofxCore.h). Otherwise a plug-in that reads it in
-    // kOfxActionCreateInstance would take the main instance's private data for its own.
-    getProps().setPointerProperty(kOfxPropInstanceData, nullptr);
-    // The copied property set has no get hooks (HostSupport's Property copy constructor doesn't copy them): without
-    // this one, a render clone, which runs the renders that overlap one on the main instance, would report no extra
-    // planes (the project's default planes and the node's user-created ones).
-    getProps().setGetHook(kNatronOfxExtraCreatedPlanes, (OFX::Host::Property::GetHook*)this);
+    // A render clone (OfxEffectInstance::createRenderClone()) is a new plug-in instance: HostSupport's copy
+    // constructor gives it a NULL kOfxPropInstanceData and the get hooks of the properties that HostSupport computes
+    // (project size, frame rate...), but not those of Natron's own properties. Without this one, a render clone,
+    // which runs the renders that overlap one on the main instance, would report no extra planes (the project's
+    // default planes and the node's user-created ones).
+    getProps().setGetHook(kNatronOfxExtraCreatedPlanes, this);
 }
 
 OfxImageEffectInstance::~OfxImageEffectInstance()
