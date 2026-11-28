@@ -355,8 +355,8 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - G13
      - `ofxGPURender.h:546-617 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxGPURender.h#L546-L617>`__ CUDA: host descriptor kOfxImageEffectPropCudaRenderSupported / CudaStreamSupported RO, "false" when unsupported; CudaEnabled MAY; CudaStream "will only be set if the host and plug-in both support CUDA streams"
      - DEFAULT / MUST
-     - Host "false" for both (ofxhIE:4716-4717; Natron never sets them). CudaEnabled = 0 in render args. kOfxImageEffectPropCudaStream is declared (NULL) in every Render/Begin/End inArgs (ofxhIE:1480 and the Begin/End lists) although streams are unsupported.
-     - PARTIAL (spec-only)
+     - Host "false" for both (ofxhIE:4716-4717; Natron never sets them). CudaEnabled = 0 in render args. kOfxImageEffectPropCudaStream is declared (NULL) in every Render/Begin/End inArgs (ofxhIE:1480 and the Begin/End lists) although streams are unsupported. Fixed: HostSupport adds it only in a CUDA ``GPURenderScope`` with a stream, when the host and the plug-in both support streams (``cudaStreamsSupported()``); Natron has no CUDA renders, so it is never set.
+     - OK (fixed by `NatronGitHub/openfx#384 <https://github.com/NatronGitHub/openfx/pull/384>`__, in libs/OpenFX since `#2041 <https://github.com/NatronGitHub/Natron/pull/2041>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - G14
@@ -574,7 +574,7 @@ Spec-only
 
 19. **G5 PARTIAL: a plug-in with kOfxImageEffectPropCPURenderSupported "false" and no OpenGL** (CUDA/Metal/OpenCL only) is still rendered on the CPU (OfxHost.cpp:359-372). `#1106 <https://github.com/NatronGitHub/Natron/issues/1106>`__. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
-20. **G13 PARTIAL: kOfxImageEffectPropCudaStream is present (NULL) in Render/Begin/EndSequenceRender inArgs** although "This property will only be set if the host and plug-in both support CUDA streams" (ofxhIE:1480 and the Begin/End lists). `#1145 <https://github.com/NatronGitHub/Natron/issues/1145>`__. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+20. **G13 (fixed): kOfxImageEffectPropCudaStream was present (NULL) in Render/Begin/EndSequenceRender inArgs** although "This property will only be set if the host and plug-in both support CUDA streams" (ofxhIE:1480 and the Begin/End lists). `#1145 <https://github.com/NatronGitHub/Natron/issues/1145>`__. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `NatronGitHub/openfx#384 <https://github.com/NatronGitHub/openfx/pull/384>`__ (in libs/OpenFX since `#2041 <https://github.com/NatronGitHub/Natron/pull/2041>`__).
 
 21. **I2 PARTIAL (low, ambiguous): kOfxInteractPropPixelScale is per logical pixel**, not per "real screen pixel" on HiDPI screens (ViewerGL.cpp:3630-3637); Natron offers kOfxInteractPropScreenPixelRatio as an extension. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
@@ -599,9 +599,9 @@ Over the 72 table rows (sections 1, 2, 4, 5, 6; the `#1349 <https://github.com/N
    * - verdict
      - count
    * - OK
-     - 43
+     - 44
    * - PARTIAL
-     - 12
+     - 11
    * - WRONG
      - 5
    * - MISSING

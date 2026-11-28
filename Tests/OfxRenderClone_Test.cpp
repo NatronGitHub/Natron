@@ -83,6 +83,8 @@ TEST(OfxRenderClone, DestroyedBeforeMainInstance)
     const int instanceDataAtCreate = NatronTestPlugin::counter("RenderClone.instanceDataAtCreate");
     const int renderWithExtraPlanes = NatronTestPlugin::counter("RenderClone.renderWithExtraPlanes");
     const int renderWithoutExtraPlanes = NatronTestPlugin::counter("RenderClone.renderWithoutExtraPlanes");
+    const int renderWithProjectInfo = NatronTestPlugin::counter("RenderClone.renderWithProjectInfo");
+    const int renderWithoutProjectInfo = NatronTestPlugin::counter("RenderClone.renderWithoutProjectInfo");
     ASSERT_EQ( 0, NatronTestPlugin::counter("RenderClone.live") );
 
     NodePtr node = NatronTestPlugin::createNode(kNatronTestPluginRenderClone);
@@ -114,6 +116,10 @@ TEST(OfxRenderClone, DestroyedBeforeMainInstance)
     // both renders, on the main instance and on the clone, saw the extra planes (the project has five by default)
     EXPECT_EQ( renderWithExtraPlanes + 2, NatronTestPlugin::counter("RenderClone.renderWithExtraPlanes") );
     EXPECT_EQ( renderWithoutExtraPlanes, NatronTestPlugin::counter("RenderClone.renderWithoutExtraPlanes") );
+    // and the project size and frame rate: HostSupport's copy constructor reinstalls their get hooks on the clone
+    // (openfx#384), without which the clone read 0
+    EXPECT_EQ( renderWithProjectInfo + 2, NatronTestPlugin::counter("RenderClone.renderWithProjectInfo") );
+    EXPECT_EQ( renderWithoutProjectInfo, NatronTestPlugin::counter("RenderClone.renderWithoutProjectInfo") );
 
     // as on quit (Project::reset(), Node::doDestroyNodeInternalEnd()), where the crash was seen; this also
     // destroys any node that an earlier test left in the project, as DeepGraphRender_Test.cpp does

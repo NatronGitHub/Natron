@@ -302,7 +302,7 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - P4
      - `ofxCore.h:638-646 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxCore.h#L638-L646>`__ kOfxPropInstanceData, Default NULL, "unique to each plug-in instance, so two instances … do not share the same data pointer"
      - DEFAULT / MUST
-     - Main instances start at NULL. **Render clones** are copy-constructed (``Instance(const Instance&)`` → ``Base(other)`` copies the property set, HS/ofxhImageEffect.cpp:780-797; HS/ofxhPropertySuite.cpp:578-592). So before their CreateInstance, clones carry the main instance's pointer (Engine/OfxEffectInstance.cpp:643-653). Fixed: the copy constructor of ``OfxImageEffectInstance`` resets it to NULL, so a clone's CreateInstance sees NULL (test ``OfxRenderClone.DestroyedBeforeMainInstance``).
+     - Main instances start at NULL. **Render clones** are copy-constructed (``Instance(const Instance&)`` → ``Base(other)`` copies the property set, HS/ofxhImageEffect.cpp:780-797; HS/ofxhPropertySuite.cpp:578-592). So before their CreateInstance, clones carry the main instance's pointer (Engine/OfxEffectInstance.cpp:643-653). Fixed: the copy constructor of ``OfxImageEffectInstance`` reset it to NULL (`#1992 <https://github.com/NatronGitHub/Natron/pull/1992>`__); since `NatronGitHub/openfx#384 <https://github.com/NatronGitHub/openfx/pull/384>`__ (in libs/OpenFX since `#2041 <https://github.com/NatronGitHub/Natron/pull/2041>`__), HostSupport's ``Instance(const Instance&)`` does, so a clone's CreateInstance sees NULL (test ``OfxRenderClone.DestroyedBeforeMainInstance``).
      - OK (fixed by `#1992 <https://github.com/NatronGitHub/Natron/pull/1992>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
@@ -321,8 +321,8 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - P7
      - `ofxCore.h:708-751 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxCore.h#L708-L751>`__ kOfxPropLabel default = kOfxPropName; "resetting this will also reset kOfxPropShortLabel and kOfxPropLongLabel"; Short/Long "initially kOfxPropName, but will be reset if kOfxPropLabel is changed"
      - DEFAULT / MUST
-     - Effect descriptor labels default to "" (HS/ofxhImageEffect.cpp:86-89). Reading them falls back to the label on the host side (HS/ofxhImageEffect.cpp:206, 229), but a plug-in reading Short/Long gets "". ``propReset(kOfxPropLabel)`` and setting kOfxPropLabel do not touch Short/Long (no hook links them). Params are the params area.
-     - PARTIAL
+     - Effect descriptor labels default to "" (HS/ofxhImageEffect.cpp:86-89). Reading them falls back to the label on the host side (HS/ofxhImageEffect.cpp:206, 229), but a plug-in reading Short/Long gets "". ``propReset(kOfxPropLabel)`` and setting kOfxPropLabel do not touch Short/Long (no hook links them). Params are the params area. Fixed: the three labels default to the plug-in identifier (an effect descriptor has no kOfxPropName; clip descriptors: their name), and the plug-in's setting or resetting of kOfxPropLabel resets Short/Long (``Property::LinkedPropertiesHook``; on effect, clip and param descriptors and param instances). Natron shows the short or long label of a plug-in whose label is its identifier (``makePluginLabel()``, test ``OfxPluginLabel``).
+     - OK (fixed by `NatronGitHub/openfx#384 <https://github.com/NatronGitHub/openfx/pull/384>`__, in libs/OpenFX since `#2041 <https://github.com/NatronGitHub/Natron/pull/2041>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - P8
@@ -798,11 +798,11 @@ Spec-only
 
 19. **R4:** the host kOfxPropName get-hook returns ErrValue instead of ErrBadIndex for index≠0 (Engine/OfxHost.cpp:483-484). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__.
 
-20. **P4:** render clones start with the main instance's kOfxPropInstanceData instead of NULL (HS/ofxhImageEffect.cpp:780-797). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `#1992 <https://github.com/NatronGitHub/Natron/pull/1992>`__.
+20. **P4:** render clones start with the main instance's kOfxPropInstanceData instead of NULL (HS/ofxhImageEffect.cpp:780-797). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `#1992 <https://github.com/NatronGitHub/Natron/pull/1992>`__ in Natron, then by `NatronGitHub/openfx#384 <https://github.com/NatronGitHub/openfx/pull/384>`__ in HostSupport (in libs/OpenFX since `#2041 <https://github.com/NatronGitHub/Natron/pull/2041>`__), which also reinstalls the clone's get hooks (project size, frame rate...).
 
 21. **P5:** the host kOfxPropName is user-set and proxied per plug-in (deliberate). There is also a typo: ``loadingPluginVersionMinor = getVersionMajor()`` (Engine/OfxHost.cpp:676), harmless. The proxied name is deliberate, won't fix; the typo is in `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
-22. **P7:** effect descriptor Short/Long labels default to "", and resetting or setting kOfxPropLabel does not reset them. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+22. **P7 (fixed):** effect descriptor Short/Long labels defaulted to "", and resetting or setting kOfxPropLabel did not reset them. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `NatronGitHub/openfx#384 <https://github.com/NatronGitHub/openfx/pull/384>`__ (in libs/OpenFX since `#2041 <https://github.com/NatronGitHub/Natron/pull/2041>`__).
 
 23. **G5/G7:** host-level Error and Warning messages go only to the log (deliberate, because of Sapphire). Natron also clears persistent messages itself (Engine/Node.cpp:2815, 3352). Host-level messages going to the log is deliberate, won't fix. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. Clearing the plug-in's persistent messages is kept, deliberately, until the plug-ins clear their own (see G7).
 

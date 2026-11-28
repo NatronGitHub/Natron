@@ -256,8 +256,8 @@ Table 3: ofxParam.h, parameter properties
    * - P4
      - `ofxParam.h:271-295 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L271-L295>`__ kOfxPropParamSetNeedsSyncing on the param set: the host "will examine this property each time it does a copy or save"; if unset, "will always call SyncPrivateData"
      - MUST
-     - hIE.cpp:1319-1340 honours it if present. But neither HostSupport nor Natron declares it on the instance properties (``git grep`` finds only hIE.cpp:1327), and propSet on an undeclared property returns kOfxStatErrUnknown (hPS.cpp:860-864). The plug-in can't set it, so the host always syncs: allowed by the "not set" branch. Sync before save and copy: NodeSerialization.cpp:64-70
-     - PARTIAL (P13)
+     - hIE.cpp:1319-1340 honours it if present. But neither HostSupport nor Natron declares it on the instance properties (``git grep`` finds only hIE.cpp:1327), and propSet on an undeclared property returns kOfxStatErrUnknown (hPS.cpp:860-864). The plug-in can't set it, so the host always syncs: allowed by the "not set" branch. Sync before save and copy: NodeSerialization.cpp:64-70. Fixed: HostSupport declares it on the effect instance, hidden from the plug-in until its first propSetInt; then 1 syncs (and is reset to 0) and 0 doesn't; a plug-in that never sets it is always synced
+     - OK (fixed by `NatronGitHub/openfx#384 <https://github.com/NatronGitHub/openfx/pull/384>`__, in libs/OpenFX since `#2041 <https://github.com/NatronGitHub/Natron/pull/2041>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - P5
@@ -383,8 +383,8 @@ Table 3: ofxParam.h, parameter properties
    * - P27
      - `ofxParam.h:704-742 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L704-L742>`__ Min/Max/DisplayMin/DisplayMax defaults INT_MIN/MAX, ±DBL_MAX; inst rw; "Setting [Min] will also reset kOfxParamPropDisplayMin" (same for Max)
      - DEFAULT/MUST
-     - Defaults OK (hP.cpp:533-545; colour display range 0..1). Notify hooks → setRange/setDisplayRange (hP.cpp:714-719, 837-841). Neither HostSupport nor Natron resets DisplayMin/Max when Min/Max is set (no such code in hP.cpp or OPI.cpp setRange, e.g. OPI.cpp:905-920)
-     - PARTIAL (low)
+     - Defaults OK (hP.cpp:533-545; colour display range 0..1). Notify hooks → setRange/setDisplayRange (hP.cpp:714-719, 837-841). Neither HostSupport nor Natron resets DisplayMin/Max when Min/Max is set (no such code in hP.cpp or OPI.cpp setRange, e.g. OPI.cpp:905-920). Fixed: the plug-in's setting of Min/Max sets DisplayMin/Max to the new value, per dimension, on descriptors and instances (instances: setRange(), then setDisplayRange()); Natron's own updates of the OFX range from a knob (``OfxParamToKnob::onMinMaxChanged()``) don't (tests ``OfxParamRange.RangeResetsDisplayRange``, ``OfxParamLinkedProperties``)
+     - OK (fixed by `NatronGitHub/openfx#384 <https://github.com/NatronGitHub/openfx/pull/384>`__, in libs/OpenFX since `#2041 <https://github.com/NatronGitHub/Natron/pull/2041>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - P28
@@ -750,7 +750,7 @@ Spec-only / UI / return codes
 
 **Problem 12. paramGetNumKeys/KeyTime report 2 fake keys (t=0, t=1) when dimension 0 has an expression (PARTIAL, deliberate).** Spec `ofxParam.h:1134-1164 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L1134-L1164>`__. OPI.cpp:97-108 (documented workaround so that GeneratorPlugin isIdentity sees animation). The expression on dimension 0 is used for every dimension. A NULL ``numberOfKeys`` is dereferenced (hP.cpp:2729). The fake keys are deliberate, won't fix; the NULL dereference is in `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
-**Problem 13. kOfxPropParamSetNeedsSyncing can't be set by the plug-in (PARTIAL).** Spec `ofxParam.h:271-295 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L271-L295>`__. Not declared on instance properties, so propSet returns ErrUnknown (hPS.cpp:860-864); hIE.cpp:1327 never finds it, so the host always calls SyncPrivateData (allowed by the "not set" branch). *Second check:* ``git grep`` in HostSupport and Engine. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+**Problem 13. kOfxPropParamSetNeedsSyncing couldn't be set by the plug-in (fixed).** Spec `ofxParam.h:271-295 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L271-L295>`__. Not declared on instance properties, so propSet returns ErrUnknown (hPS.cpp:860-864); hIE.cpp:1327 never finds it, so the host always calls SyncPrivateData (allowed by the "not set" branch). *Second check:* ``git grep`` in HostSupport and Engine. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `NatronGitHub/openfx#384 <https://github.com/NatronGitHub/openfx/pull/384>`__ (in libs/OpenFX since `#2041 <https://github.com/NatronGitHub/Natron/pull/2041>`__).
 
 **Problem 14. kOfxParamPropChoiceOrder was accepted but ignored (fixed).** Spec `ofxParam.h:630-666 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L630-L666>`__, `ofxParameter.rst:197-261 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxParameter.rst?plain=1#L197-L261>`__ (plug-ins detect support by setting the property). HostSupport declares it (hP.cpp:334,342), so the set succeeds; Natron ignored it, so the menu order was wrong (no project risk: Natron restores choices by option string, Node.cpp:1176-1192). Fixed by `#1137 <https://github.com/NatronGitHub/Natron/issues/1137>`__: the menus show the options in that order (T9). *Issues:* `#1137 <https://github.com/NatronGitHub/Natron/issues/1137>`__, `#1106 <https://github.com/NatronGitHub/Natron/issues/1106>`__, `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
@@ -760,7 +760,7 @@ Spec-only / UI / return codes
 
 **Problem 17. IsAutoKeying means "between keys" (PARTIAL).** Spec `ofxParam.h:777-785 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L777-L785>`__. OPI.cpp:373; same GUI/dimension-0 limits as problem 4. **Issue:** `#1371 <https://github.com/NatronGitHub/Natron/issues/1371>`__.
 
-**Problem 18. Setting Min/Max doesn't reset DisplayMin/DisplayMax (PARTIAL, low).** Spec `ofxParam.h:710 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L710>`__, 720. No such code in hP.cpp notify or in the OPI setRange methods. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+**Problem 18. Setting Min/Max didn't reset DisplayMin/DisplayMax (fixed).** Spec `ofxParam.h:710 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L710>`__, 720. No such code in hP.cpp notify or in the OPI setRange methods. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `NatronGitHub/openfx#384 <https://github.com/NatronGitHub/openfx/pull/384>`__ (in libs/OpenFX since `#2041 <https://github.com/NatronGitHub/Natron/pull/2041>`__), for the plug-in's writes.
 
 **Problem 19. Project load replaces plug-in defaults with the defaults saved in the project (PARTIAL, low).** Spec `ofxParameter.rst:630 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxParameter.rst?plain=1#L630>`__ (step 4). Node.cpp:1174 ``cloneDefaultValues``; this only affects "reset to default" for knobs saved in the project. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
@@ -771,6 +771,6 @@ NEXT items seen (out of scope): kOfxParamInterpType (HostSupport hP.cpp:629-635,
 Counts
 ------
 
-Table rows (105): OK 81, PARTIAL 13, WRONG 8, N/A 1, NEXT 2. Some bugs appear in more than one row: paramCopy in S15 and R13, custom interpolation in T15 and P32, ChoiceOrder in T9 and P25.
+Table rows (105): OK 83, PARTIAL 11, WRONG 8, N/A 1, NEXT 2. Some bugs appear in more than one row: paramCopy in S15 and R13, custom interpolation in T15 and P32, ChoiceOrder in T9 and P25.
 
-Distinct problems (1-20): 9 WRONG (1, 2, 3, 4, 5, 7, 9, 10, 11), 10 PARTIAL (6, 8, 12, 13, 15-20); 14 is fixed.
+Distinct problems (1-20): 9 WRONG (1, 2, 3, 4, 5, 7, 9, 10, 11), 8 PARTIAL (6, 8, 12, 15-17, 19, 20); 13, 14 and 18 are fixed.
