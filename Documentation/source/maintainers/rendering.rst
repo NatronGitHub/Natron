@@ -408,6 +408,73 @@ Suppose the Viewer needs the visible region of a Blur node at frame 10.
     `#248 <https://github.com/NatronGitHub/Natron/issues/248>`_ may be related
     (see :ref:`maint-issue-triage`).
 
+    **Render locks.** These locks guard the plug-in code of the render
+    action, not data. The render action of an Unsafe or Instance-safe effect
+    (or of an effect without concurrent OpenGL renders, on its main instance)
+    runs under the node's lock (``Node::getRenderInstancesSharedMutex()``), so
+    it never runs twice at the same time on the node. That of an Unsafe
+    plug-in also runs under the plug-in's lock (``Plugin::getPluginLock()``,
+    shared by all its instances), taken after it. The action may render
+    images upstream: ``getImage`` of an image that was not rendered before the
+    action (a frame not asked for in ``getFramesNeeded``, a larger region), or
+    an identity tile. The lock order: node locks are taken from downstream to
+    upstream, following the graph, and are held during the whole action; a
+    plug-in lock is taken last, and released while the thread renders upstream
+    or waits for the pixels of other threads. The nested ``renderRoI``
+    releases it (``UpstreamRenderLockRelease`` and ``RenderLock`` in
+    ``EffectInstanceRenderRoI.cpp``) before it renders anything or waits for
+    other threads, and takes it again when it returns. The locks of Unsafe
+    plug-ins are shared by nodes anywhere in the graph: holding one while
+    waiting upstream could deadlock two renders
+    (`#1614 <https://github.com/NatronGitHub/Natron/issues/1614>`_). The code
+    of an Unsafe plug-in still never runs on two threads at once, but a render
+    of another node of the plug-in may run while an action waits in
+    ``clipGetImage``.
+
+    **GPU renders** (`#1998 <https://github.com/NatronGitHub/Natron/issues/1998>`_).
+    A GPU render holds GPU resources during its action: a GPU context (or
+    queue) current for the frame, and, for a plug-in without concurrent GPU
+    renders, the effect's attachment (``attachedContextsMutex``). Where the
+    context goes in the lock order depends on how it is shared:
+
+    - **A context shared by the renders of several frames, taken during the
+      frame** (Natron's ``OSGLContext`` today: ``NATRON_RENDER_SHARED_CONTEXT``,
+      and ``OSGLContext::setContextCurrent()`` waits while another frame owns
+      the context). Such a context is a lock taken after render locks, so the
+      rule is: **a thread that holds it never waits for a render lock or for
+      the pixels of another thread**, and a thread that waits for it may hold
+      render locks. An effect takes its render locks for its own GPU render
+      without holding the context (it releases it, takes the locks, then takes
+      it again), and releases it before it waits for pixels that another
+      thread is rendering. Inside a GPU render action the context can't be
+      released (the plug-in's GPU state is in it): the images rendered upstream
+      for that action never wait. Their render locks are only tried and never
+      released, and pixels being rendered by another thread are not waited
+      for. When an upstream render would have to wait, the input fetch fails
+      (``kOfxStatErrMemory``). The renders on the way are then neither cached
+      nor reported as failures, and the effect renders the frame again without
+      the GPU, by the same rule as an input texture that can't be allocated
+      (`#1945 <https://github.com/NatronGitHub/Natron/issues/1945>`_,
+      `#1980 <https://github.com/NatronGitHub/Natron/issues/1980>`_). A plug-in
+      that can only render on the GPU fails then. The plug-in lock of a GPU
+      render is never released: taking it back would wait with the context
+      held.
+    - **A context (or queue) leased exclusively for a whole frame** (a pool
+      that gives each frame render its own: openfx HostSupport's
+      ``ContextPool::Lease``, or a CUDA stream, OpenCL queue or Metal command
+      queue pool). The lease is taken before the frame takes any render lock,
+      and never by a thread that holds one: it is first in the lock order. Its
+      holder may then wait for render locks and pixels, and the plug-in lock
+      of a GPU render can be released around upstream waits as on the CPU,
+      keeping the lease. No fallback to the CPU is needed. A pool that makes
+      frames wait for a lease must not be entered with render locks held.
+
+    Known exceptions: the threads of the OFX multi-thread suite and the tile
+    threads of an ``eRenderSafetyFullySafeFrame`` effect have neither the render
+    locks nor the GPU-action state of the thread that started them, while that
+    thread holds them (and the context, for a GPU render): an upstream render
+    on such a thread waits as usual.
+
     When ``renderRoI`` is called from ``getImage`` and the cached image is too
     small, the image is copied into a larger one (``copyAndResizeIfNeeded``)
     that replaces it in the cache. The pixels other threads are rendering into

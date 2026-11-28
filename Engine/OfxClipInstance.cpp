@@ -733,16 +733,8 @@ OfxClipInstance::loadTexture(OfxTime time,
     }
 
     OFX::Host::ImageEffect::Texture* texture = 0;
-    try {
-        if ( !getImagePlaneInternal(time, ViewSpec::current(), optionalBounds, 0 /*plane*/, format ? &depth : 0, 0 /*image*/, &texture) ) {
-            return 0;
-        }
-    } catch (const std::bad_alloc&) {
-        // The input could not be loaded into a texture (EffectInstance::convertRAMImageToOpenGLTexture()) or
-        // rendered: clipLoadTexture returns kOfxStatErrMemory, and the frame is rendered again without OpenGL,
-        // even if the plug-in goes on without this input (#1945).
-        getEffectHolder()->setThreadLocalOpenGLInputTextureFailed();
-        throw;
+    if ( !getImagePlaneInternal(time, ViewSpec::current(), optionalBounds, 0 /*plane*/, format ? &depth : 0, 0 /*image*/, &texture) ) {
+        return 0;
     }
 
     return texture;
@@ -831,8 +823,17 @@ OfxClipInstance::getImagePlaneInternal(OfxTime time,
 
     if ( isOutput() ) {
         return getOutputImageInternal(ofxPlane, textureDepth, image, texture);
-    } else {
+    }
+    try {
         return getInputImageInternal(time, view, optionalBounds, ofxPlane, textureDepth, image, texture);
+    } catch (const std::bad_alloc&) {
+        // During an OpenGL render, the input could not be loaded into a texture
+        // (EffectInstance::convertRAMImageToOpenGLTexture()) or rendered (a render upstream that would wait for
+        // another render, #1998): clipLoadTexture or clipGetImage returns kOfxStatErrMemory, and the frame is rendered
+        // again without OpenGL, even if the plug-in goes on without this input (#1945). Nothing is set outside an
+        // OpenGL render.
+        getEffectHolder()->setThreadLocalOpenGLInputTextureFailed();
+        throw;
     }
 }
 
