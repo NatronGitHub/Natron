@@ -70,11 +70,11 @@ Build system: CMake replaces qmake
   been shown to be equivalent. Until then, **keep the source lists in sync**
   between the ``*.pro``/``*.pri`` files and ``CMakeLists.txt``; CI checks it
   (``tools/utils/checkQmakeSources.py``).
-- The plug-ins' Makefiles stay as fallbacks of Natron RB-2.6's release
-  scripts; their CI builds with CMake, and their weekly runs check that the
-  Makefiles still build. **Keep the Makefiles in sync with CMake by hand:** a
-  new source file, resource or test goes into both. No hand-written Xcode or
-  Visual Studio projects.
+- **The plug-ins are built with CMake only** (decided 2026-11-28):
+  openfx-supportext, openfx-misc, openfx-io, openfx-arena and openfx-gmic have
+  no Makefiles any more, and Natron's release scripts always build them with
+  CMake. openfx keeps its upstream ``Makefile``. No hand-written Makefiles,
+  Xcode or Visual Studio projects.
 - **The plug-ins' CMake builds use the shared helpers,** openfx's
   ``cmake/OpenFX.cmake`` and SupportExt's (``cmake/SupportExt.cmake``), never
   copies or forks of them; a missing feature is reported to the repository

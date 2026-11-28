@@ -415,7 +415,7 @@ step_osmesa() {
 }
 
 # Natron and the plug-ins are built with Apple clang and MacPorts' libomp (compiler-common.sh);
-# the MacPorts clang is for the qmake and Makefile fallbacks (-fopenmp).
+# the MacPorts clang is for the qmake fallback (-fopenmp).
 step_compiler() {
     $PORT install libomp
     sudo port setrequested libomp

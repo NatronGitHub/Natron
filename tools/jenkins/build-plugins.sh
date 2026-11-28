@@ -12,16 +12,8 @@ source manageLog.sh
 
 updateBuildOptions
 
-#MAKEFLAGS_VERBOSE="V=1" # verbose build
-
-# Build system of the plug-ins (#1181): PLUGINS_BUILD_SYSTEM=cmake (default) builds openfx-misc,
-# openfx-io, openfx-arena and openfx-gmic with their CMake builds (function ofx_cmake_build);
-# PLUGINS_BUILD_SYSTEM=make uses their Makefiles (RB-2.6 fallback, e.g. for old release tags).
-PLUGINS_BUILD_SYSTEM="${PLUGINS_BUILD_SYSTEM:-cmake}"
-case "$PLUGINS_BUILD_SYSTEM" in
-    cmake|make) ;;
-    *) echo "Error: PLUGINS_BUILD_SYSTEM must be cmake or make, not \"$PLUGINS_BUILD_SYSTEM\""; exit 1;;
-esac
+# openfx-misc, openfx-io, openfx-arena and openfx-gmic are built with their CMake builds
+# (function ofx_cmake_build, #1181): they have no Makefiles any more.
 # openfx-arena is built with Natron's ImageMagick 7 (MAGICK7_PREFIX, see common.sh;
 # ARENA_ALLOW_ANY_MAGICK=1 allows another one, e.g. ImageMagick 6).
 
@@ -40,13 +32,6 @@ BUILD_IO=1
 BUILD_MISC=1
 BUILD_ARENA=1
 BUILD_GMIC=1
-BUILD_CV=0
-
-OMP=""
-if [ "$COMPILER" = "gcc" ] || [ "$COMPILER" = "clang-omp" ]; then
-    # compile DenoiseSharpen, CImg and GMIC with OpenMP support
-    OMP="OPENMP=1"
-fi
 
 # When debugging script, do not build if ofx bundle exists
 if [ "${DEBUG_SCRIPTS:-}" = "1" ]; then
@@ -119,11 +104,12 @@ fi
 mkdir -p "$TMP_BINARIES_PATH/Plugins"
 
 
-# CMake build type of the plug-ins (ofx_cmake_build), before COMPILE_TYPE=debug is rewritten
-# below for the Makefiles. COMPILE_TYPE=debug gives RelWithDebInfo with -O1 -g, as the Makefiles'
-# CONFIG=relwithdebinfo OPTFLAG=-O: openfx's ofx_deploy_bundle only deploys release
-# configurations (as the Makefiles), and the macOS installer skips its library step for debug
-# builds, so CMake Debug bundles would still reference the MacPorts libraries.
+# CMake build type of the plug-ins (ofx_cmake_build). COMPILE_TYPE=debug gives RelWithDebInfo
+# with -O1 -g: openfx's ofx_deploy_bundle only deploys release configurations, and the macOS
+# installer skips its library step for debug builds, so CMake Debug bundles would still
+# reference the MacPorts libraries. Release and RelWithDebInfo use -O3 (not -Ofast: its
+# -ffinite-math-only lets NaN and Inf through std::max/std::min and folds
+# std::isnan/std::isfinite to constants, so the plug-ins' NaN/Inf guards don't work).
 PLUGINS_DEBUG=0
 PLUGINS_CMAKE_RELWITHDEBINFO_FLAGS="-O3 -g -DNDEBUG"
 case "$COMPILE_TYPE" in
@@ -136,30 +122,6 @@ case "$COMPILE_TYPE" in
     *) PLUGINS_CMAKE_BUILD_TYPE=Release;;
 esac
 
-if [ "$COMPILE_TYPE" = "debug" ]; then
-    # Makefiles: CI build have to be build with CONFIG=relwithdebinfo, or the
-    # installer build for plugins won't work (deployment on osx, which
-    # copies libraries, is only
-    # done in release and relwithdebinfo configs).
-    # 
-    #COMPILE_TYPE=debug
-    COMPILE_TYPE=relwithdebinfo
-    OPTFLAG=-O
-else
-    # Makefile builds (PLUGINS_BUILD_SYSTEM=make): -O3, like the CMake builds. Not -Ofast: its
-    # -ffinite-math-only lets NaN and Inf through std::max/std::min and folds
-    # std::isnan/std::isfinite to constants, so the plug-ins' NaN/Inf guards don't work.
-    OPTFLAG=-O3
-fi
-# OPTFLAG is ignored by the CMake builds (ofx_cmake_build): they use -O3, with -g for
-# relwithdebinfo, and conformant IEEE floating point.
-
-CP_OR_MV="cp -a"
-if [ "${MINIMIZE_DISK_USAGE:-}" = "1" ]; then
-    # Move large files instead of copying them to minimize disk usage.
-    CP_OR_MV=mv
-fi
-
 function maybe_cleanup_binary_files() {
     if [ "${MINIMIZE_DISK_USAGE:-}" = "1" ]; then
         echo "Cleaning up files to minimize disk usage..."
@@ -170,23 +132,19 @@ function maybe_cleanup_binary_files() {
 }
 
 
-# Whether to build the plug-in repository in the current directory (named $1) with its CMake
-# build: yes unless PLUGINS_BUILD_SYSTEM=make. A checkout without a CMake build that uses openfx's
-# helpers (ofx_deploy_bundle) is an error, rather than a silent fallback to its Makefiles.
-function plugins_use_cmake() {
-    if [ "$PLUGINS_BUILD_SYSTEM" = "make" ]; then
-        return 1
-    fi
+# Check that the plug-in repository in the current directory (named $1) has a CMake build that
+# uses openfx's helpers (ofx_deploy_bundle): an older checkout, which only has Makefiles, is an
+# error.
+function plugins_check_cmake() {
     if [ -f CMakeLists.txt ] && grep -q 'ofx_deploy_bundle' CMakeLists.txt; then
         return 0
     fi
-    echo "Error: $1 in $(pwd) has no CMake build with openfx's helpers (ofx_deploy_bundle): use a newer $1, or build the plug-ins with their Makefiles (PLUGINS_BUILD_SYSTEM=make)"
+    echo "Error: $1 in $(pwd) has no CMake build with openfx's helpers (ofx_deploy_bundle): use a newer $1"
     exit 1
 }
 
 # Build and install the plug-in repository in the current directory with its CMake build
-# (openfx's add_ofx_plugin/ofx_deploy_bundle helpers), into $TMP_BINARIES_PATH/OFX/Plugins, where
-# the Makefile builds copy their bundles too.
+# (openfx's add_ofx_plugin/ofx_deploy_bundle helpers), into $TMP_BINARIES_PATH/OFX/Plugins.
 # Common options: the build type (PLUGINS_CMAKE_BUILD_TYPE), the C++ standard (C++17 with Qt5,
 # C++20 with Qt6), the licence (OFX_LICENSE=$NATRON_LICENSE, where supported), OpenMP, and on macOS the deployment
 # target and the bundle deployment (OFX_DEPLOY_BUNDLES).
@@ -279,11 +237,11 @@ function ofx_cmake_build() {
         # Apple clang has no OpenMP runtime: MacPorts' libomp (only used with Apple clang)
         args+=(-DOFX_LIBOMP_ROOT="${MACPORTS:-/opt/local}")
         # the deployment target of common.sh (NATRON_MACOS_MIN, 14.0, for release builds; the
-        # build Mac's macOS otherwise; #1347), as the Makefiles, which read MACOSX_DEPLOYMENT_TARGET too
+        # build Mac's macOS otherwise; #1347)
         if [ -n "${MACOSX_DEPLOYMENT_TARGET:-}" ]; then
             args+=(-DCMAKE_OSX_DEPLOYMENT_TARGET="$MACOSX_DEPLOYMENT_TARGET")
         fi
-        # make the bundles self-contained, as the Makefiles' release builds do (osxDeploy.sh)
+        # make the bundles self-contained (osxDeploy.sh)
         args+=(-DOFX_DEPLOY_BUNDLES=ON)
         if [ "$PLUGINS_DEBUG" != "1" ]; then
             # fail if a bundled library needs a newer macOS than the deployment target
@@ -369,116 +327,35 @@ if [ "$BUILD_MISC" = "1" ] && [ -d "$TMP_PATH/openfx-misc" ]; then
     fi
     GLULIB="-lMangledGLU"
 
-    # Build static on Windows so that openfx-misc are usable on other hosts without DLLs and manifests (OSMesa is linked statically into Shadertoy)
-    # Could/Should also be done on OSX?
-    # On Linux this is not the best solution, as Nuke forces gcc, so static won't help. as-is the plugins should work in Nuke10+ (CY2015),
-    # but will not work on older versions. The best solution on Nuke9 and lower is to build the plugins using RHEL devtoolset (gcc4.7).
-    #if [ "$PKGOS" = "Windows" ]; then
-    #    EXTRA_LDFLAGS_OFXMISC="-static-libgcc -static-libstdc++ -Wl,-Bstatic -lstdc++ -lpthread -lgomp -lwinpthread -Wl,-Bdynamic"
-    #fi
-
-    # openfx-misc builds with openfx's CMake helpers since openfx-misc#152. The legacy Apple
-    # clang + GXX setup (CImg built by gcc for OpenMP) only exists in the make path: the CMake
-    # build uses MacPorts' libomp with Apple clang.
-    if plugins_use_cmake openfx-misc; then
-        echo "Info: build openfx-misc using cmake..."
-        # Shadertoy is its own bundle, with OSMesa: the same OSMesa/LLVM link line as the make
-        # path (LDFLAGS_MESA below)
-        misc_osmesa="$OSMESA_PATH"
-        misc_llvm="$LLVM_PATH"
-        misc_sdk="$SDK_HOME"
-        misc_llvm_lib="$LLVM_LIB"
-        if [ "$PKGOS" = "Windows" ]; then
-            # cmake.exe is a native program: pass Windows paths (untested here)
-            misc_osmesa="$(cygpath -m "$OSMESA_PATH")"
-            misc_llvm="$(cygpath -m "$LLVM_PATH")"
-            misc_sdk="$(cygpath -m "$SDK_HOME")"
-            misc_llvm_lib="${LLVM_LIB//-L${LLVM_PATH}/-L${misc_llvm}}"
-        fi
-        # BUILD_DEBUGPROXY: not shipped (its default is ON in Debug builds)
-        ofx_cmake_build \
-            -DBUILD_DEBUGPROXY=OFF \
-            -DUSE_OSMESA=ON \
-            -DOSMESA_PATH="${misc_osmesa}" \
-            -DLLVM_PATH="${misc_llvm}" \
-            -DOSMESA_INCLUDES="${misc_osmesa}/include" \
-            -DOSMESA_LIBRARIES="-L${misc_osmesa}/lib ${GLULIB} ${MESALIB} -L${misc_sdk}/lib -lz -L${misc_llvm}/lib ${misc_llvm_lib}"
-        echo "Info: build openfx-misc using cmake... done!"
-    else
-        echo "Info: build openfx-misc using make..."
-        #set -x
-        #make -C Shadertoy V=1 CXXFLAGS_MESA="-DHAVE_OSMESA" OSMESA_PATH="${OSMESA_PATH}" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -L${LLVM_PATH}/lib ${GLULIB} ${MESALIB} $LLVM_LIB" CXX="$CXX" CONFIG="${COMPILE_TYPE}" OPTFLAG="${OPTFLAG}" LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-}" -j"${MKJOBS}" BITS="${BITS}" HAVE_CIMG=0
-        #set +x
-        # first, build everything except CImg (including OpenGL plugins)
-
-        echo "Info: make all except CImg."
-
-        set -x
-        env \
-            OSMESA_PATH="${OSMESA_PATH}" \
-            LLVM_PATH="${LLVM_PATH}" \
-            CXXFLAGS_MESA="-I${OSMESA_PATH}/include" \
-            LDFLAGS_MESA="-L${OSMESA_PATH}/lib ${GLULIB} ${MESALIB} -L${SDK_HOME}/lib -lz -L${LLVM_PATH}/lib ${LLVM_LIB}" \
-            CXX="$CXX" \
-            CONFIG="${COMPILE_TYPE}" \
-            OPTFLAG="${OPTFLAG}" \
-            BITS="${BITS}" \
-            LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-}" \
-            HAVE_CIMG=0 \
-            ${OMP} \
-            LICENSE="$NATRON_LICENSE" \
-            CXXFLAGS_EXTRA="-DHAVE_OSMESA ${CXXFLAGS_EXTRA}" \
-            make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
-        set +x
-
-        echo "Info: make CImg."
-
-        # extract CImg.h
-        make -C CImg LICENSE="$NATRON_LICENSE" CImg.h
-        
-        # build CImg.ofx
-
-        set -x
-        if [ "$COMPILER" = "clang" ] && [ -n "${GXX:-}" ]; then
-            # Building with Apple clang (no OpenMP available), but GCC is available too!
-            # libSupport was compiled by clang, now clean it to build it again with gcc
-            env \
-                CXX="$CXX" CONFIG="${COMPILE_TYPE}" OPTFLAG="${OPTFLAG}" BITS="${BITS}" HAVE_CIMG=0 \
-                make -j"${MKJOBS}" clean
-            # build CImg with OpenMP support, but statically link libgomp (see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=31400)
-            env \
-                CXX="$CXX" \
-                CONFIG="${COMPILE_TYPE}" \
-                OPTFLAG="${OPTFLAG}" \
-                BITS="${BITS}" \
-                LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-} -static-libgcc" \
-                HAVE_CIMG=1 \
-                OPENMP=1 \
-                LICENSE="$NATRON_LICENSE" \
-                CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
-                make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-} -C CImg
-        else
-            # build CImg with OpenMP support (no OpenGL required)
-            env \
-                CXX="$CXX" \
-                CONFIG="${COMPILE_TYPE}" \
-                OPTFLAG="${OPTFLAG}" \
-                BITS="${BITS}" \
-                LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-}" \
-                HAVE_CIMG=1 \
-                ${OMP} \
-                LICENSE="$NATRON_LICENSE" \
-                CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
-                make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-} -C CImg
-        fi
-        ${CP_OR_MV} ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
-        set +x
-        echo "Info: build openfx-misc using make... done!"
+    # openfx-misc builds with openfx's CMake helpers since openfx-misc#152 (with Apple clang,
+    # OpenMP comes from MacPorts' libomp).
+    plugins_check_cmake openfx-misc
+    echo "Info: build openfx-misc using cmake..."
+    # Shadertoy is its own bundle, with OSMesa
+    misc_osmesa="$OSMESA_PATH"
+    misc_llvm="$LLVM_PATH"
+    misc_sdk="$SDK_HOME"
+    misc_llvm_lib="$LLVM_LIB"
+    if [ "$PKGOS" = "Windows" ]; then
+        # cmake.exe is a native program: pass Windows paths (untested here)
+        misc_osmesa="$(cygpath -m "$OSMESA_PATH")"
+        misc_llvm="$(cygpath -m "$LLVM_PATH")"
+        misc_sdk="$(cygpath -m "$SDK_HOME")"
+        misc_llvm_lib="${LLVM_LIB//-L${LLVM_PATH}/-L${misc_llvm}}"
     fi
+    # BUILD_DEBUGPROXY: not shipped (its default is ON in Debug builds)
+    ofx_cmake_build \
+        -DBUILD_DEBUGPROXY=OFF \
+        -DUSE_OSMESA=ON \
+        -DOSMESA_PATH="${misc_osmesa}" \
+        -DLLVM_PATH="${misc_llvm}" \
+        -DOSMESA_INCLUDES="${misc_osmesa}/include" \
+        -DOSMESA_LIBRARIES="-L${misc_osmesa}/lib ${GLULIB} ${MESALIB} -L${misc_sdk}/lib -lz -L${misc_llvm}/lib ${misc_llvm_lib}"
+    echo "Info: build openfx-misc using cmake... done!"
 
     # The PIKColor and EdgeBlur PyPlugs ship with openfx-misc, in <bundle>/Contents/Resources/PyPlugs/, where Natron
-    # loads them from (openfx-misc#414). Until every openfx-misc built here installs them there (the Makefiles, or a
-    # checkout older than openfx-misc#414), copy them from the openfx-misc sources: nothing to copy when the bundle
+    # loads them from (openfx-misc#414). Until every openfx-misc built here installs them there (a checkout older
+    # than openfx-misc#414), copy them from the openfx-misc sources: nothing to copy when the bundle
     # already has the PyPlug. Natron 2.6 projects have version 2 of both (#1679): an older openfx-misc (version 1)
     # would downgrade them, so the version of the shipped copy is checked, however it got there.
     # Usage: misc_bundle_pyplug <bundle> <source dir> <PyPlug> <minimum version> <other files of the source dir>...
@@ -528,51 +405,33 @@ if [ "$BUILD_IO" = "1" ] && [ -d "$TMP_PATH/openfx-io" ]; then
 
     # openfx-io builds with openfx's CMake helpers (add_ofx_plugin, ofx_deploy_bundle) since
     # openfx-io#102.
-    if plugins_use_cmake openfx-io; then
-        echo "Info: build openfx-io using cmake..."
-        io_seexpr="$SDK_HOME"
-        io_ffmpeg_pc="${FFMPEG_PKG_CONFIG_PATH:-}"
-        io_prefix_args=()
-        if [ "$PKGOS" != "OSX" ] || [ "$FFMPEG_PATH" != "$SDK_HOME" ] || [ "$LIBRAW_PATH" != "$SDK_HOME" ]; then
-            # Linux and Windows: the FFmpeg and LibRaw of the license (common.sh), as the
-            # make path gets them through C_INCLUDE_PATH and pkg-config. macOS: only if they are
-            # not MacPorts' own (COMMERCIAL builds: ffmpeg-lgpl and libraw-lgpl in libexec)
-            io_ffmpeg_pc="${io_ffmpeg_pc:-${FFMPEG_PATH}/lib/pkgconfig}"
-            io_prefix_args+=(-DCMAKE_PREFIX_PATH="${LIBRAW_PATH};${FFMPEG_PATH};${SDK_HOME}")
-        fi
-        if [ "$PKGOS" = "Windows" ]; then
-            # cmake.exe is a native program: pass Windows paths (untested here)
-            io_seexpr="$(cygpath -m "$io_seexpr")"
-            [ -n "$io_ffmpeg_pc" ] && io_ffmpeg_pc="$(cygpath -m "$io_ffmpeg_pc")"
-            io_prefix_args=(-DCMAKE_PREFIX_PATH="$(cygpath -m "$LIBRAW_PATH");$(cygpath -m "$FFMPEG_PATH");$(cygpath -m "$SDK_HOME")")
-        fi
-        # OFX_IO_REQUIRE_ALL: fail on missing plug-in groups (ofx_cmake_build also checks the log)
-        io_saved_pkg_config_path="${PKG_CONFIG_PATH:-}"
-        if [ "$PKGOS" != "OSX" ] || [ "$LIBRAW_PATH" != "$SDK_HOME" ]; then
-            # LibRaw's libraw_r.pc (only for this build, not for the next plug-ins)
-            export PKG_CONFIG_PATH="${LIBRAW_PATH}/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
-        fi
-        ofx_cmake_build -DSEEXPR_HOME="$io_seexpr" -DFFMPEG_PKG_CONFIG_PATH="$io_ffmpeg_pc" \
-            -DOFX_IO_REQUIRE_ALL=ON ${io_prefix_args[@]+"${io_prefix_args[@]}"}
-        export PKG_CONFIG_PATH="$io_saved_pkg_config_path"
-        echo "Info: build openfx-io using cmake... done!"
-    else
-        echo "Info: build openfx-io using make..."
-        set -x
-        env \
-            OIIO_HOME="$SDK_HOME" \
-            SEEXPR_HOME="${SDK_HOME}" \
-            CXX="$CXX" \
-            CONFIG="${COMPILE_TYPE}" \
-            OPTFLAG="${OPTFLAG}" \
-            BITS="${BITS}" \
-            LDFLAGS_ADD="${BUILDID:-}" \
-            CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
-            make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
-        ${CP_OR_MV} ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
-        set +x
-        echo "Info: build openfx-io using make... done!"
+    plugins_check_cmake openfx-io
+    echo "Info: build openfx-io using cmake..."
+    io_seexpr="$SDK_HOME"
+    io_ffmpeg_pc="${FFMPEG_PKG_CONFIG_PATH:-}"
+    io_prefix_args=()
+    if [ "$PKGOS" != "OSX" ] || [ "$FFMPEG_PATH" != "$SDK_HOME" ] || [ "$LIBRAW_PATH" != "$SDK_HOME" ]; then
+        # Linux and Windows: the FFmpeg and LibRaw of the license (common.sh). macOS: only if they are
+        # not MacPorts' own (COMMERCIAL builds: ffmpeg-lgpl and libraw-lgpl in libexec)
+        io_ffmpeg_pc="${io_ffmpeg_pc:-${FFMPEG_PATH}/lib/pkgconfig}"
+        io_prefix_args+=(-DCMAKE_PREFIX_PATH="${LIBRAW_PATH};${FFMPEG_PATH};${SDK_HOME}")
     fi
+    if [ "$PKGOS" = "Windows" ]; then
+        # cmake.exe is a native program: pass Windows paths (untested here)
+        io_seexpr="$(cygpath -m "$io_seexpr")"
+        [ -n "$io_ffmpeg_pc" ] && io_ffmpeg_pc="$(cygpath -m "$io_ffmpeg_pc")"
+        io_prefix_args=(-DCMAKE_PREFIX_PATH="$(cygpath -m "$LIBRAW_PATH");$(cygpath -m "$FFMPEG_PATH");$(cygpath -m "$SDK_HOME")")
+    fi
+    # OFX_IO_REQUIRE_ALL: fail on missing plug-in groups (ofx_cmake_build also checks the log)
+    io_saved_pkg_config_path="${PKG_CONFIG_PATH:-}"
+    if [ "$PKGOS" != "OSX" ] || [ "$LIBRAW_PATH" != "$SDK_HOME" ]; then
+        # LibRaw's libraw_r.pc (only for this build, not for the next plug-ins)
+        export PKG_CONFIG_PATH="${LIBRAW_PATH}/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+    fi
+    ofx_cmake_build -DSEEXPR_HOME="$io_seexpr" -DFFMPEG_PKG_CONFIG_PATH="$io_ffmpeg_pc" \
+        -DOFX_IO_REQUIRE_ALL=ON ${io_prefix_args[@]+"${io_prefix_args[@]}"}
+    export PKG_CONFIG_PATH="$io_saved_pkg_config_path"
+    echo "Info: build openfx-io using cmake... done!"
 
     maybe_cleanup_binary_files
 
@@ -586,8 +445,8 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
     printStatusMessage "Building openfx-arena..."
     cd "$TMP_PATH/openfx-arena"
 
-    # ImageMagick 7 (MAGICK7_PREFIX, see common.sh), for the CMake and the make builds: its
-    # pkg-config files come first, only for this build (as LibRaw's for openfx-io). Natron 2.6
+    # ImageMagick 7 (MAGICK7_PREFIX, see common.sh): its pkg-config files come first, only for
+    # this build (as LibRaw's for openfx-io). Natron 2.6
     # ships openfx-arena with Natron's ImageMagick 7 build (Q32 HDRI, static on macOS and
     # Windows): another ImageMagick (6, or a stock Q16 build such as MSYS2's or Homebrew's)
     # is only accepted with ARENA_ALLOW_ANY_MAGICK=1.
@@ -624,67 +483,26 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
     echo "Info: openfx-arena uses ImageMagick $arena_magick_version ($arena_magick_libname, $arena_magick_prefix)"
 
     # openfx-arena builds with openfx's CMake helpers since openfx-arena#72.
-    if plugins_use_cmake openfx-arena; then
-        echo "Info: build openfx-arena using cmake..."
-        # OpenMP only if ImageMagick was built with it (the Makefiles keep its -fopenmp, which
-        # the CMake build drops in favour of OFX_USE_OPENMP). -DIM=7 links oleaut32 on MinGW,
-        # as make IM=7; with Apple clang, libomp is MacPorts' (OFX_LIBOMP_ROOT, see ofx_cmake_build).
-        # AudioCurve: AUTO (built if pkg-config finds sox), as the Makefiles, but OFF for COMMERCIAL. Not static on
-        # Windows (no MINGW_STATIC), as the make path: the static ImageMagick (natron_imagemagick)
-        # is linked with "pkg-config --static" by openfx-arena's CMakeLists.txt anyway.
-        arena_openmp=OFF
-        case " $(pkg-config Magick++ --cflags --libs --static 2>/dev/null) " in
-            *" -fopenmp "*) arena_openmp=ON;;
-        esac
-        # (OFX_LICENSE: passed by ofx_cmake_build)
-        arena_args=(-DOFX_USE_OPENMP="$arena_openmp" -DIM="$arena_im")
-        if [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
-            # no AudioCurve: libsox links GPL libraries (libmad, libid3tag; libao on Windows)
-            arena_args+=(-DAUDIO=OFF)
-        fi
-        ofx_cmake_build ${arena_args[@]+"${arena_args[@]}"}
-        echo "Info: build openfx-arena using cmake... done!"
-    else
-        if [ "$PKGOS" = "OSX" ]; then
-            $GSED -e s/-lgomp// -i.orig Makefile.master
-        fi
-
-        if [ "$PKGOS" = "Windows" ]; then
-            ISWIN=1
-        fi
-        arena_make_audio=""
-        if [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
-            # no AudioCurve (libsox links GPL libraries). On the command line: Bundle/Makefile's
-            # "AUDIO = ON" (when pkg-config finds sox) overrides the environment.
-            arena_make_audio="AUDIO=OFF"
-        fi
-
-        echo "Info: build openfx-arena using make..."
-        # Arena 2.1 breaks compat with older releases, check if this is a 2.1(+) build
-        ARENA_CHECK=$(cat Bundle/Makefile|grep lodepng)
-        if [ "$ARENA_CHECK" != "" ]; then
-            # Fetch external depends before build
-            make -C Bundle lodepng.h
-        fi
-
-        set -x
-        env \
-            MINGW="${ISWIN:-}" \
-            LICENSE="$NATRON_LICENSE" \
-            IM="$arena_im" \
-            CXX="$CXX" \
-            CONFIG="${COMPILE_TYPE}" \
-            OPTFLAG="${OPTFLAG}" \
-            BITS="${BITS}" \
-            LDFLAGS_ADD="${BUILDID:-}" \
-            CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
-            make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-} ${arena_make_audio:-}
-
-        ${CP_OR_MV} ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
-        set +x
-
-        echo "Info: build openfx-arena using make... done!"
+    plugins_check_cmake openfx-arena
+    echo "Info: build openfx-arena using cmake..."
+    # OpenMP only if ImageMagick was built with it (the CMake build drops ImageMagick's
+    # -fopenmp in favour of OFX_USE_OPENMP). -DIM=7 links oleaut32 on MinGW; with Apple clang,
+    # libomp is MacPorts' (OFX_LIBOMP_ROOT, see ofx_cmake_build).
+    # AudioCurve: AUTO (built if pkg-config finds sox), but OFF for COMMERCIAL. Not static on
+    # Windows (no MINGW_STATIC): the static ImageMagick (natron_imagemagick) is linked with
+    # "pkg-config --static" by openfx-arena's CMakeLists.txt anyway.
+    arena_openmp=OFF
+    case " $(pkg-config Magick++ --cflags --libs --static 2>/dev/null) " in
+        *" -fopenmp "*) arena_openmp=ON;;
+    esac
+    # (OFX_LICENSE: passed by ofx_cmake_build)
+    arena_args=(-DOFX_USE_OPENMP="$arena_openmp" -DIM="$arena_im")
+    if [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
+        # no AudioCurve: libsox links GPL libraries (libmad, libid3tag; libao on Windows)
+        arena_args+=(-DAUDIO=OFF)
     fi
+    ofx_cmake_build ${arena_args[@]+"${arena_args[@]}"}
+    echo "Info: build openfx-arena using cmake... done!"
     export PKG_CONFIG_PATH="$arena_saved_pkg_config_path"
 
     maybe_cleanup_binary_files
@@ -699,7 +517,7 @@ if [ "$BUILD_GMIC" = "1" ] && [ -d "$TMP_PATH/openfx-gmic" ]; then
     GMIC_MKJOBS="${MKJOBS}" # 1 # "${MKJOBS}"
     # also limit memory usage in case we are using gcc
     GMIC_CXXFLAGS_EXTRA=
-    if [ "$COMPILER" = "gcc" ] || [ -n "${GXX:-}" ]; then
+    if [ "$COMPILER" = "gcc" ]; then
         # see :
         # https://web.archive.org/web/20061106204547/http://hostingfu.com/article/compiling-with-gcc-on-low-memory-vps
         # http://jkroon.blogs.uls.co.za/it/scriptingprogramming/preventing-gcc-from-trashing-the-system  
@@ -710,148 +528,38 @@ if [ "$BUILD_GMIC" = "1" ] && [ -d "$TMP_PATH/openfx-gmic" ]; then
     cd "$TMP_PATH/openfx-gmic"
 
     # openfx-gmic builds with openfx's CMake helpers since openfx-gmic#61.
-    if plugins_use_cmake openfx-gmic; then
-        echo "Info: build openfx-gmic using cmake..."
-        # The CMake build downloads the G'MIC sources (from each mirror in turn, checking their
-        # sha256) into GMIC_DOWNLOAD_DIR: the download cache $SRC_PATH, which outlives the
-        # openfx-gmic checkout, so a tarball already there is not downloaded again.
-        # FFT=pocketfft (BSD-3-Clause, the default since openfx-gmic#94) for both licences: the
-        # Natron SDKs don't provide FFTW (GPL). OFX_LICENSE=COMMERCIAL (ofx_cmake_build) also
-        # keeps only the G'MIC filters under CeCILL-C.
-        gmic_download_dir="$SRC_PATH"
-        mkdir -p "$gmic_download_dir"
-        if [ "$PKGOS" = "Windows" ]; then
-            # cmake.exe is a native program: pass Windows paths (untested here)
-            gmic_download_dir="$(cygpath -m "$gmic_download_dir")"
-        fi
-        gmic_cxxflags_extra="${CXXFLAGS_EXTRA}"
-        if [ "$COMPILER" = "gcc" ]; then
-            # (the --param options are gcc's)
-            gmic_cxxflags_extra="$GMIC_CXXFLAGS_EXTRA ${CXXFLAGS_EXTRA}"
-        fi
-        gmic_args=(-DGMIC_DOWNLOAD_DIR="$gmic_download_dir" -DFFT=pocketfft)
-        if [ "$PKGOS" = "Linux" ] && grep -q 'GMIC_STATIC_DEPS' CMakeLists.txt; then
-            # link the SDK's shared zlib and libpng: GMIC_STATIC_DEPS (default ON on Linux) needs
-            # static archives built with -fPIC, which the Natron SDK doesn't provide
-            gmic_args+=(-DGMIC_STATIC_DEPS=OFF)
-        fi
-        CXXFLAGS_EXTRA="$gmic_cxxflags_extra" MKJOBS="$GMIC_MKJOBS" \
-            ofx_cmake_build "${gmic_args[@]}"
-        echo "Info: build openfx-gmic using cmake... done!"
-    else
-        if [ "$PKGOS" = "Windows" ]; then
-            ISWIN=1
-        fi
-
-        # gmic.eu may refuse downloads (HTTP 403 seen in 2026), and the Makefile's curl saves the
-        # error page as the tarball. Pre-fetch the G'MIC sources (official site, then the MacPorts
-        # distfiles mirror), verifying the checksum. Only for versions whose checksum is known here:
-        # for others, the openfx-gmic Makefile downloads and verifies the sources itself.
-        GMICVER=$(sed -n 's/^GMICVER *= *//p' Makefile | head -1)
-        GMICSRC=$(sed -n 's/^GMICSRC *= *//p' Makefile | head -1 | sed "s/\$(GMICVER)/${GMICVER}/")
-        GMIC_SHA256=
-        case "$GMICSRC" in
-            gmic_2.8.4.tar.gz) GMIC_SHA256=b2a279bdf981595b30d8d7828fabf9a620cde06eae8db345a8cddf2160c25379 ;; # MacPorts gmic 2.8.4
-        esac
-        gmic_src_ok() { # file
-            gzip -t "$1" 2>/dev/null || return 1
-            [ -n "$GMIC_SHA256" ] || return 0
-            if command -v sha256sum >/dev/null 2>&1; then
-                [ "$(sha256sum "$1" | cut -d' ' -f1)" = "$GMIC_SHA256" ]
-            elif command -v shasum >/dev/null 2>&1; then
-                [ "$(shasum -a 256 "$1" | cut -d' ' -f1)" = "$GMIC_SHA256" ]
-            else
-                echo "Warning: neither sha256sum nor shasum found, cannot verify $1"
-                return 1
-            fi
-        }
-        if [ -n "$GMICSRC" ] && [ -n "$GMIC_SHA256" ] && ! gmic_src_ok "$GMICSRC"; then
-            rm -f "$GMICSRC"
-            for url in "https://gmic.eu/files/source/$GMICSRC" ${GMIC_SHA256:+"https://distfiles.macports.org/gmic/$GMICSRC"}; do
-                if curl -f --retry 3 -L -s -S -o "$GMICSRC.tmp" "$url" && gmic_src_ok "$GMICSRC.tmp"; then
-                    mv "$GMICSRC.tmp" "$GMICSRC"
-                    echo "Info: fetched $GMICSRC from $url"
-                    break
-                fi
-                echo "Warning: could not fetch a valid $GMICSRC from $url"
-                rm -f "$GMICSRC.tmp"
-            done
-            if [ -n "$GMIC_SHA256" ] && [ ! -f "$GMICSRC" ]; then
-                echo "Error: could not download $GMICSRC"
-                exit 1
-            fi
-        fi
-
-        if [ ! -f license.mk ]; then
-            # An openfx-gmic without license.mk ignores LICENSE= and FFT= and links FFTW (GPL),
-            # which the Natron SDKs no longer provide: FFT=pocketfft below needs license.mk.
-            echo "Error: this openfx-gmic has no license.mk, so its Makefiles can't use pocketfft (they would link FFTW, which the Natron SDKs don't provide): use a newer openfx-gmic"
-            exit 1
-        fi
-        echo "Info: build openfx-gmic using make..."
-
-        # build GMIC.ofx
-        set -x
-        if [ "$COMPILER" = "clang" ] && [ -n "${GXX:-}" ]; then
-            # Building with Apple clang (no OpenMP available), but GCC is available too!
-            env \
-                CXX="$GXX" \
-                CONFIG="${COMPILE_TYPE}" \
-                OPTFLAG="${OPTFLAG}" \
-                BITS="${BITS}" \
-                LDFLAGS_ADD="${BUILDID:-} -static-libgcc" \
-                OPENMP=1 \
-                LICENSE="$NATRON_LICENSE" \
-                FFT=pocketfft \
-                CXXFLAGS_EXTRA="$GMIC_CXXFLAGS_EXTRA ${CXXFLAGS_EXTRA}" \
-                make -j"${GMIC_MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
-        else
-            # build with OpenMP support (no OpenGL required)
-            env \
-                CXX="$CXX" \
-                CONFIG="${COMPILE_TYPE}" \
-                OPTFLAG="${OPTFLAG}" \
-                BITS="${BITS}" \
-                LDFLAGS_ADD="${BUILDID:-}" \
-                ${OMP} \
-                LICENSE="$NATRON_LICENSE" \
-                FFT=pocketfft \
-                CXXFLAGS_EXTRA="$GMIC_CXXFLAGS_EXTRA ${CXXFLAGS_EXTRA}" \
-                make -j"${GMIC_MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
-        fi
-        ${CP_OR_MV} ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
-        set +x
-        echo "Info: build openfx-gmic using make... done!"
+    plugins_check_cmake openfx-gmic
+    echo "Info: build openfx-gmic using cmake..."
+    # The CMake build downloads the G'MIC sources (from each mirror in turn, checking their
+    # sha256) into GMIC_DOWNLOAD_DIR: the download cache $SRC_PATH, which outlives the
+    # openfx-gmic checkout, so a tarball already there is not downloaded again.
+    # FFT=pocketfft (BSD-3-Clause, the default since openfx-gmic#94) for both licences: the
+    # Natron SDKs don't provide FFTW (GPL). OFX_LICENSE=COMMERCIAL (ofx_cmake_build) also
+    # keeps only the G'MIC filters under CeCILL-C.
+    gmic_download_dir="$SRC_PATH"
+    mkdir -p "$gmic_download_dir"
+    if [ "$PKGOS" = "Windows" ]; then
+        # cmake.exe is a native program: pass Windows paths (untested here)
+        gmic_download_dir="$(cygpath -m "$gmic_download_dir")"
     fi
+    gmic_cxxflags_extra="${CXXFLAGS_EXTRA}"
+    if [ "$COMPILER" = "gcc" ]; then
+        # (the --param options are gcc's)
+        gmic_cxxflags_extra="$GMIC_CXXFLAGS_EXTRA ${CXXFLAGS_EXTRA}"
+    fi
+    gmic_args=(-DGMIC_DOWNLOAD_DIR="$gmic_download_dir" -DFFT=pocketfft)
+    if [ "$PKGOS" = "Linux" ] && grep -q 'GMIC_STATIC_DEPS' CMakeLists.txt; then
+        # link the SDK's shared zlib and libpng: GMIC_STATIC_DEPS (default ON on Linux) needs
+        # static archives built with -fPIC, which the Natron SDK doesn't provide
+        gmic_args+=(-DGMIC_STATIC_DEPS=OFF)
+    fi
+    CXXFLAGS_EXTRA="$gmic_cxxflags_extra" MKJOBS="$GMIC_MKJOBS" \
+        ofx_cmake_build "${gmic_args[@]}"
+    echo "Info: build openfx-gmic using cmake... done!"
     maybe_cleanup_binary_files
 
     cd "$TMP_PATH"
     #rm -rf openfx-gmic || true
-fi
-
-# OPENCV
-if [ "$BUILD_CV" = "1" ] && [ -d "$TMP_PATH/openfx-opencv" ]; then
-
-    printStatusMessage "Building openfx-opencv..."
-    cd "$TMP_PATH/openfx-opencv"
-
-    #Always bump git commit, it is only used to version-stamp binaries
-    CV_V="$CV_GIT_VERSION"
-    setBuildOption "OPENFX_OPENCV_GIT_COMMIT" "${CV_V}"
-    setBuildOption "OPENFX_OPENCV_GIT_BRANCH" "${CV_BRANCH}"
-    cd opencv2fx
-    env \
-        CXX="$CXX" \
-        CONFIG="${COMPILE_TYPE}" \
-        OPTFLAG="${OPTFLAG}" \
-        BITS="${BITS}" \
-        LDFLAGS_ADD="${BUILDID:-}" \
-        CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
-        make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
-    ${CP_OR_MV} ./*/*-"${BITS}"-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
-
-    maybe_cleanup_binary_files
-
 fi
 
 # macOS COMMERCIAL builds (#1302, #1177): openimageio links MacPorts' libheif, which links the GPL

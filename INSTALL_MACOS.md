@@ -152,7 +152,7 @@ The `clt` step of `tools/tart/provision.sh` does this inside the VM, and checks 
 
 If Apple stops offering the Command Line Tools 15.3 through `softwareupdate`, download "Command Line Tools for Xcode 15.3" from <https://developer.apple.com/download/all/> (this needs an Apple ID), copy the `.dmg` into the VM, and install it: `hdiutil attach Command_Line_Tools_for_Xcode_15.3.dmg`, then `sudo installer -pkg "/Volumes/Command Line Developer Tools/Command Line Tools.pkg" -target /`. The version is set by `NATRON_MACOS_CLT_VERSION` in `tools/jenkins/macos-release.sh`.
 
-The release scripts build Natron and the plug-ins with this Apple clang (`tools/jenkins/compiler-common.sh`, #1134), as long as it supports the C++ standard of the build (C++17 with Qt5, C++20 with Qt6) and links with MacPorts' `libomp` (section 5): Natron's `CMakeLists.txt` and the plug-ins (`OFX_LIBOMP_ROOT`, passed by `build-plugins.sh`) find it, as in "Developing with the MacPorts SDK". Apple clang's driver has no `-fopenmp` (only `-Xpreprocessor -fopenmp`) and Xcode ships no OpenMP runtime, so the builds that pass `-fopenmp` to the compiler, the deprecated qmake build (`NATRON_BUILD_SYSTEM=qmake`, `CONFIG+=openmp`) and the plug-ins' Makefiles (`PLUGINS_BUILD_SYSTEM=make`, `OPENMP=1`), use a MacPorts clang instead (section 5), as does `NATRON_MACOS_CLANG=macports`. Apple clang also builds the ports whose Portfile selects it.
+The release scripts build Natron and the plug-ins with this Apple clang (`tools/jenkins/compiler-common.sh`, #1134), as long as it supports the C++ standard of the build (C++17 with Qt5, C++20 with Qt6) and links with MacPorts' `libomp` (section 5): Natron's `CMakeLists.txt` and the plug-ins (`OFX_LIBOMP_ROOT`, passed by `build-plugins.sh`) find it, as in "Developing with the MacPorts SDK". Apple clang's driver has no `-fopenmp` (only `-Xpreprocessor -fopenmp`) and Xcode ships no OpenMP runtime, so the deprecated qmake build (`NATRON_BUILD_SYSTEM=qmake`, `CONFIG+=openmp`), which passes `-fopenmp` to the compiler, uses a MacPorts clang instead (section 5), as does `NATRON_MACOS_CLANG=macports`. Apple clang also builds the ports whose Portfile selects it.
 
 On a Mac (not needed in the VM), under *System Settings › Privacy & Security › Developer Tools* (*System Preferences › Security & Privacy › Privacy › Developer Tools* before macOS 13), enable your terminal application. This avoids Gatekeeper scans on every freshly built binary.
 
@@ -263,7 +263,7 @@ sudo port -v -N install libomp
 sudo port setrequested libomp
 ```
 
-The deprecated qmake build, the plug-ins' Makefiles and `NATRON_MACOS_CLANG=macports` need a MacPorts clang (with `-fopenmp`), and so do the release scripts if Apple clang can't build the C++ standard with `libomp` (`compiler-common.sh` warns then). The `tools/tart` SDK image has one, for these fallbacks. Install the version MacPorts uses by default on your OS:
+The deprecated qmake build and `NATRON_MACOS_CLANG=macports` need a MacPorts clang (with `-fopenmp`), and so do the release scripts if Apple clang can't build the C++ standard with `libomp` (`compiler-common.sh` warns then). The `tools/tart` SDK image has one, for these fallbacks. Install the version MacPorts uses by default on your OS:
 
 | macOS | clang port |
 |---|---|
@@ -390,7 +390,7 @@ The `.dmg` ends up in `$HOME/Development/workspace/builds_archive/natron_github_
 
 **Check the DMG on a bare macOS 14: required before every macOS release.** A DMG that runs in the SDK VM may still depend on something that only the SDK has (a MacPorts library that wasn't bundled, the Command Line Tools, Python modules). With tart, `tools/tart/natron-test.sh Natron-….dmg` runs the full [Natron-Tests](https://github.com/NatronGitHub/Natron-Tests) suite against the DMG's `NatronRenderer` in a throw-away clone of the stock `macos-sonoma-base` image, from which it removes the Command Line Tools and Homebrew, and writes `<dmg name>-tests.txt` and `<dmg name>-unit_tests_failures.zip` next to the DMG. **Attach both files to the GitHub release, next to the DMG**, as for v2.5.0 (e.g. `Natron-2.5.0-macOS12-x86_64-tests.txt`). Its exit status is 1 if a test fails that isn't a known failure, or if a known failure passes: the known failures are listed in Natron-Tests (`known_failures/common.txt`, `macos.txt` and `arm64.txt` or `x86_64.txt`, reported as `KNOWN FAIL`; a listed test that passes is reported as `UNEXPECTED PASS` and fails the run, and the list must then be updated). Review the failures, and add the accepted ones to those lists, with their issue, through a Natron-Tests pull request (see `tools/tart/README.md`). Without tart, copy `Natron.app` and Natron-Tests to a Mac running macOS 14 without MacPorts, and run `runTests.sh` as shown in "Testing" in `Documentation/source/maintainers/build-macos.rst` (it needs a `gtimeout`; it sets a private, empty `NATRON_DISK_CACHE_PATH` itself unless one is given).
 
-The plug-ins (openfx-misc, openfx-io, openfx-arena, openfx-gmic) are built with their CMake builds, with `-DOFX_DEPLOY_BUNDLES=ON` (`tools/jenkins/build-plugins.sh`); `PLUGINS_BUILD_SYSTEM=make` builds them with their Makefiles instead.
+The plug-ins (openfx-misc, openfx-io, openfx-arena, openfx-gmic) are built with their CMake builds, with `-DOFX_DEPLOY_BUNDLES=ON` (`tools/jenkins/build-plugins.sh`): they have no Makefiles any more.
 
 For a release, build a tag instead of a branch:
 
@@ -615,17 +615,17 @@ sudo port -n -s upgrade --force $(cat ~/rebuild.txt)   # one port at a time is a
 
 `launchBuildMain.sh` builds everything from fresh checkouts. To work on Natron or the plugins directly, build them from your own checkouts.
 
-The OpenFX plugins ([openfx-io](https://github.com/NatronGitHub/openfx-io), [openfx-misc](https://github.com/NatronGitHub/openfx-misc), [openfx-arena](https://github.com/NatronGitHub/openfx-arena), [openfx-gmic](https://github.com/NatronGitHub/openfx-gmic)) build the way `tools/jenkins/build-plugins.sh` builds them: openfx-misc, openfx-io and openfx-arena with CMake (#1203, #1280), openfx-gmic with `make`. The bundles go to `~/OFX/Natron-release`, which is the directory that `OFX_PLUGIN_PATH` points to in the commands below.
+The OpenFX plugins ([openfx-io](https://github.com/NatronGitHub/openfx-io), [openfx-misc](https://github.com/NatronGitHub/openfx-misc), [openfx-arena](https://github.com/NatronGitHub/openfx-arena), [openfx-gmic](https://github.com/NatronGitHub/openfx-gmic)) build the way `tools/jenkins/build-plugins.sh` builds them, with CMake (#1203, #1280, #1181; they have no Makefiles any more). The bundles go to `~/OFX/Natron-release`, which is the directory that `OFX_PLUGIN_PATH` points to in the commands below.
 
 ```Shell
 mkdir -p ~/src && cd ~/src
 for p in openfx-io openfx-misc openfx-arena openfx-gmic; do git clone --recursive https://github.com/NatronGitHub/$p.git; done
 ```
 
-openfx-misc, openfx-io and openfx-arena use openfx's CMake helpers. Build them with Apple clang and MacPorts' `libomp` (`OFX_LIBOMP_ROOT`, as `build-plugins.sh` does; `-DCMAKE_CXX_COMPILER=clang++-mp-$CLANG -DCMAKE_CXX_FLAGS=-stdlib=libc++` works too), as C++17 with a Qt5 Natron (`-DOFX_CXX_STANDARD=20` with Qt6), and install the bundles straight into `~/OFX/Natron-release`. openfx-arena needs the ImageMagick 7 of install section 7 (`ImageMagick7 +natron`, in `/opt/local/lib/ImageMagick7`): its pkg-config files must come first, as `build-plugins.sh` does with `MAGICK7_PREFIX`, or pkg-config finds the ImageMagick 6 of `/opt/local` instead.
+They use openfx's CMake helpers. Build them with Apple clang and MacPorts' `libomp` (`OFX_LIBOMP_ROOT`, as `build-plugins.sh` does; `-DCMAKE_CXX_COMPILER=clang++-mp-$CLANG -DCMAKE_CXX_FLAGS=-stdlib=libc++` works too), as C++17 with a Qt5 Natron (`-DOFX_CXX_STANDARD=20` with Qt6), and install the bundles straight into `~/OFX/Natron-release`. openfx-arena needs the ImageMagick 7 of install section 7 (`ImageMagick7 +natron`, in `/opt/local/lib/ImageMagick7`): its pkg-config files must come first, as `build-plugins.sh` does with `MAGICK7_PREFIX`, or pkg-config finds the ImageMagick 6 of `/opt/local` instead.
 
 ```Shell
-for p in openfx-misc openfx-io openfx-arena; do
+for p in openfx-misc openfx-io openfx-arena openfx-gmic; do
   cd ~/src/$p
   env PKG_CONFIG_PATH=/opt/local/lib/ImageMagick7/lib/pkgconfig \
     cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
@@ -636,24 +636,7 @@ for p in openfx-misc openfx-io openfx-arena; do
 done
 ```
 
-CMake's `Release` uses `-O3`, and `build-plugins.sh` uses `-O3 -g` for its `RelWithDebInfo` builds, without fast math (`-Ofast` would break the plug-ins' NaN and infinity checks). `build-plugins.sh` also passes `-DOFX_DEPLOY_BUNDLES=ON`, which copies the MacPorts libraries into the bundles for the DMG; a development build doesn't need it. `SEEXPR_HOME` is only used by openfx-io, and `PKG_CONFIG_PATH` only by openfx-arena: the others ignore them (openfx-misc warns that `SEEXPR_HOME` is unused). For CPU rendering in Shadertoy, add `-DUSE_OSMESA=ON` for openfx-misc. It uses the OSMesa and LLVM of install section 4: `/opt/osmesa` and `/opt/llvm` by default, or set `-DOSMESA_PATH` and `-DLLVM_PATH`. openfx-arena builds with OpenMP, as Natron's ImageMagick 7 does. The CMake options are listed in each repository's `README.md` and `CMakeLists.txt`.
-
-openfx-gmic builds with `make` (`CONFIG=debug` or `release`, OpenMP with the MacPorts clang, no OpenGL), at `-O3` like the CMake builds:
-
-```Shell
-cd ~/src/openfx-gmic
-env OPENMP=1 CXX="clang++-mp-$CLANG -stdlib=libc++ -std=c++17" OPTFLAG=-O3 \
-    CXXFLAGS_EXTRA="-isysroot $(xcrun --sdk macosx --show-sdk-path)" \
-    CONFIG=release make -j8
-```
-
-Use `-std=c++17` with a Qt5 Natron and `-std=c++20` with a Qt6 Natron (RB-2.6 policy; the packaging scripts do this automatically).
-
-The bundle is written to `GMIC_OFX/Darwin-64-release/GMIC.ofx.bundle`. To use it, symlink it next to the others (or use `/Library/OFX/Plugins`):
-
-```Shell
-ln -sf ~/src/openfx-gmic/GMIC_OFX/Darwin-64-release/GMIC.ofx.bundle ~/OFX/Natron-release/
-```
+CMake's `Release` uses `-O3`, and `build-plugins.sh` uses `-O3 -g` for its `RelWithDebInfo` builds, without fast math (`-Ofast` would break the plug-ins' NaN and infinity checks). `build-plugins.sh` also passes `-DOFX_DEPLOY_BUNDLES=ON`, which copies the MacPorts libraries into the bundles for the DMG; a development build doesn't need it. `SEEXPR_HOME` is only used by openfx-io, and `PKG_CONFIG_PATH` only by openfx-arena: the others ignore them (openfx-misc warns that `SEEXPR_HOME` is unused). For CPU rendering in Shadertoy, add `-DUSE_OSMESA=ON` for openfx-misc. It uses the OSMesa and LLVM of install section 4: `/opt/osmesa` and `/opt/llvm` by default, or set `-DOSMESA_PATH` and `-DLLVM_PATH`. openfx-arena builds with OpenMP, as Natron's ImageMagick 7 does. openfx-gmic downloads the G'MIC sources (`-DGMIC_DOWNLOAD_DIR` keeps them in a directory of your choice) and uses pocketfft for its FFT. The CMake options are listed in each repository's `README.md` and `CMakeLists.txt`.
 
 Natron itself builds with CMake, the system (Apple) clang and the MacPorts libraries (see [Building with CMake](#building-with-cmake) below), from `$NATRON_SRC`, with Homebrew off the `PATH`:
 

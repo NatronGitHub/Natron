@@ -32,9 +32,9 @@ binaries). ``launchBuildMain.sh`` performs six steps: checkout sources, build
 the plugins, build Natron, build the installer/DMG, run unit tests, archive
 artifacts. The plugins are built by ``tools/jenkins/build-plugins.sh``:
 openfx-misc, openfx-io, openfx-arena and openfx-gmic with CMake (#1203,
-#1280), all at ``-O3`` without fast math (``PLUGINS_BUILD_SYSTEM=make``
-selects their Makefiles instead). To build them by hand, see "Developing with
-the MacPorts SDK" in ``INSTALL_MACOS.md``.
+#1280; they have no Makefiles any more), all at ``-O3`` without fast math. To
+build them by hand, see "Developing with the MacPorts SDK" in
+``INSTALL_MACOS.md``.
 
 Prerequisites
 -------------
@@ -42,7 +42,7 @@ Prerequisites
 - **MacPorts**, up to date (``sudo port selfupdate``).
 - The **Natron custom-ports overlay** registered in MacPorts (see below).
 - The Xcode or Command Line Tools **clang** with MacPorts' ``libomp``, and a MacPorts
-  clang matching the OS default for the qmake and Makefile builds (see *Compiler selection*).
+  clang matching the OS default for the qmake build (see *Compiler selection*).
 - **No Homebrew tool on the** ``PATH``: ``which pkg-config qmake cmake python3``
   must not print anything under ``/opt/homebrew`` (or ``/usr/local`` on an
   Intel Mac with Homebrew), or the build silently picks up Homebrew headers and
@@ -83,9 +83,8 @@ to Apple clang without OpenMP for Natron (the plug-ins still get OpenMP if
 A MacPorts clang (``clang-mp-*``) is used by the builds that pass ``-fopenmp``
 themselves (Apple's driver has no ``-fopenmp``, only ``-Xpreprocessor
 -fopenmp``, and Xcode ships no OpenMP runtime): the deprecated qmake build
-(``NATRON_BUILD_SYSTEM=qmake``) and the plug-ins' Makefiles
-(``PLUGINS_BUILD_SYSTEM=make``); either one switches Natron and all the
-plug-ins to it. ``NATRON_MACOS_CLANG=macports`` forces it too. These are
+(``NATRON_BUILD_SYSTEM=qmake``), which switches Natron and all the plug-ins
+to it. ``NATRON_MACOS_CLANG=macports`` forces it too. These are
 fallbacks: the release builds use Apple clang.
 
 MacPorts builds some of its own ports with its own clang (``-fopenmp`` ones
@@ -114,17 +113,16 @@ Sanity-check a new OS/compiler combination::
 The packaging build compiles Natron and the plug-ins as C++17 for Qt5 and
 C++20 for Qt6, from ``QT_VERSION_MAJOR``, in one of two ways:
 
-- **CMake builds** (the default: ``NATRON_BUILD_SYSTEM=cmake``,
-  ``PLUGINS_BUILD_SYSTEM=cmake``): ``build-natron.sh`` and ``build-plugins.sh``
+- **CMake builds** (Natron's default, ``NATRON_BUILD_SYSTEM=cmake``, and
+  always for the plug-ins): ``build-natron.sh`` and ``build-plugins.sh``
   drop the ``-std=`` flag from ``$CXX``. Natron's ``CMakeLists.txt`` sets
   ``CMAKE_CXX_STANDARD`` from ``NATRON_QT6`` (with GNU extensions, i.e.
   ``-std=gnu++17``/``gnu++20``), and the plug-ins get ``-DOFX_CXX_STANDARD=17``
   or ``20`` (without GNU extensions).
-- **qmake and Makefile builds** (``NATRON_BUILD_SYSTEM=qmake``,
-  ``PLUGINS_BUILD_SYSTEM=make``): they compile with ``$CXX``, whose
-  ``-std=c++17``/``c++20`` comes from ``CXXSTD`` in
+- **qmake build of Natron** (``NATRON_BUILD_SYSTEM=qmake``): it compiles with
+  ``$CXX``, whose ``-std=c++17``/``c++20`` comes from ``CXXSTD`` in
   ``tools/jenkins/compiler-common.sh`` (``gnu++17``/``gnu++20`` on Windows).
-  The plug-ins' Makefiles keep that standard. qmake takes the standard from
+  qmake takes the standard from
   ``QT_MAJOR_VERSION`` in ``global.pri`` (``CONFIG += c++17`` or ``c++2a``),
   and Qt's ``default_post.prf`` appends ``-std=gnu++1z`` or ``-std=gnu++2a``
   after the other flags (``CONFIG += strict_c++`` is not set), so Natron's
@@ -137,9 +135,7 @@ compiles the Objective-C++ files on macOS 12 to 14 (``compiler-common.sh``).
 
 openfx-arena compiles its poppler-based reader as C++20 with GNU extensions in
 any case, because recent poppler headers require it: ``POPPLER_CXX_STANDARD``
-in its CMake build (``CXX_EXTENSIONS ON``, i.e. ``-std=gnu++20``), and
-``POPPLER_CXXSTD`` (``-std=gnu++2a``, after ``$CXX``'s ``-std``) in its
-Makefiles.
+in its CMake build (``CXX_EXTENSIONS ON``, i.e. ``-std=gnu++20``).
 
 C++17 in Apple clang
 ~~~~~~~~~~~~~~~~~~~~
@@ -252,8 +248,7 @@ Every Mach-O file in the ``.dmg`` must have a minimum macOS (``minos`` in
   ``compiler-common.sh`` keeps it. qmake gets it as
   ``QMAKE_MACOSX_DEPLOYMENT_TARGET``, the plug-ins' CMake builds as
   ``CMAKE_OSX_DEPLOYMENT_TARGET`` (``OFX_DEPLOY_STRICT_MINOS`` then rejects a
-  bundled library that is too new), and openfx's ``Makefile.master`` reads it
-  from the environment.
+  bundled library that is too new).
 - The bundled libraries, Qt, PySide2 and the Python framework come from
   MacPorts. ``macports.conf`` has ``macosx_deployment_target 14.0``. On macOS
   14 that is MacPorts' default, and its binary archives (built for the macOS
