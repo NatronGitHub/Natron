@@ -78,7 +78,7 @@ Natron's nodes are contained in separate repositories. To use the default nodes,
     https://github.com/NatronGitHub/openfx-io
 
 
-You'll find installation instructions in the README of both these repositories. Both openfx-misc and openfx-io have submodules as well.
+You'll find installation instructions in the README of both these repositories. Both openfx-misc and openfx-io have submodules as well. The plug-ins build with CMake only: they have no Makefiles any more (#1181).
 
 Plugins must be installed in /usr/OFX/Plugins on Linux
 Or in a directory named "Plugins" located in the parent directory where the binary lies, e.g.:

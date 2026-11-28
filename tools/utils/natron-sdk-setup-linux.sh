@@ -35,12 +35,9 @@ echo "###################################################################"
 echo "# Compile OFX plugins with:"
 echo "cd \"$TOP_SOURCES\""
 echo 'for d in openfx-io openfx-misc openfx-arena openfx-gmic; do'
-echo ' (cd $d && make CONFIG=release)'
+echo ' (cd $d && cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$SDK" -DSEEXPR_HOME="$SDK" -DPLUGIN_INSTALLDIR="$HOME/OFX/Plugins" && cmake --build build -j4 && cmake --install build)'
 echo 'done'
-echo "# Create links to plugins in $HOME/OFX/Plugins:"
-echo "mkdir -p \"$HOME/OFX/Plugins\""
-echo "cd \"$TOP_SOURCES\""
-echo 'ln -s $PWD/openfx-*/*-release/*.ofx.bundle "$HOME/OFX/Plugins"'
+echo "# (the bundles are installed in $HOME/OFX/Plugins)"
 echo "# Compile Natron with:"
 echo "cd \"$NATRON\""
 echo 'cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$SDK/qt5;$SDK" -DPython3_EXECUTABLE="$SDK/bin/python3" && cmake --build build -j4'

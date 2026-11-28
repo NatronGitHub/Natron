@@ -395,6 +395,9 @@ The installers are built by ``tools/jenkins/launchBuildMain.sh``, which calls
 ``build-plugins.sh``, ``build-natron.sh`` and ``build-<OS>-installer.sh``
 (macOS: through ``tools/tart``; Linux: in the SDK Docker image, by
 ``linux_packages.yml`` on GitHub Actions; Windows: ``build_installer.yml``).
+``build-plugins.sh`` builds openfx-misc, openfx-io, openfx-arena and
+openfx-gmic with their CMake builds (they have no Makefiles any more); a
+plug-in checkout without one is an error.
 ``build-natron.sh`` builds Natron with CMake:
 
 - it configures with ``-DNATRON_INSTALL_LAYOUT=PORTABLE``, the release flavour

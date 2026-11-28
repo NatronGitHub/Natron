@@ -5,9 +5,8 @@ set -u # Treat unset variables as an error when substituting.
 #set -x # Print commands and their arguments as they are executed.
 
 # C++ standard: C++17 with Qt5, C++20 with Qt6 (RB-2.6 policy; RB-2.7: C++20 everywhere).
-# CXXSTD only reaches the qmake build of Natron (NATRON_BUILD_SYSTEM=qmake) and the Makefile
-# builds of the plug-ins (PLUGINS_BUILD_SYSTEM=make), which compile with this CXX. The CMake
-# builds (the default) drop the -std flag from CXX and set the standard themselves: Natron's
+# CXXSTD only reaches the qmake build of Natron (NATRON_BUILD_SYSTEM=qmake), which compiles
+# with this CXX. The CMake builds (Natron's default, and always for the plug-ins) drop the -std flag from CXX and set the standard themselves: Natron's
 # CMakeLists.txt from NATRON_QT6 (CMAKE_CXX_STANDARD, with GNU extensions: -std=gnu++17/20),
 # the plug-ins from OFX_CXX_STANDARD (build-plugins.sh, without GNU extensions).
 if [ "${QT_VERSION_MAJOR:-5}" -ge 6 ]; then
@@ -44,14 +43,14 @@ if [ "$PKGOS" = "OSX" ]; then
     # The system (Xcode or Command Line Tools) clang builds Natron and the plug-ins when it
     # supports $CXXSTD and links with MacPorts' libomp (#1134, decided 2026-11-23): the CMake
     # builds pass it -Xpreprocessor -fopenmp and -lomp (Natron's CMakeLists.txt, OFX_LIBOMP_ROOT
-    # in build-plugins.sh). The qmake build and the plug-ins' Makefiles pass -fopenmp, which Apple
-    # clang's driver rejects: they keep a MacPorts clang-mp-N, as does NATRON_MACOS_CLANG=macports.
+    # in build-plugins.sh). The qmake build passes -fopenmp, which Apple clang's driver rejects:
+    # it keeps a MacPorts clang-mp-N, as does NATRON_MACOS_CLANG=macports.
     # No Apple clang bug is known to require a MacPorts clang; add an explicit version check
     # here, with the reason, if one is found.
     use_system_clang=0
     case "${NATRON_MACOS_CLANG:-system}" in
         system)
-            if [ "${NATRON_BUILD_SYSTEM:-cmake}" = cmake ] && [ "${PLUGINS_BUILD_SYSTEM:-cmake}" = cmake ]; then
+            if [ "${NATRON_BUILD_SYSTEM:-cmake}" = cmake ]; then
                 # probed once per C++ standard: common.sh, which sources this file, is sourced by
                 # every build script
                 if [ "${NATRON_OMP_PROBE_STD:-}" != "$CXXSTD" ]; then
