@@ -118,6 +118,15 @@ public:
                                                        bool createNodes,
                                                        std::map<std::string, bool>* moduleUpdatesProcessed) WARN_UNUSED_RETURN;
 
+    /**
+     * @brief The script (.py) of the PyPlug that a project saved as savedModule (a path, or a file name, with or
+     * without the .py extension), or an empty string if none is found. In order: the PyPlug registered by this
+     * Natron whose script has that file name, so that a path of the machine that saved the project, e.g. another
+     * Natron's older PyPlug, doesn't win over the PyPlugs of this Natron (#1920); the saved path, if it is absolute and
+     * exists; the first file of that name in the PyPlug search paths, recursively (#1645).
+     */
+    static QString findPyPlugScript(const std::string& savedModule) WARN_UNUSED_RETURN;
+
 private:
 
     friend class ::boost::serialization::access;

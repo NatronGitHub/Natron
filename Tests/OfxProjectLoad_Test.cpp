@@ -38,6 +38,7 @@
 
 #include <QtCore/QDir>
 #include <QtCore/QFile>
+#include <QtCore/QFileInfo>
 #include <QtCore/QTemporaryDir>
 
 #include <gtest/gtest.h>
@@ -729,4 +730,167 @@ TEST(OfxProjectLoad, MovedPyPlugIsFoundInSearchPaths)
     loadFromPyFile->setValue(oldLoadFromPyFile);
     ASSERT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("import sys\nsys.path.remove(r'" + movedDir.toStdString() + "')\n"
                                                                                 "sys.modules.pop('" + moduleName.toStdString() + "', None)\n", &err, &output) ) << err;
+}
+
+namespace {
+// Restores, whatever the assertions of a test do: the preference "loadFromPyFile", NATRON_PLUGIN_PATH, and the
+// Python path and module of a test PyPlug
+class ScopedPyPlugTestEnv
+{
+public:
+    ScopedPyPlugTestEnv(const QString& pyPlugDir,
+                        const QString& moduleName)
+        : _pyPlugDir( pyPlugDir.toStdString() )
+        , _moduleName( moduleName.toStdString() )
+        , _loadFromPyFile( std::dynamic_pointer_cast<KnobBool>( appPTR->getCurrentSettings()->getKnobByName("loadFromPyFile") ) )
+        , _oldLoadFromPyFile( _loadFromPyFile ? _loadFromPyFile->getValue() : true )
+        , _oldPluginPath( qgetenv(NATRON_PLUGIN_PATH_ENV_VAR) )
+        , _hadPluginPath( qEnvironmentVariableIsSet(NATRON_PLUGIN_PATH_ENV_VAR) )
+    {
+        std::string err, output;
+        _sysPathSet = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("import sys\nsys.path.insert(0, r'" + _pyPlugDir + "')\n", &err, &output);
+        qputenv( NATRON_PLUGIN_PATH_ENV_VAR, pyPlugDir.toUtf8() );
+    }
+
+    ~ScopedPyPlugTestEnv()
+    {
+        if (_hadPluginPath) {
+            qputenv(NATRON_PLUGIN_PATH_ENV_VAR, _oldPluginPath);
+        } else {
+            qunsetenv(NATRON_PLUGIN_PATH_ENV_VAR);
+        }
+        if (_loadFromPyFile) {
+            _loadFromPyFile->setValue(_oldLoadFromPyFile);
+        }
+        std::string err, output;
+        if (_sysPathSet) {
+            NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("import sys\nsys.path.remove(r'" + _pyPlugDir + "')\n", &err, &output);
+        }
+        NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("import sys\nsys.modules.pop('" + _moduleName + "', None)\n", &err, &output);
+    }
+
+    ScopedPyPlugTestEnv(const ScopedPyPlugTestEnv&) = delete;
+    ScopedPyPlugTestEnv& operator=(const ScopedPyPlugTestEnv&) = delete;
+
+    bool isValid() const
+    {
+        return _sysPathSet && bool(_loadFromPyFile);
+    }
+
+    void setLoadFromPyFile(bool value)
+    {
+        _loadFromPyFile->setValue(value);
+    }
+
+private:
+    const std::string _pyPlugDir;
+    const std::string _moduleName;
+    const KnobBoolPtr _loadFromPyFile;
+    const bool _oldLoadFromPyFile;
+    const QByteArray _oldPluginPath;
+    const bool _hadPluginPath;
+    bool _sysPathSet = false;
+};
+
+QString
+canonicalDir(const QString& path)
+{
+    return QDir( QFileInfo(path).absolutePath() ).canonicalPath();
+}
+} // namespace
+
+// A project's PyPlug is the one of the Natron that loads it, found by the file name of its script, even when the
+// project saved only that file name, or a path of another machine where a file of that name exists, e.g. another
+// Natron's older PyPlug (#1920). The node keeps the directory of this Natron's PyPlug (for its resources and the
+// PyPlug export dialog) also when it is loaded as a Group (preference "loadFromPyFile" off): a saved file name alone
+// gave it an empty module name, so it lost its PyPlug, and a path of another machine gave it that directory.
+TEST(OfxProjectLoad, ProjectPyPlugIsFoundByFileName)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const QString thisDir = dir + QString::fromUtf8("this/");
+    const QString otherDir = dir + QString::fromUtf8("other/");
+    ASSERT_TRUE( QDir().mkpath(thisDir) );
+    ASSERT_TRUE( QDir().mkpath(otherDir) );
+    const char* const pyPlugID = "net.natron.test.PyPlugByFileName";
+    const QString moduleName = QString::fromUtf8("NatronTestPyPlugByFileName");
+    // version is the PyPlug's version; the other Natron's copy is older
+    const auto script = [&](int version) {
+        return std::string("from NatronEngine import *\n"
+                           "def getPluginID():\n"
+                           "    return '") + pyPlugID + "'\n"
+               "def getLabel():\n"
+               "    return 'PyPlugByFileName'\n"
+               "def getVersion():\n"
+               "    return " + std::to_string(version) + "\n"
+               "def createInstance(app, group):\n"
+               "    inp = app.createNode('" + PLUGINID_NATRON_INPUT + "', -1, group)\n"
+               "    out = app.createNode('" + PLUGINID_NATRON_OUTPUT + "', -1, group)\n"
+               "    out.connectInput(0, inp)\n";
+    };
+    const QString scriptName = moduleName + QString::fromUtf8(".py");
+    ASSERT_TRUE( writeFile( thisDir + scriptName, QByteArray( script(2).c_str() ) ) );
+    ASSERT_TRUE( writeFile( otherDir + scriptName, QByteArray( script(1).c_str() ) ) );
+    ScopedPyPlugTestEnv env(thisDir, moduleName);
+    ASSERT_TRUE( env.isValid() );
+    Plugin* plugin = appPTR->registerPlugin( thisDir, QStringList() << QString::fromUtf8("Other") << QString::fromUtf8("Test"),
+                                             QString::fromUtf8(pyPlugID), QString::fromUtf8("PyPlugByFileName"), QString(), QStringList(),
+                                             false, false, 0, false, 2, 0, false );
+    ASSERT_TRUE(plugin);
+    plugin->setPythonModule(thisDir + moduleName);
+
+    // a project with the PyPlug, saved as text; then the same project with the PyPlug saved at a path of another
+    // machine, and with its file name alone
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+    project->resetProject();
+    {
+        CreateNodeArgs args( pyPlugID, project );
+        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+        ASSERT_TRUE( bool( app->createNode(args) ) );
+    }
+    QString savedPath;
+    ASSERT_TRUE( project->saveProject( dir, QString::fromUtf8("saved.ntp"), &savedPath, eProjectFileFormatText ) );
+    project->resetProject();
+    const QByteArray contents = readFile( dir + QString::fromUtf8("saved.ntp") );
+    ASSERT_EQ( 1, contents.count( thisDir.toUtf8() ) ) << contents.constData();
+    const char* const names[] = { "otherpath.ntp", "filename.ntp" };
+    ASSERT_TRUE( writeFile( dir + QString::fromUtf8(names[0]), QByteArray(contents).replace( thisDir.toUtf8(), otherDir.toUtf8() ) ) );
+    ASSERT_TRUE( writeFile( dir + QString::fromUtf8(names[1]), QByteArray(contents).replace( thisDir.toUtf8(), QByteArray() ) ) );
+
+    for (const char* name : names) {
+        for (int fromPyFile = 0; fromPyFile < 2; ++fromPyFile) {
+            env.setLoadFromPyFile( fromPyFile != 0 );
+            project->resetProject();
+            testing::internal::CaptureStdout();
+            const bool loaded = project->loadProject( dir, QString::fromUtf8(name) );
+            const std::string output = testing::internal::GetCapturedStdout();
+            EXPECT_TRUE(loaded) << name << ", loadFromPyFile " << fromPyFile << ": " << output;
+            // the saved version is the version of this Natron's PyPlug: nothing to ask
+            EXPECT_EQ( std::string::npos, output.find("PyPlug version") ) << name << ", loadFromPyFile " << fromPyFile << ": " << output;
+            const NodesList nodes = project->getNodes();
+            ASSERT_EQ( 1, (int)nodes.size() ) << name << ", loadFromPyFile " << fromPyFile;
+            const QString module = QString::fromUtf8( nodes.front()->getPluginPythonModule().c_str() );
+            EXPECT_EQ( canonicalDir(thisDir + scriptName).toStdString(), canonicalDir(module).toStdString() )
+                << name << ", loadFromPyFile " << fromPyFile << ": module " << module.toStdString() << "\n" << output;
+        }
+    }
+
+    // a PyPlug whose saved script exists but can't be imported (not on the Python path), with an ID that this Natron
+    // doesn't have: the node is the Group saved in the project; it was dropped, with its children
+    const QString unimportable = QString::fromUtf8("NatronTestUnimportablePyPlug");
+    ASSERT_TRUE( writeFile( otherDir + unimportable + QString::fromUtf8(".py"), QByteArray( script(1).c_str() ) ) );
+    ASSERT_TRUE( writeFile( dir + QString::fromUtf8("unimportable.ntp"),
+                            QByteArray(contents).replace( ( thisDir + moduleName ).toUtf8(), ( otherDir + unimportable ).toUtf8() )
+                            .replace( QByteArray(pyPlugID), QByteArray("net.natron.test.UnregisteredPyPlug") ) ) );
+    env.setLoadFromPyFile(true);
+    project->resetProject();
+    testing::internal::CaptureStdout();
+    const bool loaded = project->loadProject( dir, QString::fromUtf8("unimportable.ntp") );
+    const std::string output = testing::internal::GetCapturedStdout();
+    EXPECT_TRUE(loaded) << output;
+    EXPECT_EQ( 1, (int)project->getNodes().size() ) << output;
+    project->resetProject();
 }

@@ -25,10 +25,12 @@
 
 #include "NodeGroupSerialization.h"
 
+#include <algorithm> // std::max
 #include <cassert>
 #include <stdexcept>
 
 #include <QDateTime>
+#include <QFile>
 #include <QFileInfo>
 
 #include "Engine/AppManager.h"
@@ -36,6 +38,7 @@
 #include "Engine/Settings.h"
 #include "Engine/AppInstance.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/Plugin.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/ViewerInstance.h"
 
@@ -81,6 +84,48 @@ static QString lookForFileRecursively(const QString& dirPath, const QString& fil
     }
     return QString();
 
+}
+
+QString
+NodeCollectionSerialization::findPyPlugScript(const std::string& savedModule)
+{
+    QString savedPath = QString::fromUtf8( savedModule.c_str() );
+    //Workaround a bug introduced in Natron where we were not saving the .py extension
+    if ( !savedPath.endsWith( QString::fromUtf8(".py") ) ) {
+        savedPath.append( QString::fromUtf8(".py") );
+    }
+    // after the last / or \ (a path saved on Windows may use backslashes)
+    const QString fileName = savedPath.mid( std::max( savedPath.lastIndexOf( QLatin1Char('/') ), savedPath.lastIndexOf( QLatin1Char('\\') ) ) + 1 );
+
+    // the PyPlugs of this Natron first (Plugin::getPythonModule() has no .py extension)
+    const PluginsMap& plugins = appPTR->getPluginsList();
+    for (PluginsMap::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
+        for (PluginVersionsOrdered::const_reverse_iterator itv = it->second.rbegin(); itv != it->second.rend(); ++itv) {
+            const QString& module = (*itv)->getPythonModule();
+            if ( !module.isEmpty() ) {
+                const QString script = module + QString::fromUtf8(".py");
+                if ( (QFileInfo(script).fileName() == fileName) && QFile::exists(script) ) {
+                    return script;
+                }
+            }
+        }
+    }
+
+    // a file name alone is not looked for in the current directory
+    if ( !QFileInfo(savedPath).isRelative() && QFile::exists(savedPath) ) {
+        return savedPath;
+    }
+
+    // search by file name: the saved path doesn't exist here (#1645)
+    const QStringList natronPaths = appPTR->getAllNonOFXPluginsPaths();
+    for (int i = 0; i < natronPaths.size(); ++i) {
+        const QString found = lookForFileRecursively(natronPaths[i], fileName);
+        if ( !found.isEmpty() ) {
+            return found;
+        }
+    }
+
+    return QString();
 }
 
 NodesRestoreStatus
@@ -165,27 +210,8 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
         bool usingPythonModule = false;
         if ( !pythonModuleAbsolutePath.empty() ) {
             unsigned int savedPythonModuleVersion = (*it)->getPythonModuleVersion();
-            QString qPyModulePath = QString::fromUtf8( pythonModuleAbsolutePath.c_str() );
-            //Workaround a bug introduced in Natron where we were not saving the .py extension
-            if ( !qPyModulePath.endsWith( QString::fromUtf8(".py") ) ) {
-                qPyModulePath.append( QString::fromUtf8(".py") );
-            }
             // The path that has been saved in the project might not be corresponding on this computer.
-            // First try with the saved path
-            // Then search through all PyPlug search paths recursively for a match
-            if (!QFile::exists(qPyModulePath)) {
-                // search by file name: the saved absolute path doesn't exist here (#1645)
-                const QString pythonModuleFileName = QFileInfo(qPyModulePath).fileName();
-
-                qPyModulePath.clear();
-                QStringList natronPaths = appPTR->getAllNonOFXPluginsPaths();
-                for (int i = 0; i < natronPaths.size(); ++i) {
-                    qPyModulePath = lookForFileRecursively(natronPaths[i], pythonModuleFileName);
-                    if (!qPyModulePath.isEmpty()) {
-                        break;
-                    }
-                }
-            }
+            const QString qPyModulePath = findPyPlugScript(pythonModuleAbsolutePath);
 
 
             //This is a python group plug-in, try to find the corresponding .py file, maybe a more recent version of the plug-in exists.
@@ -211,6 +237,10 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
                             if (found->second) {
                                 pluginID = pythonPluginID;
                                 usingPythonModule = true;
+                            } else {
+                                // "No" for an earlier node of this PyPlug: the Group saved in the project, as for that node
+                                pluginID = PLUGINID_NATRON_GROUP;
+                                usingPythonModule = false;
                             }
                         } else {
                             StandardButtonEnum rep = Dialogs::questionDialog( ( (pyVersion > savedPythonModuleVersion) ? tr("New PyPlug version") : tr("Old PyPlug version") ).toStdString(),
@@ -233,6 +263,11 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
                         pluginID = pythonPluginID;
                         usingPythonModule = true;
                     }
+                } else {
+                    // the script can't be imported: load the Group saved in the project, as when no script is found
+                    // (the saved PyPlug ID may not be registered, which would drop the node and its children)
+                    pluginID = PLUGINID_NATRON_GROUP;
+                    usingPythonModule = false;
                 }
             }
         } // if (!pythonModuleAbsolutePath.empty()) {
