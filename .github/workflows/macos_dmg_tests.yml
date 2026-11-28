@@ -4,10 +4,10 @@ name: macOS DMG tests
 # the DMG is downloaded and mounted, Natron.app is copied out of it, Homebrew is moved away (there
 # is no MacPorts and no SDK), and tools/tart/run-natron-tests.sh runs the whole suite against the
 # copied app, with the known failures of Natron-Tests (an unexpected pass fails the job), as
-# tools/tart/natron-test.sh does in a tart VM. Called by macos_x86_64.yml (the DMG it builds, on
-# the latest Intel runner) and macos_arm64.yml (the DMG built with tools/tart, on the latest arm64
-# runner), with the DMG as an artifact of the calling run. The results are kept as an artifact for
-# 14 days.
+# tools/tart/natron-test.sh does in a tart VM. Called by macos_dmg.yml (the DMG it builds, for
+# macos_x86_64.yml on the latest Intel runner and macos_arm64.yml on the latest arm64 runner) and
+# macos_arm64.yml (a DMG given to it, e.g. one built with tools/tart), with the DMG as an artifact
+# of the calling run. The results are kept as an artifact for 14 days.
 on:
   workflow_call:
     inputs:
@@ -85,13 +85,11 @@ jobs:
           done
           # a bare macOS, as far as possible: no Homebrew (/usr/local; /opt/homebrew on arm64), no SDK,
           # no MacPorts, and no Python.framework in /Library/Frameworks (which dyld searches by
-          # default, so it could hide a framework missing from Natron.app). /opt/homebrew is moved
-          # here, not in macos_x86_64_sdk.sh, which is part of the SDK key.
-          .github/workflows/macos_x86_64_sdk.sh hide-homebrew
+          # default, so it could hide a framework missing from Natron.app)
+          .github/workflows/macos_sdk.sh hide-homebrew
+          [ ! -e /opt/homebrew ] || { echo "::error::/opt/homebrew exists"; exit 1; }
           hidden=$HOME/hidden-from-tests; mkdir -p "$hidden"
-          for d in /opt/homebrew /Library/Frameworks/Python.framework; do
-            [ ! -e "$d" ] || sudo mv "$d" "$hidden/$(echo "${d#/}" | tr / _)"
-          done
+          [ ! -e /Library/Frameworks/Python.framework ] || sudo mv /Library/Frameworks/Python.framework "$hidden/"
           [ ! -e /opt/local ] || { echo "::error::/opt/local exists"; exit 1; }
           tools/tart/run-natron-tests.sh "$DMG" Natron-Tests "$RUNNER_TEMP/results" "$DMG_NAME"
 

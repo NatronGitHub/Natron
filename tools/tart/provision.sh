@@ -11,7 +11,7 @@
 #   SDK steps: disk nobrew clt macports macports_conf overlay sync pins osmesa compiler tools libs python_qt
 #              dmgtools rebuild_target fixups
 #   env:       REDO="step..." re-runs steps already marked done; PROXY=socks5h://... for internet access
-#              BUNDLE_ONLY_REBUILD=1: on a macOS newer than the target (GitHub's macos-15-intel runner),
+#              BUNDLE_ONLY_REBUILD=1: on a macOS newer than the target (GitHub's macos-15 runners),
 #              install from MacPorts' binary archives, and rebuild from source only the ports whose
 #              files go into the DMG (bundled_ports), not the build tools
 #   others:    sync (re-publish the overlay), update (refresh an existing SDK), cleanup (shrink the image), build (build Natron)
@@ -21,7 +21,7 @@ set -euo pipefail
 # This script changes the machine it runs on: it removes Homebrew and the Command Line Tools,
 # sets the system proxy, rewrites ~/.zprofile and the git configuration. Refuse to run anywhere
 # but in a tart VM driven by natron-sdk.sh/natron-build.sh (vm_start writes /tmp/natron-tart-id),
-# or on a throw-away GitHub-hosted runner (.github/workflows/macos_x86_64_sdk.yml).
+# or on a throw-away GitHub-hosted runner (.github/workflows/macos_sdk.yml).
 if [ "${GITHUB_ACTIONS:-}" = true ] && [ "${RUNNER_ENVIRONMENT:-}" = github-hosted ]; then
     :
 elif [ "$(sysctl -n kern.hv_vmm_present 2> /dev/null)" != 1 ] ||

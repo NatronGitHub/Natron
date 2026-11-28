@@ -1,24 +1,31 @@
 #!/bin/bash
-# Helpers of macos_x86_64.yml and macos_x86_64_sdk.yml: the macOS x86_64 MacPorts SDK on GitHub's
-# macos-15-intel runners. The SDK is made by tools/tart/provision.sh (the steps of the arm64 tart
-# SDK image, minus disk, nobrew and clt), with BUNDLE_ONLY_REBUILD=1; it is saved as a zstd tarball
-# of /opt/local, /opt/osmesa, /opt/llvm, /opt/MacPorts-Natron and ~/provision-logs.
+# Helpers of macos_dmg.yml and macos_sdk.yml: the macOS MacPorts SDK of the DMG of one
+# architecture (x86_64 or arm64), on GitHub's macOS 15 runners (macos-15-intel, macos-15). The SDK
+# is made by tools/tart/provision.sh (the steps of the arm64 tart SDK image, minus disk, nobrew and
+# clt), with BUNDLE_ONLY_REBUILD=1; it is saved as a zstd tarball of /opt/local, /opt/osmesa,
+# /opt/llvm, /opt/MacPorts-Natron and ~/provision-logs.
 #
-#   macos_x86_64_sdk.sh find KEY MODE    print "name run_id what" of the SDK artifact to start from
-#                                        (what: reuse, update or scratch; see below)
-#   macos_x86_64_sdk.sh hide-homebrew    move the runner's Homebrew (/usr/local) out of the way
-#   macos_x86_64_sdk.sh unhide-homebrew  put it back (its zstd and git are used to save the SDK)
-#   macos_x86_64_sdk.sh download NAME RUN DIR   download the SDK or state artifact NAME of run RUN into
-#                                        DIR, checked with zstd -t, with retries (needs Homebrew's gh
-#                                        and zstd, and GH_TOKEN)
-#   macos_x86_64_sdk.sh restore FILE     extract a saved SDK (needs Homebrew's zstd)
-#   macos_x86_64_sdk.sh run DEADLINE STEP...  run provision.sh STEPs; stop them at DEADLINE (seconds
-#                                        since the epoch): exit status 0 if all done, 3 if stopped
-#   macos_x86_64_sdk.sh save FILE [final]     tar the SDK into FILE (final: without the build directories)
-#   macos_x86_64_sdk.sh steps            print the provision.sh steps of the SDK
+#   macos_sdk.sh find ARCH KEY MODE  print "name run_id what" of the SDK artifact of ARCH to start
+#                                    from (what: reuse, update or scratch; see below)
+#   macos_sdk.sh select-xcode        select the Xcode that builds the SDK and the DMG ($XCODE_APP)
+#   macos_sdk.sh hide-homebrew       move the runner's Homebrew (/usr/local, /opt/homebrew) out of the way
+#   macos_sdk.sh unhide-homebrew     put it back (its zstd and git are used to save the SDK)
+#   macos_sdk.sh download NAME RUN DIR   download the SDK or state artifact NAME of run RUN into
+#                                    DIR, checked with zstd -t, with retries (needs Homebrew's gh
+#                                    and zstd, and GH_TOKEN)
+#   macos_sdk.sh restore FILE        extract a saved SDK (needs Homebrew's zstd)
+#   macos_sdk.sh run DEADLINE STEP...  run provision.sh STEPs; stop them at DEADLINE (seconds
+#                                    since the epoch): exit status 0 if all done, 3 if stopped
+#   macos_sdk.sh save FILE [final]   tar the SDK into FILE (final: without the build directories)
+#   macos_sdk.sh steps               print the provision.sh steps of the SDK
 set -euo pipefail
 
-ARTIFACT_PREFIX=natron-sdk-macos-x86_64-
+# the SDK artifact of ARCH is natron-sdk-macos-ARCH-<key> (macos_sdk.yml)
+ARTIFACT_PREFIX=natron-sdk-macos-
+# The Xcode of the SDK and the DMG: one whose macOS SDK is at most one macOS release above the
+# deployment target (NATRON_MACOS_RELEASE_MIN, 14.0), which is the well-supported case (Xcode 16.4,
+# macOS 15.5 SDK); the runner (macOS 15) follows the same rule. Both move when the target moves.
+XCODE_APP=/Applications/Xcode_16.4.app
 # SDK steps of provision.sh on a runner: not disk, nobrew (Homebrew is hidden instead) and clt (the
 # runner's Xcode is used: GitHub has no macOS 14 runner, and no Command Line Tools 15.3)
 SDK_STEPS="macports macports_conf overlay sync pins osmesa compiler tools libs python_qt dmgtools rebuild_target fixups"
@@ -30,42 +37,57 @@ PATHS=(opt/local opt/osmesa opt/llvm opt/MacPorts-Natron "${HOME#/}/provision-lo
 cmd=${1:-}; shift || true
 case $cmd in
 find)
-    # The newest SDK artifacts of this workflow's earlier runs (not expired): one of the same KEY
-    # (same tools/MacPorts, provision.sh, ...) if it is recent enough, else the newest one of this
-    # branch or of the default branch, which is updated (MODE reuse or update); none for MODE scratch.
-    key=$1 mode=$2
+    # The newest SDK artifacts of ARCH of the earlier runs of this run's workflow (macos_x86_64.yml or
+    # macos_arm64.yml; not expired): one of the same KEY (same tools/MacPorts, provision.sh, ...) if
+    # it is recent enough, else the newest one of this branch or of the default branch, which is
+    # updated (MODE reuse or update); none for MODE scratch.
+    arch=$1 key=$2 mode=$3
+    case $arch in x86_64|arm64) ;; *) echo "find: ARCH is x86_64 or arm64, not $arch" >&2; exit 2 ;; esac
+    prefix=$ARTIFACT_PREFIX$arch-
     [ "$mode" != scratch ] || { echo "- - scratch"; exit 0; }
     : "${GITHUB_REPOSITORY:?}" "${GITHUB_REF_NAME:?}" "${DEFAULT_BRANCH:?}" "${GITHUB_RUN_ID:?}"
     gh_retry() { local _; for _ in 1 2 3; do gh "$@" && return 0; sleep 20; done; return 1; }
-    list=$(gh_retry api "repos/$GITHUB_REPOSITORY/actions/workflows/macos_x86_64.yml/runs?per_page=40" --jq '.workflow_runs[].id' |
+    # the workflow of this run (macos_sdk.yml is called by it)
+    workflow=$(gh_retry api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --jq .workflow_id)
+    list=$(gh_retry api "repos/$GITHUB_REPOSITORY/actions/workflows/$workflow/runs?per_page=40" --jq '.workflow_runs[].id' |
         while read -r id; do
             [ "$id" != "$GITHUB_RUN_ID" ] || continue
             gh_retry api "repos/$GITHUB_REPOSITORY/actions/runs/$id/artifacts?per_page=100" --jq \
-                ".artifacts[] | select((.name | startswith(\"$ARTIFACT_PREFIX\")) and (.expired | not)) |
+                ".artifacts[] | select((.name | startswith(\"$prefix\")) and (.expired | not)) |
                  \"\(.created_at) \(.name) \(.workflow_run.id) \(.workflow_run.head_branch)\""
         done | sort -r)
     echo "SDK artifacts found:" >&2; echo "${list:-(none)}" >&2
     # (runs on Linux: GNU date)
     cutoff=$(date -u -d "$REUSE_MAX_DAYS days ago" +%Y-%m-%dT%H:%M:%SZ)
     if [ "$mode" = reuse ]; then
-        hit=$(echo "$list" | awk -v n="$ARTIFACT_PREFIX$key" -v c="$cutoff" '$2 == n && $1 >= c {print $2, $3; exit}')
+        hit=$(echo "$list" | awk -v n="$prefix$key" -v c="$cutoff" '$2 == n && $1 >= c {print $2, $3; exit}')
         [ -z "$hit" ] || { echo "$hit reuse"; exit 0; }
     fi
     base=$(echo "$list" | awk -v b="$GITHUB_REF_NAME" -v d="$DEFAULT_BRANCH" '$4 == b || $4 == d {print $2, $3; exit}')
     if [ -n "$base" ]; then echo "$base update"; else echo "- - scratch"; fi
     ;;
+select-xcode)
+    [ -d "$XCODE_APP" ] || { echo "::error::$XCODE_APP is not on this runner image: pick another Xcode in macos_sdk.sh (XCODE_APP)"; ls -d /Applications/Xcode*.app; exit 1; }
+    sudo xcode-select -s "$XCODE_APP/Contents/Developer"
+    xcodebuild -version
+    xcrun --sdk macosx --show-sdk-version
+    ;;
 hide-homebrew)
-    # On Intel Macs Homebrew lives in /usr/local, whose include and lib directories the compilers
-    # and the linker search by default: it must be gone, not only off the PATH. /usr is read-only
-    # (signed system volume), so its contents are moved.
+    # Homebrew must be gone, not only off the PATH. On Intel Macs it lives in /usr/local, whose
+    # include and lib directories the compilers and the linker search by default; /usr is
+    # read-only (signed system volume), so its contents are moved. On arm64 it is /opt/homebrew
+    # (and /usr/local has other tools of the runner image), which build systems may still find
+    # (e.g. CMake's default prefixes): both are moved.
     hidden=$HOME/usr-local.homebrew
     if [ -d "$hidden" ]; then echo "already hidden"; exit 0; fi
     sudo mkdir "$hidden"
     sudo find /usr/local -mindepth 1 -maxdepth 1 -exec mv {} "$hidden/" \;
     [ -z "$(ls -A /usr/local)" ] || { echo "could not empty /usr/local:"; ls -A /usr/local; exit 1; }
+    [ ! -e /opt/homebrew ] || sudo mv /opt/homebrew "$HOME/opt-homebrew.homebrew"
     ;;
 unhide-homebrew)
     hidden=$HOME/usr-local.homebrew
+    [ ! -e "$HOME/opt-homebrew.homebrew" ] || sudo mv "$HOME/opt-homebrew.homebrew" /opt/homebrew
     [ -d "$hidden" ] || exit 0
     sudo find "$hidden" -mindepth 1 -maxdepth 1 -exec mv {} /usr/local/ \;
     sudo rmdir "$hidden"
@@ -181,5 +203,5 @@ steps)
     echo "$SDK_STEPS"
     ;;
 *)
-    sed -n 2,18p "$0"; exit 2 ;;
+    sed -n 2,20p "$0"; exit 2 ;;
 esac
