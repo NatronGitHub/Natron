@@ -385,6 +385,9 @@ These rules apply to the unit and script tests of every repository (Natron's
   written), add the real check. A check that can't fail (an expected output
   that accepts anything) is tightened, or removed and listed like a removed
   test, with the check that replaces it.
+- **No coverage-only tests.** A test checks behaviour that matters (a
+  contract or a past bug); a test written only to raise the coverage figure,
+  with no meaningful assertion, isn't added.
 - **Third-party samples stay out of the repository.** A test that needs a file
   from another project downloads it, with a hash check, from the
   repository's "test assets" GitHub release; the release notes give its
