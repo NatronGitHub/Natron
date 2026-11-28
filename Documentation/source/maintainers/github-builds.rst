@@ -91,8 +91,8 @@ runs ``ctest`` (the ``Tests`` google-test binary, the Python-driven
 - **macOS** (``macos-test``): macOS 15 arm64, the system (Xcode) clang and
   MacPorts libraries (Python 3.11, PySide2), never Homebrew, which the job
   takes off the ``PATH``. ``/opt/local`` is restored from a cache keyed on the
-  MacPorts version, the overlay (``tools/MacPorts``) and the port list (bump
-  ``MACPORTS_CACHE_VERSION`` when the list changes). There are no prebuilt
+  MacPorts version, the overlay (``tools/MacPorts``), the port list and
+  ``MACPORTS_CACHE_VERSION`` (bump it to drop the cache). There are no prebuilt
   macOS plug-ins, so ``BaseTest.*`` is filtered out.
 
 The jobs run on pull requests against ``master`` and ``RB-*``, and on pushes
@@ -105,10 +105,7 @@ through its pull request. In addition:
   draft, run the workflow by hand (see `How to`_).
 - **macOS is informative.** Its job starts only after Linux and Windows have
   passed (``needs:``), because macOS runners are scarce, and it is never a
-  required check: merging needs Linux and Windows only. A Windows job that
-  didn't get a runner (cancelled or timed out before it started, or still
-  queued after 3 hours) counts as passed if Linux passed. Don't re-run a
-  macOS job that was cancelled or got no runner.
+  required check (see :doc:`guidelines` for what counts as green CI).
 - Changes under ``Documentation/`` run nothing (``paths-ignore``): Read the
   Docs builds the documentation (``.readthedocs.yaml``, see
   :ref:`maint-building-manual`).
@@ -263,7 +260,7 @@ system libraries that must match the user's system: glibc and the compiler
 runtime, GLVND/Mesa and the GPU drivers, the core X11 and xcb client
 libraries (libX11, libX11-xcb, libxcb, as in the `AppImage excludelist
 <https://github.com/AppImageCommunity/pkg2appimage/blob/master/excludelist>`_),
-ALSA, fontconfig. The xcb extension and xcb-util libraries and libxkbcommon,
+ALSA. The xcb extension and xcb-util libraries and libxkbcommon,
 which a desktop doesn't always have, are bundled (#2024). The full list, and
 what ``checkBundle`` checks, is in ``INSTALL_LINUX.md`` ("Runtime requirements
 of the Linux binaries"); keep both in sync with ``build-Linux-installer.sh``.
@@ -537,12 +534,15 @@ Natron's GitHub releases are made from tags:
 
 - **Pre-release tags** (``v2.6.0-alpha1``, ``-beta1``, ``-rc1``, ``-RC1``,
   ``-alpha.1``, …): ``linux_packages.yml``, ``macos_x86_64.yml`` and
-  ``build_installer.yml`` build the packages from the tag (the plug-ins from
-  their ``Natron-<version>`` tags) and attach them, with their Natron-Tests
+  ``build_installer.yml`` build the packages from the tag and attach them, with their Natron-Tests
   results, to the GitHub pre-release
   (``.github/workflows/attach_to_prerelease.sh``, which creates the
   pre-release if it doesn't exist yet): the Linux archives, the x86_64 DMG,
-  the Windows portable zip with Setup.exe. ``linux_packages.yml`` attaches
+  the Windows portable zip with Setup.exe. Only ``linux_packages.yml`` makes a
+  release build (``RELEASE_TAG``), whose plug-ins come from their
+  ``Natron-<version>`` tags; ``macos_x86_64.yml`` and ``build_installer.yml``
+  pass the tag as a branch name, so they make a snapshot build with the
+  plug-ins of ``Global/plugin-branches.sh``. ``linux_packages.yml`` attaches
   every archive it built, with the test results, whatever they are;
   ``macos_x86_64.yml`` and ``build_installer.yml`` attach nothing unless their
   Natron-Tests job passed. The arm64 DMG is built with ``tools/tart`` and
@@ -572,8 +572,8 @@ are only called by the package workflows): in the
 
 ``build=fast`` is the pull-request build (Linux, Windows, then macOS); without
 it, ``ci.yml`` builds Debug and Release, as the weekly run. Use this to
-validate a draft pull request, or a change that only the package workflows
-build (``tools/jenkins``, ``tools/docker``, ``tools/tart``, ``tools/MacPorts``,
+validate a draft pull request on its rebased head before marking it ready (see
+:doc:`guidelines`), or a change that only the package workflows build (``tools/jenkins``, ``tools/docker``, ``tools/tart``, ``tools/MacPorts``,
 ``tools/MINGW-packages``), before marking it ready. Don't dispatch a run on a
 commit that already has one, and poll runs sparingly: all of them share the
 repository's API and runner quotas.

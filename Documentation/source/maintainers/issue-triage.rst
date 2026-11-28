@@ -95,7 +95,7 @@ the backlog:
   performance* (``prio:high``, ``func:readers``).
 
 A recurring theme (``#557``, ``#862``, ``#903``, ``#958``, ``#1005``,
-``#1068`` …) is *random / hard-to-reproduce crashes*. Investing in the crash
+``#1068`` …, all closed since) is *random / hard-to-reproduce crashes*. Investing in the crash
 reporter pipeline (sentry-native, ``#1183``) so real stack traces come back
 from users would pay off across all of these.
 
@@ -211,7 +211,7 @@ main window.
   was a stall of this kind, fixed in 2.6. A render thread waited for its own
   tiles, and with several parallel renders two such threads waited for each
   other forever. A race in the reference count of the images being rendered
-  (`#1127 <https://github.com/NatronGitHub/Natron/issues/1127>`_) could also
+  (`#1127 <https://github.com/NatronGitHub/Natron/issues/1127>`_, closed) could also
   leave tiles marked as being rendered forever. #248 may be related, since 1
   or 2 parallel renders avoid it: retest #248 projects with 2.6 before looking
   elsewhere.

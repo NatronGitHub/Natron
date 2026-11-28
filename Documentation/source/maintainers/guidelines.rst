@@ -71,8 +71,8 @@ Build system: CMake replaces qmake
   between the ``*.pro``/``*.pri`` files and ``CMakeLists.txt``; CI checks it
   (``tools/utils/checkQmakeSources.py``).
 - The plug-ins' Makefiles stay as fallbacks of Natron RB-2.6's release
-  scripts; their CI builds with CMake (openfx-misc also checks the Makefile
-  build weekly).
+  scripts; their CI builds with CMake, and their weekly runs check that the
+  Makefiles still build.
 
 Code (Natron)
 -------------
@@ -92,10 +92,8 @@ Code (Natron)
 - **Keep saved projects and scripts working.** The ``*Serialization`` classes
   and the ``Py*`` Python API are backward-compatibility-critical: bump
   ``BOOST_CLASS_VERSION`` on a serialization change, and keep the Python API
-  stable (see :doc:`python-bindings`). In the plug-ins, a change that breaks
-  saved projects needs a new major version of the plug-in, and a fix that
-  changes the output of existing projects keeps the old behaviour for the old
-  version.
+  stable (see :doc:`python-bindings`). For the plug-ins, see `Differences
+  between the repositories`_.
 - **Qt 5 and Qt 6 must both build**: prefer APIs that both have, then the
   shims of ``Global/QtCompat.h``, then ``QT_VERSION_CHECK`` guards.
 - **Never silence deprecation warnings** (no pragmas, ``-Wno-deprecated*`` or
@@ -209,8 +207,9 @@ The workflows are described in :doc:`github-builds`; the rules are:
   fixes; a MacPorts clang only otherwise (#1134).
 - **Windows toolchains:** Natron, openfx-io and openfx-arena are never built
   with MSVC: MSYS2 UCRT64, and MSYS2 CLANGARM64 for native ARM64 (#1494).
-  openfx, openfx-misc and openfx-gmic may use MSVC or UCRT64 per pull request;
-  their weekly runs use MSVC for x86-64 and Arm64X.
+  openfx, openfx-misc (without OSMesa) and openfx-gmic may use MSVC or UCRT64
+  per pull request (one fast C++17 build); their weekly runs use MSVC for
+  x86-64 and Arm64X (or, if Arm64X isn't possible, Arm64EC and AArch64).
 - **No COMMERCIAL builds** (``NATRON_LICENSE`` or ``OFX_LICENSE`` set to
   ``COMMERCIAL``) in CI, weekly runs or releases; scripts may keep a manual
   option. COMMERCIAL work is labelled ``commercial`` and ``prio:low``. GPL
@@ -230,8 +229,9 @@ The process, for every pull request, code or documentation:
    `Reviews`_).
 3. **Rebase it on the latest base branch** (RB-2.6 for Natron, ``master``
    for the openfx repositories) and force-push with lease (the pull request's
-   branch only). Then mark it ready, which runs CI on the rebased head. Never
-   rebase the RB-2.6 to RB-2.7 forward merge.
+   branch only). Run CI on the rebased head (by hand, since drafts run none,
+   see :doc:`github-builds`), and mark it ready once that run passes; marking
+   it ready runs CI again. Never rebase the RB-2.6 to RB-2.7 forward merge.
 4. **CI passes:** the maintainer reviews it. **Only after the maintainer's
    approval** is it merged, and only when the reviewers say "merge" on the
    final head, every finding they raised is fixed or answered, CI passes on
@@ -242,7 +242,8 @@ The process, for every pull request, code or documentation:
 
 Merge methods (Natron): squash a pull request that fixes one issue; rebase (one
 commit per issue) a pull request that fixes several; a merge commit for the
-forward merge.
+forward merge; rebase (never squash) the CHANGELOG collection, whose commit
+message the next collection reads (see :ref:`maint-changelog`).
 
 **Fewer pull requests, more issues fixed in each.** Group related fixes (same
 area, same files, or the same kind of change) into one pull request, one
@@ -338,16 +339,12 @@ Issues
 Natron-Tests known failures
 ---------------------------
 
-- Natron-Tests' ``known_failures/`` lists the tests that are expected to fail:
-  one list for every platform (``common.txt``, where most of them should be),
-  one per platform (``linux.txt``, ``macos.txt``, ``windows.txt``) and one per
-  architecture. *Why: known failures should hardly differ between platforms;
-  when they do, that points at a real bug.*
-- **Every entry cites an open Natron issue.** Never add a test to a list
-  without one; when its issue is closed, remove the entry or give it another
-  open issue.
-- **A known failure that passes fails the run** (``UNEXPECTED PASS``): update
-  the lists. See :doc:`github-builds`.
+- **Most known failures go in the common list**; a platform or architecture
+  list only gets a test that a run shows passing elsewhere. *Why: known
+  failures should hardly differ between platforms; when they do, that points
+  at a real bug.*
+- **Every entry cites an open Natron issue**, and a known failure that passes
+  fails the run. How the lists work: :doc:`github-builds`, "Natron-Tests".
 
 macOS: MacPorts and INSTALL_MACOS.md
 ------------------------------------
@@ -380,30 +377,34 @@ Differences between the repositories
    * - Base branch
      - Natron: RB-2.6 (RB-2.7 for Qt 6-only work). The openfx repositories:
        ``master``.
-   * - Windows per pull request
-     - Natron, openfx-io, openfx-arena: MSYS2 UCRT64, never MSVC. openfx,
-       openfx-misc, openfx-gmic: MSVC or UCRT64 (one fast C++17 build); their
-       weekly runs use MSVC for x86-64 and Arm64X.
-   * - Weekly runs
-     - Natron: Sunday, never skipped. openfx and the plug-ins: Saturday 03:17
-       UTC.
+   * - Windows and weekly runs
+     - See `CI and packages`_.
    * - Merge method
      - Natron: squash for one issue, rebase for several. openfx-io: one commit
        per pull request (review fixes squashed). openfx-arena: squash.
    * - CHANGELOG
-     - Natron's ``CHANGELOG.md`` also collects the ``### CHANGELOG`` lines of
-       openfx-io, openfx-misc, openfx-arena and openfx-gmic, which have no
-       ``CHANGELOG.md`` (see :ref:`maint-changelog`).
+     - Every pull request has a ``### CHANGELOG`` section. Natron's collection
+       also reads those of the plug-in repositories (see
+       :ref:`maint-changelog`). openfx-io and openfx-misc have no changelog
+       file; openfx-gmic keeps a ``CHANGELOG.md`` and openfx-arena a
+       ``ChangeLog.md``; openfx-supportext has none (its lines stay in the pull
+       request descriptions).
    * - Draft CI
      - openfx runs its bindings-sync check on drafts: a change to a virtual
        function of ``HostSupport/include`` updates the Python adapters of
        ``HostSupport/python/src``, or says why not in a ``Bindings:`` line.
    * - Saved projects
-     - The plug-ins: a change that breaks saved projects gets a new major
-       version (the old one stays registered and unchanged); new choice
-       options go at the end. openfx-supportext: a fix that changes the output
-       of existing projects keeps the old behaviour behind a flag for the old
-       version.
+     - The plug-ins: a plug-in gets a new major version only if its current
+       major shipped in Natron 2.5.0, the change is incompatible (a project
+       saved with it could no longer be loaded: a parameter removed, renamed or
+       retyped, choice options reordered) and the behaviour differs; the old
+       major then stays registered and unchanged. A bug fix needs no new major,
+       even when it changes renders, and new choice options go at the end.
+       openfx-supportext: a fix that changes plausible output of existing
+       projects keeps the old behaviour behind a flag that the plug-in enables
+       for its old version (crash, NaN and garbage fixes excepted). Library
+       upgrades in 2.6 (e.g. ImageMagick 7, a new G'MIC) may change the output;
+       old results need Natron 2.5.
    * - C++ standard
      - openfx Support and HostSupport, and openfx-supportext: C++17 minimum;
        their users build them as C++17 to C++23.

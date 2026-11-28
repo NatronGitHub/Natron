@@ -120,8 +120,8 @@ The ``Tests`` module (Google Test, about a hundred ``Tests/*_Test.cpp`` files)
 covers the engine (curves, LUTs, images, caches, hashing, knobs and
 expressions, rendering and its threads, tracking, projects, the Python API)
 and the OpenFX host (one ``Ofx*_Test.cpp`` per area). Run the tests that cover
-your change before opening a pull request; the CI runs the whole suite (see
-:doc:`github-builds`). When you fix
+your change (locally, or with a manual CI run on your branch) before marking a
+pull request ready; the CI runs the whole suite (see :doc:`github-builds`). When you fix
 a bug that is unit-testable — anything in the color, image, curve, hashing or
 geometry code — add a regression test. Rendering and GUI behavior are harder to
 unit-test: GUI behaviour can be tested by a GUI test script in ``Tests/gui/``, run by
@@ -246,8 +246,8 @@ Start each line with the component it is about (``Python:``, ``Viewer:``,
 ``Read/Write:``, ``Preferences:``, ``Build/packaging:``; a plug-in name under
 ``Plugins``), and write it for users: what they see, not how the code changed.
 A line without a ``#NNN`` reference gets the number of its pull request. The
-plug-in repositories (openfx-io, openfx-misc, openfx-arena, openfx-gmic) have
-no ``CHANGELOG.md``: their pull requests carry the same section, with
+plug-in repositories' pull requests (openfx-io, openfx-misc, openfx-arena,
+openfx-gmic) carry the same section, with
 ``Plugins:`` lines such as ``- ReadFFmpeg: ... (openfx-io#NNN)``. In them, a
 bare ``#NNN`` is an issue of that repository and becomes ``openfx-io#NNN``:
 write a Natron reference as ``Natron#NNN``. Pull requests opened against
@@ -290,8 +290,8 @@ The procedure, from an up-to-date RB-2.6 checkout with ``gh`` authenticated:
    ``none`` or have an internal label; ``--help`` lists the options. It
    refuses to run when ``CHANGELOG.md`` has uncommitted changes: a second
    ``--write`` would add the lines again.
-4. **Editorial pass**, which can't be automated: a person, or an agent whose
-   result a person reviews, rewrites the topmost version for users. One entry
+4. **Editorial pass**, which can't be automated: a person rewrites (or reviews
+   a rewrite of) the topmost version for users. One entry
    per user-visible change; related fixes merged into one line; internal items
    removed (refactors, test-only, CI and documentation-only changes, follow-ups
    of features that no release has shipped yet); every pull request and issue

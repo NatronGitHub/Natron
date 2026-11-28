@@ -78,12 +78,12 @@ or a deadlock around the cache. High value; reproduce under a debug build with
 FP-exception trapping and thread sanitizer.
 
 **Fix launch/teardown crashes (P0).**
-Startup crashes (`#845 <https://github.com/NatronGitHub/Natron/issues/845>`_,
-closed, `#1008 <https://github.com/NatronGitHub/Natron/issues/1008>`_) and
-shutdown/lifecycle crashes (`#795 <https://github.com/NatronGitHub/Natron/issues/795>`_,
+The startup crash `#1008 <https://github.com/NatronGitHub/Natron/issues/1008>`_ is still
+open; the earlier startup and shutdown/lifecycle crashes
+(`#845 <https://github.com/NatronGitHub/Natron/issues/845>`_,
+`#795 <https://github.com/NatronGitHub/Natron/issues/795>`_,
 `#1029 <https://github.com/NatronGitHub/Natron/issues/1029>`_,
-`#1057 <https://github.com/NatronGitHub/Natron/issues/1057>`_, all closed) recur across
-platforms. Several likely involve OpenGL context creation
+`#1057 <https://github.com/NatronGitHub/Natron/issues/1057>`_) are closed. Several involved OpenGL context creation
 (`#516 <https://github.com/NatronGitHub/Natron/issues/516>`_, amdgpu-pro, closed) — a
 good place to add defensive checks and clearer diagnostics in ``OSGLContext_*``.
 
