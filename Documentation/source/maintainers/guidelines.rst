@@ -242,8 +242,8 @@ The process, for every pull request, code or documentation:
 
 Merge methods (Natron): squash a pull request that fixes one issue; rebase (one
 commit per issue) a pull request that fixes several; a merge commit for the
-forward merge; rebase (never squash) the CHANGELOG collection, whose commit
-message the next collection reads (see :ref:`maint-changelog`).
+forward merge; rebase or a merge commit (never squash) for the CHANGELOG
+collection, whose commit message the next collection reads (see :ref:`maint-changelog`).
 
 **Fewer pull requests, more issues fixed in each.** Group related fixes (same
 area, same files, or the same kind of change) into one pull request, one

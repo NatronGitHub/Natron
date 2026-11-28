@@ -571,10 +571,11 @@ are only called by the package workflows): in the
     gh run list -R NatronGitHub/Natron --branch <branch>
 
 ``build=fast`` is the pull-request build (Linux, Windows, then macOS); without
-it, ``ci.yml`` builds Debug and Release, as the weekly run. Use this to
-validate a draft pull request on its rebased head before marking it ready (see
-:doc:`guidelines`), or a change that only the package workflows build (``tools/jenkins``, ``tools/docker``, ``tools/tart``, ``tools/MacPorts``,
-``tools/MINGW-packages``), before marking it ready. Don't dispatch a run on a
+it, ``ci.yml`` builds Debug and Release, as the weekly run. Before marking a
+draft pull request ready (see :doc:`guidelines`), use this to validate its
+rebased head, and to run the package workflows on a change that only they
+build (``tools/jenkins``, ``tools/docker``, ``tools/tart``, ``tools/MacPorts``,
+``tools/MINGW-packages``). Don't dispatch a run on a
 commit that already has one, and poll runs sparingly: all of them share the
 repository's API and runner quotas.
 
