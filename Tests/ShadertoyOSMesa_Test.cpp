@@ -123,7 +123,7 @@ readPFM(const std::string& path,
         return false;
     }
     f.get(); // the single whitespace character after the scale
-    const std::size_t n = (std::size_t)*width * *height;
+    const std::size_t n = static_cast<std::size_t>(*width) * *height;
     std::vector<float> rgb(n * 3);
     if ( !f.read( reinterpret_cast<char*>( rgb.data() ), rgb.size() * sizeof(float) ) ) {
         return false;
@@ -157,7 +157,7 @@ writePFM(const std::string& path,
     std::ofstream f(path.c_str(), std::ios::binary);
 
     f << "PF\n" << width << " " << height << "\n-1\n";
-    for (std::size_t i = 0; i < (std::size_t)width * height; ++i) {
+    for (std::size_t i = 0; i < static_cast<std::size_t>(width) * height; ++i) {
         f.write( reinterpret_cast<const char*>(&pixels[i * 4]), 3 * sizeof(float) );
     }
 
@@ -192,9 +192,9 @@ setChoice(const NodePtr& node,
     const std::vector<ChoiceOption> options = choice->getEntries_mt_safe();
     for (std::size_t i = 0; i < options.size(); ++i) {
         if ( (options[i].id == option) || (options[i].label == option) ) {
-            choice->setValue( (int)i );
+            choice->setValue( static_cast<int>(i) );
 
-            return choice->getValue() == (int)i;
+            return choice->getValue() == static_cast<int>(i);
         }
     }
 
@@ -274,13 +274,13 @@ protected:
         ASSERT_TRUE( (bounds.x1 <= 0) && (bounds.y1 <= 0) && (bounds.x2 >= kWidth) && (bounds.y2 >= kHeight) )
             << name << ": the image is " << bounds.width() << "x" << bounds.height();
 
-        Pixels pixels( (std::size_t)kWidth * kHeight * 4 );
+        Pixels pixels( static_cast<std::size_t>(kWidth) * kHeight * 4 );
         {
             Image::ReadAccess acc = img->getReadRights();
             for (int y = 0; y < kHeight; ++y) {
                 const float* row = reinterpret_cast<const float*>( acc.pixelAt(0, y) );
-                ASSERT_TRUE(row != NULL);
-                std::memcpy( &pixels[(std::size_t)y * kWidth * 4], row, kWidth * 4 * sizeof(float) );
+                ASSERT_TRUE(row != nullptr);
+                std::memcpy( &pixels[static_cast<std::size_t>(y) * kWidth * 4], row, kWidth * 4 * sizeof(float) );
             }
         }
 
@@ -301,11 +301,12 @@ protected:
         double sumError = 0.;
         int worst = 0;
         for (std::size_t i = 0; i < pixels.size(); ++i) {
-            const float e = std::isfinite(pixels[i]) ? std::fabs(pixels[i] - reference[i]) : HUGE_VALF;
+            // a NaN or an infinity, in the render or in the reference, is the largest difference
+            const float e = ( std::isfinite(pixels[i]) && std::isfinite(reference[i]) ) ? std::fabs(pixels[i] - reference[i]) : HUGE_VALF;
             sumError += e;
-            if ( !(e <= maxError) ) {
+            if (e > maxError) {
                 maxError = e;
-                worst = (int)i;
+                worst = static_cast<int>(i);
             }
         }
         const int c = worst % 4;
@@ -402,7 +403,8 @@ TEST_F(ShadertoyOSMesaTest, SoftpipeFunctions)
         return;
     }
     if ( !knob<KnobChoice>(node, "cpuDriver") ) {
-        NatronTest::skip("this OSMesa has only one CPU driver");
+        // every OSMesa of the packages has llvmpipe and softpipe (osmesa-install)
+        skipOrFail("this OSMesa has only one CPU driver: softpipe can't be selected");
 
         return;
     }
