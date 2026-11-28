@@ -6,8 +6,8 @@ set -u # Treat unset variables as an error when substituting.
 
 # C++ standard: C++17 with Qt5, C++20 with Qt6 (RB-2.6 policy; RB-2.7: C++20 everywhere).
 # CXXSTD only reaches the qmake build of Natron (NATRON_BUILD_SYSTEM=qmake), which compiles
-# with this CXX. The CMake builds (Natron's default, and always for the plug-ins) drop the -std flag from CXX and set the standard themselves: Natron's
-# CMakeLists.txt from NATRON_QT6 (CMAKE_CXX_STANDARD, with GNU extensions: -std=gnu++17/20),
+# with this CXX. The CMake builds (Natron's default, and always for the plug-ins) drop the
+# -std flag from CXX and set the standard themselves: Natron's CMakeLists.txt from NATRON_QT6 (CMAKE_CXX_STANDARD, with GNU extensions: -std=gnu++17/20),
 # the plug-ins from OFX_CXX_STANDARD (build-plugins.sh, without GNU extensions).
 if [ "${QT_VERSION_MAJOR:-5}" -ge 6 ]; then
     CXXSTD="c++20"
