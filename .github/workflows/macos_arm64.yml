@@ -33,6 +33,10 @@ on:
   # Sunday 05:47 UTC (macos_x86_64.yml runs at 05:17, on other runners)
   - cron: '47 5 * * 0'
   push:
+    # VALIDATION ONLY (not for merging): a new workflow can't be dispatched before it is on the
+    # default branch
+    branches:
+    - macos-arm64-github-dmg-validate
     # pre-release tags, as linux_packages.yml
     tags:
     - 'v*-alpha*'
