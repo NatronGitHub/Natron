@@ -97,7 +97,7 @@ jobs:
         if: inputs.pacman_repo_run_id != ''
         uses: actions/download-artifact@v4
         with:
-          name: natron_package_repo${{ matrix.repo_suffix }}-${{ steps.repo.outputs.version }}
+          name: natron_package_repo${{ matrix.repo_suffix }}-weekly
           run-id: ${{ inputs.pacman_repo_run_id }}
           github-token: ${{ github.token }}
           path: natron_pacman_repo

@@ -18,7 +18,7 @@ fi
 
 cd ${NATRON_REPO_DIR}
 
-WINDOWS_PACMAN_REPO_VERSION=`cat ${NATRON_DIR}/tools/MINGW-packages/windows_pacman_repo_version.txt`
+WINDOWS_PACMAN_REPO_VERSION="weekly" # `cat ${NATRON_DIR}/tools/MINGW-packages/windows_pacman_repo_version.txt`
 # One repository per MSYS2 environment: the UCRT64 one keeps its original name.
 if [[ "${MSYSTEM}" == "UCRT64" ]]; then
     ZIP_FILENAME="natron_package_repo-${WINDOWS_PACMAN_REPO_VERSION}.zip"
